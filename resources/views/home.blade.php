@@ -10,7 +10,7 @@
                 {{ __('messages.home.hero_subtitle') }}
             </p>
             <div class="mt-8 flex items-center justify-center gap-4">
-                <a href="#" class="rounded-md bg-amber-600 px-6 py-3 text-sm font-semibold text-white hover:bg-amber-700">
+                <a href="{{ route('directory') }}" class="rounded-md bg-amber-600 px-6 py-3 text-sm font-semibold text-white hover:bg-amber-700">
                     {{ __('messages.home.cta_find') }}
                 </a>
                 <a href="#" class="rounded-md border border-stone-300 bg-white px-6 py-3 text-sm font-semibold text-stone-700 hover:border-amber-600 hover:text-amber-700">

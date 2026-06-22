@@ -1,6 +1,7 @@
 @props([
     'title' => null,
     'description' => null,
+    'schema' => null,
 ])
 
 <!DOCTYPE html>
@@ -11,6 +12,9 @@
     <meta name="description" content="{{ $description ?? __('messages.meta.default_description') }}">
     <link rel="canonical" href="{{ url()->current() }}">
     <title>{{ $title ? $title . ' — ' . config('app.name') : config('app.name') }}</title>
+    @if ($schema)
+        <script type="application/ld+json">{!! json_encode($schema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
+    @endif
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="flex min-h-screen flex-col bg-stone-50 text-stone-800 antialiased">
@@ -22,8 +26,8 @@
             </a>
             {{-- Phase B wires these to real routes; placeholders for now. --}}
             <nav class="hidden items-center gap-6 text-sm font-medium text-stone-600 md:flex">
-                <a href="#" class="hover:text-amber-700">{{ __('messages.nav.find_exporters') }}</a>
-                <a href="#" class="hover:text-amber-700">{{ __('messages.nav.species') }}</a>
+                <a href="{{ route('directory') }}" class="hover:text-amber-700">{{ __('messages.nav.find_exporters') }}</a>
+                <a href="{{ route('species.index') }}" class="hover:text-amber-700">{{ __('messages.nav.species') }}</a>
                 <a href="#" class="hover:text-amber-700">{{ __('messages.nav.pricing') }}</a>
                 <a href="#" class="hover:text-amber-700">{{ __('messages.nav.verification') }}</a>
             </nav>

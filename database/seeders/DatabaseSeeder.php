@@ -22,5 +22,10 @@ class DatabaseSeeder extends Seeder
             'name' => 'Platform Admin',
             'email' => 'admin@cameroontimberhub.test',
         ])->assignRole('super_admin');
+
+        $this->call([
+            SpeciesSeeder::class,
+            DemoCompanySeeder::class,
+        ]);
     }
 }

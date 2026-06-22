@@ -1,7 +1,23 @@
 <?php
 
+use App\Http\Controllers\Public\CompanyController;
+use App\Http\Controllers\Public\DirectoryController;
+use App\Http\Controllers\Public\SitemapController;
+use App\Http\Controllers\Public\SpeciesController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('home');
 })->name('home');
+
+// Directory & company profiles (static segments before slug routes).
+Route::get('/companies', [DirectoryController::class, 'index'])->name('directory');
+Route::get('/companies/{slug}', [CompanyController::class, 'show'])->name('companies.show');
+
+// Species catalog + programmatic-SEO species pages.
+Route::get('/species', [SpeciesController::class, 'index'])->name('species.index');
+Route::get('/species/{slug}', [SpeciesController::class, 'show'])->name('species.show');
+
+// SEO infrastructure.
+Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
+Route::get('/robots.txt', [SitemapController::class, 'robots'])->name('robots');
