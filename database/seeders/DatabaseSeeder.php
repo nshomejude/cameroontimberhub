@@ -15,11 +15,12 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        $this->call(RolesAndPermissionsSeeder::class);
 
+        // Local/dev super admin for the /admin Filament panel (password: "password").
         User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+            'name' => 'Platform Admin',
+            'email' => 'admin@cameroontimberhub.test',
+        ])->assignRole('super_admin');
     }
 }
