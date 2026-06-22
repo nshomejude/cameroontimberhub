@@ -5,7 +5,7 @@ namespace App\Filament\Exporter\Resources\Companies\Pages;
 use App\Enums\CompanyStatus;
 use App\Filament\Exporter\Resources\Companies\CompanyResource;
 use App\Services\CompanyCompletenessService;
-use App\Services\CompanyStatusService;
+use App\Services\VerificationService;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
@@ -41,7 +41,7 @@ class EditCompany extends EditRecord
                         return;
                     }
 
-                    app(CompanyStatusService::class)->submit($this->record, auth()->user());
+                    app(VerificationService::class)->submit($this->record, [], auth()->user());
 
                     Notification::make()->title('Submitted for review')->success()->send();
 

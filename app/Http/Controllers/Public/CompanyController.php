@@ -24,7 +24,8 @@ class CompanyController extends Controller
             ])
             ->firstOrFail();
 
-        $badge = $company->activeBadges->sortByDesc('issued_at')->first();
+        $badges = $company->activeBadges->where('is_public', true)->sortByDesc('issued_at')->values();
+        $badge = $badges->first();
 
         $schema = [
             '@context' => 'https://schema.org',
@@ -47,6 +48,7 @@ class CompanyController extends Controller
         return view('public.companies.show', [
             'company' => $company,
             'badge' => $badge,
+            'badges' => $badges,
             'schema' => $schema,
         ]);
     }

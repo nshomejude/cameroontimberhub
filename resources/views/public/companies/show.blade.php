@@ -65,10 +65,22 @@
                 <h2 class="flex items-center gap-2 font-display text-lg font-semibold text-forest-900">
                     <x-heroicon-s-shield-check class="h-5 w-5 text-forest-600" /> Verification
                 </h2>
+                @if($badges->isNotEmpty())
+                    <ul class="mt-3 space-y-1.5">
+                        @foreach($badges as $activeBadge)
+                            <li class="flex items-center gap-2 text-sm font-medium text-forest-700">
+                                <x-heroicon-s-check-badge class="h-4 w-4 text-forest-600" />{{ $activeBadge->badge_type->label() }}
+                            </li>
+                        @endforeach
+                    </ul>
+                @endif
                 <dl class="mt-4 space-y-2.5 text-sm">
                     <div class="flex justify-between"><dt class="text-ink-soft">Status</dt><dd class="font-medium text-forest-700">Verified profile</dd></div>
                     <div class="flex justify-between"><dt class="text-ink-soft">Verification date</dt><dd class="text-ink">{{ optional($badge?->issued_at)->format('d M Y') ?? '—' }}</dd></div>
                     <div class="flex justify-between"><dt class="text-ink-soft">Valid until</dt><dd class="text-ink">{{ optional($badge?->valid_until)->format('d M Y') ?? '—' }}</dd></div>
+                    @if($badge?->reference_code)
+                        <div class="flex justify-between"><dt class="text-ink-soft">Reference</dt><dd class="text-ink">{{ $badge->reference_code }}</dd></div>
+                    @endif
                 </dl>
                 <p class="mt-4 border-t border-sand-100 pt-4 text-xs leading-relaxed text-ink-soft">
                     Documents reviewed by Cameroon Timber Hub based on information submitted by the company.
