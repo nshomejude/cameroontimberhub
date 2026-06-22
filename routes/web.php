@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\DocumentDownloadController;
 use App\Http\Controllers\Public\CompanyController;
 use App\Http\Controllers\Public\DirectoryController;
 use App\Http\Controllers\Public\HomeController;
@@ -20,3 +21,8 @@ Route::get('/species/{slug}', [SpeciesController::class, 'show'])->name('species
 // SEO infrastructure.
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 Route::get('/robots.txt', [SitemapController::class, 'robots'])->name('robots');
+
+// Signed, auth-gated private compliance document download.
+Route::get('/documents/{document}/download', DocumentDownloadController::class)
+    ->name('documents.download')
+    ->middleware(['signed', 'auth']);

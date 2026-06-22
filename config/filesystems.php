@@ -47,6 +47,16 @@ return [
             'report' => false,
         ],
 
+        // Private compliance documents — never web-served directly; access only
+        // via signed download routes through DocumentService.
+        'documents' => [
+            'driver' => 'local',
+            'root' => storage_path('app/documents'),
+            'visibility' => 'private',
+            'throw' => false,
+            'report' => false,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),

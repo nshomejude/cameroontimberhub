@@ -77,6 +77,16 @@ class Company extends Model
         return $this->hasMany(VerificationBadge::class);
     }
 
+    public function documents(): HasMany
+    {
+        return $this->hasMany(CompanyDocument::class);
+    }
+
+    public function verificationRequests(): HasMany
+    {
+        return $this->hasMany(VerificationRequest::class);
+    }
+
     public function species(): BelongsToMany
     {
         return $this->belongsToMany(Species::class, 'company_species')

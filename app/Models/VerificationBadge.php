@@ -37,6 +37,21 @@ class VerificationBadge extends Model
         return $this->belongsTo(User::class, 'verified_by');
     }
 
+    public function revokedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'revoked_by');
+    }
+
+    public function verificationRequest(): BelongsTo
+    {
+        return $this->belongsTo(VerificationRequest::class);
+    }
+
+    public function supportingDocument(): BelongsTo
+    {
+        return $this->belongsTo(CompanyDocument::class, 'supporting_document_id');
+    }
+
     /** Active and within its validity window. */
     public function scopeActive(Builder $query): Builder
     {
