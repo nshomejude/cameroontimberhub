@@ -4,7 +4,9 @@ namespace App\Filament\Resources\Companies\Tables;
 
 use App\Enums\CompanyStatus;
 use App\Models\Company;
+use App\Models\Plan;
 use App\Services\CompanyStatusService;
+use App\Services\SubscriptionService;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
@@ -12,6 +14,7 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreBulkAction;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
 use Filament\Tables\Columns\IconColumn;
@@ -129,8 +132,26 @@ class CompaniesTable
                 ->icon('heroicon-o-star')->color('warning')
                 ->visible(fn (): bool => $canManage())
                 ->action(function (Company $record) use ($notify): void {
+                    // Featuring is gated by the company's plan entitlement.
+                    if (! $record->is_featured && ! $record->hasFeature('featured')) {
+                        Notification::make()->title("This company's plan does not include featured placement.")->warning()->send();
+
+                        return;
+                    }
                     $record->update(['is_featured' => ! $record->is_featured]);
                     $notify($record->is_featured ? 'Company featured' : 'Company unfeatured');
+                }),
+
+            Action::make('assignPlan')->label('Assign plan')
+                ->icon('heroicon-o-credit-card')->color('info')
+                ->visible(fn (): bool => (bool) auth()->user()?->can('plans.manage'))
+                ->schema([
+                    Select::make('plan_id')->label('Plan')->required()
+                        ->options(fn () => Plan::where('is_active', true)->orderBy('sort_order')->pluck('name', 'id')),
+                ])
+                ->action(function (Company $record, array $data) use ($notify): void {
+                    app(SubscriptionService::class)->assign($record, Plan::findOrFail($data['plan_id']), auth()->user());
+                    $notify('Plan assigned');
                 }),
         ];
     }

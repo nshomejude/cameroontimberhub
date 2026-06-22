@@ -5,6 +5,7 @@ use App\Http\Controllers\Public\CompanyController;
 use App\Http\Controllers\Public\DirectoryController;
 use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Public\InquiryController;
+use App\Http\Controllers\Public\PricingController;
 use App\Http\Controllers\Public\RfqController;
 use App\Http\Controllers\Public\SitemapController;
 use App\Http\Controllers\Public\SpeciesController;
@@ -15,6 +16,9 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 // Directory & company profiles (static segments before slug routes).
 Route::get('/companies', [DirectoryController::class, 'index'])->name('directory');
 Route::get('/companies/{slug}', [CompanyController::class, 'show'])->name('companies.show');
+
+// Pricing (plans-as-data).
+Route::get('/pricing', [PricingController::class, 'index'])->name('pricing');
 
 // Species catalog + programmatic-SEO species pages.
 Route::get('/species', [SpeciesController::class, 'index'])->name('species.index');

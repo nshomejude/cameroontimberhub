@@ -36,7 +36,7 @@
             <nav class="hidden items-center gap-7 text-sm font-medium text-ink-soft md:flex">
                 <a href="{{ route('directory') }}" class="transition hover:text-forest-700">{{ __('messages.nav.find_exporters') }}</a>
                 <a href="{{ route('species.index') }}" class="transition hover:text-forest-700">{{ __('messages.nav.species') }}</a>
-                <a href="#" class="transition hover:text-forest-700">{{ __('messages.nav.pricing') }}</a>
+                <a href="{{ route('pricing') }}" class="transition hover:text-forest-700">{{ __('messages.nav.pricing') }}</a>
                 <a href="#" class="transition hover:text-forest-700">{{ __('messages.nav.verification') }}</a>
             </nav>
 

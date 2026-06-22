@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\BadgeStatus;
 use App\Enums\CompanyStatus;
+use App\Enums\SubscriptionStatus;
 use App\Models\Concerns\HasSlug;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -12,6 +13,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Company extends Model
@@ -100,6 +102,35 @@ class Company extends Model
     public function leads(): HasMany
     {
         return $this->hasMany(Lead::class);
+    }
+
+    public function subscriptions(): HasMany
+    {
+        return $this->hasMany(Subscription::class);
+    }
+
+    public function plan(): BelongsTo
+    {
+        return $this->belongsTo(Plan::class);
+    }
+
+    public function activeSubscription(): HasOne
+    {
+        return $this->hasOne(Subscription::class)
+            ->where('status', SubscriptionStatus::Active->value)
+            ->latestOfMany();
+    }
+
+    /** @return array<string, mixed> */
+    public function planFeatures(): array
+    {
+        return (array) ($this->plan?->features ?? []);
+    }
+
+    /** Plan-based feature gate (spec: plans-as-data + manual assignment). */
+    public function hasFeature(string $key): bool
+    {
+        return (bool) data_get($this->planFeatures(), $key, false);
     }
 
     public function species(): BelongsToMany

@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
         ])->assignRole('super_admin');
 
         $this->call([
+            PlanSeeder::class,
             DocumentTypeSeeder::class,
             SpeciesSeeder::class,
             DemoCompanySeeder::class,
