@@ -80,3 +80,40 @@
     text-transform: uppercase;
     color: var(--color-timber-700);
 }
+
+/* ---------- Native app shell ---------- */
+
+@layer base {
+    * { -webkit-tap-highlight-color: transparent; }
+    html { -webkit-text-size-adjust: 100%; }
+    body { overscroll-behavior-y: contain; -webkit-overflow-scrolling: touch; }
+    [x-cloak] { display: none !important; }
+}
+
+.app-bar {
+    min-height: 3.5rem;
+    padding-top: env(safe-area-inset-top);
+}
+
+.tab-bar {
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Direction-aware page transitions (native push/pop feel) */
+@keyframes pageInForward {
+    from { opacity: 0; transform: translateX(18px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes pageInBack {
+    from { opacity: 0; transform: translateX(-18px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+.app-page { animation: pageInForward 0.26s cubic-bezier(0.32, 0.72, 0, 1); }
+.app-page.page-enter-back { animation-name: pageInBack; }
+
+@keyframes sheetUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.bottom-sheet-panel { animation: sheetUp 0.3s cubic-bezier(0.32, 0.72, 0, 1); }
+
+@media (prefers-reduced-motion: reduce) {
+    .app-page, .bottom-sheet-panel { animation: none; }
+}
