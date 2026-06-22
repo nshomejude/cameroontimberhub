@@ -49,7 +49,7 @@
             <div class="rounded-2xl bg-forest-800 p-6 text-sand-100">
                 <h2 class="font-display text-lg font-semibold text-white">Need {{ $species->common_name }}?</h2>
                 <p class="mt-1 text-sm text-forest-200">Request a quote and we'll connect you with verified exporters.</p>
-                <a href="#" class="mt-4 inline-flex items-center gap-1.5 rounded-full bg-timber-400 px-5 py-2.5 text-sm font-semibold text-forest-950 transition hover:bg-timber-300">
+                <a href="{{ route('rfq.create', ['species' => $species->slug]) }}" class="mt-4 inline-flex items-center gap-1.5 rounded-full bg-timber-400 px-5 py-2.5 text-sm font-semibold text-forest-950 transition hover:bg-timber-300">
                     Request a quote <x-heroicon-m-arrow-right class="h-4 w-4" />
                 </a>
             </div>

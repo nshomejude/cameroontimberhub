@@ -42,7 +42,7 @@
 
             <div class="flex items-center gap-3">
                 <a href="#" class="hidden text-sm font-medium text-forest-800 transition hover:text-forest-600 sm:inline">{{ __('messages.nav.list_company') }}</a>
-                <a href="#" class="inline-flex items-center gap-1.5 rounded-full bg-forest-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-forest-800">
+                <a href="{{ route('rfq.create') }}" class="inline-flex items-center gap-1.5 rounded-full bg-forest-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-forest-800">
                     {{ __('messages.nav.request_quote') }}
                     <x-heroicon-m-arrow-right class="h-4 w-4" />
                 </a>

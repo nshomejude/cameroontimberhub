@@ -103,12 +103,28 @@
                 </section>
             @endif
 
-            <section class="rounded-2xl bg-forest-800 p-6 text-sand-100">
-                <h2 class="font-display text-lg font-semibold text-white">Interested in this supplier?</h2>
-                <p class="mt-1 text-sm text-forest-200">Send a request for quote — no account needed.</p>
-                <a href="#" class="mt-4 inline-flex items-center gap-1.5 rounded-full bg-timber-400 px-5 py-2.5 text-sm font-semibold text-forest-950 transition hover:bg-timber-300">
-                    Request a quote <x-heroicon-m-arrow-right class="h-4 w-4" />
-                </a>
+            @php($f = 'w-full rounded-lg border border-sand-300 bg-white px-3 py-2 text-sm text-ink focus:border-forest-500 focus:ring-2 focus:ring-forest-100 focus:outline-none')
+            <section class="rounded-2xl border border-sand-200 bg-white p-6 shadow-sm">
+                <h2 class="font-display text-lg font-semibold text-forest-900">Contact this exporter</h2>
+                @if (session('inquiry_sent'))
+                    <p class="mt-3 rounded-lg bg-forest-50 p-3 text-sm text-forest-700">Thanks — check your email to confirm and deliver your message.</p>
+                @else
+                    <form method="POST" action="{{ route('inquiry.store', $company->slug) }}" class="mt-4 space-y-3">
+                        @csrf
+                        <input type="hidden" name="form_rendered_at" value="{{ now()->timestamp }}">
+                        <div class="hidden" aria-hidden="true"><input type="text" name="website" tabindex="-1" autocomplete="off"></div>
+                        <input type="text" name="name" value="{{ old('name') }}" class="{{ $f }}" placeholder="Your name *" required>
+                        <input type="email" name="email" value="{{ old('email') }}" class="{{ $f }}" placeholder="Email *" required>
+                        <input type="text" name="phone" value="{{ old('phone') }}" class="{{ $f }}" placeholder="Phone (optional)">
+                        <textarea name="message" rows="3" class="{{ $f }}" placeholder="Your message (min 20 characters) *" required>{{ old('message') }}</textarea>
+                        <label class="flex items-start gap-2 text-xs text-ink-soft">
+                            <input type="checkbox" name="consent" value="1" class="mt-0.5 rounded border-sand-300" required>
+                            <span>I consent to be contacted by email about this inquiry.</span>
+                        </label>
+                        <button class="w-full rounded-full bg-forest-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-forest-800">Send message</button>
+                    </form>
+                @endif
+                <a href="{{ route('rfq.create') }}" class="mt-3 inline-block text-sm font-medium text-forest-700 transition hover:text-forest-900">Or request a multi-supplier quote &rarr;</a>
             </section>
         </aside>
     </div>

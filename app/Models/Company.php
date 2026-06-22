@@ -87,6 +87,21 @@ class Company extends Model
         return $this->hasMany(VerificationRequest::class);
     }
 
+    public function inquiries(): HasMany
+    {
+        return $this->hasMany(CompanyInquiry::class);
+    }
+
+    public function rfqRoutings(): HasMany
+    {
+        return $this->hasMany(RfqCompany::class);
+    }
+
+    public function leads(): HasMany
+    {
+        return $this->hasMany(Lead::class);
+    }
+
     public function species(): BelongsToMany
     {
         return $this->belongsToMany(Species::class, 'company_species')

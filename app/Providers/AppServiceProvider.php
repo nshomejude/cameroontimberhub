@@ -2,7 +2,10 @@
 
 namespace App\Providers;
 
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Spatie\Activitylog\Models\Activity;
 
@@ -22,6 +25,18 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->injectRequestContextIntoAuditLog();
+        $this->registerRateLimiters();
+    }
+
+    /** Public-intake rate limiters (spec §4.2), keyed in Redis. */
+    protected function registerRateLimiters(): void
+    {
+        RateLimiter::for('rfq-submit', fn (Request $request) => [
+            Limit::perHour(5)->by('rfq-ip:'.$request->ip()),
+            Limit::perHour(3)->by('rfq-email:'.strtolower((string) $request->input('buyer_email'))),
+        ]);
+
+        RateLimiter::for('inquiry-submit', fn (Request $request) => Limit::perHour(8)->by('inquiry-ip:'.$request->ip()));
     }
 
     /**
