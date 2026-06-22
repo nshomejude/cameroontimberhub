@@ -1,0 +1,94 @@
+<!-- @dsCard group="App shell" name="Native affordances" subtitle="Pull-to-refresh + install chip" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../shared/app.css">
+    <title>Native affordances</title>
+    <style>
+        :root {
+            --color-forest-700: #254f35;
+            --color-forest-900: #1b3425;
+            --color-timber-400: #cb9248;
+            --color-sand-50: #fbf9f4;
+            --color-ink: #201e18;
+        }
+        .ds-stage {
+            max-width: 430px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 28px;
+        }
+        .ds-title {
+            font-family: "Fraunces", serif;
+            font-weight: 600;
+            font-size: 20px;
+            color: var(--color-forest-900);
+            align-self: flex-start;
+        }
+        .ds-tile {
+            position: relative;
+            width: 390px;
+            max-width: 100%;
+            border-radius: 24px;
+            background: var(--color-sand-50);
+            border: 1px solid #ece6d8;
+            padding: 24px 16px 20px;
+            box-shadow: 0 1px 2px rgba(32, 30, 24, 0.05);
+        }
+        .ds-pull-stack {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding-top: 24px;
+        }
+    </style>
+</head>
+<body class="bg-sand-50 text-ink antialiased">
+    <div class="ds-stage">
+        <h1 class="ds-title">Native affordances</h1>
+
+        <!-- (A) Pull-to-refresh indicator -->
+        <div class="ds-tile">
+            <div class="ds-pull-stack">
+                <span class="flex h-9 w-9 items-center justify-center rounded-full bg-white text-forest-600 shadow-md">
+                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" data-slot="icon">
+                        <path fill-rule="evenodd" d="M15.312 11.424a5.5 5.5 0 0 1-9.201 2.466l-.312-.311h2.433a.75.75 0 0 0 0-1.5H3.989a.75.75 0 0 0-.75.75v4.242a.75.75 0 0 0 1.5 0v-2.43l.31.31a7 7 0 0 0 11.712-3.138.75.75 0 0 0-1.449-.39Zm1.23-3.723a.75.75 0 0 0 .219-.53V2.929a.75.75 0 0 0-1.5 0V5.36l-.31-.31A7 7 0 0 0 3.239 8.188a.75.75 0 1 0 1.448.389A5.5 5.5 0 0 1 13.89 6.11l.311.31h-2.432a.75.75 0 0 0 0 1.5h4.243a.75.75 0 0 0 .53-.219Z" clip-rule="evenodd"/>
+                    </svg>
+                </span>
+                <span class="text-xs text-ink-soft">Release to refresh</span>
+            </div>
+        </div>
+
+        <!-- (B) Install-to-home-screen chip -->
+        <div class="ds-tile">
+            <div class="mx-auto max-w-sm rounded-2xl bg-forest-800 p-3 text-sand-100 shadow-xl">
+                <div class="flex items-center gap-3">
+                    <svg class="h-9 w-9 shrink-0" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <circle cx="20" cy="20" r="20" fill="#254f35" />
+                        <circle cx="21" cy="20" r="14.6" stroke="#e6cca1" stroke-width="1.4" opacity="0.85" />
+                        <circle cx="22" cy="20.6" r="9.6" stroke="#e6cca1" stroke-width="1.4" opacity="0.7" />
+                        <circle cx="23" cy="21" r="4.9" stroke="#d7ac6c" stroke-width="1.4" opacity="0.8" />
+                        <circle cx="23.4" cy="21.3" r="1.7" fill="#d7ac6c" />
+                    </svg>
+                    <p class="flex-1 text-sm">Install Timber Hub for an app-like experience.</p>
+                    <button class="rounded-full bg-timber-400 px-3 py-1.5 text-xs font-semibold text-forest-950">Install</button>
+                    <button class="text-forest-300" aria-label="Dismiss">
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" data-slot="icon">
+                            <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

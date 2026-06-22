@@ -1,0 +1,90 @@
+<!-- @dsCard group="Components" name="Quote CTAs" subtitle="Species aside + closing band" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../shared/app.css">
+  <style>
+    :root {
+      --color-forest-700: #254f35;
+      --color-forest-900: #1b3425;
+      --color-timber-400: #cb9248;
+      --color-sand-50: #fbf9f4;
+      --color-ink: #201e18;
+    }
+    .ds-stage {
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 40px 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 40px;
+    }
+    .ds-stage .ds-label {
+      font-family: "Instrument Sans", system-ui, sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #8a8472;
+      margin-bottom: 12px;
+    }
+    .ds-aside-wrap { max-width: 360px; }
+  </style>
+</head>
+<body class="bg-sand-50 text-ink antialiased">
+  <div class="ds-stage">
+
+    <!-- (A) Species aside box -->
+    <div>
+      <p class="ds-label">Species aside</p>
+      <div class="ds-aside-wrap">
+        <div class="rounded-2xl bg-forest-800 p-6 text-sand-100">
+          <h2 class="font-display text-lg font-semibold text-white">Need Sapele?</h2>
+          <p class="mt-1 text-sm text-forest-200">Request a quote and we'll connect you with verified exporters.</p>
+          <a href="#" class="mt-4 inline-flex items-center gap-1.5 rounded-full bg-timber-400 px-5 py-2.5 text-sm font-semibold text-forest-950 transition hover:bg-timber-300">
+            Request a quote
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" data-slot="icon" class="h-4 w-4">
+              <path fill-rule="evenodd" d="M3 10a.75.75 0 0 1 .75-.75h10.638L10.23 5.29a.75.75 0 1 1 1.04-1.08l5.5 5.25a.75.75 0 0 1 0 1.08l-5.5 5.25a.75.75 0 1 1-1.04-1.08l4.158-3.96H3.75A.75.75 0 0 1 3 10Z" clip-rule="evenodd"/>
+            </svg>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- (B) Home closing band -->
+    <div>
+      <p class="ds-label">Closing band</p>
+      <div class="relative overflow-hidden rounded-3xl bg-forest-800 px-8 py-16 text-center text-sand-100 sm:px-16">
+        <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" class="pointer-events-none absolute -right-12 -bottom-16 h-72 w-72 opacity-10">
+          <circle cx="20" cy="20" r="20" fill="#254f35" />
+          <circle cx="21" cy="20" r="14.6" stroke="#e6cca1" stroke-width="1.4" opacity="0.85" />
+          <circle cx="22" cy="20.6" r="9.6" stroke="#e6cca1" stroke-width="1.4" opacity="0.7" />
+          <circle cx="23" cy="21" r="4.9" stroke="#d7ac6c" stroke-width="1.4" opacity="0.8" />
+          <circle cx="23.4" cy="21.3" r="1.7" fill="#d7ac6c" />
+        </svg>
+        <div class="relative">
+          <h2 class="mx-auto max-w-2xl font-display text-3xl font-semibold text-white sm:text-4xl">Looking for verified Cameroonian timber?</h2>
+          <p class="mx-auto mt-3 max-w-xl text-forest-200">Browse exporters by species and region, or send a request and we'll route it to matching verified suppliers.</p>
+          <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
+            <a href="#" class="inline-flex items-center gap-2 rounded-full bg-timber-400 px-7 py-3.5 text-sm font-semibold text-forest-950 transition hover:bg-timber-300">
+              Browse exporters
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" data-slot="icon" class="h-4 w-4">
+                <path fill-rule="evenodd" d="M3 10a.75.75 0 0 1 .75-.75h10.638L10.23 5.29a.75.75 0 1 1 1.04-1.08l5.5 5.25a.75.75 0 0 1 0 1.08l-5.5 5.25a.75.75 0 1 1-1.04-1.08l4.158-3.96H3.75A.75.75 0 0 1 3 10Z" clip-rule="evenodd"/>
+              </svg>
+            </a>
+            <a href="#" class="inline-flex items-center gap-2 rounded-full border border-forest-600 px-7 py-3.5 text-sm font-semibold text-sand-100 transition hover:bg-forest-700">
+              Explore species
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

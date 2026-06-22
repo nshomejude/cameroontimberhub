@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cameroon Timber Hub — Design System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --forest-900:#1b3425; --forest-800:#20402c; --forest-700:#254f35; --forest-600:#2c6240;
+    --forest-50:#f1f7f2; --timber-400:#cb9248; --timber-700:#834b27;
+    --sand-50:#fbf9f4; --sand-100:#f5f0e6; --sand-200:#ebe3d2; --sand-300:#dcceb4;
+    --ink:#201e18; --ink-soft:#5b554a;
+  }
+  *{box-sizing:border-box}
+  html{font-size:106.25%}
+  body{margin:0;background:var(--sand-50);color:var(--ink);
+    font-family:'Instrument Sans',ui-sans-serif,system-ui,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1240px;margin:0 auto;padding:0 20px 80px}
+  header.top{position:sticky;top:0;z-index:10;background:rgba(251,249,244,.88);backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--sand-200);padding:14px 20px;margin-bottom:8px}
+  header.top .row{max-width:1240px;margin:0 auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .mark{height:34px;width:34px;flex:none}
+  .brand{font-family:'Fraunces',serif;font-weight:600;color:var(--forest-900);font-size:1.05rem;line-height:1.1}
+  .brand small{display:block;font-family:'Instrument Sans',sans-serif;font-weight:500;color:var(--timber-700);
+    font-size:.62rem;letter-spacing:.13em;text-transform:uppercase}
+  nav.jump{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+  nav.jump a{font-size:.78rem;font-weight:600;color:var(--forest-700);text-decoration:none;
+    border:1px solid var(--sand-300);border-radius:999px;padding:5px 12px;background:#fff}
+  nav.jump a:hover{border-color:var(--forest-600);color:var(--forest-900)}
+  .lede{max-width:60ch;color:var(--ink-soft);margin:22px auto 6px;padding:0 20px;font-size:1.02rem}
+  .lede b{color:var(--forest-800)}
+  h2.group{font-family:'Fraunces',serif;font-weight:600;color:var(--forest-950,#0e1c14);font-size:1.5rem;
+    margin:42px 0 4px;display:flex;align-items:baseline;gap:10px}
+  h2.group span{font-family:'Instrument Sans',sans-serif;font-size:.72rem;font-weight:600;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--timber-700)}
+  .grid{display:grid;gap:20px;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));margin-top:18px}
+  .grid.screens{grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+  .card{background:#fff;border:1px solid var(--sand-200);border-radius:18px;overflow:hidden;
+    box-shadow:0 1px 0 rgba(0,0,0,.02);display:flex;flex-direction:column}
+  .card .head{padding:13px 15px;border-bottom:1px solid var(--sand-100,#f5f0e6);display:flex;align-items:flex-start;gap:10px}
+  .card .head h3{margin:0;font-family:'Fraunces',serif;font-weight:600;font-size:1.02rem;color:var(--forest-900)}
+  .card .head p{margin:2px 0 0;font-size:.8rem;color:var(--ink-soft)}
+  .card .head a.open{margin-left:auto;flex:none;font-size:.72rem;font-weight:600;color:var(--forest-700);
+    text-decoration:none;border:1px solid var(--sand-300);border-radius:999px;padding:3px 10px}
+  .card .head a.open:hover{border-color:var(--forest-600)}
+  .frameWrap{background:
+      repeating-conic-gradient(#fdfcf9 0% 25%, #f6f2ea 0% 50%) 0 0/18px 18px;
+    display:flex;justify-content:center;align-items:flex-start;padding:0;overflow:hidden}
+  iframe{border:0;background:var(--sand-50);width:100%;display:block}
+  .screens iframe{width:390px}
+  footer.note{margin-top:54px;color:var(--ink-soft);font-size:.85rem;border-top:1px solid var(--sand-200);padding-top:18px}
+  code{background:var(--sand-100);padding:1px 6px;border-radius:6px;font-size:.85em}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="row">
+    <svg class="mark" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <circle cx="20" cy="20" r="20" fill="#254f35"/>
+      <circle cx="21" cy="20" r="14.6" stroke="#e6cca1" stroke-width="1.4" opacity="0.85"/>
+      <circle cx="22" cy="20.6" r="9.6" stroke="#e6cca1" stroke-width="1.4" opacity="0.7"/>
+      <circle cx="23" cy="21" r="4.9" stroke="#d7ac6c" stroke-width="1.4" opacity="0.8"/>
+      <circle cx="23.4" cy="21.3" r="1.7" fill="#d7ac6c"/>
+    </svg>
+    <div class="brand">Cameroon Timber Hub<small>Design System</small></div>
+    <nav class="jump">
+      <a href="#foundations">Foundations</a>
+      <a href="#components">Components</a>
+      <a href="#app-shell">App shell</a>
+      <a href="#screens">Screens</a>
+    </nav>
+  </div>
+</header>
+
+<p class="lede">A living component library mirroring the production <b>TALL-stack</b> UI — built from the same
+design tokens, real Heroicons, and the compiled Tailwind stylesheet (<code>shared/app.css</code>), so every
+preview renders exactly as it does in the app. Each tile below is a standalone <code>@dsCard</code> preview,
+ready to publish to <b>claude.ai/design</b>.</p>
+
+<div class="wrap" id="gallery"></div>
+
+<footer class="note wrap">
+  Generated locally. To publish to your Claude Design workspace: run <code>/design-login</code>, then the
+  DesignSync push uploads these files; the Design System pane builds its cards from each preview's first-line
+  <code>&lt;!-- @dsCard --&gt;</code> marker.
+</footer>
+
+<script>
+const CARDS = {
+  foundations: [
+    ['colors','Color tokens','Forest · Timber · Sand · Ink ramps',680],
+    ['typography','Typography','Fraunces display + Instrument Sans + eyebrow',560],
+    ['brand-mark','Brand mark','Timber growth-ring logo, sizes & lockup',440],
+    ['surfaces','Surfaces & motifs','Radius, elevation, gradient/blur atmosphere',620],
+    ['iconography','Iconography','Heroicons in forest & timber',560],
+  ],
+  components: [
+    ['buttons','Buttons & actions','Primary, timber CTA, outline, text link',480],
+    ['badges','Badges & pills','Featured, Verified, CITES, status',440],
+    ['form-fields','Form fields','Inputs, select, textarea, checkbox',560],
+    ['search-bar','Hero search','Home search bar + popular species',360],
+    ['company-card','Company card','Verified exporter directory tile',430],
+    ['species-card','Species card','Catalog tile with CITES variant',420],
+    ['trust-pillar','Trust pillars','3-up value props',520],
+    ['stats-row','Stats strip','Hero metric row',300],
+    ['verification-panel','Verification panel','Trust sidebar card',520],
+    ['quote-cta','Quote CTAs','Species aside + closing band',640],
+    ['pricing-tier','Pricing tiers','3 plans with most-popular ring',640],
+    ['empty-state','Empty state & breadcrumb','No-results card + breadcrumb',460],
+  ],
+  'app-shell': [
+    ['top-app-bar','Top app bar','Brand state + back state',360],
+    ['bottom-tab-bar','Bottom tab bar','5 tabs, active states',360],
+    ['nav-rail','Navigation rail','Desktop sidebar',680],
+    ['bottom-sheet','Bottom sheet','Drag-to-dismiss filter sheet (open)',640],
+    ['pwa-affordances','Native affordances','Pull-to-refresh + install chip',420],
+    ['offline','Offline screen','PWA offline fallback',560],
+  ],
+  screens: [
+    ['home','Home screen','Hero, search, stats, featured',840],
+    ['directory','Directory screen','Filter trigger + listing',840],
+    ['company-detail','Company detail screen','Profile, verification, contact',900],
+    ['species-detail','Species detail screen','Properties + exporters',880],
+    ['quote-form','Quote form screen','No-account RFQ',900],
+    ['pricing','Pricing screen','Stacked plan cards',980],
+  ],
+};
+const LABEL = {foundations:'Foundations', components:'Components', 'app-shell':'App shell', screens:'Screens'};
+const SUB = {foundations:'Tokens & primitives', components:'Reusable UI', 'app-shell':'Native shell', screens:'Full mobile pages'};
+const g = document.getElementById('gallery');
+for (const group of Object.keys(CARDS)) {
+  const h = document.createElement('h2');
+  h.className = 'group'; h.id = group;
+  h.innerHTML = LABEL[group] + ' <span>' + SUB[group] + '</span>';
+  g.appendChild(h);
+  const grid = document.createElement('div');
+  grid.className = 'grid' + (group === 'screens' ? ' screens' : '');
+  for (const [slug, name, sub, h0] of CARDS[group]) {
+    const src = group + '/' + slug + '.html';
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML =
+      '<div class="head"><div><h3>' + name + '</h3><p>' + sub + '</p></div>' +
+      '<a class="open" href="' + src + '" target="_blank" rel="noopener">Open ↗</a></div>' +
+      '<div class="frameWrap"><iframe loading="lazy" src="' + src + '" style="height:' + h0 + 'px" title="' + name + '"></iframe></div>';
+    grid.appendChild(card);
+  }
+  g.appendChild(grid);
+}
+</script>
+</body>
+</html>

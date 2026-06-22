@@ -1,0 +1,73 @@
+<!-- @dsCard group="Components" name="Species card" subtitle="Catalog tile with CITES variant" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../shared/app.css">
+  <style>
+    :root{
+      --color-forest-700:#254f35;
+      --color-forest-900:#1b3425;
+      --color-timber-400:#cb9248;
+      --color-sand-50:#fbf9f4;
+      --color-ink:#201e18;
+    }
+    .ds-stage{
+      max-width:880px;
+      margin:0 auto;
+      padding:48px 32px;
+      box-sizing:border-box;
+    }
+    .ds-grid{
+      display:grid;
+      grid-template-columns:repeat(2, minmax(0, 400px));
+      gap:24px;
+      justify-content:center;
+    }
+  </style>
+</head>
+<body class="bg-sand-50 text-ink antialiased">
+  <div class="ds-stage">
+    <div class="ds-grid">
+
+      <!-- (A) Afrormosia — CITES II -->
+      <a href="#" class="group flex flex-col rounded-2xl border border-sand-200 bg-white p-6 shadow-[0_1px_0_rgba(0,0,0,0.02)] transition hover:-translate-y-0.5 hover:border-forest-200 hover:shadow-lg">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <h2 class="font-display text-xl font-semibold text-forest-900 group-hover:text-forest-700">Afrormosia</h2>
+            <p class="text-sm italic text-ink-soft">Pericopsis elata</p>
+          </div>
+          <span class="shrink-0 rounded-full bg-timber-100 px-2.5 py-0.5 text-xs font-semibold text-timber-800">CITES II</span>
+        </div>
+        <p class="mt-3 text-sm leading-relaxed text-ink-soft">A prized West African hardwood with a lustrous golden-brown surface, used in fine furniture and boatbuilding.</p>
+        <span class="mt-4 inline-flex items-center gap-1 text-sm font-medium text-forest-600">
+          View exporters <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" data-slot="icon" class="h-4 w-4 transition group-hover:translate-x-0.5">
+  <path fill-rule="evenodd" d="M3 10a.75.75 0 0 1 .75-.75h10.638L10.23 5.29a.75.75 0 1 1 1.04-1.08l5.5 5.25a.75.75 0 0 1 0 1.08l-5.5 5.25a.75.75 0 1 1-1.04-1.08l4.158-3.96H3.75A.75.75 0 0 1 3 10Z" clip-rule="evenodd"/>
+</svg>
+        </span>
+      </a>
+
+      <!-- (B) Ayous — no CITES -->
+      <a href="#" class="group flex flex-col rounded-2xl border border-sand-200 bg-white p-6 shadow-[0_1px_0_rgba(0,0,0,0.02)] transition hover:-translate-y-0.5 hover:border-forest-200 hover:shadow-lg">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <h2 class="font-display text-xl font-semibold text-forest-900 group-hover:text-forest-700">Ayous</h2>
+            <p class="text-sm italic text-ink-soft">Triplochiton scleroxylon</p>
+          </div>
+        </div>
+        <p class="mt-3 text-sm leading-relaxed text-ink-soft">A pale, lightweight hardwood widely used for plywood, mouldings and joinery.</p>
+        <span class="mt-4 inline-flex items-center gap-1 text-sm font-medium text-forest-600">
+          View exporters <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" data-slot="icon" class="h-4 w-4 transition group-hover:translate-x-0.5">
+  <path fill-rule="evenodd" d="M3 10a.75.75 0 0 1 .75-.75h10.638L10.23 5.29a.75.75 0 1 1 1.04-1.08l5.5 5.25a.75.75 0 0 1 0 1.08l-5.5 5.25a.75.75 0 1 1-1.04-1.08l4.158-3.96H3.75A.75.75 0 0 1 3 10Z" clip-rule="evenodd"/>
+</svg>
+        </span>
+      </a>
+
+    </div>
+  </div>
+</body>
+</html>

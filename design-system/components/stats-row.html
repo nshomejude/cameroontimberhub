@@ -1,0 +1,52 @@
+<!-- @dsCard group="Components" name="Stats strip" subtitle="Hero metric row" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../shared/app.css">
+  <style>
+    :root {
+      --color-forest-700: #254f35;
+      --color-forest-900: #1b3425;
+      --color-timber-400: #cb9248;
+      --color-sand-50: #fbf9f4;
+      --color-ink: #201e18;
+    }
+    .ds-stage {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 48px 32px;
+      display: flex;
+      justify-content: center;
+    }
+    .ds-frame {
+      width: 100%;
+      max-width: 640px;
+    }
+  </style>
+</head>
+<body class="bg-sand-50 text-ink antialiased">
+  <div class="ds-stage">
+    <div class="ds-frame">
+      <dl class="mx-auto mt-16 grid max-w-2xl grid-cols-3 gap-6 border-t border-sand-200 pt-8">
+        <div>
+          <dt class="font-display text-4xl font-semibold text-forest-800 sm:text-5xl">128</dt>
+          <dd class="mt-1 text-sm text-ink-soft">Verified exporters</dd>
+        </div>
+        <div>
+          <dt class="font-display text-4xl font-semibold text-forest-800 sm:text-5xl">24</dt>
+          <dd class="mt-1 text-sm text-ink-soft">Timber species</dd>
+        </div>
+        <div>
+          <dt class="font-display text-4xl font-semibold text-forest-800 sm:text-5xl">17</dt>
+          <dd class="mt-1 text-sm text-ink-soft">Export markets</dd>
+        </div>
+      </dl>
+    </div>
+  </div>
+</body>
+</html>

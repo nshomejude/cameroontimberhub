@@ -1,0 +1,222 @@
+<!-- @dsCard group="Screens" name="Species detail screen" subtitle="Properties + exporters" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../shared/app.css">
+    <style>
+        :root {
+            --color-forest-700:#254f35;
+            --color-forest-900:#1b3425;
+            --color-timber-400:#cb9248;
+            --color-sand-50:#fbf9f4;
+            --color-ink:#201e18;
+        }
+        .ds-stage {
+            max-width: 460px;
+            margin: 0 auto;
+            padding: 32px 24px;
+            display: flex;
+            justify-content: center;
+        }
+        .ds-phone {
+            width: 390px;
+            height: 880px;
+            background: #15110c;
+            border-radius: 44px;
+            padding: 10px;
+            box-shadow: 0 30px 60px -20px rgba(0,0,0,0.45);
+            flex-shrink: 0;
+        }
+        .ds-phone-screen {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: var(--color-sand-50, #fbf9f4);
+            border-radius: 34px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .ds-phone-scroll {
+            flex: 1 1 auto;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .ds-phone-scroll::-webkit-scrollbar { width: 0; height: 0; }
+    </style>
+</head>
+<body class="bg-sand-50 text-ink antialiased">
+    <div class="ds-stage">
+        <div class="ds-phone">
+            <div class="ds-phone-screen">
+
+                <!-- Top app bar (DETAIL state: back + title) -->
+                <header class="app-bar sticky top-0 z-30 flex items-center gap-2 border-b border-sand-200 bg-sand-50/90 px-3 backdrop-blur">
+                    <a href="#" class="-ml-1 flex h-10 w-10 items-center justify-center rounded-full text-forest-800 active:bg-sand-200">
+                        <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" data-slot="icon">
+                            <path fill-rule="evenodd" d="M11.78 5.22a.75.75 0 0 1 0 1.06L8.06 10l3.72 3.72a.75.75 0 1 1-1.06 1.06l-4.25-4.25a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0Z" clip-rule="evenodd"/>
+                        </svg>
+                    </a>
+                    <h1 class="truncate font-display text-base font-semibold text-forest-900">Sapele</h1>
+                    <div class="ml-auto flex items-center gap-1"></div>
+                </header>
+
+                <!-- Scrollable page content -->
+                <main class="ds-phone-scroll app-page">
+
+                    <!-- Dark gradient header -->
+                    <section class="relative overflow-hidden border-b border-sand-200 bg-gradient-to-br from-forest-800 to-forest-950 text-sand-100">
+                        <svg class="pointer-events-none absolute -right-16 -top-16 h-80 w-80 opacity-10" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <circle cx="20" cy="20" r="20" fill="#254f35" />
+                            <circle cx="21" cy="20" r="14.6" stroke="#e6cca1" stroke-width="1.4" opacity="0.85" />
+                            <circle cx="22" cy="20.6" r="9.6" stroke="#e6cca1" stroke-width="1.4" opacity="0.7" />
+                            <circle cx="23" cy="21" r="4.9" stroke="#d7ac6c" stroke-width="1.4" opacity="0.8" />
+                            <circle cx="23.4" cy="21.3" r="1.7" fill="#d7ac6c" />
+                        </svg>
+                        <div class="relative mx-auto max-w-6xl px-4 py-12">
+                            <nav class="mb-6 flex items-center gap-1.5 text-sm text-forest-200">
+                                <a href="#" class="transition hover:text-white">Species</a>
+                                <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" data-slot="icon">
+                                    <path fill-rule="evenodd" d="M8.22 5.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06L11.94 10 8.22 6.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd"/>
+                                </svg>
+                                <span class="text-sand-100">Sapele</span>
+                            </nav>
+                            <h1 class="font-display text-4xl font-semibold text-white sm:text-5xl">Sapele</h1>
+                            <p class="mt-2 text-lg italic text-forest-200">Entandrophragma cylindricum</p>
+                        </div>
+                    </section>
+
+                    <div class="mx-auto grid max-w-6xl gap-10 px-4 py-12 lg:grid-cols-3">
+                        <div class="space-y-10 lg:col-span-2">
+                            <!-- About -->
+                            <section>
+                                <h2 class="font-display text-2xl font-semibold text-forest-950">About Sapele</h2>
+                                <div class="mt-4 whitespace-pre-line leading-relaxed text-ink-soft">Sapele is a prized West African hardwood with a fine, interlocked grain and a warm reddish-brown lustre. It is widely sought for fine furniture, joinery and musical instruments thanks to its strength and dimensional stability.</div>
+                            </section>
+
+                            <!-- Properties -->
+                            <section>
+                                <h2 class="font-display text-2xl font-semibold text-forest-950">Properties</h2>
+                                <dl class="mt-4 grid gap-3 sm:grid-cols-2">
+                                    <div class="rounded-xl border border-sand-200 bg-white px-4 py-3">
+                                        <dt class="text-xs font-semibold uppercase tracking-wide text-ink-soft">Density</dt>
+                                        <dd class="mt-0.5 text-ink">640 kg/m³</dd>
+                                    </div>
+                                    <div class="rounded-xl border border-sand-200 bg-white px-4 py-3">
+                                        <dt class="text-xs font-semibold uppercase tracking-wide text-ink-soft">Durability</dt>
+                                        <dd class="mt-0.5 text-ink">Durable</dd>
+                                    </div>
+                                    <div class="rounded-xl border border-sand-200 bg-white px-4 py-3">
+                                        <dt class="text-xs font-semibold uppercase tracking-wide text-ink-soft">Janka Hardness</dt>
+                                        <dd class="mt-0.5 text-ink">1,510 lbf</dd>
+                                    </div>
+                                    <div class="rounded-xl border border-sand-200 bg-white px-4 py-3">
+                                        <dt class="text-xs font-semibold uppercase tracking-wide text-ink-soft">Typical Uses</dt>
+                                        <dd class="mt-0.5 text-ink">Furniture & joinery</dd>
+                                    </div>
+                                </dl>
+                            </section>
+                        </div>
+
+                        <aside>
+                            <div class="rounded-2xl bg-forest-800 p-6 text-sand-100">
+                                <h2 class="font-display text-lg font-semibold text-white">Need Sapele?</h2>
+                                <p class="mt-1 text-sm text-forest-200">Request a quote and we'll connect you with verified exporters.</p>
+                                <a href="#" class="mt-4 inline-flex items-center gap-1.5 rounded-full bg-timber-400 px-5 py-2.5 text-sm font-semibold text-forest-950 transition hover:bg-timber-300">
+                                    Request a quote
+                                    <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" data-slot="icon">
+                                        <path fill-rule="evenodd" d="M3 10a.75.75 0 0 1 .75-.75h10.638L10.23 5.29a.75.75 0 1 1 1.04-1.08l5.5 5.25a.75.75 0 0 1 0 1.08l-5.5 5.25a.75.75 0 1 1-1.04-1.08l4.158-3.96H3.75A.75.75 0 0 1 3 10Z" clip-rule="evenodd"/>
+                                    </svg>
+                                </a>
+                            </div>
+                        </aside>
+                    </div>
+
+                    <!-- Verified exporters -->
+                    <section class="mx-auto max-w-6xl px-4 pb-16">
+                        <h2 class="font-display text-2xl font-semibold text-forest-950">Verified exporters handling Sapele</h2>
+                        <div class="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                            <a href="#"
+                               class="group flex flex-col rounded-2xl border border-sand-200 bg-white p-6 shadow-[0_1px_0_rgba(0,0,0,0.02)] transition hover:-translate-y-0.5 hover:border-forest-200 hover:shadow-lg">
+                                <div class="flex items-start gap-4">
+                                    <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-forest-700 font-display text-lg font-semibold text-sand-100">
+                                        B
+                                    </span>
+                                    <div class="min-w-0 flex-1">
+                                        <h3 class="truncate font-display text-lg font-semibold text-forest-900 group-hover:text-forest-700">Bois du Cameroun SARL</h3>
+                                        <p class="mt-0.5 flex items-center gap-1 text-sm text-ink-soft">
+                                            <svg class="h-4 w-4 text-timber-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" data-slot="icon">
+                                                <path fill-rule="evenodd" d="m9.69 18.933.003.001C9.89 19.02 10 19 10 19s.11.02.308-.066l.002-.001.006-.003.018-.008a5.741 5.741 0 0 0 .281-.14c.186-.096.446-.24.757-.433.62-.384 1.445-.966 2.274-1.765C15.302 14.988 17 12.493 17 9A7 7 0 1 0 3 9c0 3.492 1.698 5.988 3.355 7.584a13.731 13.731 0 0 0 2.273 1.765 11.842 11.842 0 0 0 .976.544l.062.029.018.008.006.003ZM10 11.25a2.25 2.25 0 1 0 0-4.5 2.25 2.25 0 0 0 0 4.5Z" clip-rule="evenodd"/>
+                                            </svg>
+                                            Littoral, Douala
+                                        </p>
+                                    </div>
+                                    <span class="rounded-full bg-timber-100 px-2.5 py-0.5 text-xs font-semibold text-timber-800">Featured</span>
+                                </div>
+
+                                <div class="mt-4 flex flex-wrap gap-1.5">
+                                    <span class="rounded-full bg-sand-100 px-2.5 py-1 text-xs font-medium text-ink-soft">Sapele</span>
+                                    <span class="rounded-full bg-sand-100 px-2.5 py-1 text-xs font-medium text-ink-soft">Ayous</span>
+                                    <span class="rounded-full bg-sand-100 px-2.5 py-1 text-xs font-medium text-ink-soft">Iroko</span>
+                                    <span class="rounded-full bg-sand-100 px-2.5 py-1 text-xs font-medium text-ink-soft">Tali</span>
+                                </div>
+
+                                <div class="mt-5 flex items-center justify-between border-t border-sand-100 pt-4">
+                                    <span class="inline-flex items-center gap-1.5 text-sm font-medium text-forest-600">
+                                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" data-slot="icon">
+                                            <path fill-rule="evenodd" d="M8.603 3.799A4.49 4.49 0 0 1 12 2.25c1.357 0 2.573.6 3.397 1.549a4.49 4.49 0 0 1 3.498 1.307 4.491 4.491 0 0 1 1.307 3.497A4.49 4.49 0 0 1 21.75 12a4.49 4.49 0 0 1-1.549 3.397 4.491 4.491 0 0 1-1.307 3.497 4.491 4.491 0 0 1-3.497 1.307A4.49 4.49 0 0 1 12 21.75a4.49 4.49 0 0 1-3.397-1.549 4.49 4.49 0 0 1-3.498-1.306 4.491 4.491 0 0 1-1.307-3.498A4.49 4.49 0 0 1 2.25 12c0-1.357.6-2.573 1.549-3.397a4.49 4.49 0 0 1 1.307-3.497 4.49 4.49 0 0 1 3.497-1.307Zm7.007 6.387a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z" clip-rule="evenodd"/>
+                                        </svg>
+                                        Verified profile
+                                    </span>
+                                    <span class="text-xs text-ink-soft">Mar 2025</span>
+                                </div>
+                            </a>
+                        </div>
+                    </section>
+
+                </main>
+
+                <!-- Bottom tab bar (pinned inside frame; SPECIES active) -->
+                <nav class="tab-bar grid grid-cols-5 border-t border-sand-200 bg-white/95 backdrop-blur">
+                    <a href="#" class="flex flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-medium transition active:scale-95 text-ink-soft">
+                        <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" data-slot="icon">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"/>
+                        </svg>
+                        Home
+                    </a>
+                    <a href="#" class="flex flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-medium transition active:scale-95 text-ink-soft">
+                        <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" data-slot="icon">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Z"/>
+                        </svg>
+                        Exporters
+                    </a>
+                    <a href="#" class="flex flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-medium transition active:scale-95 text-forest-700">
+                        <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" data-slot="icon">
+                            <path d="M5.566 4.657A4.505 4.505 0 0 1 6.75 4.5h10.5c.41 0 .806.055 1.183.157A3 3 0 0 0 15.75 3h-7.5a3 3 0 0 0-2.684 1.657ZM2.25 12a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3v6a3 3 0 0 1-3 3H5.25a3 3 0 0 1-3-3v-6ZM5.25 7.5c-.41 0-.806.055-1.184.157A3 3 0 0 1 6.75 6h10.5a3 3 0 0 1 2.683 1.657A4.505 4.505 0 0 0 18.75 7.5H5.25Z"/>
+                        </svg>
+                        Species
+                    </a>
+                    <a href="#" class="flex flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-medium transition active:scale-95 text-ink-soft">
+                        <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" data-slot="icon">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 0 1-.825-.242m9.345-8.334a2.126 2.126 0 0 0-.476-.095 48.64 48.64 0 0 0-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0 0 11.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155"/>
+                        </svg>
+                        Quote
+                    </a>
+                    <a href="#" class="flex flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-medium transition active:scale-95 text-ink-soft">
+                        <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" data-slot="icon">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/>
+                        </svg>
+                        Account
+                    </a>
+                </nav>
+
+            </div>
+        </div>
+    </div>
+</body>
+</html>

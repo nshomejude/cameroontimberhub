@@ -1,0 +1,231 @@
+<!-- @dsCard group="Screens" name="Home screen" subtitle="Hero, search, stats, featured" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../shared/app.css">
+    <style>
+        :root {
+            --color-forest-700: #254f35;
+            --color-forest-900: #1b3425;
+            --color-timber-400: #cb9248;
+            --color-sand-50: #fbf9f4;
+            --color-ink: #201e18;
+        }
+        .ds-stage {
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 32px 16px;
+            display: flex;
+            justify-content: center;
+        }
+        .phone-frame {
+            width: 390px;
+            height: 840px;
+            background: #14160f;
+            border-radius: 44px;
+            padding: 10px;
+            box-shadow: 0 30px 70px rgba(27, 52, 37, 0.35), 0 6px 16px rgba(0,0,0,0.2);
+            flex-shrink: 0;
+        }
+        .phone-screen {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: var(--color-sand-50);
+            border-radius: 34px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .phone-scroll {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .phone-scroll::-webkit-scrollbar { width: 0; }
+    </style>
+</head>
+<body class="bg-sand-50 text-ink antialiased">
+    <div class="ds-stage">
+        <div class="phone-frame">
+            <div class="phone-screen">
+
+                <!-- Top app bar (ROOT state: brand mark + title) -->
+                <header class="app-bar sticky top-0 z-30 flex items-center gap-2 border-b border-sand-200 bg-sand-50/90 px-3 backdrop-blur">
+                    <span class="ml-1 md:hidden">
+                        <svg class="h-8 w-8" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <circle cx="20" cy="20" r="20" fill="#254f35" />
+                            <circle cx="21" cy="20" r="14.6" stroke="#e6cca1" stroke-width="1.4" opacity="0.85" />
+                            <circle cx="22" cy="20.6" r="9.6" stroke="#e6cca1" stroke-width="1.4" opacity="0.7" />
+                            <circle cx="23" cy="21" r="4.9" stroke="#d7ac6c" stroke-width="1.4" opacity="0.8" />
+                            <circle cx="23.4" cy="21.3" r="1.7" fill="#d7ac6c" />
+                        </svg>
+                    </span>
+                    <h1 class="truncate font-display text-base font-semibold text-forest-900">Cameroon Timber Hub</h1>
+                    <div class="ml-auto flex items-center gap-1"></div>
+                </header>
+
+                <div class="phone-scroll">
+                    <main class="app-page">
+
+                        <!-- Hero -->
+                        <section class="relative overflow-hidden border-b border-sand-200 bg-gradient-to-b from-forest-50 via-sand-50 to-sand-50">
+                            <svg class="pointer-events-none absolute -right-24 -top-24 h-[28rem] w-[28rem] opacity-[0.05]" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                <circle cx="20" cy="20" r="20" fill="#254f35" />
+                                <circle cx="21" cy="20" r="14.6" stroke="#e6cca1" stroke-width="1.4" opacity="0.85" />
+                                <circle cx="22" cy="20.6" r="9.6" stroke="#e6cca1" stroke-width="1.4" opacity="0.7" />
+                                <circle cx="23" cy="21" r="4.9" stroke="#d7ac6c" stroke-width="1.4" opacity="0.8" />
+                                <circle cx="23.4" cy="21.3" r="1.7" fill="#d7ac6c" />
+                            </svg>
+                            <div class="pointer-events-none absolute left-1/2 top-0 h-72 w-[40rem] -translate-x-1/2 rounded-full bg-forest-100/50 blur-3xl"></div>
+
+                            <div class="relative mx-auto max-w-5xl px-4 py-24 text-center sm:py-28">
+                                <p class="eyebrow">Verified timber trade</p>
+                                <h1 class="mx-auto mt-5 max-w-4xl font-display text-3xl font-semibold leading-[1.03] text-forest-950 sm:text-6xl lg:text-7xl">
+                                    Find verified Cameroonian timber exporters
+                                </h1>
+                                <p class="mx-auto mt-6 max-w-2xl text-xl leading-relaxed text-ink-soft">
+                                    Browse exporters by species, region and export market — documents reviewed by Cameroon Timber Hub.
+                                </p>
+
+                                <!-- Search -->
+                                <form method="GET" action="#" class="mx-auto mt-9 flex max-w-xl items-center gap-2 rounded-2xl border border-sand-200 bg-white p-2 shadow-xl shadow-forest-900/5">
+                                    <span class="pl-3 text-ink-soft">
+                                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                            <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11ZM2 9a7 7 0 1 1 12.452 4.391l3.328 3.329a.75.75 0 1 1-1.06 1.06l-3.329-3.328A7 7 0 0 1 2 9Z" clip-rule="evenodd"/>
+                                        </svg>
+                                    </span>
+                                    <input name="q" type="search" placeholder="Search verified exporters…"
+                                           class="min-w-0 flex-1 border-0 bg-transparent py-2.5 text-base text-ink placeholder:text-ink-soft/60 focus:outline-none focus:ring-0">
+                                    <button type="submit" class="shrink-0 rounded-xl bg-forest-700 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-forest-800">Search</button>
+                                </form>
+
+                                <div class="mt-5 flex flex-wrap items-center justify-center gap-2 text-sm">
+                                    <span class="text-ink-soft">Popular species:</span>
+                                    <a href="#" class="rounded-full border border-sand-200 bg-white/70 px-3 py-1 font-medium text-forest-800 transition hover:border-forest-300 hover:bg-white">Sapele</a>
+                                    <a href="#" class="rounded-full border border-sand-200 bg-white/70 px-3 py-1 font-medium text-forest-800 transition hover:border-forest-300 hover:bg-white">Iroko</a>
+                                    <a href="#" class="rounded-full border border-sand-200 bg-white/70 px-3 py-1 font-medium text-forest-800 transition hover:border-forest-300 hover:bg-white">Ayous</a>
+                                    <a href="#" class="rounded-full border border-sand-200 bg-white/70 px-3 py-1 font-medium text-forest-800 transition hover:border-forest-300 hover:bg-white">Tali</a>
+                                </div>
+
+                                <dl class="mx-auto mt-16 grid max-w-2xl grid-cols-3 gap-6 border-t border-sand-200 pt-8">
+                                    <div>
+                                        <dt class="font-display text-4xl font-semibold text-forest-800 sm:text-5xl">128</dt>
+                                        <dd class="mt-1 text-sm text-ink-soft">Verified exporters</dd>
+                                    </div>
+                                    <div>
+                                        <dt class="font-display text-4xl font-semibold text-forest-800 sm:text-5xl">24</dt>
+                                        <dd class="mt-1 text-sm text-ink-soft">Timber species</dd>
+                                    </div>
+                                    <div>
+                                        <dt class="font-display text-4xl font-semibold text-forest-800 sm:text-5xl">17</dt>
+                                        <dd class="mt-1 text-sm text-ink-soft">Export markets</dd>
+                                    </div>
+                                </dl>
+                            </div>
+                        </section>
+
+                        <!-- Featured exporters -->
+                        <section class="mx-auto max-w-6xl px-4 py-20">
+                            <div class="flex items-end justify-between gap-4">
+                                <div>
+                                    <p class="eyebrow">Verified directory</p>
+                                    <h2 class="mt-3 font-display text-3xl font-semibold text-forest-950">Featured verified exporters</h2>
+                                </div>
+                                <a href="#" class="hidden shrink-0 items-center gap-1 text-sm font-semibold text-forest-700 transition hover:text-forest-900 sm:inline-flex">
+                                    View all
+                                    <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                        <path fill-rule="evenodd" d="M3 10a.75.75 0 0 1 .75-.75h10.638L10.23 5.29a.75.75 0 1 1 1.04-1.08l5.5 5.25a.75.75 0 0 1 0 1.08l-5.5 5.25a.75.75 0 1 1-1.04-1.08l4.158-3.96H3.75A.75.75 0 0 1 3 10Z" clip-rule="evenodd"/>
+                                    </svg>
+                                </a>
+                            </div>
+                            <div class="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+
+                                <!-- Company card: Bois du Cameroun SARL -->
+                                <a href="#"
+                                   class="group flex flex-col rounded-2xl border border-sand-200 bg-white p-6 shadow-[0_1px_0_rgba(0,0,0,0.02)] transition hover:-translate-y-0.5 hover:border-forest-200 hover:shadow-lg">
+                                    <div class="flex items-start gap-4">
+                                        <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-forest-700 font-display text-lg font-semibold text-sand-100">
+                                            B
+                                        </span>
+                                        <div class="min-w-0 flex-1">
+                                            <h3 class="truncate font-display text-lg font-semibold text-forest-900 group-hover:text-forest-700">Bois du Cameroun SARL</h3>
+                                            <p class="mt-0.5 flex items-center gap-1 text-sm text-ink-soft">
+                                                <svg class="h-4 w-4 text-timber-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                                    <path fill-rule="evenodd" d="m9.69 18.933.003.001C9.89 19.02 10 19 10 19s.11.02.308-.066l.002-.001.006-.003.018-.008a5.741 5.741 0 0 0 .281-.14c.186-.096.446-.24.757-.433.62-.384 1.445-.966 2.274-1.765C15.302 14.988 17 12.493 17 9A7 7 0 1 0 3 9c0 3.492 1.698 5.988 3.355 7.584a13.731 13.731 0 0 0 2.273 1.765 11.842 11.842 0 0 0 .976.544l.062.029.018.008.006.003ZM10 11.25a2.25 2.25 0 1 0 0-4.5 2.25 2.25 0 0 0 0 4.5Z" clip-rule="evenodd"/>
+                                                </svg>
+                                                Littoral, Douala
+                                            </p>
+                                        </div>
+                                        <span class="rounded-full bg-timber-100 px-2.5 py-0.5 text-xs font-semibold text-timber-800">Featured</span>
+                                    </div>
+
+                                    <div class="mt-4 flex flex-wrap gap-1.5">
+                                        <span class="rounded-full bg-sand-100 px-2.5 py-1 text-xs font-medium text-ink-soft">Sapele</span>
+                                        <span class="rounded-full bg-sand-100 px-2.5 py-1 text-xs font-medium text-ink-soft">Iroko</span>
+                                        <span class="rounded-full bg-sand-100 px-2.5 py-1 text-xs font-medium text-ink-soft">Ayous</span>
+                                        <span class="rounded-full bg-sand-100 px-2.5 py-1 text-xs font-medium text-ink-soft">Tali</span>
+                                    </div>
+
+                                    <div class="mt-5 flex items-center justify-between border-t border-sand-100 pt-4">
+                                        <span class="inline-flex items-center gap-1.5 text-sm font-medium text-forest-600">
+                                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                                <path fill-rule="evenodd" d="M8.603 3.799A4.49 4.49 0 0 1 12 2.25c1.357 0 2.573.6 3.397 1.549a4.49 4.49 0 0 1 3.498 1.307 4.491 4.491 0 0 1 1.307 3.497A4.49 4.49 0 0 1 21.75 12a4.49 4.49 0 0 1-1.549 3.397 4.491 4.491 0 0 1-1.307 3.497 4.491 4.491 0 0 1-3.497 1.307A4.49 4.49 0 0 1 12 21.75a4.49 4.49 0 0 1-3.397-1.549 4.49 4.49 0 0 1-3.498-1.306 4.491 4.491 0 0 1-1.307-3.498A4.49 4.49 0 0 1 2.25 12c0-1.357.6-2.573 1.549-3.397a4.49 4.49 0 0 1 1.307-3.497 4.49 4.49 0 0 1 3.497-1.307Zm7.007 6.387a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z" clip-rule="evenodd"/>
+                                            </svg>
+                                            Verified profile
+                                        </span>
+                                        <span class="text-xs text-ink-soft">Mar 2025</span>
+                                    </div>
+                                </a>
+
+                            </div>
+                        </section>
+
+                    </main>
+                </div>
+
+                <!-- Bottom tab bar (HOME active) -->
+                <nav class="tab-bar grid grid-cols-5 border-t border-sand-200 bg-white/95 backdrop-blur">
+                    <a href="#" class="flex flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-medium transition active:scale-95 text-forest-700">
+                        <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                            <path d="M11.47 3.841a.75.75 0 0 1 1.06 0l8.69 8.69a.75.75 0 1 0 1.06-1.061l-8.689-8.69a2.25 2.25 0 0 0-3.182 0l-8.69 8.69a.75.75 0 1 0 1.061 1.06l8.69-8.689Z"/>
+                            <path d="m12 5.432 8.159 8.159c.03.03.06.058.091.086v6.198c0 1.035-.84 1.875-1.875 1.875H15a.75.75 0 0 1-.75-.75v-4.5a.75.75 0 0 0-.75-.75h-3a.75.75 0 0 0-.75.75V21a.75.75 0 0 1-.75.75H5.625a1.875 1.875 0 0 1-1.875-1.875v-6.198a2.29 2.29 0 0 0 .091-.086L12 5.432Z"/>
+                        </svg>
+                        Home
+                    </a>
+                    <a href="#" class="flex flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-medium transition active:scale-95 text-ink-soft">
+                        <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Z"/>
+                        </svg>
+                        Exporters
+                    </a>
+                    <a href="#" class="flex flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-medium transition active:scale-95 text-ink-soft">
+                        <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 6.878V6a2.25 2.25 0 0 1 2.25-2.25h7.5A2.25 2.25 0 0 1 18 6v.878m-12 0c.235-.083.487-.128.75-.128h10.5c.263 0 .515.045.75.128m-12 0A2.25 2.25 0 0 0 4.5 9v.878m13.5-3A2.25 2.25 0 0 1 19.5 9v.878m0 0a2.246 2.246 0 0 0-.75-.128H5.25c-.263 0-.515.045-.75.128m15 0A2.25 2.25 0 0 1 21 12v6a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 18v-6c0-.98.626-1.813 1.5-2.122"/>
+                        </svg>
+                        Species
+                    </a>
+                    <a href="#" class="flex flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-medium transition active:scale-95 text-ink-soft">
+                        <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 0 1-.825-.242m9.345-8.334a2.126 2.126 0 0 0-.476-.095 48.64 48.64 0 0 0-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0 0 11.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155"/>
+                        </svg>
+                        Quote
+                    </a>
+                    <a href="#" class="flex flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-medium transition active:scale-95 text-ink-soft">
+                        <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/>
+                        </svg>
+                        Account
+                    </a>
+                </nav>
+
+            </div>
+        </div>
+    </div>
+</body>
+</html>

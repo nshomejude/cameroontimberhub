@@ -1,0 +1,171 @@
+<!-- @dsCard group="Foundations" name="Color tokens" subtitle="Forest · Timber · Sand · Ink ramps" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../shared/app.css">
+  <style>
+    :root {
+      --color-forest-700: #254f35;
+      --color-forest-900: #1b3425;
+      --color-timber-400: #cb9248;
+      --color-sand-50: #fbf9f4;
+      --color-ink: #201e18;
+      --color-ink-soft: #5b554a;
+    }
+    .ds-stage {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 48px 40px 56px;
+      box-sizing: border-box;
+    }
+    .ds-ramp {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 18px;
+    }
+    .ds-swatch { width: 84px; }
+    .ds-chip {
+      width: 84px;
+      height: 84px;
+      border-radius: 14px;
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,.08);
+    }
+    .ds-name {
+      margin-top: 10px;
+      font-family: "Instrument Sans", system-ui, sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--color-ink);
+      line-height: 1.25;
+    }
+    .ds-class {
+      font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+      font-size: 11px;
+      color: var(--color-ink-soft);
+      line-height: 1.4;
+    }
+    .ds-hex {
+      font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+      font-size: 11px;
+      color: var(--color-ink-soft);
+      line-height: 1.4;
+      text-transform: uppercase;
+    }
+    /* swatches where the fill itself is dark — paint the hex glyph onto the chip
+       face in white so the chip stays legible; the under-labels stay dark ink
+       because they sit on the cream page, not on the fill. */
+    .ds-chip-label {
+      position: relative;
+      display: flex;
+      align-items: flex-end;
+      justify-content: flex-start;
+      padding: 8px;
+      box-sizing: border-box;
+      font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: .02em;
+    }
+    .ds-section { margin-bottom: 44px; }
+    .ds-ramp-title {
+      font-family: "Fraunces", Georgia, serif;
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--color-ink);
+      margin: 0 0 4px;
+    }
+    .ds-ramp-cap {
+      font-family: "Instrument Sans", system-ui, sans-serif;
+      font-size: 13px;
+      color: var(--color-ink-soft);
+      margin: 0 0 18px;
+    }
+    .ds-page-title {
+      font-family: "Fraunces", Georgia, serif;
+      font-size: 34px;
+      font-weight: 600;
+      color: var(--color-ink);
+      margin: 0 0 6px;
+      letter-spacing: -0.01em;
+    }
+    .ds-page-cap {
+      font-family: "Instrument Sans", system-ui, sans-serif;
+      font-size: 14px;
+      color: var(--color-ink-soft);
+      margin: 0 0 40px;
+      max-width: 60ch;
+    }
+  </style>
+</head>
+<body class="bg-sand-50 text-ink antialiased">
+  <div class="ds-stage">
+    <h1 class="ds-page-title font-display">Color tokens</h1>
+    <p class="ds-page-cap">Four core ramps drive the entire interface — forest greens for brand and primary actions, a warm timber accent for wood and highlights, sand creams for surfaces and neutrals, and ink for text.</p>
+
+    <!-- Forest -->
+    <section class="ds-section">
+      <h2 class="ds-ramp-title font-display">Forest</h2>
+      <p class="ds-ramp-cap">Primary brand green — buttons, links, verified states.</p>
+      <div class="ds-ramp">
+        <div class="ds-swatch"><div class="ds-chip ds-chip-label" style="background:#f1f7f2;color:rgba(0,0,0,.55)">#f1f7f2</div><div class="ds-name">forest-50</div><div class="ds-class">bg-forest-50</div><div class="ds-hex">#f1f7f2</div></div>
+        <div class="ds-swatch"><div class="ds-chip ds-chip-label" style="background:#dcebe0;color:rgba(0,0,0,.55)">#dcebe0</div><div class="ds-name">forest-100</div><div class="ds-class">bg-forest-100</div><div class="ds-hex">#dcebe0</div></div>
+        <div class="ds-swatch"><div class="ds-chip ds-chip-label" style="background:#bad7c2;color:rgba(0,0,0,.55)">#bad7c2</div><div class="ds-name">forest-200</div><div class="ds-class">bg-forest-200</div><div class="ds-hex">#bad7c2</div></div>
+        <div class="ds-swatch"><div class="ds-chip ds-chip-label" style="background:#8fbb9d;color:rgba(0,0,0,.6)">#8fbb9d</div><div class="ds-name">forest-300</div><div class="ds-class">bg-forest-300</div><div class="ds-hex">#8fbb9d</div></div>
+        <div class="ds-swatch"><div class="ds-chip ds-chip-label" style="background:#5d9a71;color:rgba(255,255,255,.92)">#5d9a71</div><div class="ds-name">forest-400</div><div class="ds-class">bg-forest-400</div><div class="ds-hex">#5d9a71</div></div>
+        <div class="ds-swatch"><div class="ds-chip ds-chip-label" style="background:#3c7d52;color:rgba(255,255,255,.92)">#3c7d52</div><div class="ds-name">forest-500</div><div class="ds-class">bg-forest-500</div><div class="ds-hex">#3c7d52</div></div>
+        <div class="ds-swatch"><div class="ds-chip ds-chip-label" style="background:#2c6240;color:rgba(255,255,255,.92)">#2c6240</div><div class="ds-name">forest-600</div><div class="ds-class">bg-forest-600</div><div class="ds-hex">#2c6240</div></div>
+        <div class="ds-swatch"><div class="ds-chip ds-chip-label" style="background:#254f35;color:rgba(255,255,255,.92)">#254f35</div><div class="ds-name">forest-700</div><div class="ds-class">bg-forest-700</div><div class="ds-hex">#254f35</div></div>
+        <div class="ds-swatch"><div class="ds-chip ds-chip-label" style="background:#20402c;color:rgba(255,255,255,.92)">#20402c</div><div class="ds-name">forest-800</div><div class="ds-class">bg-forest-800</div><div class="ds-hex">#20402c</div></div>
+        <div class="ds-swatch"><div class="ds-chip ds-chip-label" style="background:#1b3425;color:rgba(255,255,255,.92)">#1b3425</div><div class="ds-name">forest-900</div><div class="ds-class">bg-forest-900</div><div class="ds-hex">#1b3425</div></div>
+        <div class="ds-swatch"><div class="ds-chip ds-chip-label" style="background:#0e1c14;color:rgba(255,255,255,.92)">#0e1c14</div><div class="ds-name">forest-950</div><div class="ds-class">bg-forest-950</div><div class="ds-hex">#0e1c14</div></div>
+      </div>
+    </section>
+
+    <!-- Timber -->
+    <section class="ds-section">
+      <h2 class="ds-ramp-title font-display">Timber</h2>
+      <p class="ds-ramp-cap">Warm wood accent — badges, highlights, secondary emphasis.</p>
+      <div class="ds-ramp">
+        <div class="ds-swatch"><div class="ds-chip ds-chip-label" style="background:#faf6ef;color:rgba(0,0,0,.55)">#faf6ef</div><div class="ds-name">timber-50</div><div class="ds-class">bg-timber-50</div><div class="ds-hex">#faf6ef</div></div>
+        <div class="ds-swatch"><div class="ds-chip ds-chip-label" style="background:#f3e7d2;color:rgba(0,0,0,.55)">#f3e7d2</div><div class="ds-name">timber-100</div><div class="ds-class">bg-timber-100</div><div class="ds-hex">#f3e7d2</div></div>
+        <div class="ds-swatch"><div class="ds-chip ds-chip-label" style="background:#e6cca1;color:rgba(0,0,0,.6)">#e6cca1</div><div class="ds-name">timber-200</div><div class="ds-class">bg-timber-200</div><div class="ds-hex">#e6cca1</div></div>
+        <div class="ds-swatch"><div class="ds-chip ds-chip-label" style="background:#d7ac6c;color:rgba(0,0,0,.6)">#d7ac6c</div><div class="ds-name">timber-300</div><div class="ds-class">bg-timber-300</div><div class="ds-hex">#d7ac6c</div></div>
+        <div class="ds-swatch"><div class="ds-chip ds-chip-label" style="background:#cb9248;color:rgba(255,255,255,.92)">#cb9248</div><div class="ds-name">timber-400</div><div class="ds-class">bg-timber-400</div><div class="ds-hex">#cb9248</div></div>
+        <div class="ds-swatch"><div class="ds-chip ds-chip-label" style="background:#bd7a32;color:rgba(255,255,255,.92)">#bd7a32</div><div class="ds-name">timber-500</div><div class="ds-class">bg-timber-500</div><div class="ds-hex">#bd7a32</div></div>
+        <div class="ds-swatch"><div class="ds-chip ds-chip-label" style="background:#a3612a;color:rgba(255,255,255,.92)">#a3612a</div><div class="ds-name">timber-600</div><div class="ds-class">bg-timber-600</div><div class="ds-hex">#a3612a</div></div>
+        <div class="ds-swatch"><div class="ds-chip ds-chip-label" style="background:#834b27;color:rgba(255,255,255,.92)">#834b27</div><div class="ds-name">timber-700</div><div class="ds-class">bg-timber-700</div><div class="ds-hex">#834b27</div></div>
+        <div class="ds-swatch"><div class="ds-chip ds-chip-label" style="background:#6c3f25;color:rgba(255,255,255,.92)">#6c3f25</div><div class="ds-name">timber-800</div><div class="ds-class">bg-timber-800</div><div class="ds-hex">#6c3f25</div></div>
+        <div class="ds-swatch"><div class="ds-chip ds-chip-label" style="background:#5a3622;color:rgba(255,255,255,.92)">#5a3622</div><div class="ds-name">timber-900</div><div class="ds-class">bg-timber-900</div><div class="ds-hex">#5a3622</div></div>
+      </div>
+    </section>
+
+    <!-- Sand -->
+    <section class="ds-section">
+      <h2 class="ds-ramp-title font-display">Sand</h2>
+      <p class="ds-ramp-cap">Cream neutrals — page backgrounds, cards, dividers.</p>
+      <div class="ds-ramp">
+        <div class="ds-swatch"><div class="ds-chip ds-chip-label" style="background:#fbf9f4;color:rgba(0,0,0,.55)">#fbf9f4</div><div class="ds-name">sand-50</div><div class="ds-class">bg-sand-50</div><div class="ds-hex">#fbf9f4</div></div>
+        <div class="ds-swatch"><div class="ds-chip ds-chip-label" style="background:#f5f0e6;color:rgba(0,0,0,.55)">#f5f0e6</div><div class="ds-name">sand-100</div><div class="ds-class">bg-sand-100</div><div class="ds-hex">#f5f0e6</div></div>
+        <div class="ds-swatch"><div class="ds-chip ds-chip-label" style="background:#ebe3d2;color:rgba(0,0,0,.55)">#ebe3d2</div><div class="ds-name">sand-200</div><div class="ds-class">bg-sand-200</div><div class="ds-hex">#ebe3d2</div></div>
+        <div class="ds-swatch"><div class="ds-chip ds-chip-label" style="background:#dcceb4;color:rgba(0,0,0,.6)">#dcceb4</div><div class="ds-name">sand-300</div><div class="ds-class">bg-sand-300</div><div class="ds-hex">#dcceb4</div></div>
+        <div class="ds-swatch"><div class="ds-chip ds-chip-label" style="background:#c4b08a;color:rgba(0,0,0,.62)">#c4b08a</div><div class="ds-name">sand-400</div><div class="ds-class">bg-sand-400</div><div class="ds-hex">#c4b08a</div></div>
+      </div>
+    </section>
+
+    <!-- Ink -->
+    <section class="ds-section" style="margin-bottom:0">
+      <h2 class="ds-ramp-title font-display">Ink</h2>
+      <p class="ds-ramp-cap">Text colors — primary copy and softened secondary text.</p>
+      <div class="ds-ramp">
+        <div class="ds-swatch"><div class="ds-chip ds-chip-label" style="background:#201e18;color:rgba(255,255,255,.92)">#201e18</div><div class="ds-name">ink</div><div class="ds-class">text-ink</div><div class="ds-hex">#201e18</div></div>
+        <div class="ds-swatch"><div class="ds-chip ds-chip-label" style="background:#5b554a;color:rgba(255,255,255,.92)">#5b554a</div><div class="ds-name">ink-soft</div><div class="ds-class">text-ink-soft</div><div class="ds-hex">#5b554a</div></div>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

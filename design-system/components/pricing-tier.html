@@ -1,0 +1,88 @@
+<!-- @dsCard group="Components" name="Pricing tiers" subtitle="3 plans with most-popular ring" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../shared/app.css">
+  <style>
+    :root {
+      --color-forest-700: #254f35;
+      --color-forest-900: #1b3425;
+      --color-timber-400: #cb9248;
+      --color-sand-50: #fbf9f4;
+      --color-ink: #201e18;
+    }
+    .ds-stage {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 48px 32px;
+    }
+  </style>
+</head>
+<body class="bg-sand-50 text-ink antialiased">
+  <div class="ds-stage">
+    <div class="grid gap-6 md:grid-cols-3">
+
+      <!-- Free -->
+      <div class="flex flex-col rounded-2xl border bg-white p-7 shadow-sm border-sand-200">
+        <h2 class="font-display text-2xl font-semibold text-forest-900">Free</h2>
+        <p class="mt-2 text-sm text-ink-soft">Get listed at no cost.</p>
+        <p class="mt-5">
+          <span class="font-display text-3xl font-semibold text-forest-950">0</span>
+          <span class="text-sm text-ink-soft">XAF / month</span>
+        </p>
+        <ul class="mt-6 space-y-2.5 text-sm text-ink-soft">
+          <li class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" data-slot="icon" class="h-5 w-5 text-forest-500"><path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clip-rule="evenodd"/></svg>Up to 3 gallery images</li>
+        </ul>
+        <a href="#" class="mt-7 inline-flex items-center justify-center gap-1.5 rounded-full bg-forest-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-forest-800">
+          List your company
+        </a>
+      </div>
+
+      <!-- Professional (most popular) -->
+      <div class="flex flex-col rounded-2xl border bg-white p-7 shadow-sm border-forest-300 ring-1 ring-forest-200">
+        <span class="mb-3 inline-block self-start rounded-full bg-forest-700 px-3 py-0.5 text-xs font-semibold text-white">Most popular</span>
+        <h2 class="font-display text-2xl font-semibold text-forest-900">Professional</h2>
+        <p class="mt-2 text-sm text-ink-soft">A verified profile that wins buyers.</p>
+        <p class="mt-5">
+          <span class="font-display text-3xl font-semibold text-forest-950">50,000</span>
+          <span class="text-sm text-ink-soft">XAF / month</span>
+        </p>
+        <ul class="mt-6 space-y-2.5 text-sm text-ink-soft">
+          <li class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" data-slot="icon" class="h-5 w-5 text-forest-500"><path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clip-rule="evenodd"/></svg>Up to 8 gallery images</li>
+          <li class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" data-slot="icon" class="h-5 w-5 text-forest-500"><path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clip-rule="evenodd"/></svg>Verification badge</li>
+          <li class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" data-slot="icon" class="h-5 w-5 text-forest-500"><path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clip-rule="evenodd"/></svg>Receive RFQ leads</li>
+        </ul>
+        <a href="#" class="mt-7 inline-flex items-center justify-center gap-1.5 rounded-full bg-forest-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-forest-800">
+          List your company
+        </a>
+      </div>
+
+      <!-- Premium -->
+      <div class="flex flex-col rounded-2xl border bg-white p-7 shadow-sm border-sand-200">
+        <h2 class="font-display text-2xl font-semibold text-forest-900">Premium</h2>
+        <p class="mt-2 text-sm text-ink-soft">Maximum reach for serious exporters.</p>
+        <p class="mt-5">
+          <span class="font-display text-3xl font-semibold text-forest-950">120,000</span>
+          <span class="text-sm text-ink-soft">XAF / month</span>
+        </p>
+        <ul class="mt-6 space-y-2.5 text-sm text-ink-soft">
+          <li class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" data-slot="icon" class="h-5 w-5 text-forest-500"><path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clip-rule="evenodd"/></svg>Up to 20 gallery images</li>
+          <li class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" data-slot="icon" class="h-5 w-5 text-forest-500"><path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clip-rule="evenodd"/></svg>Verification badge</li>
+          <li class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" data-slot="icon" class="h-5 w-5 text-forest-500"><path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clip-rule="evenodd"/></svg>Receive RFQ leads</li>
+          <li class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" data-slot="icon" class="h-5 w-5 text-forest-500"><path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clip-rule="evenodd"/></svg>Featured placement</li>
+          <li class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" data-slot="icon" class="h-5 w-5 text-forest-500"><path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clip-rule="evenodd"/></svg>API access</li>
+        </ul>
+        <a href="#" class="mt-7 inline-flex items-center justify-center gap-1.5 rounded-full bg-forest-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-forest-800">
+          List your company
+        </a>
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>

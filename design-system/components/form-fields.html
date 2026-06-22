@@ -1,0 +1,75 @@
+<!-- @dsCard group="Components" name="Form fields" subtitle="Inputs, select, textarea, checkbox" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../shared/app.css">
+  <style>
+    :root {
+      --color-forest-700:#254f35;
+      --color-forest-900:#1b3425;
+      --color-timber-400:#cb9248;
+      --color-sand-50:#fbf9f4;
+      --color-ink:#201e18;
+    }
+    .ds-stage {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 48px 32px;
+      box-sizing: border-box;
+    }
+    .ds-title {
+      font-family: "Fraunces", serif;
+      font-weight: 600;
+      font-size: 28px;
+      color: var(--color-ink);
+      margin: 0 0 24px;
+    }
+    .ds-card-frame {
+      max-width: 520px;
+    }
+  </style>
+</head>
+<body class="bg-sand-50 text-ink antialiased">
+  <div class="ds-stage">
+    <h1 class="ds-title">Form fields</h1>
+
+    <div class="ds-card-frame rounded-2xl border border-sand-200 bg-white p-6">
+      <form method="GET" class="space-y-3">
+        <label class="relative block">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" data-slot="icon" class="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-ink-soft/60" aria-hidden="true">
+            <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11ZM2 9a7 7 0 1 1 12.452 4.391l3.328 3.329a.75.75 0 1 1-1.06 1.06l-3.329-3.328A7 7 0 0 1 2 9Z" clip-rule="evenodd"/>
+          </svg>
+          <input type="search" name="q" placeholder="Search exporters…"
+                 class="w-full rounded-lg border border-sand-300 bg-white px-3 py-2.5 text-sm text-ink focus:border-forest-500 focus:ring-2 focus:ring-forest-100 focus:outline-none pl-10"
+                 style="border-color:#254f35; box-shadow:0 0 0 2px #e3ede5;">
+        </label>
+
+        <select name="region"
+                class="w-full rounded-lg border border-sand-300 bg-white px-3 py-2.5 text-sm text-ink focus:border-forest-500 focus:ring-2 focus:ring-forest-100 focus:outline-none">
+          <option value="">All regions</option>
+          <option value="Littoral">Littoral</option>
+          <option value="Centre">Centre</option>
+          <option value="Sud">Sud</option>
+          <option value="East">East</option>
+        </select>
+
+        <input type="text" name="name" placeholder="Your name *"
+               class="w-full rounded-lg border border-sand-300 bg-white px-3 py-2.5 text-sm text-ink focus:border-forest-500 focus:ring-2 focus:ring-forest-100 focus:outline-none">
+
+        <textarea name="requirements" rows="3" placeholder="Describe your requirements *"
+                  class="w-full rounded-lg border border-sand-300 bg-white px-3 py-2.5 text-sm text-ink focus:border-forest-500 focus:ring-2 focus:ring-forest-100 focus:outline-none"></textarea>
+
+        <label class="flex items-start gap-2 text-sm text-ink-soft">
+          <input type="checkbox" name="consent" class="mt-1 rounded border-sand-300" checked>
+          <span>I consent to be contacted by email about this inquiry.</span>
+        </label>
+      </form>
+    </div>
+  </div>
+</body>
+</html>

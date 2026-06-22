@@ -1,0 +1,65 @@
+<!-- @dsCard group="Components" name="Verification panel" subtitle="Trust sidebar card" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../shared/app.css">
+  <style>
+    :root {
+      --color-forest-700: #254f35;
+      --color-forest-900: #1b3425;
+      --color-timber-400: #cb9248;
+      --color-sand-50: #fbf9f4;
+      --color-ink: #201e18;
+    }
+    .ds-stage {
+      max-width: 460px;
+      margin: 0 auto;
+      padding: 40px 30px;
+      display: flex;
+      justify-content: center;
+    }
+    .ds-stage > section {
+      width: 100%;
+      max-width: 400px;
+    }
+  </style>
+</head>
+<body class="bg-sand-50 text-ink antialiased">
+  <div class="ds-stage">
+    <section class="rounded-2xl border border-sand-200 bg-white p-6 shadow-sm">
+      <h2 class="flex items-center gap-2 font-display text-lg font-semibold text-forest-900">
+        <svg class="h-5 w-5 text-forest-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" data-slot="icon">
+          <path fill-rule="evenodd" d="M12.516 2.17a.75.75 0 0 0-1.032 0 11.209 11.209 0 0 1-7.877 3.08.75.75 0 0 0-.722.515A12.74 12.74 0 0 0 2.25 9.75c0 5.942 4.064 10.933 9.563 12.348a.749.749 0 0 0 .374 0c5.499-1.415 9.563-6.406 9.563-12.348 0-1.39-.223-2.73-.635-3.985a.75.75 0 0 0-.722-.516l-.143.001c-2.996 0-5.717-1.17-7.734-3.08Zm3.094 8.016a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z" clip-rule="evenodd"/>
+        </svg> Verification
+      </h2>
+      <ul class="mt-3 space-y-1.5">
+        <li class="flex items-center gap-2 text-sm font-medium text-forest-700">
+          <svg class="h-4 w-4 text-forest-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" data-slot="icon">
+            <path fill-rule="evenodd" d="M8.603 3.799A4.49 4.49 0 0 1 12 2.25c1.357 0 2.573.6 3.397 1.549a4.49 4.49 0 0 1 3.498 1.307 4.491 4.491 0 0 1 1.307 3.497A4.49 4.49 0 0 1 21.75 12a4.49 4.49 0 0 1-1.549 3.397 4.491 4.491 0 0 1-1.307 3.497 4.491 4.491 0 0 1-3.497 1.307A4.49 4.49 0 0 1 12 21.75a4.49 4.49 0 0 1-3.397-1.549 4.49 4.49 0 0 1-3.498-1.306 4.491 4.491 0 0 1-1.307-3.498A4.49 4.49 0 0 1 2.25 12c0-1.357.6-2.573 1.549-3.397a4.49 4.49 0 0 1 1.307-3.497 4.49 4.49 0 0 1 3.497-1.307Zm7.007 6.387a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z" clip-rule="evenodd"/>
+          </svg>Verified Exporter
+        </li>
+        <li class="flex items-center gap-2 text-sm font-medium text-forest-700">
+          <svg class="h-4 w-4 text-forest-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" data-slot="icon">
+            <path fill-rule="evenodd" d="M8.603 3.799A4.49 4.49 0 0 1 12 2.25c1.357 0 2.573.6 3.397 1.549a4.49 4.49 0 0 1 3.498 1.307 4.491 4.491 0 0 1 1.307 3.497A4.49 4.49 0 0 1 21.75 12a4.49 4.49 0 0 1-1.549 3.397 4.491 4.491 0 0 1-1.307 3.497 4.491 4.491 0 0 1-3.497 1.307A4.49 4.49 0 0 1 12 21.75a4.49 4.49 0 0 1-3.397-1.549 4.49 4.49 0 0 1-3.498-1.306 4.491 4.491 0 0 1-1.307-3.498A4.49 4.49 0 0 1 2.25 12c0-1.357.6-2.573 1.549-3.397a4.49 4.49 0 0 1 1.307-3.497 4.49 4.49 0 0 1 3.497-1.307Zm7.007 6.387a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z" clip-rule="evenodd"/>
+          </svg>Documents Verified
+        </li>
+      </ul>
+      <dl class="mt-4 space-y-2.5 text-sm">
+        <div class="flex justify-between"><dt class="text-ink-soft">Status</dt><dd class="font-medium text-forest-700">Verified profile</dd></div>
+        <div class="flex justify-between"><dt class="text-ink-soft">Verification date</dt><dd class="text-ink">12 Mar 2025</dd></div>
+        <div class="flex justify-between"><dt class="text-ink-soft">Valid until</dt><dd class="text-ink">12 Mar 2026</dd></div>
+        <div class="flex justify-between"><dt class="text-ink-soft">Reference</dt><dd class="text-ink">CTH-2025-0042</dd></div>
+      </dl>
+      <p class="mt-4 border-t border-sand-100 pt-4 text-xs leading-relaxed text-ink-soft">
+        Documents reviewed by Cameroon Timber Hub based on information submitted by the company.
+        Buyers should conduct final due diligence before any transaction.
+      </p>
+    </section>
+  </div>
+</body>
+</html>

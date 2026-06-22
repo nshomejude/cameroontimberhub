@@ -1,0 +1,105 @@
+<!-- @dsCard group="Foundations" name="Typography" subtitle="Fraunces display + Instrument Sans + eyebrow" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Typography</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../shared/app.css">
+  <style>
+    :root {
+      --color-forest-700: #254f35;
+      --color-forest-900: #1b3425;
+      --color-forest-950: #122418;
+      --color-timber-400: #cb9248;
+      --color-sand-50: #fbf9f4;
+      --color-ink: #201e18;
+      --color-ink-soft: #5c574a;
+    }
+    .ds-stage {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 56px 40px;
+    }
+    .ds-row {
+      display: grid;
+      grid-template-columns: 180px 1fr;
+      gap: 32px;
+      align-items: baseline;
+      padding: 26px 0;
+      border-bottom: 1px solid rgba(32, 30, 24, 0.08);
+    }
+    .ds-row:last-child { border-bottom: 0; }
+    .ds-label {
+      font-family: "Instrument Sans", system-ui, sans-serif;
+      font-size: 12px;
+      line-height: 1.4;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #9a948420;
+      color: #9a9484;
+    }
+    .ds-label small {
+      display: block;
+      margin-top: 4px;
+      font-weight: 400;
+      letter-spacing: 0;
+      text-transform: none;
+      color: #b5afa0;
+      font-size: 11px;
+    }
+    .ds-sample p { margin: 0; }
+  </style>
+</head>
+<body class="bg-sand-50 text-ink antialiased">
+  <div class="ds-stage">
+
+    <div class="ds-row">
+      <div class="ds-label">Eyebrow<small>eyebrow</small></div>
+      <div class="ds-sample">
+        <p class="eyebrow">Verified timber trade</p>
+      </div>
+    </div>
+
+    <div class="ds-row">
+      <div class="ds-label">Display XL<small>h1 · font-display text-5xl</small></div>
+      <div class="ds-sample">
+        <h1 class="font-display text-5xl font-semibold text-forest-950">Find verified Cameroonian timber</h1>
+      </div>
+    </div>
+
+    <div class="ds-row">
+      <div class="ds-label">Display L<small>h2 · font-display text-3xl</small></div>
+      <div class="ds-sample">
+        <h2 class="font-display text-3xl font-semibold text-forest-950">Trade timber with confidence</h2>
+      </div>
+    </div>
+
+    <div class="ds-row">
+      <div class="ds-label">Heading<small>h3 · font-display text-xl</small></div>
+      <div class="ds-sample">
+        <h3 class="font-display text-xl font-semibold text-forest-900">Bois du Cameroun SARL</h3>
+      </div>
+    </div>
+
+    <div class="ds-row">
+      <div class="ds-label">Body<small>Instrument Sans · text-ink-soft</small></div>
+      <div class="ds-sample">
+        <p class="text-ink-soft">Browse verified exporters by species, region and export market. Documents reviewed by Cameroon Timber Hub.</p>
+      </div>
+    </div>
+
+    <div class="ds-row">
+      <div class="ds-label">Caption<small>text-sm text-ink-soft</small></div>
+      <div class="ds-sample">
+        <p class="text-sm text-ink-soft">Verification date · 12 Mar 2025</p>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

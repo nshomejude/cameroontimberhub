@@ -1,0 +1,109 @@
+<!-- @dsCard group="App shell" name="Bottom sheet" subtitle="Drag-to-dismiss filter sheet (open)" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../shared/app.css">
+  <style>
+    :root {
+      --color-forest-700:#254f35;
+      --color-forest-900:#1b3425;
+      --color-timber-400:#cb9248;
+      --color-sand-50:#fbf9f4;
+      --color-ink:#201e18;
+    }
+    .ds-stage {
+      max-width: 430px;
+      margin: 0 auto;
+      padding: 32px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+    .ds-title {
+      font-family: "Fraunces", serif;
+      font-weight: 600;
+      font-size: 20px;
+      color: var(--color-forest-900);
+      align-self: flex-start;
+    }
+    .ds-tile {
+      position: relative;
+      width: 390px;
+      height: 620px;
+      border-radius: 24px;
+      overflow: hidden;
+      background: var(--color-sand-50);
+      box-shadow: 0 10px 30px rgba(0,0,0,.12);
+    }
+  </style>
+</head>
+<body class="bg-sand-50 text-ink antialiased">
+  <div class="ds-stage">
+    <div class="ds-title">Bottom sheet</div>
+
+    <div class="ds-tile">
+      <!-- dim backdrop -->
+      <div style="position:absolute; inset:0; background:rgba(0,0,0,.4);"></div>
+
+      <!-- sheet panel pinned bottom -->
+      <div class="bottom-sheet-panel absolute inset-x-0 bottom-0 max-h-[88vh] overflow-y-auto rounded-t-3xl bg-white shadow-2xl">
+        <div class="sticky top-0 flex justify-center bg-white pt-3 pb-1">
+          <span class="h-1.5 w-10 rounded-full bg-sand-300"></span>
+        </div>
+
+        <h2 class="px-5 font-display text-lg font-semibold text-forest-900">Filter exporters</h2>
+
+        <div class="px-5 pb-6 pt-3">
+          <form method="GET" action="#" class="space-y-3">
+            <label class="relative block">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" data-slot="icon" class="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-ink-soft/60">
+                <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11ZM2 9a7 7 0 1 1 12.452 4.391l3.328 3.329a.75.75 0 1 1-1.06 1.06l-3.329-3.328A7 7 0 0 1 2 9Z" clip-rule="evenodd"/>
+              </svg>
+              <input type="search" name="q" value="" placeholder="Search exporters…"
+                     class="w-full rounded-lg border border-sand-300 bg-sand-50/60 py-2.5 pl-10 pr-3 text-sm text-ink placeholder:text-ink-soft/60 focus:border-forest-500 focus:bg-white focus:ring-2 focus:ring-forest-100 focus:outline-none">
+            </label>
+
+            <div class="grid gap-3 sm:grid-cols-3">
+              <select name="region" class="w-full rounded-lg border border-sand-300 bg-sand-50/60 px-3 py-2.5 text-sm text-ink focus:border-forest-500 focus:bg-white focus:ring-2 focus:ring-forest-100 focus:outline-none">
+                <option value="">All regions</option>
+                <option value="Littoral">Littoral</option>
+                <option value="Centre">Centre</option>
+                <option value="Sud">Sud</option>
+              </select>
+
+              <select name="species" class="w-full rounded-lg border border-sand-300 bg-sand-50/60 px-3 py-2.5 text-sm text-ink focus:border-forest-500 focus:bg-white focus:ring-2 focus:ring-forest-100 focus:outline-none">
+                <option value="">All species</option>
+                <option value="sapele">Sapele</option>
+                <option value="iroko">Iroko</option>
+                <option value="ayous">Ayous</option>
+              </select>
+
+              <select name="market" class="w-full rounded-lg border border-sand-300 bg-sand-50/60 px-3 py-2.5 text-sm text-ink focus:border-forest-500 focus:bg-white focus:ring-2 focus:ring-forest-100 focus:outline-none">
+                <option value="">All export markets</option>
+                <option value="FR">FR</option>
+                <option value="BE">BE</option>
+                <option value="CN">CN</option>
+              </select>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <button type="submit" class="inline-flex items-center gap-1.5 rounded-full bg-forest-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-forest-800">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" data-slot="icon" class="h-4 w-4">
+                  <path fill-rule="evenodd" d="M2.628 1.601C5.028 1.206 7.49 1 10 1s4.973.206 7.372.601a.75.75 0 0 1 .628.74v2.288a2.25 2.25 0 0 1-.659 1.59l-4.682 4.683a2.25 2.25 0 0 0-.659 1.59v3.037c0 .684-.31 1.33-.844 1.757l-1.937 1.55A.75.75 0 0 1 8 18.25v-5.757a2.25 2.25 0 0 0-.659-1.591L2.659 6.22A2.25 2.25 0 0 1 2 4.629V2.34a.75.75 0 0 1 .628-.74Z" clip-rule="evenodd"/>
+                </svg> Apply filters
+              </button>
+              <a href="#" class="rounded-full px-4 py-2.5 text-sm font-medium text-ink-soft transition hover:text-forest-700">Reset</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
