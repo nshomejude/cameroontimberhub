@@ -2,13 +2,12 @@
 
 use App\Http\Controllers\Public\CompanyController;
 use App\Http\Controllers\Public\DirectoryController;
+use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Public\SitemapController;
 use App\Http\Controllers\Public\SpeciesController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('home');
-})->name('home');
+Route::get('/', [HomeController::class, 'index'])->name('home');
 
 // Directory & company profiles (static segments before slug routes).
 Route::get('/companies', [DirectoryController::class, 'index'])->name('directory');

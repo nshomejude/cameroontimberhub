@@ -5,6 +5,78 @@
 @source '../views';
 
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
+    --font-display: 'Fraunces', ui-serif, Georgia, 'Times New Roman', serif;
+
+    /* Forest — primary brand green */
+    --color-forest-50: #f1f7f2;
+    --color-forest-100: #dcebe0;
+    --color-forest-200: #bad7c2;
+    --color-forest-300: #8fbb9d;
+    --color-forest-400: #5d9a71;
+    --color-forest-500: #3c7d52;
+    --color-forest-600: #2c6240;
+    --color-forest-700: #254f35;
+    --color-forest-800: #20402c;
+    --color-forest-900: #1b3425;
+    --color-forest-950: #0e1c14;
+
+    /* Timber — warm wood accent */
+    --color-timber-50: #faf6ef;
+    --color-timber-100: #f3e7d2;
+    --color-timber-200: #e6cca1;
+    --color-timber-300: #d7ac6c;
+    --color-timber-400: #cb9248;
+    --color-timber-500: #bd7a32;
+    --color-timber-600: #a3612a;
+    --color-timber-700: #834b27;
+    --color-timber-800: #6c3f25;
+    --color-timber-900: #5a3622;
+
+    /* Sand — cream neutrals */
+    --color-sand-50: #fbf9f4;
+    --color-sand-100: #f5f0e6;
+    --color-sand-200: #ebe3d2;
+    --color-sand-300: #dcceb4;
+    --color-sand-400: #c4b08a;
+
+    /* Ink — warm near-black text */
+    --color-ink: #201e18;
+    --color-ink-soft: #5b554a;
+}
+
+@layer base {
+    html {
+        /* Larger editorial base so body/UI text isn't cramped (default ~16px). */
+        font-size: 118.75%;
+        scroll-behavior: smooth;
+    }
+
+    body {
+        background-color: var(--color-sand-50);
+        color: var(--color-ink);
+        font-size: 1rem;
+        line-height: 1.7;
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+    }
+
+    h1, h2, h3 {
+        font-family: var(--font-display);
+        letter-spacing: -0.01em;
+    }
+
+    ::selection {
+        background-color: var(--color-forest-200);
+        color: var(--color-forest-900);
+    }
+}
+
+@utility eyebrow {
+    font-size: 0.75rem;
+    line-height: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-timber-700);
 }
