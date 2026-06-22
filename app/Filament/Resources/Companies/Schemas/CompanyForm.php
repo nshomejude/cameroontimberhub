@@ -1,0 +1,74 @@
+<?php
+
+namespace App\Filament\Resources\Companies\Schemas;
+
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\TagsInput;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
+
+class CompanyForm
+{
+    public static function configure(Schema $schema): Schema
+    {
+        return $schema
+            ->components([
+                Section::make('Identity')
+                    ->columns(2)
+                    ->schema([
+                        TextInput::make('legal_name')->required()->maxLength(255),
+                        TextInput::make('trade_name')->maxLength(255)->helperText('Public display name (falls back to legal name).'),
+                        TextInput::make('slug')->maxLength(180)->unique(ignoreRecord: true)
+                            ->helperText('Leave blank to auto-generate. Changing a live slug breaks inbound links.'),
+                        TextInput::make('registration_number')->label('RCCM')->maxLength(100),
+                        TextInput::make('tax_id')->label('NIU')->maxLength(100),
+                    ]),
+
+                Section::make('Profile')
+                    ->columns(3)
+                    ->schema([
+                        Textarea::make('description')->rows(5)->columnSpanFull(),
+                        TextInput::make('year_founded')->numeric()->minValue(1800)->maxValue((int) date('Y')),
+                        TextInput::make('employee_count')->numeric()->minValue(0),
+                        TextInput::make('annual_capacity_m3')->label('Annual capacity (m³)')->numeric(),
+                    ]),
+
+                Section::make('Location & contact')
+                    ->columns(3)
+                    ->schema([
+                        TextInput::make('region')->maxLength(120),
+                        TextInput::make('city')->maxLength(120),
+                        TextInput::make('country_code')->default('CM')->maxLength(2),
+                        TextInput::make('address_line')->maxLength(255)->columnSpanFull(),
+                        TextInput::make('email')->email()->maxLength(255),
+                        TextInput::make('phone')->tel()->maxLength(32),
+                        TextInput::make('website_url')->url()->maxLength(255),
+                    ]),
+
+                Section::make('Branding')
+                    ->columns(2)
+                    ->schema([
+                        FileUpload::make('logo_path')->image()->imageEditor()->disk('public')->directory('companies/logos'),
+                        FileUpload::make('cover_path')->image()->imageEditor()->disk('public')->directory('companies/covers'),
+                    ]),
+
+                Section::make('SIGIF (captured, not integrated)')
+                    ->columns(2)
+                    ->collapsed()
+                    ->schema([
+                        TextInput::make('sigif_operator_id')->label('SIGIF operator ID')->maxLength(100),
+                        TagsInput::make('sigif_permit_numbers')->label('Permit / title numbers')->placeholder('Add a number'),
+                    ]),
+
+                Section::make('SEO')
+                    ->columns(2)
+                    ->collapsed()
+                    ->schema([
+                        TextInput::make('meta_title')->maxLength(255),
+                        Textarea::make('meta_description')->rows(2)->maxLength(320),
+                    ]),
+            ]);
+    }
+}
