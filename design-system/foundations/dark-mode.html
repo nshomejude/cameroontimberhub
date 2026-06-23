@@ -1,0 +1,89 @@
+<!-- @dsCard group="Foundations" name="Dark mode" subtitle="Warm forest-aligned dark palette + light/dark comparison" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dark mode</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{ --forest-700:#254f35; --forest-900:#1b3425; --timber-700:#834b27; --sand-200:#ebe3d2; --ink:#201e18; --ink-soft:#5b554a; }
+  *{box-sizing:border-box}
+  .ds-stage{max-width:980px;margin:0 auto;padding:40px 28px 64px;font-family:'Instrument Sans',ui-sans-serif,system-ui,sans-serif;color:var(--ink)}
+  .ds-title{font-family:'Fraunces',serif;font-weight:600;color:var(--forest-900);font-size:32px;margin:0}
+  .ds-cap{color:var(--ink-soft);margin:6px 0 0;max-width:64ch}
+  h2.sec{font-family:'Fraunces',serif;font-weight:600;color:var(--forest-900);font-size:19px;margin:38px 0 14px;border-bottom:1px solid var(--sand-200);padding-bottom:8px}
+  .swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px}
+  .sw{border-radius:12px;border:1px solid var(--sand-200);overflow:hidden;font-size:12px}
+  .sw .chip{height:60px}
+  .sw .meta{padding:8px 10px}
+  .sw .meta b{display:block;font-size:13px;color:var(--ink)}
+  .sw .meta span{color:var(--ink-soft)}
+  .compare{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:14px}
+  .pane{border-radius:18px;padding:22px;border:1px solid var(--sand-200)}
+  .pane.light{background:#fbf9f4}
+  .pane.dark{background:#14130f;border-color:#2c2a24}
+  .pane .tag{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:14px}
+  .pane.light .tag{color:#9a9182}
+  .pane.dark .tag{color:#b3ab9b}
+  /* mini company card */
+  .mc{border-radius:16px;padding:18px;display:flex;gap:14px;align-items:flex-start}
+  .mc .av{height:44px;width:44px;border-radius:12px;background:#254f35;color:#f5f0e6;display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-weight:600;flex:none}
+  .mc h3{margin:0;font-family:'Fraunces',serif;font-weight:600;font-size:16px}
+  .mc p{margin:2px 0 0;font-size:13px}
+  .mc .pill{display:inline-block;margin-top:10px;font-size:11px;font-weight:600;border-radius:999px;padding:2px 9px}
+  .light .mc{background:#fff;border:1px solid #ebe3d2}
+  .light .mc h3{color:#1b3425}
+  .light .mc p{color:#5b554a}
+  .light .mc .pill{background:#f3e7d2;color:#834b27}
+  .dark .mc{background:#1f1d18;border:1px solid #2c2a24}
+  .dark .mc h3{color:#f5f0e6}
+  .dark .mc p{color:#b3ab9b}
+  .dark .mc .pill{background:rgba(203,146,72,.15);color:#e6cca1}
+  .btn{margin-top:16px;display:inline-block;border-radius:999px;background:#254f35;color:#fff;font-size:13px;font-weight:600;padding:9px 18px}
+  .dark .btn{background:#2c6240}
+  code{background:#f5f0e6;border:1px solid var(--sand-200);border-radius:6px;padding:1px 7px;font-size:12px;color:var(--timber-700)}
+</style>
+</head>
+<body style="background:#fbf9f4;color:#201e18">
+<div class="ds-stage">
+  <h1 class="ds-title">Dark mode</h1>
+  <p class="ds-cap">A warm, forest-aligned dark theme. It's class-based (<code>.dark</code> on <code>&lt;html&gt;</code>), respects the OS preference, and is toggled from the app bar (sun / moon). The status-bar tint follows. Components carry <code>dark:</code> variants; on-dark branded panels (the forest covers &amp; CTAs) stay as-is.</p>
+
+  <h2 class="sec">Dark surface &amp; text scale</h2>
+  <div class="swatches">
+    <div class="sw"><div class="chip" style="background:#14130f"></div><div class="meta"><b>Page</b><span>#14130f</span></div></div>
+    <div class="sw"><div class="chip" style="background:#1f1d18"></div><div class="meta"><b>Card surface</b><span>#1f1d18</span></div></div>
+    <div class="sw"><div class="chip" style="background:#26241e"></div><div class="meta"><b>Raised / input</b><span>#26241e</span></div></div>
+    <div class="sw"><div class="chip" style="background:#2c2a24"></div><div class="meta"><b>Border</b><span>#2c2a24</span></div></div>
+    <div class="sw"><div class="chip" style="background:#34302a"></div><div class="meta"><b>Border strong</b><span>#34302a</span></div></div>
+    <div class="sw"><div class="chip" style="background:#1b2c22"></div><div class="meta"><b>Forest tile</b><span>#1b2c22</span></div></div>
+    <div class="sw"><div class="chip" style="background:#f1ece1"></div><div class="meta"><b>Text</b><span>#f1ece1</span></div></div>
+    <div class="sw"><div class="chip" style="background:#b3ab9b"></div><div class="meta"><b>Text soft</b><span>#b3ab9b</span></div></div>
+  </div>
+
+  <h2 class="sec">Light vs dark</h2>
+  <div class="compare">
+    <div class="pane light">
+      <div class="tag">Light</div>
+      <div class="mc">
+        <span class="av">B</span>
+        <div><h3>Bois du Cameroun SARL</h3><p>Littoral, Douala</p><span class="pill">Featured</span></div>
+      </div>
+      <a class="btn">Request a quote</a>
+    </div>
+    <div class="pane dark">
+      <div class="tag">Dark</div>
+      <div class="mc">
+        <span class="av">B</span>
+        <div><h3>Bois du Cameroun SARL</h3><p>Littoral, Douala</p><span class="pill">Featured</span></div>
+      </div>
+      <a class="btn">Request a quote</a>
+    </div>
+  </div>
+  <p class="ds-cap" style="margin-top:16px">Accent greens shift lighter on dark (links use <code>forest-300/400</code>); timber badges use a translucent fill (<code>timber-400/15</code>) with <code>timber-200</code> text for contrast.</p>
+</div>
+</body>
+</html>

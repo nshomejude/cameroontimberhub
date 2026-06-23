@@ -4,6 +4,11 @@
 @source '../../storage/framework/views/*.php';
 @source '../views';
 
+/* Class-based dark mode: `dark:` applies under a `.dark` ancestor (toggled via
+   the theme button), not only via prefers-color-scheme. The boot script in the
+   app layout sets `.dark` on <html> before first paint to avoid a flash. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
     --font-display: 'Fraunces', ui-serif, Georgia, 'Times New Roman', serif;
@@ -117,3 +122,22 @@
 @media (prefers-reduced-motion: reduce) {
     .app-page, .bottom-sheet-panel { animation: none; }
 }
+
+/* ---------- Dark theme ----------
+   Warm, forest-aligned dark palette. Components carry `dark:` variants; these
+   base rules cover the document chrome so there's no flash of light. */
+@layer base {
+    html.dark { color-scheme: dark; }
+    .dark body {
+        background-color: #14130f; /* warm near-black page */
+        color: #f1ece1;            /* warm near-white text */
+    }
+    .dark ::selection {
+        background-color: var(--color-forest-600);
+        color: var(--color-sand-50);
+    }
+}
+
+/* Dark surface scale (for reference / reuse by components):
+   page #14130f · card #1f1d18 · raised #26241e · border #2c2a24 / #34302a
+   text #f1ece1 · soft #b3ab9b · forest tile #1b2c22 */

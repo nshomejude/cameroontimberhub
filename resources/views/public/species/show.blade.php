@@ -25,19 +25,19 @@
         <div class="space-y-10 lg:col-span-2">
             @if($species->description)
                 <section>
-                    <h2 class="font-display text-2xl font-semibold text-forest-950">About {{ $species->common_name }}</h2>
-                    <div class="mt-4 whitespace-pre-line leading-relaxed text-ink-soft">{{ $species->description }}</div>
+                    <h2 class="font-display text-2xl font-semibold text-forest-950 dark:text-sand-100">About {{ $species->common_name }}</h2>
+                    <div class="mt-4 whitespace-pre-line leading-relaxed text-ink-soft dark:text-[#b3ab9b]">{{ $species->description }}</div>
                 </section>
             @endif
 
             @if(is_array($species->characteristics) && count($species->characteristics))
                 <section>
-                    <h2 class="font-display text-2xl font-semibold text-forest-950">Properties</h2>
+                    <h2 class="font-display text-2xl font-semibold text-forest-950 dark:text-sand-100">Properties</h2>
                     <dl class="mt-4 grid gap-3 sm:grid-cols-2">
                         @foreach($species->characteristics as $key => $value)
-                            <div class="rounded-xl border border-sand-200 bg-white px-4 py-3">
-                                <dt class="text-xs font-semibold uppercase tracking-wide text-ink-soft">{{ Str::headline((string) $key) }}</dt>
-                                <dd class="mt-0.5 text-ink">{{ is_array($value) ? implode(', ', $value) : $value }}</dd>
+                            <div class="rounded-xl border border-sand-200 dark:border-[#2c2a24] bg-white dark:bg-[#1f1d18] px-4 py-3">
+                                <dt class="text-xs font-semibold uppercase tracking-wide text-ink-soft dark:text-[#b3ab9b]">{{ Str::headline((string) $key) }}</dt>
+                                <dd class="mt-0.5 text-ink dark:text-[#f1ece1]">{{ is_array($value) ? implode(', ', $value) : $value }}</dd>
                             </div>
                         @endforeach
                     </dl>
@@ -57,7 +57,7 @@
     </div>
 
     <section class="mx-auto max-w-6xl px-4 pb-16">
-        <h2 class="font-display text-2xl font-semibold text-forest-950">Verified exporters handling {{ $species->common_name }}</h2>
+        <h2 class="font-display text-2xl font-semibold text-forest-950 dark:text-sand-100">Verified exporters handling {{ $species->common_name }}</h2>
         @if($companies->isNotEmpty())
             <div class="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 @foreach($companies as $company)
@@ -65,8 +65,8 @@
                 @endforeach
             </div>
         @else
-            <div class="mt-6 rounded-2xl border border-dashed border-sand-300 bg-white p-12 text-center">
-                <p class="text-ink-soft">We're onboarding verified exporters for {{ $species->common_name }}.</p>
+            <div class="mt-6 rounded-2xl border border-dashed border-sand-300 dark:border-[#3a352e] bg-white dark:bg-[#1f1d18] p-12 text-center">
+                <p class="text-ink-soft dark:text-[#b3ab9b]">We're onboarding verified exporters for {{ $species->common_name }}.</p>
                 <a href="#" class="mt-4 inline-flex items-center gap-1.5 rounded-full bg-forest-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-forest-800">
                     Submit an inquiry <x-heroicon-m-arrow-right class="h-4 w-4" />
                 </a>

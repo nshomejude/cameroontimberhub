@@ -1,0 +1,19 @@
+#!/bin/sh
+# Design-system freshness guard.
+# Install:  cp design-system/_build/pre-commit.sample .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+#
+# Blocks a commit if resources/css/app.css changed but design-system/shared/app.css
+# wasn't regenerated (run: pwsh design-system/_build/regen.ps1).
+
+# Only check when app.css is part of this commit.
+if git diff --cached --name-only | grep -q '^resources/css/app.css$'; then
+  if command -v pwsh >/dev/null 2>&1; then
+    pwsh -NoProfile -File design-system/_build/regen.ps1 -Check || {
+      echo "✗ design-system mirror is stale. Run: pwsh design-system/_build/regen.ps1"
+      exit 1
+    }
+  else
+    echo "! pwsh not found — skipping design-system freshness check."
+  fi
+fi
+exit 0

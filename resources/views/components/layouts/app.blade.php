@@ -29,6 +29,20 @@
     {{-- PWA --}}
     <link rel="manifest" href="/manifest.webmanifest">
     <meta name="theme-color" content="#1b3425">
+    {{-- Apply the saved/system theme before first paint to avoid a flash. --}}
+    <script>
+        (function () {
+            try {
+                var s = localStorage.getItem('theme');
+                var d = s ? s === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+                if (d) {
+                    document.documentElement.classList.add('dark');
+                    var m = document.querySelector('meta[name=theme-color]');
+                    if (m) m.setAttribute('content', '#14130f');
+                }
+            } catch (e) {}
+        })();
+    </script>
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -47,21 +61,21 @@
     @livewireStyles
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="app-shell bg-sand-50 text-ink antialiased md:pl-60" x-data="{ installable: false }"
+<body class="app-shell bg-sand-50 text-ink antialiased md:pl-60 dark:bg-[#14130f] dark:text-[#f1ece1]" x-data="{ installable: false }"
       @pwa-installable.window="installable = true">
 
     {{-- Desktop nav rail --}}
-    <aside class="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-sand-200 bg-white md:flex">
+    <aside class="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-sand-200 bg-white md:flex dark:border-[#2c2a24] dark:bg-[#1b1a16]">
         <a href="{{ route('home') }}" class="flex items-center gap-2.5 px-5 py-5">
             <x-brand-mark class="h-9 w-9" />
-            <span class="font-display text-base font-semibold leading-tight text-forest-900">Cameroon Timber Hub</span>
+            <span class="font-display text-base font-semibold leading-tight text-forest-900 dark:text-sand-100">Cameroon Timber Hub</span>
         </a>
         <nav class="flex-1 space-y-1 px-3">
             @foreach ($tabs as $tab)
                 <a href="{{ $tab['url'] }}" @class([
                     'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition',
-                    'bg-forest-50 text-forest-800' => $tab['active'],
-                    'text-ink-soft hover:bg-sand-100' => ! $tab['active'],
+                    'bg-forest-50 text-forest-800 dark:bg-forest-900/40 dark:text-forest-200' => $tab['active'],
+                    'text-ink-soft hover:bg-sand-100 dark:text-[#b3ab9b] dark:hover:bg-white/5' => ! $tab['active'],
                 ])>
                     <x-dynamic-component :component="($tab['active'] ? 'heroicon-s-' : 'heroicon-o-') . $tab['icon']" class="h-5 w-5" />
                     {{ $tab['label'] }}
@@ -76,21 +90,31 @@
     </aside>
 
     {{-- Top app bar --}}
-    <header class="app-bar sticky top-0 z-30 flex items-center gap-2 border-b border-sand-200 bg-sand-50/90 px-3 backdrop-blur">
+    <header class="app-bar sticky top-0 z-30 flex items-center gap-2 border-b border-sand-200 bg-sand-50/90 px-3 backdrop-blur dark:border-[#2c2a24] dark:bg-[#14130f]/90">
         @if ($showBack)
-            <a href="javascript:history.back()" data-native-ignore class="-ml-1 flex h-10 w-10 items-center justify-center rounded-full text-forest-800 active:bg-sand-200">
+            <a href="javascript:history.back()" data-native-ignore class="-ml-1 flex h-10 w-10 items-center justify-center rounded-full text-forest-800 active:bg-sand-200 dark:text-sand-100 dark:active:bg-white/10">
                 <x-heroicon-m-chevron-left class="h-6 w-6" />
             </a>
         @else
             <span class="ml-1 md:hidden"><x-brand-mark class="h-8 w-8" /></span>
         @endif
-        <h1 class="truncate font-display text-base font-semibold text-forest-900">{{ $title ?? 'Cameroon Timber Hub' }}</h1>
-        <div class="ml-auto flex items-center gap-1">{{ $actions ?? '' }}</div>
+        <h1 class="truncate font-display text-base font-semibold text-forest-900 dark:text-sand-100">{{ $title ?? 'Cameroon Timber Hub' }}</h1>
+        <div class="ml-auto flex items-center gap-1">
+            <button type="button"
+                    x-data="{ dark: document.documentElement.classList.contains('dark') }"
+                    @click="window.__toggleTheme(); dark = document.documentElement.classList.contains('dark')"
+                    class="flex h-10 w-10 items-center justify-center rounded-full text-forest-800 active:bg-sand-200 dark:text-sand-100 dark:active:bg-white/10"
+                    :aria-label="dark ? 'Switch to light mode' : 'Switch to dark mode'" aria-label="Toggle theme">
+                <x-heroicon-o-moon class="h-5 w-5" x-show="!dark" />
+                <x-heroicon-o-sun class="h-5 w-5" x-show="dark" x-cloak />
+            </button>
+            {{ $actions ?? '' }}
+        </div>
     </header>
 
     {{-- Pull-to-refresh indicator --}}
     <div id="pull-indicator" class="pointer-events-none fixed inset-x-0 top-14 z-20 flex justify-center opacity-0" aria-hidden="true">
-        <span class="mt-2 flex h-9 w-9 items-center justify-center rounded-full bg-white text-forest-600 shadow-md">
+        <span class="mt-2 flex h-9 w-9 items-center justify-center rounded-full bg-white text-forest-600 shadow-md dark:bg-[#26241e] dark:text-forest-300">
             <x-heroicon-m-arrow-path class="h-5 w-5" />
         </span>
     </div>
@@ -113,12 +137,12 @@
     </div>
 
     {{-- Bottom tab bar (mobile) --}}
-    <nav class="tab-bar fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-sand-200 bg-white/95 backdrop-blur md:hidden">
+    <nav class="tab-bar fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-sand-200 bg-white/95 backdrop-blur md:hidden dark:border-[#2c2a24] dark:bg-[#1b1a16]/95">
         @foreach ($tabs as $tab)
             <a href="{{ $tab['url'] }}" @class([
                 'flex flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-medium transition active:scale-95',
-                'text-forest-700' => $tab['active'],
-                'text-ink-soft' => ! $tab['active'],
+                'text-forest-700 dark:text-forest-300' => $tab['active'],
+                'text-ink-soft dark:text-[#b3ab9b]' => ! $tab['active'],
             ])>
                 <x-dynamic-component :component="($tab['active'] ? 'heroicon-s-' : 'heroicon-o-') . $tab['icon']" class="h-6 w-6" />
                 {{ $tab['label'] }}

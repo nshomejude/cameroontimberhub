@@ -53,6 +53,9 @@ document.addEventListener('livewire:navigated', () => {
         main.classList.add('app-page');
     }
     window.scrollTo({ top: 0 });
+    // Keep the status-bar tint in sync after an SPA navigation re-renders <head>.
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', document.documentElement.classList.contains('dark') ? '#14130f' : '#1b3425');
 });
 
 // 5. Swipe from the left edge to go back (native gesture).
@@ -103,3 +106,23 @@ document.addEventListener('livewire:navigated', () => {
         }
     }, { passive: true });
 })();
+
+// 7. Theme toggle (light / dark). The pre-paint boot script in the layout <head>
+//    has already applied the initial `.dark` class from localStorage or the OS.
+window.__toggleTheme = () => {
+    const root = document.documentElement;
+    const dark = !root.classList.contains('dark');
+    root.classList.toggle('dark', dark);
+    try { localStorage.setItem('theme', dark ? 'dark' : 'light'); } catch (e) {}
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', dark ? '#14130f' : '#1b3425');
+    window.dispatchEvent(new CustomEvent('theme-changed', { detail: { dark } }));
+};
+
+// Follow the OS until the user makes an explicit choice.
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+    try { if (localStorage.getItem('theme')) return; } catch (_) {}
+    document.documentElement.classList.toggle('dark', e.matches);
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', e.matches ? '#14130f' : '#1b3425');
+});

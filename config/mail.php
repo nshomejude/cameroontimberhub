@@ -115,4 +115,22 @@ return [
         'name' => env('MAIL_FROM_NAME', env('APP_NAME', 'Laravel')),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Markdown Mail Settings
+    |--------------------------------------------------------------------------
+    |
+    | Branded markdown mail theme + the paths Laravel scans for components and
+    | CSS themes. "timber" is our forest/timber theme published under
+    | resources/views/vendor/mail/html/themes/timber.css.
+    |
+    */
+
+    'markdown' => [
+        'theme' => 'timber',
+        'paths' => [
+            resource_path('views/vendor/mail'),
+        ],
+    ],
+
 ];
