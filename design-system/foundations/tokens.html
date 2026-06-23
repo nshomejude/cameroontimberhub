@@ -1,0 +1,98 @@
+<!-- @dsCard group="Foundations" name="Design tokens" subtitle="Type scale, radius, elevation, motion + machine-readable exports" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Design tokens</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/app.css">
+<style>
+  :root{ --forest-700:#254f35; --forest-900:#1b3425; --timber-700:#834b27; --sand-50:#fbf9f4; --sand-200:#ebe3d2; --sand-300:#dcceb4; --ink:#201e18; --ink-soft:#5b554a; }
+  .ds-stage{max-width:1000px;margin:0 auto;padding:40px 28px 64px;font-family:'Instrument Sans',ui-sans-serif,system-ui,sans-serif;color:var(--ink)}
+  .ds-title{font-family:'Fraunces',serif;font-weight:600;color:var(--forest-900);font-size:34px;margin:0}
+  .ds-cap{color:var(--ink-soft);margin:6px 0 0}
+  h2.sec{font-family:'Fraunces',serif;font-weight:600;color:var(--forest-900);font-size:20px;margin:40px 0 14px;border-bottom:1px solid var(--sand-200);padding-bottom:8px}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  td,th{text-align:left;padding:9px 10px;border-bottom:1px solid #efe9dc;vertical-align:middle}
+  th{color:var(--ink-soft);font-weight:600;font-size:12px;letter-spacing:.04em;text-transform:uppercase}
+  code{background:var(--sand-50);border:1px solid var(--sand-200);border-radius:6px;padding:1px 7px;font-size:13px;color:var(--timber-700)}
+  .swbox{display:inline-block;vertical-align:middle;border:1px solid rgba(0,0,0,.08);background:#fff}
+  .scale{font-family:'Fraunces',serif;font-weight:600;color:var(--forest-900);line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:520px}
+  .shadowcard{height:54px;width:120px;border-radius:12px;background:#fff;display:inline-block}
+  .files{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+  .files a{font-size:13px;font-weight:600;color:var(--forest-700);text-decoration:none;border:1px solid var(--sand-300);border-radius:999px;padding:6px 13px;background:#fff}
+  .note{margin-top:8px;font-size:13px;color:var(--ink-soft)}
+</style>
+</head>
+<body class="bg-sand-50 text-ink antialiased">
+<div class="ds-stage">
+  <h1 class="ds-title">Design tokens</h1>
+  <p class="ds-cap">The public forest/timber experience. Root font-size is <strong>118.75% (≈19px)</strong> — rem sizes resolve against it. (Colors live on the “Color tokens” card; the Filament admin uses a separate Amber theme.)</p>
+
+  <h2 class="sec">Typeface</h2>
+  <table>
+    <tr><th style="width:120px">Role</th><th>Family</th><th>Sample</th></tr>
+    <tr><td>Display</td><td><code>--font-display</code> Fraunces</td><td><span style="font-family:'Fraunces',serif;font-weight:600;font-size:26px;color:var(--forest-900)">Verified Cameroonian timber</span></td></tr>
+    <tr><td>UI / body</td><td><code>--font-sans</code> Instrument Sans</td><td><span style="font-size:17px">Browse exporters by species, region and market.</span></td></tr>
+    <tr><td>Eyebrow</td><td><code>.eyebrow</code></td><td><span style="font-weight:600;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--timber-700)">Verified timber trade</span></td></tr>
+  </table>
+
+  <h2 class="sec">Type scale <span style="font-weight:400;font-size:13px;color:var(--ink-soft)">— rem → px @ 19 root</span></h2>
+  <table>
+    <tr><th style="width:90px">Token</th><th style="width:150px">rem / px</th><th>Sample</th></tr>
+    <tr><td><code>7xl</code></td><td>4.5rem / 85.5px</td><td><div class="scale" style="font-size:48px">Aa Timber</div></td></tr>
+    <tr><td><code>5xl</code></td><td>3rem / 57px</td><td><div class="scale" style="font-size:40px">Aa Timber</div></td></tr>
+    <tr><td><code>4xl</code></td><td>2.25rem / 42.75px</td><td><div class="scale" style="font-size:34px">Aa Timber</div></td></tr>
+    <tr><td><code>3xl</code></td><td>1.875rem / 35.63px</td><td><div class="scale" style="font-size:29px">Aa Timber</div></td></tr>
+    <tr><td><code>2xl</code></td><td>1.5rem / 28.5px</td><td><div class="scale" style="font-size:24px">Aa Timber</div></td></tr>
+    <tr><td><code>xl</code></td><td>1.25rem / 23.75px</td><td><div class="scale" style="font-size:20px">Aa Timber</div></td></tr>
+    <tr><td><code>lg</code></td><td>1.125rem / 21.38px</td><td><div class="scale" style="font-size:18px">Aa Timber</div></td></tr>
+    <tr><td><code>base</code></td><td>1rem / 19px</td><td><span style="font-size:16px">Aa Timber — body copy</span></td></tr>
+    <tr><td><code>sm</code></td><td>0.875rem / 16.63px</td><td><span style="font-size:14px;color:var(--ink-soft)">Aa Timber — caption</span></td></tr>
+    <tr><td><code>xs</code></td><td>0.75rem / 14.25px</td><td><span style="font-size:12px;color:var(--ink-soft)">Aa Timber — micro</span></td></tr>
+  </table>
+
+  <h2 class="sec">Radius</h2>
+  <table>
+    <tr><th style="width:90px">Token</th><th style="width:120px">Value</th><th>Preview</th></tr>
+    <tr><td><code>lg</code></td><td>0.5rem</td><td><span class="swbox" style="width:54px;height:34px;border-radius:8px;background:var(--sand-300)"></span></td></tr>
+    <tr><td><code>xl</code></td><td>0.75rem</td><td><span class="swbox" style="width:54px;height:34px;border-radius:12px;background:var(--sand-300)"></span></td></tr>
+    <tr><td><code>2xl</code></td><td>1rem</td><td><span class="swbox" style="width:54px;height:34px;border-radius:16px;background:var(--sand-300)"></span></td></tr>
+    <tr><td><code>3xl</code></td><td>1.5rem</td><td><span class="swbox" style="width:54px;height:34px;border-radius:24px;background:var(--sand-300)"></span></td></tr>
+    <tr><td><code>full</code></td><td>9999px</td><td><span class="swbox" style="width:54px;height:34px;border-radius:999px;background:var(--sand-300)"></span></td></tr>
+  </table>
+
+  <h2 class="sec">Elevation</h2>
+  <table>
+    <tr><th style="width:90px">Token</th><th>Preview</th></tr>
+    <tr><td><code>sm</code></td><td><span class="shadowcard" style="box-shadow:0 1px 2px 0 rgb(0 0 0 / .05)"></span></td></tr>
+    <tr><td><code>md</code></td><td><span class="shadowcard" style="box-shadow:0 4px 6px -1px rgb(0 0 0 / .1),0 2px 4px -2px rgb(0 0 0 / .1)"></span></td></tr>
+    <tr><td><code>lg</code></td><td><span class="shadowcard" style="box-shadow:0 10px 15px -3px rgb(0 0 0 / .1),0 4px 6px -4px rgb(0 0 0 / .1)"></span></td></tr>
+    <tr><td><code>xl</code></td><td><span class="shadowcard" style="box-shadow:0 20px 25px -5px rgb(0 0 0 / .1),0 8px 10px -6px rgb(0 0 0 / .1)"></span></td></tr>
+    <tr><td><code>card</code></td><td><span class="shadowcard" style="box-shadow:0 1px 0 rgb(0 0 0 / .02);border:1px solid var(--sand-200)"></span> <span class="note" style="margin-left:8px">signature flat card edge</span></td></tr>
+  </table>
+
+  <h2 class="sec">Motion &amp; app shell</h2>
+  <table>
+    <tr><th style="width:170px">Token</th><th>Value</th></tr>
+    <tr><td><code>ease-native</code></td><td>cubic-bezier(0.32, 0.72, 0, 1)</td></tr>
+    <tr><td>Page transition</td><td>pageInForward / pageInBack — 0.26s</td></tr>
+    <tr><td>Bottom sheet</td><td>sheetUp — 0.3s</td></tr>
+    <tr><td>theme-color</td><td><span class="swbox" style="width:16px;height:16px;border-radius:4px;background:#1b3425"></span> <code>#1b3425</code> (forest-900)</td></tr>
+    <tr><td>Breakpoint (shell)</td><td>tab bar → nav rail at <code>md</code> 768px</td></tr>
+    <tr><td>Touch target</td><td>44px minimum · safe-area insets honored</td></tr>
+  </table>
+
+  <h2 class="sec">Exports</h2>
+  <p class="note">Machine-readable tokens for handoff (in <code>design-system/tokens/</code>):</p>
+  <div class="files">
+    <a href="../tokens/tokens.json">tokens.json</a>
+    <a href="../tokens/tokens.css">tokens.css</a>
+    <a href="../tokens/tokens.scss">tokens.scss</a>
+  </div>
+</div>
+</body>
+</html>

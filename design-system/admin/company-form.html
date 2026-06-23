@@ -1,0 +1,458 @@
+<!-- @dsCard group="Admin (Filament)" name="Company — edit form" subtitle="Sectioned resource form" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background: #f9fafb;
+    color: #111827;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { text-decoration: none; color: inherit; }
+
+  /* SIDEBAR */
+  .sidebar {
+    position: fixed;
+    top: 0; left: 0;
+    width: 256px;
+    height: 100vh;
+    background: #ffffff;
+    border-right: 1px solid #e5e7eb;
+    overflow-y: auto;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 18px 16px;
+  }
+  .brand-logo {
+    width: 36px; height: 36px;
+    border-radius: 9px;
+    background: #d97706;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: .02em;
+    flex-shrink: 0;
+  }
+  .brand-name { font-weight: 600; font-size: 15px; color: #111827; }
+  .brand-sub { font-size: 11px; color: #6b7280; margin-top: 1px; }
+
+  .nav-group { padding: 6px 12px; }
+  .nav-group-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: #9ca3af;
+    font-weight: 600;
+    padding: 8px 12px 4px;
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    color: #374151;
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 2px;
+  }
+  .nav-item:hover { background: #f3f4f6; }
+  .nav-item svg { color: #6b7280; flex-shrink: 0; }
+  .nav-item.active {
+    background: #fffbeb;
+    color: #b45309;
+    font-weight: 600;
+  }
+  .nav-item.active svg { color: #d97706; }
+
+  /* TOPBAR */
+  .topbar {
+    margin-left: 256px;
+    position: sticky;
+    top: 0;
+    height: 64px;
+    background: #fff;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 10;
+  }
+  .search-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 8px 12px;
+    width: 320px;
+    color: #9ca3af;
+    font-size: 14px;
+  }
+  .search-box svg { color: #9ca3af; }
+  .topbar-right { display: flex; align-items: center; gap: 16px; }
+  .icon-btn {
+    color: #6b7280;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+  .avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: #fef3c7;
+    color: #b45309;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 13px;
+  }
+
+  /* CONTENT */
+  .content {
+    margin-left: 256px;
+    padding: 28px 32px;
+    background: #f9fafb;
+    min-height: 100vh;
+  }
+  .page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+  }
+  .page-title { font-size: 24px; font-weight: 700; color: #111827; margin: 0; }
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: #d97706;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 9px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .btn-primary:hover { background: #b45309; }
+  .plus-icon { font-size: 16px; line-height: 1; font-weight: 700; }
+
+  /* CARDS / SECTIONS */
+  .form-stack { display: flex; flex-direction: column; gap: 20px; max-width: 920px; }
+  .card {
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 1px 3px rgb(0 0 0 / .08);
+    padding: 22px 24px;
+  }
+  .section-head { margin-bottom: 18px; }
+  .section-title { font-weight: 600; font-size: 15px; color: #111827; }
+  .section-desc { color: #6b7280; font-size: 13px; margin-top: 3px; }
+
+  .grid { display: grid; gap: 16px 20px; }
+  .grid-2 { grid-template-columns: repeat(2, 1fr); }
+  .grid-3 { grid-template-columns: repeat(3, 1fr); }
+  .col-span-full { grid-column: 1 / -1; }
+
+  .field { display: flex; flex-direction: column; }
+  .field-label {
+    font-size: 13px;
+    color: #374151;
+    margin-bottom: 4px;
+    font-weight: 500;
+  }
+  .req { color: #d97706; }
+  .input, .textarea {
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 14px;
+    background: #fff;
+    font-family: inherit;
+    color: #111827;
+    width: 100%;
+  }
+  .input:focus, .textarea:focus {
+    outline: none;
+    border-color: #f59e0b;
+    box-shadow: 0 0 0 3px #fef3c7;
+  }
+  .textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
+  .field-helper { font-size: 12px; color: #6b7280; margin-top: 5px; }
+
+  /* DROPZONE */
+  .dropzone {
+    border: 2px dashed #d1d5db;
+    border-radius: 8px;
+    padding: 26px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: #f9fafb;
+    color: #6b7280;
+    text-align: center;
+  }
+  .dropzone svg { color: #9ca3af; }
+  .dropzone-text { font-size: 13px; }
+  .dropzone-text b { color: #b45309; font-weight: 600; }
+
+  /* COLLAPSED SECTIONS */
+  .card.collapsed {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 24px;
+  }
+  .collapsed-left { display: flex; flex-direction: column; gap: 2px; }
+  .collapsed-summary { color: #6b7280; font-size: 13px; }
+  .chev { color: #9ca3af; display: flex; }
+</style>
+</head>
+<body>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-logo">CTH</div>
+      <div>
+        <div class="brand-name">Cameroon Timber Hub</div>
+        <div class="brand-sub">Admin panel</div>
+      </div>
+    </div>
+
+    <nav class="nav-group">
+      <a class="nav-item" href="#">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" style="width:20px;height:20px"><path stroke-linecap="round" stroke-linejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"/></svg>
+        Dashboard
+      </a>
+    </nav>
+
+    <div class="nav-group">
+      <div class="nav-group-label">Catalogue</div>
+      <a class="nav-item active" href="#">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" style="width:20px;height:20px"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Z"/></svg>
+        Companies
+      </a>
+      <a class="nav-item" href="#">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" style="width:20px;height:20px"><path stroke-linecap="round" stroke-linejoin="round" d="M6 6.878V6a2.25 2.25 0 0 1 2.25-2.25h7.5A2.25 2.25 0 0 1 18 6v.878m-12 0c.235-.083.487-.128.75-.128h10.5c.263 0 .515.045.75.128m-12 0A2.25 2.25 0 0 0 4.5 9v.878m13.5-3A2.25 2.25 0 0 1 19.5 9v.878m0 0a2.246 2.246 0 0 0-.75-.128H5.25c-.263 0-.515.045-.75.128m15 0A2.25 2.25 0 0 1 21 12v6a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 18v-6c0-.98.626-1.813 1.5-2.122"/></svg>
+        Listings
+      </a>
+      <a class="nav-item" href="#">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" style="width:20px;height:20px"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"/></svg>
+        Documents
+      </a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">Operations</div>
+      <a class="nav-item" href="#">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" style="width:20px;height:20px"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 13.5h3.86a2.25 2.25 0 0 1 2.012 1.244l.256.512a2.25 2.25 0 0 0 2.013 1.244h3.218a2.25 2.25 0 0 0 2.013-1.244l.256-.512a2.25 2.25 0 0 1 2.013-1.244h3.859m-19.5.338V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18v-4.162c0-.224-.034-.447-.1-.661L19.24 5.338a2.25 2.25 0 0 0-2.15-1.588H6.911a2.25 2.25 0 0 0-2.15 1.588L2.35 13.177a2.25 2.25 0 0 0-.1.661Z"/></svg>
+        RFQ inbox
+      </a>
+      <a class="nav-item" href="#">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" style="width:20px;height:20px"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z"/></svg>
+        Verification
+      </a>
+      <a class="nav-item" href="#">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" style="width:20px;height:20px"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z"/></svg>
+        Subscriptions
+      </a>
+    </div>
+  </aside>
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="search-box">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" style="width:18px;height:18px"><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"/></svg>
+      Search
+    </div>
+    <div class="topbar-right">
+      <span class="icon-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" style="width:20px;height:20px"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0"/></svg>
+      </span>
+      <div class="avatar">AM</div>
+    </div>
+  </header>
+
+  <!-- CONTENT -->
+  <main class="content">
+    <div class="page-header">
+      <h1 class="page-title">Edit company</h1>
+      <button class="btn-primary">
+        <span class="plus-icon">+</span>
+        Save changes
+      </button>
+    </div>
+
+    <div class="form-stack">
+
+      <!-- SECTION: Identity -->
+      <section class="card">
+        <div class="section-head">
+          <div class="section-title">Identity</div>
+          <div class="section-desc">Legal registration details used across the platform.</div>
+        </div>
+        <div class="grid grid-2">
+          <div class="field">
+            <label class="field-label">Legal name <span class="req">*</span></label>
+            <input class="input" type="text" value="Bois du Cameroun SARL">
+          </div>
+          <div class="field">
+            <label class="field-label">Trade name</label>
+            <input class="input" type="text" value="Bois du Cameroun">
+            <div class="field-helper">Public display name (falls back to legal name).</div>
+          </div>
+          <div class="field">
+            <label class="field-label">Slug</label>
+            <input class="input" type="text" value="bois-du-cameroun-sarl">
+            <div class="field-helper">Leave blank to auto-generate. Changing a live slug breaks inbound links.</div>
+          </div>
+          <div class="field">
+            <label class="field-label">RCCM</label>
+            <input class="input" type="text" value="RC/DLA/2014/B/1234">
+          </div>
+          <div class="field">
+            <label class="field-label">NIU</label>
+            <input class="input" type="text" value="M021400012345P">
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION: Profile -->
+      <section class="card">
+        <div class="section-head">
+          <div class="section-title">Profile</div>
+          <div class="section-desc">Company background shown on the public profile.</div>
+        </div>
+        <div class="grid grid-3">
+          <div class="field col-span-full">
+            <label class="field-label">Description</label>
+            <textarea class="textarea" rows="3">Douala-based hardwood exporter specialising in sawn ayous, sapelli and tali for European and Asian buyers. Operates a FSC-aligned supply chain from forest concession to the Bonabéri port.</textarea>
+          </div>
+          <div class="field">
+            <label class="field-label">Year founded</label>
+            <input class="input" type="text" value="2014">
+          </div>
+          <div class="field">
+            <label class="field-label">Employees</label>
+            <input class="input" type="text" value="85">
+          </div>
+          <div class="field">
+            <label class="field-label">Annual capacity (m³)</label>
+            <input class="input" type="text" value="12000">
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION: Location & contact -->
+      <section class="card">
+        <div class="section-head">
+          <div class="section-title">Location &amp; contact</div>
+          <div class="section-desc">Where the company is based and how buyers reach it.</div>
+        </div>
+        <div class="grid grid-3">
+          <div class="field">
+            <label class="field-label">Region</label>
+            <input class="input" type="text" value="Littoral">
+          </div>
+          <div class="field">
+            <label class="field-label">City</label>
+            <input class="input" type="text" value="Douala">
+          </div>
+          <div class="field">
+            <label class="field-label">Country code</label>
+            <input class="input" type="text" value="CM">
+          </div>
+          <div class="field col-span-full">
+            <label class="field-label">Address</label>
+            <input class="input" type="text" value="Zone Industrielle Bonabéri">
+          </div>
+          <div class="field">
+            <label class="field-label">Email</label>
+            <input class="input" type="text" value="export@boisducameroun.cm">
+          </div>
+          <div class="field">
+            <label class="field-label">Phone</label>
+            <input class="input" type="text" value="+237 6 99 00 11 22">
+          </div>
+          <div class="field">
+            <label class="field-label">Website</label>
+            <input class="input" type="text" value="https://boisducameroun.cm">
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION: Branding -->
+      <section class="card">
+        <div class="section-head">
+          <div class="section-title">Branding</div>
+          <div class="section-desc">Logo and cover image used on the company profile.</div>
+        </div>
+        <div class="grid grid-2">
+          <div class="field">
+            <label class="field-label">Logo</label>
+            <div class="dropzone">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" style="width:20px;height:20px"><path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"/></svg>
+              <div class="dropzone-text">Drop a file or <b>browse</b></div>
+            </div>
+          </div>
+          <div class="field">
+            <label class="field-label">Cover</label>
+            <div class="dropzone">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" style="width:20px;height:20px"><path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"/></svg>
+              <div class="dropzone-text">Drop a file or <b>browse</b></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION: SIGIF (collapsed) -->
+      <section class="card collapsed">
+        <div class="collapsed-left">
+          <div class="section-title">SIGIF (captured, not integrated)</div>
+          <div class="collapsed-summary">SIGIF operator ID, permit / title numbers</div>
+        </div>
+        <span class="chev">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" style="width:20px;height:20px"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/></svg>
+        </span>
+      </section>
+
+      <!-- SECTION: SEO (collapsed) -->
+      <section class="card collapsed">
+        <div class="collapsed-left">
+          <div class="section-title">SEO</div>
+          <div class="collapsed-summary">Meta title, meta description</div>
+        </div>
+        <span class="chev">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" style="width:20px;height:20px"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/></svg>
+        </span>
+      </section>
+
+    </div>
+  </main>
+
+</body>
+</html>

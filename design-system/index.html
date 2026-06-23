@@ -38,6 +38,10 @@
     text-transform:uppercase;color:var(--timber-700)}
   .grid{display:grid;gap:20px;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));margin-top:18px}
   .grid.screens{grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+  .grid.wide{grid-template-columns:1fr}
+  .grid.wide iframe{width:100%}
+  .grid.emails{grid-template-columns:repeat(auto-fill,minmax(440px,1fr))}
+  .grid.emails .frameWrap{background:#eef0f3}
   .card{background:#fff;border:1px solid var(--sand-200);border-radius:18px;overflow:hidden;
     box-shadow:0 1px 0 rgba(0,0,0,.02);display:flex;flex-direction:column}
   .card .head{padding:13px 15px;border-bottom:1px solid var(--sand-100,#f5f0e6);display:flex;align-items:flex-start;gap:10px}
@@ -71,6 +75,9 @@
       <a href="#components">Components</a>
       <a href="#app-shell">App shell</a>
       <a href="#screens">Screens</a>
+      <a href="#emails">Emails</a>
+      <a href="#admin">Admin</a>
+      <a href="#exporter">Exporter</a>
     </nav>
   </div>
 </header>
@@ -93,6 +100,7 @@ const CARDS = {
   foundations: [
     ['colors','Color tokens','Forest · Timber · Sand · Ink ramps',680],
     ['typography','Typography','Fraunces display + Instrument Sans + eyebrow',560],
+    ['tokens','Design tokens','Type scale, radius, elevation, motion + exports',900],
     ['brand-mark','Brand mark','Timber growth-ring logo, sizes & lockup',440],
     ['surfaces','Surfaces & motifs','Radius, elevation, gradient/blur atmosphere',620],
     ['iconography','Iconography','Heroicons in forest & timber',560],
@@ -127,9 +135,25 @@ const CARDS = {
     ['quote-form','Quote form screen','No-account RFQ',900],
     ['pricing','Pricing screen','Stacked plan cards',980],
   ],
+  emails: [
+    ['rfq-verification','RFQ verification email','Double opt-in — confirm a quote request',640],
+    ['inquiry-verification','Inquiry verification email','Double opt-in — confirm a message',600],
+  ],
+  admin: [
+    ['dashboard','Admin dashboard','Platform overview stats',600],
+    ['companies-table','Companies — list','Directory moderation table',560],
+    ['company-form','Company — edit form','Sectioned resource form',920],
+    ['rfq-triage','RFQs — triage','Verified request queue + actions',620],
+  ],
+  exporter: [
+    ['dashboard','Exporter dashboard','Self-service supplier panel',560],
+    ['leads','Leads — inbox','Routed buyer leads',520],
+  ],
 };
-const LABEL = {foundations:'Foundations', components:'Components', 'app-shell':'App shell', screens:'Screens'};
-const SUB = {foundations:'Tokens & primitives', components:'Reusable UI', 'app-shell':'Native shell', screens:'Full mobile pages'};
+const LABEL = {foundations:'Foundations', components:'Components', 'app-shell':'App shell', screens:'Screens', emails:'Emails', admin:'Admin (Filament)', exporter:'Exporter (Filament)'};
+const SUB = {foundations:'Tokens & primitives', components:'Reusable UI', 'app-shell':'Native shell', screens:'Full mobile pages', emails:'Transactional · default mail theme', admin:'Back-office · amber theme', exporter:'Supplier panel · amber theme'};
+const WIDE = {admin:true, exporter:true};
+const NARROW = {emails:true};
 const g = document.getElementById('gallery');
 for (const group of Object.keys(CARDS)) {
   const h = document.createElement('h2');
@@ -137,7 +161,7 @@ for (const group of Object.keys(CARDS)) {
   h.innerHTML = LABEL[group] + ' <span>' + SUB[group] + '</span>';
   g.appendChild(h);
   const grid = document.createElement('div');
-  grid.className = 'grid' + (group === 'screens' ? ' screens' : '');
+  grid.className = 'grid' + (group === 'screens' ? ' screens' : WIDE[group] ? ' wide' : NARROW[group] ? ' emails' : '');
   for (const [slug, name, sub, h0] of CARDS[group]) {
     const src = group + '/' + slug + '.html';
     const card = document.createElement('div');

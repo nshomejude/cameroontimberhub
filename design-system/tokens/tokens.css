@@ -1,0 +1,68 @@
+/* Cameroon Timber Hub — design tokens (public forest/timber experience).
+ * Source of truth: resources/css/app.css @theme. Root font-size is 118.75% (≈19px);
+ * rem-based sizes resolve against that base. The Filament admin uses a separate Amber theme. */
+:root {
+  /* Forest — primary brand green */
+  --color-forest-50: #f1f7f2;
+  --color-forest-100: #dcebe0;
+  --color-forest-200: #bad7c2;
+  --color-forest-300: #8fbb9d;
+  --color-forest-400: #5d9a71;
+  --color-forest-500: #3c7d52;
+  --color-forest-600: #2c6240;
+  --color-forest-700: #254f35;
+  --color-forest-800: #20402c;
+  --color-forest-900: #1b3425;
+  --color-forest-950: #0e1c14;
+
+  /* Timber — warm wood accent */
+  --color-timber-50: #faf6ef;
+  --color-timber-100: #f3e7d2;
+  --color-timber-200: #e6cca1;
+  --color-timber-300: #d7ac6c;
+  --color-timber-400: #cb9248;
+  --color-timber-500: #bd7a32;
+  --color-timber-600: #a3612a;
+  --color-timber-700: #834b27;
+  --color-timber-800: #6c3f25;
+  --color-timber-900: #5a3622;
+
+  /* Sand — cream neutrals */
+  --color-sand-50: #fbf9f4;
+  --color-sand-100: #f5f0e6;
+  --color-sand-200: #ebe3d2;
+  --color-sand-300: #dcceb4;
+  --color-sand-400: #c4b08a;
+
+  /* Ink — warm near-black text */
+  --color-ink: #201e18;
+  --color-ink-soft: #5b554a;
+
+  /* Type */
+  --font-display: Fraunces, ui-serif, Georgia, 'Times New Roman', serif;
+  --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
+  --root-font-size: 118.75%;
+  --leading-body: 1.7;
+  --tracking-eyebrow: 0.12em;
+
+  /* Radius */
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+  --radius-3xl: 1.5rem;
+  --radius-full: 9999px;
+
+  /* Elevation */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  --shadow-card: 0 1px 0 rgb(0 0 0 / 0.02);
+
+  /* Motion */
+  --ease-native: cubic-bezier(0.32, 0.72, 0, 1);
+
+  /* App shell */
+  --theme-color: #1b3425;
+  --app-bar-min-height: 3.5rem;
+}

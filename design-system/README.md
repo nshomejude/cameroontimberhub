@@ -28,21 +28,48 @@ Each individual card (e.g. `components/company-card.html`) also opens on its own
 design-system/
 ├── index.html              ← local gallery (open this)
 ├── shared/app.css          ← compiled Tailwind + tokens + app-shell CSS
-├── foundations/            ← colors, typography, brand-mark, surfaces, iconography
+├── tokens/                 ← machine-readable token exports: tokens.json / tokens.css / tokens.scss
+├── foundations/            ← colors, typography, design-tokens, brand-mark, surfaces, iconography
 ├── components/             ← buttons, badges, form-fields, search-bar, cards, panels, pricing, …
 ├── app-shell/              ← top-app-bar, bottom-tab-bar, nav-rail, bottom-sheet, pwa-affordances, offline
 ├── screens/                ← full mobile screens in phone frames (home, directory, detail, quote, pricing)
-└── _build/                 ← the workflow script that generates the cards (not part of the library)
+├── emails/                 ← real rendered transactional emails (rfq / inquiry verification)
+├── admin/                  ← schematic Filament admin screens (dashboard, companies, company form, RFQ triage)
+├── exporter/               ← schematic Filament exporter panel (dashboard, leads)
+└── _build/                 ← the workflow scripts that generate the cards (not part of the library)
 ```
 
 ## Cards
 
 | Group | Cards |
 |-------|-------|
-| **Foundations** | Color tokens · Typography · Brand mark · Surfaces & motifs · Iconography |
+| **Foundations** | Color tokens · Typography · **Design tokens** · Brand mark · Surfaces & motifs · Iconography |
 | **Components** | Buttons · Badges · Form fields · Hero search · Company card · Species card · Trust pillars · Stats strip · Verification panel · Quote CTAs · Pricing tiers · Empty state |
 | **App shell** | Top app bar · Bottom tab bar · Navigation rail · Bottom sheet · Native affordances · Offline screen |
 | **Screens** | Home · Directory · Company detail · Species detail · Quote form · Pricing |
+| **Emails** | RFQ verification · Inquiry verification |
+| **Admin (Filament)** | Dashboard · Companies list · Company form · RFQ triage |
+| **Exporter (Filament)** | Dashboard · Leads inbox |
+
+**38 cards in total.**
+
+### Two design languages (by design)
+
+This product intentionally runs **two** visual systems, and the library reflects both honestly:
+
+- **Public site** — the bespoke **forest / timber** editorial + native app shell (Foundations, Components, App shell, Screens). This is the design system proper, and every preview links the compiled `shared/app.css`.
+- **Admin & exporter panels** — these run on **Filament**, which uses its own UI with an **Amber** primary and the **Inter** typeface. The `admin/` and `exporter/` cards are *schematic approximations* of those Filament screens, built from the real resource definitions (columns, form sections, actions, overview stats). They are self-contained (their own inline styles, no `shared/app.css`) and are deliberately **not** forest/timber — that would misrepresent the real back-office.
+- **Emails** are the **real** rendered output of the Laravel markdown mailables. They currently use Laravel's **default mail theme** (not yet brand-themed) — a genuine branding gap worth noting.
+
+### Token exports
+
+`tokens/` holds the design tokens in three consumable formats, generated from the `@theme` block in `resources/css/app.css`:
+
+- `tokens.json` — structured tokens (colors, type scale with px@19, radius, elevation, motion, breakpoints, app-shell specifics)
+- `tokens.css` — `:root` custom properties
+- `tokens.scss` — SCSS variables + maps + `forest()/timber()/sand()` helpers
+
+The **Design tokens** foundation card is a visual spec sheet of the same values.
 
 ## Publishing to Claude Design
 

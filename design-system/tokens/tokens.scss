@@ -1,0 +1,57 @@
+// Cameroon Timber Hub — design tokens (public forest/timber experience).
+// Source of truth: resources/css/app.css @theme. Root font-size 118.75% (≈19px).
+// The Filament admin/exporter panels use a separate Amber theme (not covered here).
+
+// ---- Colors ----------------------------------------------------------------
+$forest: (
+  50: #f1f7f2, 100: #dcebe0, 200: #bad7c2, 300: #8fbb9d, 400: #5d9a71,
+  500: #3c7d52, 600: #2c6240, 700: #254f35, 800: #20402c, 900: #1b3425, 950: #0e1c14
+);
+$timber: (
+  50: #faf6ef, 100: #f3e7d2, 200: #e6cca1, 300: #d7ac6c, 400: #cb9248,
+  500: #bd7a32, 600: #a3612a, 700: #834b27, 800: #6c3f25, 900: #5a3622
+);
+$sand: (50: #fbf9f4, 100: #f5f0e6, 200: #ebe3d2, 300: #dcceb4, 400: #c4b08a);
+$ink: #201e18;
+$ink-soft: #5b554a;
+
+// ---- Type ------------------------------------------------------------------
+$font-display: (Fraunces, ui-serif, Georgia, 'Times New Roman', serif);
+$font-sans: ('Instrument Sans', ui-sans-serif, system-ui, sans-serif);
+$root-font-size: 118.75%; // ≈19px base
+$leading-body: 1.7;
+$tracking-eyebrow: 0.12em;
+
+// rem value => computed px at the 19px root
+$font-size: (
+  xs: 0.75rem, sm: 0.875rem, base: 1rem, lg: 1.125rem, xl: 1.25rem,
+  2xl: 1.5rem, 3xl: 1.875rem, 4xl: 2.25rem, 5xl: 3rem, 6xl: 3.75rem, 7xl: 4.5rem
+);
+
+// ---- Radius ----------------------------------------------------------------
+$radius: (lg: 0.5rem, xl: 0.75rem, 2xl: 1rem, 3xl: 1.5rem, full: 9999px);
+
+// ---- Elevation -------------------------------------------------------------
+$shadow: (
+  sm: (0 1px 2px 0 rgb(0 0 0 / 0.05)),
+  md: (0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)),
+  lg: (0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)),
+  xl: (0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)),
+  card: (0 1px 0 rgb(0 0 0 / 0.02))
+);
+
+// ---- Breakpoints (app shell switches bottom-tabs -> nav-rail at md) ---------
+$breakpoint: (sm: 640px, md: 768px, lg: 1024px, xl: 1280px, 2xl: 1536px);
+
+// ---- Motion ----------------------------------------------------------------
+$ease-native: cubic-bezier(0.32, 0.72, 0, 1);
+
+// ---- App shell -------------------------------------------------------------
+$theme-color: #1b3425;
+$app-bar-min-height: 3.5rem;
+$tab-bar-columns: 5;
+
+// Helper: timber($n), forest($n), sand($n)
+@function forest($n) { @return map-get($forest, $n); }
+@function timber($n) { @return map-get($timber, $n); }
+@function sand($n)   { @return map-get($sand, $n); }
