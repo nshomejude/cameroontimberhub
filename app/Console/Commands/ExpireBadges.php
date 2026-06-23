@@ -2,14 +2,12 @@
 
 namespace App\Console\Commands;
 
-use App\Enums\BadgeStatus;
-use App\Models\VerificationBadge;
+use App\Jobs\ExpireBadgesJob;
 use Illuminate\Console\Command;
 
 /**
- * Daily lifecycle sweep: flips active badges past their valid_until to expired.
- * A company that loses its last active badge silently drops from public surfaces
- * (the publiclyVisible scope filters on active, unexpired badges).
+ * Daily lifecycle sweep: dispatches ExpireBadgesJob to flip active badges
+ * past their valid_until to expired on the queue.
  */
 class ExpireBadges extends Command
 {
@@ -19,13 +17,9 @@ class ExpireBadges extends Command
 
     public function handle(): int
     {
-        $expired = VerificationBadge::query()
-            ->where('status', BadgeStatus::Active->value)
-            ->whereNotNull('valid_until')
-            ->whereDate('valid_until', '<', today())
-            ->update(['status' => BadgeStatus::Expired->value]);
+        ExpireBadgesJob::dispatch();
 
-        $this->info("Expired {$expired} badge(s).");
+        $this->info('ExpireBadgesJob dispatched.');
 
         return self::SUCCESS;
     }
