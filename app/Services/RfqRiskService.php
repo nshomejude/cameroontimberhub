@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Enums\SuspiciousEventSeverity;
+use App\Enums\SuspiciousEventType;
 use App\Models\Rfq;
 use App\Models\SuspiciousEvent;
 use Illuminate\Support\Str;
@@ -57,13 +59,13 @@ class RfqRiskService
         $base = ['subject_type' => Rfq::class, 'subject_id' => $rfq->getKey(), 'ip_address' => $rfq->ip_address, 'context' => $context];
 
         if (in_array('burst_ip', $flags, true)) {
-            SuspiciousEvent::record('rapid_rfq_burst', array_merge($base, ['severity' => 'medium']));
+            SuspiciousEvent::record(SuspiciousEventType::RapidRfqBurst, array_merge($base, ['severity' => SuspiciousEventSeverity::Medium]));
         }
         if (in_array('duplicate_recent', $flags, true)) {
-            SuspiciousEvent::record('duplicate_submission', array_merge($base, ['severity' => 'medium']));
+            SuspiciousEvent::record(SuspiciousEventType::DuplicateSubmission, array_merge($base, ['severity' => SuspiciousEventSeverity::Medium]));
         }
         if ($isSpam) {
-            SuspiciousEvent::record('suspicious_rfq', array_merge($base, ['severity' => 'high']));
+            SuspiciousEvent::record(SuspiciousEventType::SuspiciousRfq, array_merge($base, ['severity' => SuspiciousEventSeverity::High]));
         }
     }
 }

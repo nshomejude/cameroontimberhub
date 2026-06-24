@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\RfqIncoterm;
 use App\Enums\RfqStatus;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -18,13 +19,14 @@ class Rfq extends Model
     protected function casts(): array
     {
         return [
-            'status' => RfqStatus::class,
+            'status'           => RfqStatus::class,
+            'incoterm'         => RfqIncoterm::class,
             'email_verified_at' => 'datetime',
-            'is_spam' => 'boolean',
-            'spam_score' => 'integer',
-            'target_amount' => 'decimal:2',
-            'deadline' => 'date',
-            'attachments' => 'array',
+            'is_spam'          => 'boolean',
+            'spam_score'       => 'integer',
+            'target_amount'    => 'decimal:2',
+            'deadline'         => 'date',
+            'attachments'      => 'array',
         ];
     }
 

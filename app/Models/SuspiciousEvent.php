@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Enums\SuspiciousEventSeverity;
+use App\Enums\SuspiciousEventType;
 use Illuminate\Database\Eloquent\Model;
 
 class SuspiciousEvent extends Model
@@ -14,16 +16,18 @@ class SuspiciousEvent extends Model
     protected function casts(): array
     {
         return [
-            'context' => 'array',
+            'event_type' => SuspiciousEventType::class,
+            'severity'   => SuspiciousEventSeverity::class,
+            'context'    => 'array',
             'created_at' => 'datetime',
         ];
     }
 
-    public static function record(string $eventType, array $attributes = []): self
+    public static function record(SuspiciousEventType $eventType, array $attributes = []): self
     {
         return static::create(array_merge([
             'event_type' => $eventType,
-            'severity' => 'low',
+            'severity'   => SuspiciousEventSeverity::Low,
             'created_at' => now(),
         ], $attributes));
     }

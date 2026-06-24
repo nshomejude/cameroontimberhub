@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\CompanyUserRole;
 use App\Models\Company;
 use App\Models\CompanyDocument;
 use App\Models\User;
@@ -31,12 +32,12 @@ class CompanyDocumentPolicy
         }
 
         if ($company === null) {
-            return $user->companies()->wherePivotIn('role', ['owner', 'manager'])->exists();
+            return $user->companies()->wherePivotIn('role', [CompanyUserRole::Owner->value, CompanyUserRole::Manager->value])->exists();
         }
 
         $pivot = $company->users()->whereKey($user->getKey())->first()?->pivot;
 
-        return $pivot && in_array($pivot->role, ['owner', 'manager'], true);
+        return $pivot && in_array($pivot->role, [CompanyUserRole::Owner, CompanyUserRole::Manager], true);
     }
 
     public function approve(User $user): bool
@@ -59,7 +60,7 @@ class CompanyDocumentPolicy
         return $user->can('companies.manage')
             || $document->company->users()
                 ->whereKey($user->getKey())
-                ->wherePivotIn('role', ['owner'])
+                ->wherePivotIn('role', [CompanyUserRole::Owner->value])
                 ->exists();
     }
 }

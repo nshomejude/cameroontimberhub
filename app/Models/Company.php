@@ -144,7 +144,8 @@ class Company extends Model
     {
         return $this->belongsToMany(User::class, 'company_user')
             ->withPivot(['role', 'is_primary'])
-            ->withTimestamps();
+            ->withTimestamps()
+            ->withCasts(['role' => \App\Enums\CompanyUserRole::class]);
     }
 
     public function createdBy(): BelongsTo

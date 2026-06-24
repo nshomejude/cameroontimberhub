@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\CompanyUserRole;
 use App\Models\Company;
 use App\Models\User;
 
@@ -31,7 +32,7 @@ class CompanyPolicy
 
         $pivot = $company->users()->whereKey($user->getKey())->first()?->pivot;
 
-        return $pivot && in_array($pivot->role, ['owner', 'manager'], true);
+        return $pivot && in_array($pivot->role, [CompanyUserRole::Owner, CompanyUserRole::Manager], true);
     }
 
     public function delete(User $user, Company $company): bool

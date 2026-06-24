@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Enums\SuspiciousEventSeverity;
+use App\Enums\SuspiciousEventType;
 use App\Models\SuspiciousEvent;
 
 /**
@@ -33,10 +35,10 @@ class AntiSpamService
 
     private function log(?string $email): void
     {
-        SuspiciousEvent::record('honeypot_triggered', [
-            'severity' => 'medium',
+        SuspiciousEvent::record(SuspiciousEventType::HoneypotTriggered, [
+            'severity'   => SuspiciousEventSeverity::Medium,
             'ip_address' => request()->ip(),
-            'context' => ['email' => $email],
+            'context'    => ['email' => $email],
         ]);
     }
 }
