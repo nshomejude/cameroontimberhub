@@ -2,6 +2,7 @@
 
 use App\Models\Company;
 use App\Models\Page;
+use App\Models\SlugRedirect;
 use App\Models\Species;
 
 // ---------------------------------------------------------------------------
@@ -184,4 +185,33 @@ it('does not expose draft companies on the programmatic exporter page', function
         ->assertOk()
         ->assertSee('Visible Iroko Co')
         ->assertDontSee('Draft Iroko Co');
+});
+
+// ---------------------------------------------------------------------------
+// Slug Redirects (HandleSlugRedirects middleware)
+// ---------------------------------------------------------------------------
+
+it('issues a 301 redirect for a GET request to a registered old slug', function (): void {
+    SlugRedirect::create([
+        'from_slug' => 'old-company-name',
+        'to_url'    => '/exporters/iroko-cameroon',
+    ]);
+
+    $this->get('/old-company-name')
+        ->assertStatus(301)
+        ->assertRedirect('/exporters/iroko-cameroon');
+});
+
+it('does not redirect a GET request when no slug_redirects entry exists', function (): void {
+    $this->get('/some-path-with-no-redirect')->assertStatus(404);
+});
+
+it('does not redirect POST requests even when a slug_redirects entry exists', function (): void {
+    SlugRedirect::create([
+        'from_slug' => 'old-contact',
+        'to_url'    => '/contact',
+    ]);
+
+    $response = $this->post('/old-contact');
+    expect($response->status())->not->toBe(301);
 });
