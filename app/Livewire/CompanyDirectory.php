@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Models\Company;
 use App\Models\CompanyExportMarket;
 use App\Models\Species;
+use App\Services\SearchService;
 use Illuminate\Contracts\View\View;
 use Livewire\Attributes\Url;
 use Livewire\Component;
@@ -55,17 +56,14 @@ class CompanyDirectory extends Component
         $this->resetPage();
     }
 
-    public function render(): View
+    public function render(SearchService $search): View
     {
-        $companies = Company::publiclyVisible()
-            ->with(['species:id,slug,common_name', 'exportMarkets:id,company_id,country_code'])
-            ->when($this->region !== '', fn ($q) => $q->where('region', $this->region))
-            ->when($this->species !== '', fn ($q) => $q->whereHas('species', fn ($s) => $s->where('slug', $this->species)))
-            ->when($this->market !== '', fn ($q) => $q->whereHas('exportMarkets', fn ($m) => $m->where('country_code', $this->market)))
-            ->when($this->search !== '', fn ($q) => $q->whereRaw("search_vector @@ plainto_tsquery('english', ?)", [$this->search]))
-            ->orderByDesc('is_featured')
-            ->orderByDesc('verified_at')
-            ->paginate(12);
+        $companies = $search->searchCompanies([
+            'q'       => $this->search,
+            'region'  => $this->region,
+            'species' => $this->species,
+            'market'  => $this->market,
+        ]);
 
         $regions = Company::publiclyVisible()
             ->whereNotNull('region')
