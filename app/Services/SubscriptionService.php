@@ -8,6 +8,7 @@ use App\Models\Plan;
 use App\Models\Subscription;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
 /**
  * Manual plan assignment (no payment gateway). One active subscription per
@@ -38,5 +39,26 @@ class SubscriptionService
 
             return $subscription;
         });
+    }
+
+    public function cancel(Subscription $subscription, ?User $actor = null, ?string $reason = null): void
+    {
+        if ($subscription->status === SubscriptionStatus::Cancelled) {
+            throw new RuntimeException('Subscription is already cancelled.');
+        }
+
+        $subscription->update([
+            'status' => SubscriptionStatus::Cancelled,
+            'cancelled_at' => now(),
+            'notes' => $reason,
+        ]);
+
+        $company = $subscription->company;
+        if ($company && $company->plan_id === $subscription->plan_id) {
+            $company->update(['plan_id' => null]);
+        }
+
+        activity('subscription')->performedOn($subscription)->causedBy($actor)->event('cancelled')
+            ->withProperties(['reason' => $reason])->log('Subscription cancelled');
     }
 }
