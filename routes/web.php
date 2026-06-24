@@ -5,7 +5,9 @@ use App\Http\Controllers\Public\CompanyController;
 use App\Http\Controllers\Public\DirectoryController;
 use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Public\InquiryController;
+use App\Http\Controllers\Public\PageController;
 use App\Http\Controllers\Public\PricingController;
+use App\Http\Controllers\Public\ProgrammaticExporterController;
 use App\Http\Controllers\Public\RfqController;
 use App\Http\Controllers\Public\SitemapController;
 use App\Http\Controllers\Public\SpeciesController;
@@ -42,3 +44,18 @@ Route::get('/rfq/{rfq}/verify', [RfqController::class, 'verify'])->middleware('s
 // Public company inquiry intake + email verification.
 Route::post('/companies/{company:slug}/inquiries', [InquiryController::class, 'store'])->middleware('throttle:inquiry-submit')->name('inquiry.store');
 Route::get('/inquiry/{inquiry}/verify', [InquiryController::class, 'verify'])->middleware('signed')->name('inquiry.verify');
+
+// Static marketing pages (CMS-backed via the pages table).
+Route::get('/about', [PageController::class, 'show'])->defaults('slug', 'about')->name('about');
+Route::get('/contact', [PageController::class, 'show'])->defaults('slug', 'contact')->name('contact');
+Route::get('/verification', [PageController::class, 'show'])->defaults('slug', 'verification')->name('verification.info');
+Route::get('/list-your-company', [PageController::class, 'show'])->defaults('slug', 'list-your-company')->name('list.company');
+
+// SEO landing pages for primary keywords (landing template, shows company grid).
+Route::get('/timber-exporters-cameroon', [PageController::class, 'show'])->defaults('slug', 'timber-exporters-cameroon')->name('seo.exporters');
+Route::get('/cameroon-timber-suppliers', [PageController::class, 'show'])->defaults('slug', 'cameroon-timber-suppliers')->name('seo.suppliers');
+
+// Programmatic SEO: /exporters/{species}-cameroon — 404s when no verified companies handle the species.
+Route::get('/exporters/{species}', [ProgrammaticExporterController::class, 'show'])
+    ->where('species', '[a-z0-9-]+-cameroon')
+    ->name('pseo.exporters');
