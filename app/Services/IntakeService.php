@@ -7,7 +7,6 @@ use App\Mail\RfqVerificationMail;
 use App\Models\Company;
 use App\Models\CompanyInquiry;
 use App\Models\Rfq;
-use App\Models\SuspiciousEvent;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
@@ -22,26 +21,12 @@ class IntakeService
         private readonly RfqReferenceGenerator $references,
         private readonly RfqRiskService $risk,
         private readonly LeadFlowService $leads,
+        private readonly AntiSpamService $antiSpam,
     ) {}
 
     public function honeypotTripped(array $data): bool
     {
-        $email = $data['buyer_email'] ?? ($data['email'] ?? null);
-
-        if (! empty($data['website'] ?? null)) {
-            $this->logHoneypot($email);
-
-            return true;
-        }
-
-        $renderedAt = (int) ($data['form_rendered_at'] ?? 0);
-        if ($renderedAt > 0 && (now()->timestamp - $renderedAt) < (int) config('trust.min_form_seconds')) {
-            $this->logHoneypot($email);
-
-            return true;
-        }
-
-        return false;
+        return $this->antiSpam->honeypotTripped($data, 'buyer_email');
     }
 
     public function createRfq(array $header, array $items, ?string $source = null): Rfq
@@ -115,12 +100,4 @@ class IntakeService
         ]);
     }
 
-    protected function logHoneypot(?string $email): void
-    {
-        SuspiciousEvent::record('honeypot_triggered', [
-            'severity' => 'medium',
-            'ip_address' => request()->ip(),
-            'context' => ['buyer_email' => $email],
-        ]);
-    }
 }
