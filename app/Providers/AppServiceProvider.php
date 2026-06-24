@@ -2,9 +2,11 @@
 
 namespace App\Providers;
 
+use App\Policies\ActivityLogPolicy;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Spatie\Activitylog\Models\Activity;
@@ -24,6 +26,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Gate::policy(Activity::class, ActivityLogPolicy::class);
+
         $this->injectRequestContextIntoAuditLog();
         $this->registerRateLimiters();
     }
