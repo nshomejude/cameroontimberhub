@@ -5,6 +5,7 @@ use App\Http\Controllers\Public\CompanyController;
 use App\Http\Controllers\Public\DirectoryController;
 use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Public\InquiryController;
+use App\Http\Controllers\Public\ContactController;
 use App\Http\Controllers\Public\PageController;
 use App\Http\Controllers\Public\PricingController;
 use App\Http\Controllers\Public\ProgrammaticExporterController;
@@ -47,9 +48,12 @@ Route::get('/inquiry/{inquiry}/verify', [InquiryController::class, 'verify'])->m
 
 // Static marketing pages (CMS-backed via the pages table).
 Route::get('/about', [PageController::class, 'show'])->defaults('slug', 'about')->name('about');
-Route::get('/contact', [PageController::class, 'show'])->defaults('slug', 'contact')->name('contact');
 Route::get('/verification', [PageController::class, 'show'])->defaults('slug', 'verification')->name('verification.info');
 Route::get('/list-your-company', [PageController::class, 'show'])->defaults('slug', 'list-your-company')->name('list.company');
+
+// Contact page — dedicated controller for the POST handler.
+Route::get('/contact', [ContactController::class, 'show'])->name('contact');
+Route::post('/contact', [ContactController::class, 'store'])->middleware('throttle:6,1')->name('contact.store');
 
 // SEO landing pages for primary keywords (landing template, shows company grid).
 Route::get('/timber-exporters-cameroon', [PageController::class, 'show'])->defaults('slug', 'timber-exporters-cameroon')->name('seo.exporters');
@@ -59,3 +63,8 @@ Route::get('/cameroon-timber-suppliers', [PageController::class, 'show'])->defau
 Route::get('/exporters/{species}', [ProgrammaticExporterController::class, 'show'])
     ->where('species', '[a-z0-9-]+-cameroon')
     ->name('pseo.exporters');
+
+// CMS catch-all — must be last. Resolves any published page by slug (legal, static, etc.).
+Route::get('/{slug}', [PageController::class, 'show'])
+    ->where('slug', '[a-z0-9][a-z0-9-]*')
+    ->name('page.show');

@@ -27,6 +27,7 @@ class DatabaseSeeder extends Seeder
             PlanSeeder::class,
             DocumentTypeSeeder::class,
             SpeciesSeeder::class,
+            PageSeeder::class,
             DemoCompanySeeder::class,
         ]);
     }
