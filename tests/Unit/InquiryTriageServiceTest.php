@@ -5,7 +5,6 @@ use App\Models\Company;
 use App\Models\CompanyInquiry;
 use App\Models\User;
 use App\Services\InquiryTriageService;
-use Illuminate\Support\Facades\Config;
 use Spatie\Activitylog\Models\Activity;
 
 function makeInquiry(array $attributes = []): CompanyInquiry
