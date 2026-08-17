@@ -28,6 +28,7 @@ class RolesAndPermissionsSeeder extends Seeder
         'species.manage',
         'rfqs.triage',
         'rfqs.route',
+        'inquiries.review',
         'pages.manage',
         'plans.manage',
         'users.manage',
@@ -40,7 +41,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'companies.view', 'companies.manage',
             'documents.review', 'verification.review',
             'badges.issue', 'badges.revoke',
-            'species.manage', 'rfqs.triage', 'rfqs.route',
+            'species.manage', 'rfqs.triage', 'rfqs.route', 'inquiries.review',
             'pages.manage', 'audit.view',
         ],
         'verification_officer' => [
