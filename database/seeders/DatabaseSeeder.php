@@ -29,6 +29,7 @@ class DatabaseSeeder extends Seeder
             SpeciesSeeder::class,
             PageSeeder::class,
             DemoCompanySeeder::class,
+            ProductSeeder::class,
         ]);
     }
 }

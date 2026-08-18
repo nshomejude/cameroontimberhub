@@ -26,9 +26,9 @@ it('serves both panel login pages', function () {
 it('seeds the canonical RBAC roles and permissions', function () {
     $this->seed(RolesAndPermissionsSeeder::class);
 
-    expect(Permission::count())->toBe(15);
-    expect(Role::findByName('super_admin', 'web')->permissions)->toHaveCount(15);
-    expect(Role::findByName('admin', 'web')->permissions)->toHaveCount(12);
+    expect(Permission::count())->toBe(16);
+    expect(Role::findByName('super_admin', 'web')->permissions)->toHaveCount(16);
+    expect(Role::findByName('admin', 'web')->permissions)->toHaveCount(13);
     expect(Role::findByName('verification_officer', 'web')->permissions)->toHaveCount(6);
     expect(Role::findByName('content_manager', 'web')->permissions)->toHaveCount(3);
 });

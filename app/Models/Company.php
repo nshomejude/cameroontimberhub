@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\BadgeStatus;
 use App\Enums\CompanyStatus;
+use App\Enums\CompanyUserRole;
 use App\Enums\SubscriptionStatus;
 use App\Models\Concerns\HasSlug;
 use Illuminate\Database\Eloquent\Builder;
@@ -133,6 +134,11 @@ class Company extends Model
         return (bool) data_get($this->planFeatures(), $key, false);
     }
 
+    public function products(): HasMany
+    {
+        return $this->hasMany(Product::class);
+    }
+
     public function species(): BelongsToMany
     {
         return $this->belongsToMany(Species::class, 'company_species')
@@ -145,7 +151,7 @@ class Company extends Model
         return $this->belongsToMany(User::class, 'company_user')
             ->withPivot(['role', 'is_primary'])
             ->withTimestamps()
-            ->withCasts(['role' => \App\Enums\CompanyUserRole::class]);
+            ->withCasts(['role' => CompanyUserRole::class]);
     }
 
     public function createdBy(): BelongsTo

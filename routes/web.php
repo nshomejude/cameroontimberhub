@@ -4,14 +4,16 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\DocumentDownloadController;
 use App\Http\Controllers\Public\CompanyController;
+use App\Http\Controllers\Public\ContactController;
 use App\Http\Controllers\Public\DirectoryController;
 use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Public\InquiryController;
-use App\Http\Controllers\Public\ContactController;
 use App\Http\Controllers\Public\PageController;
 use App\Http\Controllers\Public\PricingController;
+use App\Http\Controllers\Public\ProductController;
 use App\Http\Controllers\Public\ProgrammaticExporterController;
 use App\Http\Controllers\Public\RfqController;
+use App\Http\Controllers\Public\SearchController;
 use App\Http\Controllers\Public\SitemapController;
 use App\Http\Controllers\Public\SpeciesController;
 use Illuminate\Support\Facades\Route;
@@ -21,6 +23,13 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 // Directory & company profiles (static segments before slug routes).
 Route::get('/companies', [DirectoryController::class, 'index'])->name('directory');
 Route::get('/companies/{slug}', [CompanyController::class, 'show'])->name('companies.show');
+
+// Product marketplace (static segment before the CMS slug catch-all).
+Route::get('/marketplace', [ProductController::class, 'index'])->name('marketplace');
+Route::get('/marketplace/{product:slug}', [ProductController::class, 'show'])->name('products.show');
+
+// Cross-entity search (products + companies + species).
+Route::get('/search', [SearchController::class, 'index'])->name('search');
 
 // Pricing (plans-as-data).
 Route::get('/pricing', [PricingController::class, 'index'])->name('pricing');
