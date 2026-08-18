@@ -24,6 +24,7 @@ class ProductController extends Controller
             'types' => array_filter((array) $request->query('types', $request->query('type', []))),
             'speciesIn' => array_filter((array) $request->query('wood', $request->query('species', []))),
             'region' => (string) $request->query('region', ''),
+            'supplier' => (string) $request->query('supplier', ''),
             'certifiedOnly' => $request->boolean('certified'),
             'bestSellers' => $request->boolean('best'),
             'sort' => (string) $request->query('sort', 'featured'),

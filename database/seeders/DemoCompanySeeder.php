@@ -39,7 +39,34 @@ class DemoCompanySeeder extends Seeder
             'orders_completed' => 320,
             'response_time_hours' => 2,
             'languages' => ['English', 'French'],
+            // Public-profile demo detail (all real columns, all nullable).
+            'tagline' => 'Reliable. Sustainable. Certified.',
+            'year_founded' => 2012,
+            'employee_count' => 125,
+            'registration_number' => 'RC/DLA/2012/B/0897',
+            'address_line' => 'Zone Portuaire',
+            'website_url' => 'https://kuete.example',
+            'annual_capacity_m3' => 50000,
+            'on_time_delivery_percent' => 98,
+            'payment_terms' => '30% advance, 70% on delivery',
+            'working_hours' => 'Mon – Fri: 8:00 AM – 5:00 PM GMT+1',
+            'main_ports' => 'Douala, Kribi',
+            'shipping_terms' => 'FOB, CFR, CIF',
+            'delivery_days_min' => 15,
+            'delivery_days_max' => 30,
+            'forest_location' => 'Centre, East & South regions',
+            'forest_management' => 'Sustainable forest management',
+            'annual_harvest_capacity_m3' => 80000,
         ], ['sapele', 'iroko', 'ayous'], ['FR', 'NL', 'CN', 'US'], 'CTH-DEMO-0001');
+
+        // Social profiles for the flagship demo supplier — real rows behind the
+        // profile's `sameAs` structured data and social icon row.
+        foreach ([
+            'linkedin' => 'https://www.linkedin.com/company/kuete-timber-demo',
+            'facebook' => 'https://www.facebook.com/kuetetimberdemo',
+        ] as $platform => $url) {
+            $kuete->socialLinks()->updateOrCreate(['platform' => $platform], ['url' => $url]);
+        }
 
         $exporter->companies()->syncWithoutDetaching([
             $kuete->id => ['role' => 'owner', 'is_primary' => true],
@@ -281,6 +308,10 @@ class DemoCompanySeeder extends Seeder
             array_intersect_key($attrs, array_flip([
                 'supplier_type', 'response_rate_percent', 'years_experience', 'is_featured',
                 'rating_avg', 'rating_count', 'orders_completed', 'response_time_hours', 'languages',
+                'tagline', 'on_time_delivery_percent', 'payment_terms', 'working_hours', 'main_ports',
+                'shipping_terms', 'delivery_days_min', 'delivery_days_max', 'forest_location',
+                'forest_management', 'annual_harvest_capacity_m3', 'year_founded', 'employee_count',
+                'annual_capacity_m3', 'registration_number', 'address_line', 'website_url',
             ])),
         ))->save();
 

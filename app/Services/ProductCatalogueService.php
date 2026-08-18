@@ -58,7 +58,7 @@ class ProductCatalogueService
      * Facet groups AND together; values inside one group OR together — the
      * conventional faceted-browse semantics.
      *
-     * @param  array{q?: string, types?: list<string>, speciesIn?: list<string>, region?: string, certifiedOnly?: bool, inStock?: bool, sort?: string}  $filters
+     * @param  array{q?: string, supplier?: string, types?: list<string>, speciesIn?: list<string>, region?: string, certifiedOnly?: bool, inStock?: bool, sort?: string}  $filters
      */
     public function query(array $filters): Builder
     {
@@ -81,8 +81,11 @@ class ProductCatalogueService
         $types = array_values(array_intersect((array) ($filters['types'] ?? []), array_column(ProductType::cases(), 'value')));
         $speciesIn = array_values(array_filter((array) ($filters['speciesIn'] ?? [])));
 
+        $supplier = trim((string) ($filters['supplier'] ?? ''));
+
         return $query
             ->when($q !== '', fn (Builder $b) => $b->whereRaw("search_vector @@ plainto_tsquery('english', ?)", [$q]))
+            ->when($supplier !== '', fn (Builder $b) => $b->whereHas('company', fn ($c) => $c->where('companies.slug', $supplier)))
             ->when($region !== '', fn (Builder $b) => $b->whereHas('company', fn ($c) => $c->where('region', $region)))
             ->when($skipGroup !== 'types' && $types !== [], fn (Builder $b) => $b->whereIn('products.product_type', $types))
             ->when($skipGroup !== 'species' && $speciesIn !== [], fn (Builder $b) => $b->whereHas('species', fn ($s) => $s->whereIn('species.slug', $speciesIn)))

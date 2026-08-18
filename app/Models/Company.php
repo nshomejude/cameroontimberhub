@@ -6,6 +6,8 @@ use App\Enums\BadgeStatus;
 use App\Enums\BadgeType;
 use App\Enums\CompanyStatus;
 use App\Enums\CompanyUserRole;
+use App\Enums\DocumentStatus;
+use App\Enums\DocumentVisibility;
 use App\Enums\ProductType;
 use App\Enums\SubscriptionStatus;
 use App\Enums\SupplierType;
@@ -43,6 +45,10 @@ class Company extends Model
             'verified_at' => 'datetime',
             'verification_expires_at' => 'datetime',
             'annual_capacity_m3' => 'decimal:2',
+            'annual_harvest_capacity_m3' => 'decimal:2',
+            'on_time_delivery_percent' => 'integer',
+            'delivery_days_min' => 'integer',
+            'delivery_days_max' => 'integer',
             'latitude' => 'decimal:6',
             'longitude' => 'decimal:6',
         ];
@@ -362,6 +368,33 @@ class Company extends Model
         }
 
         return null;
+    }
+
+    /**
+     * "15 - 30 Days" for the logistics panel, or null when neither bound is
+     * recorded. A single bound renders on its own rather than being padded out.
+     */
+    public function deliveryTimeLabel(): ?string
+    {
+        $min = $this->delivery_days_min;
+        $max = $this->delivery_days_max;
+
+        return match (true) {
+            $min !== null && $max !== null => $min.' - '.$max.' days',
+            $min !== null => 'from '.$min.' days',
+            $max !== null => 'up to '.$max.' days',
+            default => null,
+        };
+    }
+
+    /** Public documents only — never the private/admin/buyer-gated ones. */
+    public function publicDocuments(): HasMany
+    {
+        return $this->documents()
+            ->where('visibility', DocumentVisibility::Public->value)
+            ->where('status', DocumentStatus::Approved->value)
+            ->where(fn (Builder $q) => $q->whereNull('expiry_date')->orWhere('expiry_date', '>=', today()))
+            ->orderByDesc('issue_date');
     }
 
     public function activeBadges(): HasMany

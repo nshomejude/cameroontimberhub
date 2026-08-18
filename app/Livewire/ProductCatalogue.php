@@ -42,6 +42,14 @@ class ProductCatalogue extends Component
     #[Url(except: '')]
     public string $region = '';
 
+    /**
+     * Supplier slug facet. Not a sidebar checkbox — it backs the "View all
+     * products" link on a supplier profile, so /marketplace?supplier={slug}
+     * lands on that supplier's catalogue.
+     */
+    #[Url(as: 'supplier', except: '')]
+    public string $supplier = '';
+
     #[Url(as: 'certified', except: false)]
     public bool $certifiedOnly = false;
 
@@ -93,6 +101,7 @@ class ProductCatalogue extends Component
         $this->types = [];
         $this->speciesIn = [];
         $this->region = '';
+        $this->supplier = '';
         $this->certifiedOnly = false;
         $this->bestSellers = false;
         $this->sort = 'featured';
@@ -117,6 +126,7 @@ class ProductCatalogue extends Component
             || $this->types !== []
             || $this->speciesIn !== []
             || $this->region !== ''
+            || $this->supplier !== ''
             || $this->certifiedOnly
             || $this->bestSellers;
     }
@@ -129,6 +139,7 @@ class ProductCatalogue extends Component
             'types' => array_values($this->types),
             'speciesIn' => array_values($this->speciesIn),
             'region' => $this->region,
+            'supplier' => $this->supplier,
             'certifiedOnly' => $this->certifiedOnly,
             'bestSellers' => $this->bestSellers,
             'sort' => $this->sort,

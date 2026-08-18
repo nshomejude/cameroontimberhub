@@ -78,6 +78,23 @@ class CompanyForm
                             ->columnSpan(2),
                     ]),
 
+                Section::make('Public profile details')
+                    ->description('Powers the Business Summary, Forest & Sourcing and Logistics panels on the public supplier profile. Each row is hidden when blank — never enter a placeholder.')
+                    ->columns(3)
+                    ->schema([
+                        TextInput::make('tagline')->maxLength(160)->helperText('Short strapline under the company name.')->columnSpanFull(),
+                        TextInput::make('on_time_delivery_percent')->label('On-time delivery (%)')->numeric()->minValue(0)->maxValue(100),
+                        TextInput::make('payment_terms')->maxLength(255),
+                        TextInput::make('working_hours')->maxLength(120)->placeholder('Mon – Fri: 8:00 AM – 5:00 PM'),
+                        TextInput::make('main_ports')->maxLength(255)->placeholder('Douala, Kribi'),
+                        TextInput::make('shipping_terms')->maxLength(120)->placeholder('FOB, CFR, CIF'),
+                        TextInput::make('delivery_days_min')->label('Delivery time — min (days)')->numeric()->minValue(0),
+                        TextInput::make('delivery_days_max')->label('Delivery time — max (days)')->numeric()->minValue(0),
+                        TextInput::make('forest_location')->maxLength(255),
+                        TextInput::make('forest_management')->maxLength(255),
+                        TextInput::make('annual_harvest_capacity_m3')->label('Annual harvest capacity (m³)')->numeric(),
+                    ]),
+
                 Section::make('Location & contact')
                     ->columns(3)
                     ->schema([
