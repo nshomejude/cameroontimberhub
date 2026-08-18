@@ -130,6 +130,159 @@ class SearchService
             ->orderByDesc('created_at');
     }
 
+    /** Result buckets offered by the /search type filter. */
+    public const RESULT_TYPES = ['products', 'suppliers', 'species'];
+
+    /**
+     * Match on FTS, falling back to trigram similarity so a misspelled query
+     * ("sapeli") still finds the record.
+     *
+     * Both arms are index-backed and the planner combines them with a
+     * BitmapOr across the GIN index on search_vector and the gin_trgm_ops
+     * index on $column. Note the trigram arm must use the `%` operator:
+     * `similarity(col, ?) > 0.25` is NOT indexable and degrades to a
+     * sequential scan, which also costs the FTS arm its index.
+     */
+    private function matches(Builder $query, string $column, string $q): Builder
+    {
+        return $query->where(fn (Builder $w) => $w
+            ->whereRaw("search_vector @@ plainto_tsquery('english', ?)", [$q])
+            ->orWhereRaw("{$column} % ?", [$q]));
+    }
+
+    /** Relevance score: the better of the FTS rank and the trigram similarity. */
+    private function relevance(string $column, string $q): array
+    {
+        return ["GREATEST(ts_rank(search_vector, plainto_tsquery('english', ?)), similarity({$column}, ?))", [$q, $q]];
+    }
+
+    /**
+     * Ranked, paginated cross-entity search backing /search.
+     *
+     * Every arm re-applies the public visibility gate — only `active` products
+     * belonging to publicly visible companies, `verified` companies and
+     * `published` species can surface. Draft and hidden records must never
+     * leak through search.
+     *
+     * @param  array{q?: string, type?: string, species?: string, product_type?: string, grade?: string, country?: string, sort?: string}  $filters
+     * @return array{results: LengthAwarePaginator, counts: array<string, int>, supplierCount: int}
+     */
+    public function crossSearch(array $filters, int $perPage = 12): array
+    {
+        $q = trim((string) ($filters['q'] ?? ''));
+        $type = in_array($filters['type'] ?? '', self::RESULT_TYPES, true) ? $filters['type'] : 'products';
+
+        $counts = [
+            'products' => (clone $this->crossProductQuery($q, $filters))->toBase()->getCountForPagination(),
+            'suppliers' => (clone $this->crossCompanyQuery($q))->toBase()->getCountForPagination(),
+            'species' => (clone $this->crossSpeciesQuery($q))->toBase()->getCountForPagination(),
+        ];
+
+        $query = match ($type) {
+            'suppliers' => $this->crossCompanyQuery($q),
+            'species' => $this->crossSpeciesQuery($q),
+            default => $this->crossProductQuery($q, $filters),
+        };
+
+        return [
+            'results' => $query->paginate($perPage)->withQueryString(),
+            'counts' => $counts,
+            // "245 products from 68 suppliers" — distinct suppliers behind the hits.
+            'supplierCount' => $type === 'products'
+                ? (clone $this->crossProductQuery($q, $filters))->distinct()->count('products.company_id')
+                : 0,
+        ];
+    }
+
+    /** @param array{species?: string, product_type?: string, grade?: string, country?: string, sort?: string} $filters */
+    private function crossProductQuery(string $q, array $filters): Builder
+    {
+        $query = Product::query()
+            ->active()
+            ->with(['company:id,slug,legal_name,trade_name,city,region,status', 'species:id,slug,common_name', 'images'])
+            ->whereHas('company', fn ($c) => $c->publiclyVisible())
+            ->when(($filters['species'] ?? '') !== '', fn ($b) => $b->whereHas('species', fn ($s) => $s->where('slug', $filters['species'])))
+            ->when(($filters['product_type'] ?? '') !== '', fn ($b) => $b->where('product_type', $filters['product_type']))
+            ->when(($filters['grade'] ?? '') !== '', fn ($b) => $b->where('grade', $filters['grade']))
+            ->when(($filters['country'] ?? '') !== '', fn ($b) => $b->whereHas('company', fn ($c) => $c->where('region', $filters['country'])));
+
+        if ($q !== '') {
+            $this->matches($query, 'name', $q);
+        }
+
+        return $this->applyCrossSort($query, $q, 'name', $filters['sort'] ?? 'relevance');
+    }
+
+    private function crossCompanyQuery(string $q): Builder
+    {
+        $query = Company::publiclyVisible()->with('species:id,slug,common_name')->withCount(['products' => fn ($p) => $p->active()]);
+
+        if ($q !== '') {
+            $this->matches($query, 'legal_name', $q);
+        }
+
+        return $q === ''
+            ? $query->orderByDesc('is_featured')->orderByDesc('verified_at')
+            : $query->orderByRaw($this->relevance('legal_name', $q)[0].' DESC', $this->relevance('legal_name', $q)[1]);
+    }
+
+    private function crossSpeciesQuery(string $q): Builder
+    {
+        $query = Species::published();
+
+        if ($q !== '') {
+            $this->matches($query, 'common_name', $q);
+        }
+
+        return $q === ''
+            ? $query->orderBy('sort_order')->orderBy('common_name')
+            : $query->orderByRaw($this->relevance('common_name', $q)[0].' DESC', $this->relevance('common_name', $q)[1]);
+    }
+
+    private function applyCrossSort(Builder $query, string $q, string $column, string $sort): Builder
+    {
+        return match ($sort) {
+            'price_asc' => $query->orderByRaw('price_amount ASC NULLS LAST'),
+            'price_desc' => $query->orderByRaw('price_amount DESC NULLS LAST'),
+            'newest' => $query->orderByDesc('created_at'),
+            default => $q === ''
+                ? $query->orderByDesc('is_featured')->orderByDesc('is_best_seller')->orderByDesc('created_at')
+                : $query->orderByRaw($this->relevance($column, $q)[0].' DESC', $this->relevance($column, $q)[1]),
+        };
+    }
+
+    /** Sort options exposed by the search toolbar. @return array<string, string> */
+    public static function searchSortOptions(): array
+    {
+        return [
+            'relevance' => 'Relevance',
+            'price_asc' => 'Price (low to high)',
+            'price_desc' => 'Price (high to low)',
+            'newest' => 'Newest',
+        ];
+    }
+
+    /**
+     * Nearest species by trigram similarity — powers "did you mean" on a
+     * zero-result page rather than a dead end.
+     *
+     * @return Collection<int, Species>
+     */
+    public function suggestSpecies(string $q, int $limit = 6): Collection
+    {
+        $q = trim($q);
+
+        if ($q === '') {
+            return collect();
+        }
+
+        return Species::published()
+            ->whereRaw('similarity(common_name, ?) > ?', [$q, 0.1])
+            ->orderByRaw('similarity(common_name, ?) DESC', [$q])
+            ->limit($limit)
+            ->get();
+    }
+
     /**
      * Cross-entity search backing /search: products, companies and species.
      *
