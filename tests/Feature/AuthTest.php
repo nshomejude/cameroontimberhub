@@ -17,7 +17,7 @@ it('lets a guest view the register page', function () {
     $this->get('/register')->assertOk()->assertSee('Create Your Account', false);
 });
 
-it('registers a buyer with no company and sends them home', function () {
+it('registers a buyer with no company and sends them to their account', function () {
     $response = $this->post('/register', [
         'account_type' => 'buyer',
         'name' => 'Bea Buyer',
@@ -27,7 +27,7 @@ it('registers a buyer with no company and sends them home', function () {
         'terms' => '1',
     ]);
 
-    $response->assertRedirect(route('home'));
+    $response->assertRedirect(route('account.index'));
 
     $user = User::where('email', 'bea@example.com')->firstOrFail();
 
@@ -87,7 +87,7 @@ it('rejects a duplicate email on registration', function () {
     $this->assertGuest();
 });
 
-it('logs a plain buyer in and redirects home', function () {
+it('logs a plain buyer in and redirects to their account', function () {
     $user = User::factory()->create([
         'email' => 'buyer@example.com',
         'password' => 'Str0ng-Passw0rd!',
@@ -96,7 +96,7 @@ it('logs a plain buyer in and redirects home', function () {
     $this->post('/login', [
         'email' => 'buyer@example.com',
         'password' => 'Str0ng-Passw0rd!',
-    ])->assertRedirect(route('home'));
+    ])->assertRedirect(route('account.index'));
 
     $this->assertAuthenticatedAs($user);
 });

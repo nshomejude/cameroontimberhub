@@ -191,7 +191,7 @@ it('invalidates the session on logout', function () {
 // ---------------------------------------------------------------- register
 
 it('creates a buyer with a hashed password and logs them in', function () {
-    $this->post('/register', validRegistration())->assertRedirect(route('home'));
+    $this->post('/register', validRegistration())->assertRedirect(route('account.index'));
 
     $user = User::where('email', 'bea@example.com')->firstOrFail();
 

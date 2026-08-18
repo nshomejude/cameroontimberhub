@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\DocumentDownloadController;
+use App\Http\Controllers\Public\AccountController;
 use App\Http\Controllers\Public\BuyerOrderController;
 use App\Http\Controllers\Public\BuyerQuoteController;
 use App\Http\Controllers\Public\CompanyController;
@@ -131,6 +132,20 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::post('/logout', [LoginController::class, 'destroy'])->middleware('auth')->name('logout');
+
+// Buyer account area. `/dashboard` is the Filament exporter panel and `/admin`
+// the staff panel, so the buyer's own home lives at `/account`. `auth` bounces
+// guests to login preserving the intended URL; `buyer` (EnsureBuyerAccount)
+// forwards staff and company members to their own panels rather than showing
+// them a structurally empty page. Every listing is scoped to the signed-in
+// buyer inside BuyerDashboard — no id is ever read from the request.
+Route::middleware(['auth', 'buyer'])->prefix('account')->name('account.')->group(function () {
+    Route::get('/', [AccountController::class, 'index'])->name('index');
+    Route::get('/requests', [AccountController::class, 'rfqs'])->name('rfqs');
+    Route::get('/quotes', [AccountController::class, 'quotes'])->name('quotes');
+    Route::get('/orders', [AccountController::class, 'orders'])->name('orders');
+    Route::get('/receipts', [AccountController::class, 'receipts'])->name('receipts');
+});
 
 // CMS catch-all — must be last. Resolves any published page by slug (legal, static, etc.).
 Route::get('/{slug}', [PageController::class, 'show'])

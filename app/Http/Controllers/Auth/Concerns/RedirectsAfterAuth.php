@@ -7,7 +7,11 @@ use App\Models\User;
 /**
  * Single source of truth for where a freshly authenticated user lands.
  * Staff first (a user can be both staff and a company member), then company
- * membership (exporter panel), then the public site for plain buyers.
+ * membership (exporter panel), then the buyer account area.
+ *
+ * The order and the tests here must stay in step with EnsureBuyerAccount, which
+ * applies the same rule in reverse to keep staff and company members out of the
+ * buyer dashboard.
  */
 trait RedirectsAfterAuth
 {
@@ -27,6 +31,6 @@ trait RedirectsAfterAuth
             return '/dashboard';
         }
 
-        return route('home');
+        return route('account.index');
     }
 }
