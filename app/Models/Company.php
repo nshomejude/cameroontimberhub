@@ -33,6 +33,11 @@ class Company extends Model
             'supplier_type' => SupplierType::class,
             'response_rate_percent' => 'integer',
             'years_experience' => 'integer',
+            'rating_avg' => 'decimal:1',
+            'rating_count' => 'integer',
+            'orders_completed' => 'integer',
+            'response_time_hours' => 'integer',
+            'languages' => 'array',
             'sigif_permit_numbers' => 'array',
             'is_featured' => 'boolean',
             'verified_at' => 'datetime',
@@ -294,6 +299,39 @@ class Company extends Model
     public function scopeDashboardOwned(Builder $query, User $user): Builder
     {
         return $query->whereHas('users', fn (Builder $u) => $u->whereKey($user->getKey()));
+    }
+
+    /**
+     * True only when the supplier has a real buyer rating behind it. The
+     * product page's star row is hidden entirely when this is false, rather
+     * than rendering an empty five-star strip or "0 reviews".
+     */
+    public function hasRating(): bool
+    {
+        return $this->rating_avg !== null && (int) $this->rating_count > 0;
+    }
+
+    /** "< 2h" / "< 3 days", or null when no response time is recorded. */
+    public function responseTimeLabel(): ?string
+    {
+        $hours = $this->response_time_hours;
+
+        if ($hours === null) {
+            return null;
+        }
+
+        return $hours < 24
+            ? '< '.$hours.'h'
+            : '< '.(int) ceil($hours / 24).' days';
+    }
+
+    /**
+     * "Member Since" for the supplier card — the verification date, falling
+     * back to when the record was created. Never invented.
+     */
+    public function memberSince(): ?string
+    {
+        return ($this->verified_at ?? $this->created_at)?->format('M Y');
     }
 
     public function activeBadges(): HasMany

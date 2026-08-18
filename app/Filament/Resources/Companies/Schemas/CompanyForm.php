@@ -55,6 +55,29 @@ class CompanyForm
                             ->numeric()->minValue(0)->maxValue(200),
                     ]),
 
+                Section::make('Trust metrics')
+                    ->description('Shown on the "Supplier Information" card of every product detail page. Each figure is hidden when blank — never enter a placeholder.')
+                    ->columns(3)
+                    ->schema([
+                        TextInput::make('rating_avg')
+                            ->label('Buyer rating (0–5)')
+                            ->numeric()->minValue(0)->maxValue(5)->step(0.1)
+                            ->helperText('Only shown together with a review count.'),
+                        TextInput::make('rating_count')
+                            ->label('Ratings received')
+                            ->numeric()->minValue(0),
+                        TextInput::make('orders_completed')
+                            ->label('Orders completed')
+                            ->numeric()->minValue(0),
+                        TextInput::make('response_time_hours')
+                            ->label('Typical response time (hours)')
+                            ->numeric()->minValue(1)->maxValue(720),
+                        TagsInput::make('languages')
+                            ->label('Trade desk languages')
+                            ->placeholder('Add a language')
+                            ->columnSpan(2),
+                    ]),
+
                 Section::make('Location & contact')
                     ->columns(3)
                     ->schema([

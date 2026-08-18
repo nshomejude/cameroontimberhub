@@ -12,6 +12,34 @@
     </section>
 
     <section class="mx-auto max-w-3xl px-4 py-10">
+        @if ($shortlist->isNotEmpty())
+            <div class="mb-6 rounded-2xl border border-forest-200 bg-forest-50 p-5">
+                <h2 class="flex items-center gap-2 text-[1rem] font-bold text-forest-900">
+                    <x-heroicon-o-clipboard-document-list class="h-5 w-5" />
+                    Your RFQ list ({{ $shortlist->count() }})
+                </h2>
+                <p class="mt-1 text-[0.8125rem] text-forest-800">These listings are included in the request below.</p>
+                <ul class="mt-3 space-y-2">
+                    @foreach ($shortlist as $item)
+                        <li class="flex items-center gap-3 rounded-lg bg-white px-3 py-2">
+                            <div class="min-w-0 flex-1">
+                                <a href="{{ route('products.show', $item->slug) }}" class="block truncate text-[0.875rem] font-semibold text-ink hover:text-forest-800">{{ $item->name }}</a>
+                                <p class="truncate text-[0.75rem] text-ink-soft">{{ $item->company?->name }}</p>
+                            </div>
+                            <form method="POST" action="{{ route('rfq-list.destroy', $item->slug) }}">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="rounded p-1.5 text-ink-soft transition hover:text-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500"
+                                        aria-label="Remove {{ $item->name }} from your RFQ list">
+                                    <x-heroicon-o-x-mark class="h-4 w-4" />
+                                </button>
+                            </form>
+                        </li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
         @if ($errors->any())
             <div class="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
                 Please fix the highlighted fields below.
@@ -34,7 +62,7 @@
                         <select name="species_id" class="{{ $field }}">
                             <option value="">— choose or type below —</option>
                             @foreach ($species as $sp)
-                                <option value="{{ $sp->id }}" @selected(old('species_id') == $sp->id || (! old('species_id') && $prefillSpecies === $sp->slug))>{{ $sp->common_name }}</option>
+                                <option value="{{ $sp->id }}" @selected(old('species_id') == $sp->id || (! old('species_id') && ($prefillSpecies === $sp->slug || $prefillSpeciesId === $sp->id)))>{{ $sp->common_name }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -53,7 +81,7 @@
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="mb-1 block text-sm font-medium text-ink-soft dark:text-[#b3ab9b]">Quantity *</label>
-                            <input type="number" step="0.01" name="quantity" value="{{ old('quantity') }}" class="{{ $field }}" required>
+                            <input type="number" step="0.01" name="quantity" value="{{ old('quantity', $prefillQuantity) }}" class="{{ $field }}" required>
                         </div>
                         <div>
                             <label class="mb-1 block text-sm font-medium text-ink-soft dark:text-[#b3ab9b]">Unit *</label>
@@ -96,7 +124,7 @@
                     </div>
                     <input type="date" name="deadline" value="{{ old('deadline') }}" class="{{ $field }}">
                 </div>
-                <textarea name="notes" rows="4" class="{{ $field }}" placeholder="Describe your requirements (20–4000 characters) *" required>{{ old('notes') }}</textarea>
+                <textarea name="notes" rows="4" class="{{ $field }}" placeholder="Describe your requirements (20–4000 characters) *" required>{{ old('notes', $prefillNotes) }}</textarea>
             </fieldset>
 
             <label class="flex items-start gap-2 text-sm text-ink-soft dark:text-[#b3ab9b]">

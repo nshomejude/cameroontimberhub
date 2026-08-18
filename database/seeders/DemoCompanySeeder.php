@@ -33,6 +33,11 @@ class DemoCompanySeeder extends Seeder
             'supplier_type' => SupplierType::Exporter,
             'response_rate_percent' => 94,
             'years_experience' => 18,
+            'rating_avg' => 4.9,
+            'rating_count' => 56,
+            'orders_completed' => 320,
+            'response_time_hours' => 2,
+            'languages' => ['English', 'French'],
         ], ['sapele', 'iroko', 'ayous'], ['FR', 'NL', 'CN', 'US'], 'CTH-DEMO-0001');
 
         $exporter->companies()->syncWithoutDetaching([
@@ -50,6 +55,11 @@ class DemoCompanySeeder extends Seeder
             'supplier_type' => SupplierType::Manufacturer,
             'response_rate_percent' => 88,
             'years_experience' => 12,
+            'rating_avg' => 4.6,
+            'rating_count' => 31,
+            'orders_completed' => 145,
+            'response_time_hours' => 4,
+            'languages' => ['French', 'English'],
         ], ['tali', 'padouk', 'azobe'], ['BE', 'GB', 'CN'], 'CTH-DEMO-0002');
 
         // Featured verified suppliers shown on the landing page "Verified Timber
@@ -67,6 +77,11 @@ class DemoCompanySeeder extends Seeder
             'supplier_type' => SupplierType::Exporter,
             'response_rate_percent' => 97,
             'years_experience' => 16,
+            'rating_avg' => 4.8,
+            'rating_count' => 42,
+            'orders_completed' => 260,
+            'response_time_hours' => 3,
+            'languages' => ['French', 'English', 'Italian'],
         ], ['sapele', 'ayous', 'iroko'], ['FR', 'BE', 'IT', 'ES', 'DE', 'NL', 'PT', 'GB'], 'CTH-DEMO-0003');
 
         $this->makeVisibleCompany([
@@ -82,6 +97,11 @@ class DemoCompanySeeder extends Seeder
             'supplier_type' => SupplierType::Manufacturer,
             'response_rate_percent' => 91,
             'years_experience' => 26,
+            'rating_avg' => 4.7,
+            'rating_count' => 38,
+            'orders_completed' => 410,
+            'response_time_hours' => 6,
+            'languages' => ['English', 'French', 'Mandarin'],
         ], ['tali', 'azobe', 'padouk'], ['CN', 'VN', 'IN', 'US', 'TR', 'GR', 'MA', 'AE', 'JP', 'KR'], 'CTH-DEMO-0004');
 
         $this->makeVisibleCompany([
@@ -97,6 +117,11 @@ class DemoCompanySeeder extends Seeder
             'supplier_type' => SupplierType::Manufacturer,
             'response_rate_percent' => 89,
             'years_experience' => 19,
+            'rating_avg' => 4.5,
+            'rating_count' => 22,
+            'orders_completed' => 180,
+            'response_time_hours' => 8,
+            'languages' => ['French', 'English'],
         ], ['ayous', 'sapele', 'movingui'], ['CN', 'US', 'GB', 'FR', 'ZA', 'EG'], 'CTH-DEMO-0005');
 
         // Supplier-directory demo set: the eight suppliers drawn in the approved
@@ -248,7 +273,10 @@ class DemoCompanySeeder extends Seeder
         // directory metrics (idempotent: same input => same row).
         $company->forceFill(array_merge(
             ['logo_path' => $logo],
-            array_intersect_key($attrs, array_flip(['supplier_type', 'response_rate_percent', 'years_experience', 'is_featured'])),
+            array_intersect_key($attrs, array_flip([
+                'supplier_type', 'response_rate_percent', 'years_experience', 'is_featured',
+                'rating_avg', 'rating_count', 'orders_completed', 'response_time_hours', 'languages',
+            ])),
         ))->save();
 
         if (! $company->contacts()->exists()) {

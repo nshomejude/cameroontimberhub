@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Rfq;
 use App\Models\Species;
 use App\Services\IntakeService;
+use App\Services\RfqList;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -13,16 +14,30 @@ use Illuminate\View\View;
 
 class RfqController extends Controller
 {
-    public function create(Request $request): View
+    public function create(Request $request, RfqList $list): View
     {
+        $shortlist = $list->products();
+
+        // The shortlist drives the form: the first item pre-fills the single
+        // structured line, and every item is echoed into the notes so the
+        // supplier sees exactly what the buyer shortlisted.
+        $first = $shortlist->first();
+
         return view('public.rfq.create', [
             'species' => Species::published()->orderBy('common_name')->get(['id', 'slug', 'common_name']),
             'prefillSpecies' => $request->query('species'),
+            'shortlist' => $shortlist,
+            'prefillSpeciesId' => $first?->species_id,
+            'prefillQuantity' => $first?->moq_quantity !== null ? rtrim(rtrim(number_format((float) $first->moq_quantity, 2, '.', ''), '0'), '.') : null,
+            'prefillNotes' => $shortlist->isEmpty() ? null : 'I would like a quotation for the following listings:
+'
+                .$shortlist->map(fn ($p) => '- '.$p->name.' ('.($p->company?->name ?? 'supplier').')')->implode('
+'),
             'formRenderedAt' => now()->timestamp,
         ]);
     }
 
-    public function store(Request $request, IntakeService $intake): RedirectResponse
+    public function store(Request $request, IntakeService $intake, RfqList $list): RedirectResponse
     {
         // Honeypot/min-time: silent neutral success, no row written.
         if ($intake->honeypotTripped($request->all())) {
@@ -58,6 +73,9 @@ class RfqController extends Controller
         ]];
 
         $intake->createRfq($header, $items, $data['source'] ?? 'request_quote');
+
+        // The shortlist has been consumed by this request.
+        $list->clear();
 
         return redirect()->route('rfq.thanks');
     }

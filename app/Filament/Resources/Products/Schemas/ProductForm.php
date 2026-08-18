@@ -7,6 +7,7 @@ use App\Enums\ProductStatus;
 use App\Enums\ProductType;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\KeyValue;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
@@ -80,10 +81,27 @@ class ProductForm
                     ]),
 
                 Section::make('Media')
+                    ->description('The first gallery slot is the primary image. The public gallery only renders images whose file exists — it is never padded out.')
                     ->schema([
                         FileUpload::make('primary_image_path')
                             ->image()->imageEditor()
                             ->disk('public')->directory('products')
+                            ->columnSpanFull(),
+                        Repeater::make('images')
+                            ->relationship()
+                            ->label('Additional gallery images')
+                            ->orderColumn('sort_order')
+                            ->reorderable()
+                            ->collapsed()
+                            ->itemLabel(fn (array $state): ?string => $state['alt'] ?? $state['path'] ?? null)
+                            ->schema([
+                                TextInput::make('path')
+                                    ->required()->maxLength(512)
+                                    ->helperText('Path under public/img, e.g. products/iroko-sawn-timber-38.jpg'),
+                                TextInput::make('alt')
+                                    ->maxLength(255)
+                                    ->helperText('Leave blank for a decorative image.'),
+                            ])
                             ->columnSpanFull(),
                     ]),
 

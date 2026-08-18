@@ -13,6 +13,7 @@ use App\Http\Controllers\Public\PricingController;
 use App\Http\Controllers\Public\ProductController;
 use App\Http\Controllers\Public\ProgrammaticExporterController;
 use App\Http\Controllers\Public\RfqController;
+use App\Http\Controllers\Public\RfqListController;
 use App\Http\Controllers\Public\SearchController;
 use App\Http\Controllers\Public\SitemapController;
 use App\Http\Controllers\Public\SpeciesController;
@@ -51,6 +52,10 @@ Route::get('/documents/{document}/download', DocumentDownloadController::class)
 Route::get('/request-quote', [RfqController::class, 'create'])->name('rfq.create');
 Route::post('/request-quote', [RfqController::class, 'store'])->middleware('throttle:rfq-submit')->name('rfq.store');
 Route::get('/request-quote/thanks', [RfqController::class, 'thanks'])->name('rfq.thanks');
+
+// Session-backed RFQ shortlist ("Add to RFQ List" on a product page).
+Route::post('/rfq-list/{slug}', [RfqListController::class, 'store'])->name('rfq-list.store');
+Route::delete('/rfq-list/{slug}', [RfqListController::class, 'destroy'])->name('rfq-list.destroy');
 Route::get('/rfq/{rfq}/verify', [RfqController::class, 'verify'])->middleware('signed')->name('rfq.verify');
 
 // Public company inquiry intake + email verification.
