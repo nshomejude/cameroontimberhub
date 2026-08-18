@@ -17,6 +17,10 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\HandleSlugRedirects::class,
         ]);
 
+        // Already-authenticated visitors hitting /login or /register go home;
+        // the post-auth redirect rule then applies on their next real login.
+        $middleware->redirectUsersTo('/');
+
         $middleware->alias([
             'exporter.onboarded' => \App\Http\Middleware\EnsureExporterOnboarded::class,
         ]);

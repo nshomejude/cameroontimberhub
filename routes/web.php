@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\DocumentDownloadController;
 use App\Http\Controllers\Public\CompanyController;
 use App\Http\Controllers\Public\DirectoryController;
@@ -63,6 +65,16 @@ Route::get('/cameroon-timber-suppliers', [PageController::class, 'show'])->defau
 Route::get('/exporters/{species}', [ProgrammaticExporterController::class, 'show'])
     ->where('species', '[a-z0-9-]+-cameroon')
     ->name('pseo.exporters');
+
+// Public buyer/supplier authentication (hand-rolled; no starter kit).
+Route::middleware('guest')->group(function () {
+    Route::get('/login', [LoginController::class, 'create'])->name('login');
+    Route::post('/login', [LoginController::class, 'store'])->middleware('throttle:6,1')->name('login.store');
+    Route::get('/register', [RegisterController::class, 'create'])->name('register');
+    Route::post('/register', [RegisterController::class, 'store'])->middleware('throttle:6,1')->name('register.store');
+});
+
+Route::post('/logout', [LoginController::class, 'destroy'])->middleware('auth')->name('logout');
 
 // CMS catch-all — must be last. Resolves any published page by slug (legal, static, etc.).
 Route::get('/{slug}', [PageController::class, 'show'])
