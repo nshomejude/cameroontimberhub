@@ -10,7 +10,8 @@ it('serves the public home page', function () {
     $response = $this->get('/');
 
     $response->assertOk();
-    $response->assertSee(__('messages.home.hero_title'));
+    $response->assertSee(__('messages.home.hero_eyebrow'));
+    $response->assertSee(__('messages.home.hero_subtitle'));
     $response->assertSee('Cameroon Timber Hub');
 });
 

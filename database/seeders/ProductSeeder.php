@@ -105,11 +105,11 @@ class ProductSeeder extends Seeder
                     'Beautiful golden brown appearance',
                     'Ideal for high-end construction and joinery',
                 ],
-                'primary_image_path' => 'products/demo/iroko-sawn-50mm.jpg',
+                'primary_image_path' => 'products/iroko-sawn-timber.jpg',
                 'images' => [
-                    'products/demo/iroko-sawn-50mm.jpg',
-                    'products/demo/iroko-sawn-50mm-2.jpg',
-                    'products/demo/iroko-sawn-50mm-3.jpg',
+                    'products/iroko-sawn-timber.jpg',
+                    'products/iroko-sawn-timber-38.jpg',
+                    'products/iroko-sawn-timber-75.jpg',
                 ],
             ],
             [
@@ -124,7 +124,7 @@ class ProductSeeder extends Seeder
                 'thickness_mm' => 38,
                 'moisture_content' => '12% - 15% (KD)',
                 'specifications' => $irokoSpecs,
-                'primary_image_path' => 'products/demo/iroko-sawn-38mm.jpg',
+                'primary_image_path' => 'products/iroko-sawn-timber-38.jpg',
             ],
             [
                 'company' => 'kuete-timber',
@@ -138,7 +138,7 @@ class ProductSeeder extends Seeder
                 'thickness_mm' => 75,
                 'moisture_content' => '12% - 15% (KD)',
                 'specifications' => $irokoSpecs,
-                'primary_image_path' => 'products/demo/iroko-sawn-75mm.jpg',
+                'primary_image_path' => 'products/iroko-sawn-timber-75.jpg',
             ],
             [
                 'company' => 'kuete-timber',
@@ -154,7 +154,7 @@ class ProductSeeder extends Seeder
                 'rating' => 4.6,
                 'reviews_count' => 11,
                 'buyers_count' => 47,
-                'primary_image_path' => 'products/demo/iroko-logs.jpg',
+                'primary_image_path' => 'products/iroko-logs.jpg',
             ],
             [
                 'company' => 'kuete-timber',
@@ -172,7 +172,7 @@ class ProductSeeder extends Seeder
                 'rating' => 4.7,
                 'reviews_count' => 9,
                 'buyers_count' => 32,
-                'primary_image_path' => 'products/demo/sapele-veneer.jpg',
+                'primary_image_path' => 'products/sapele-veneer.jpg',
             ],
             [
                 'company' => 'sangha-forest',
@@ -189,7 +189,7 @@ class ProductSeeder extends Seeder
                 'rating' => 4.5,
                 'reviews_count' => 7,
                 'buyers_count' => 21,
-                'primary_image_path' => 'products/demo/tali-flooring.jpg',
+                'primary_image_path' => 'products/tali-flooring.jpg',
             ],
             [
                 'company' => 'sangha-forest',
@@ -207,7 +207,7 @@ class ProductSeeder extends Seeder
                 'rating' => 4.9,
                 'reviews_count' => 15,
                 'buyers_count' => 63,
-                'primary_image_path' => 'products/demo/azobe-decking.jpg',
+                'primary_image_path' => 'products/azobe-decking.jpg',
             ],
             [
                 'company' => 'sangha-forest',
@@ -219,10 +219,11 @@ class ProductSeeder extends Seeder
                 'moq_quantity' => 10,
                 'grade' => 'Select & Better',
                 'moisture_content' => '10% - 12% (KD)',
+                'is_featured' => true,
                 'rating' => 4.4,
                 'reviews_count' => 5,
                 'buyers_count' => 18,
-                'primary_image_path' => 'products/demo/padouk-mouldings.jpg',
+                'primary_image_path' => 'products/padouk-mouldings.jpg',
             ],
             [
                 'company' => 'sangha-forest',
@@ -235,7 +236,7 @@ class ProductSeeder extends Seeder
                 'moq_quantity' => 200,
                 'moq_unit' => PriceUnit::Piece,
                 'thickness_mm' => 18,
-                'primary_image_path' => 'products/demo/ayous-plywood.jpg',
+                'primary_image_path' => 'products/ayous-plywood.jpg',
             ],
         ];
     }

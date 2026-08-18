@@ -18,9 +18,10 @@ return [
     ],
 
     'home' => [
-        'hero_eyebrow' => 'Verified B2B Timber Network',
-        'hero_title' => 'The verified network for Cameroon timber trade',
-        'hero_subtitle' => 'Find verified Cameroonian timber exporters, explore species, and request quotes — backed by compliance documents reviewed by Cameroon Timber Hub.',
+        'hero_eyebrow' => 'The B2B Marketplace for Cameroon Timber',
+        'hero_title' => 'Connect. Source. Trade Timber Globally.',
+        'hero_subtitle' => 'Cameroon Timber Hub is the trusted B2B marketplace that connects verified timber suppliers with international buyers. Discover products, request quotations, negotiate orders, and trade with confidence.',
+        'hero_subtitle_mobile' => 'The trusted B2B marketplace connecting verified Cameroon timber suppliers with international buyers.',
         'cta_find' => 'Find Exporters',
         'cta_quote' => 'Request a Quote',
         'pillars_title' => 'Built on trust',

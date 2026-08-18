@@ -45,6 +45,44 @@ class DemoCompanySeeder extends Seeder
             'phone' => '+237 6 70 00 00 00',
         ], ['tali', 'padouk', 'azobe'], ['BE', 'GB', 'CN'], 'CTH-DEMO-0002');
 
+        // Featured verified suppliers shown on the landing page "Verified Timber
+        // Suppliers" row (four cards, per the approved mockup).
+        $this->makeVisibleCompany([
+            'legal_name' => 'Pallisco Cameroon Sarl',
+            'trade_name' => 'Pallisco Cameroon',
+            'description' => 'Pallisco Cameroon exports FSC-controlled sawn timber and logs from Douala to European joinery and construction markets.',
+            'region' => 'Littoral',
+            'city' => 'Douala',
+            'email' => 'export@pallisco.example',
+            'phone' => '+237 6 55 00 00 00',
+            'year_founded' => 2009,
+            'is_featured' => true,
+        ], ['sapele', 'ayous', 'iroko'], ['FR', 'BE', 'IT', 'ES', 'DE', 'NL', 'PT', 'GB'], 'CTH-DEMO-0003');
+
+        $this->makeVisibleCompany([
+            'legal_name' => 'SIFOR Timber Sarl',
+            'trade_name' => 'SIFOR Timber',
+            'description' => 'SIFOR Timber mills and ships hardwood decking, flooring and mouldings from Kribi deep-sea port to buyers on four continents.',
+            'region' => 'South',
+            'city' => 'Kribi',
+            'email' => 'trade@sifor.example',
+            'phone' => '+237 6 77 00 00 00',
+            'year_founded' => 1999,
+            'is_featured' => true,
+        ], ['tali', 'azobe', 'padouk'], ['CN', 'VN', 'IN', 'US', 'TR', 'GR', 'MA', 'AE', 'JP', 'KR'], 'CTH-DEMO-0004');
+
+        $this->makeVisibleCompany([
+            'legal_name' => 'CFC Wood Industry Sarl',
+            'trade_name' => 'CFC Wood Industry',
+            'description' => 'CFC Wood Industry is a Bafoussam-based processor supplying veneer, plywood and finished timber components to international buyers.',
+            'region' => 'West',
+            'city' => 'Bafoussam',
+            'email' => 'sales@cfcwood.example',
+            'phone' => '+237 6 91 00 00 00',
+            'year_founded' => 2006,
+            'is_featured' => true,
+        ], ['ayous', 'sapele', 'movingui'], ['CN', 'US', 'GB', 'FR', 'ZA', 'EG'], 'CTH-DEMO-0005');
+
         // A draft company — must never surface publicly (visibility-gate demo).
         Company::firstOrCreate(['slug' => 'pending-mill'], [
             'legal_name' => 'Pending Mill Sarl',
@@ -58,15 +96,22 @@ class DemoCompanySeeder extends Seeder
     /** @param list<string> $speciesSlugs @param list<string> $markets */
     private function makeVisibleCompany(array $attrs, array $speciesSlugs, array $markets, string $ref): Company
     {
+        $slug = Str::slug($attrs['trade_name'] ?? $attrs['legal_name']);
+
         $company = Company::firstOrCreate(
-            ['slug' => Str::slug($attrs['trade_name'] ?? $attrs['legal_name'])],
+            ['slug' => $slug],
             array_merge($attrs, [
                 'status' => CompanyStatus::Verified,
                 'country_code' => 'CM',
-                'logo_path' => 'companies/demo/'.Str::slug($attrs['legal_name']).'.png',
+                // Logos live under public/img/suppliers and are extracted from the
+                // approved landing-page mockup.
+                'logo_path' => 'suppliers/'.$slug.'.png',
                 'verified_at' => now(),
             ]),
         );
+
+        // Keep re-runs in sync with the mockup-derived logo path.
+        $company->forceFill(['logo_path' => 'suppliers/'.$slug.'.png'])->save();
 
         if (! $company->contacts()->exists()) {
             $company->contacts()->create([
