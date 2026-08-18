@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\DocumentDownloadController;
+use App\Http\Controllers\Public\BuyerQuoteController;
 use App\Http\Controllers\Public\CompanyController;
 use App\Http\Controllers\Public\ContactController;
 use App\Http\Controllers\Public\DirectoryController;
@@ -64,6 +65,17 @@ Route::post('/request-quote/step/{step}', [RfqController::class, 'storeStep'])
 Route::post('/rfq-list/{slug}', [RfqListController::class, 'store'])->name('rfq-list.store');
 Route::delete('/rfq-list/{slug}', [RfqListController::class, 'destroy'])->name('rfq-list.destroy');
 Route::get('/rfq/{rfq}/verify', [RfqController::class, 'verify'])->middleware('signed')->name('rfq.verify');
+
+// Buyer-facing quote responses. Deliberately NOT behind `auth` or `signed`
+// middleware: RFQ intake is account-free, so access is decided per-request by
+// BuyerRfqAccess, which admits either a valid long-lived signed link or the
+// signed-in owner of the RFQ (rfqs.user_id). Accept/decline are POSTs only.
+Route::get('/rfq/{rfq}/responses', [BuyerQuoteController::class, 'index'])->name('buyer.rfq.responses');
+Route::get('/rfq/{rfq}/responses/{quote}', [BuyerQuoteController::class, 'show'])->name('buyer.rfq.quote');
+Route::post('/rfq/{rfq}/responses/{quote}/accept', [BuyerQuoteController::class, 'accept'])
+    ->middleware('throttle:12,1')->name('buyer.rfq.quote.accept');
+Route::post('/rfq/{rfq}/responses/{quote}/decline', [BuyerQuoteController::class, 'decline'])
+    ->middleware('throttle:12,1')->name('buyer.rfq.quote.decline');
 
 // Public company inquiry intake + email verification.
 Route::post('/companies/{company:slug}/inquiries', [InquiryController::class, 'store'])->middleware('throttle:inquiry-submit')->name('inquiry.store');

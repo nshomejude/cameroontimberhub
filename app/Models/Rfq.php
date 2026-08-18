@@ -7,6 +7,7 @@ use App\Enums\RfqStatus;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -19,14 +20,14 @@ class Rfq extends Model
     protected function casts(): array
     {
         return [
-            'status'           => RfqStatus::class,
-            'incoterm'         => RfqIncoterm::class,
+            'status' => RfqStatus::class,
+            'incoterm' => RfqIncoterm::class,
             'email_verified_at' => 'datetime',
-            'is_spam'          => 'boolean',
-            'spam_score'       => 'integer',
-            'target_amount'    => 'decimal:2',
-            'deadline'         => 'date',
-            'attachments'      => 'array',
+            'is_spam' => 'boolean',
+            'spam_score' => 'integer',
+            'target_amount' => 'decimal:2',
+            'deadline' => 'date',
+            'attachments' => 'array',
         ];
     }
 
@@ -48,6 +49,20 @@ class Rfq extends Model
     public function leads(): HasMany
     {
         return $this->hasMany(Lead::class);
+    }
+
+    public function quotes(): HasMany
+    {
+        return $this->hasMany(Quote::class);
+    }
+
+    /**
+     * The registered buyer this RFQ belongs to, when `buyer_email` matched an
+     * account. Null for the guest path, which relies on the signed link.
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 
     /** Email-confirmed RFQs — the gate for every admin/exporter surface. */

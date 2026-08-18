@@ -8,6 +8,7 @@ use App\Http\Controllers\Auth\Concerns\ProvidesAuthPageStats;
 use App\Http\Controllers\Auth\Concerns\RedirectsAfterAuth;
 use App\Http\Controllers\Controller;
 use App\Models\Company;
+use App\Models\Rfq;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -68,6 +69,12 @@ class RegisterController extends Controller
                     'is_primary' => true,
                 ]);
             }
+
+            // Adopt any account-free RFQs this address submitted earlier, so
+            // they appear in the new account without a signed link.
+            Rfq::whereNull('user_id')
+                ->whereRaw('lower(buyer_email) = ?', [strtolower($data['email'])])
+                ->update(['user_id' => $user->id]);
 
             return $user;
         });

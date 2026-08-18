@@ -30,6 +30,7 @@ class DatabaseSeeder extends Seeder
             PageSeeder::class,
             DemoCompanySeeder::class,
             ProductSeeder::class,
+            QuoteSeeder::class,
         ]);
     }
 }

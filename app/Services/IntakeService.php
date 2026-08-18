@@ -7,6 +7,7 @@ use App\Mail\RfqVerificationMail;
 use App\Models\Company;
 use App\Models\CompanyInquiry;
 use App\Models\Rfq;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
@@ -32,7 +33,15 @@ class IntakeService
     public function createRfq(array $header, array $items, ?string $source = null): Rfq
     {
         $rfq = DB::transaction(function () use ($header, $items, $source) {
+            // Guests stay guests, but when the address already has an account we
+            // bind the RFQ to it so it shows up in that buyer's own screens
+            // without needing the signed link.
+            $owner = isset($header['buyer_email'])
+                ? User::whereRaw('lower(email) = ?', [strtolower(trim($header['buyer_email']))])->first()
+                : null;
+
             $rfq = Rfq::create(array_merge($header, [
+                'user_id' => $owner?->getKey(),
                 'reference_code' => $this->references->generate(),
                 'status' => 'new',
                 'visibility' => 'public',
@@ -99,5 +108,4 @@ class IntakeService
             'h' => sha1($inquiry->email),
         ]);
     }
-
 }
