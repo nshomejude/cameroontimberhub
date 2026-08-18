@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\DocumentDownloadController;
+use App\Http\Controllers\Public\BuyerOrderController;
 use App\Http\Controllers\Public\BuyerQuoteController;
 use App\Http\Controllers\Public\CompanyController;
 use App\Http\Controllers\Public\ContactController;
@@ -15,6 +16,7 @@ use App\Http\Controllers\Public\PageController;
 use App\Http\Controllers\Public\PricingController;
 use App\Http\Controllers\Public\ProductController;
 use App\Http\Controllers\Public\ProgrammaticExporterController;
+use App\Http\Controllers\Public\ReceiptVerificationController;
 use App\Http\Controllers\Public\RfqController;
 use App\Http\Controllers\Public\RfqListController;
 use App\Http\Controllers\Public\SearchController;
@@ -76,6 +78,21 @@ Route::post('/rfq/{rfq}/responses/{quote}/accept', [BuyerQuoteController::class,
     ->middleware('throttle:12,1')->name('buyer.rfq.quote.accept');
 Route::post('/rfq/{rfq}/responses/{quote}/decline', [BuyerQuoteController::class, 'decline'])
     ->middleware('throttle:12,1')->name('buyer.rfq.quote.decline');
+
+// Award & order. Same access model as the quote screens (BuyerRfqAccess).
+// The award review page is a GET, but awarding is only ever the accept POST.
+Route::get('/rfq/{rfq}/responses/{quote}/award', [BuyerOrderController::class, 'award'])->name('buyer.rfq.quote.award');
+Route::get('/rfq/{rfq}/order', [BuyerOrderController::class, 'show'])->name('buyer.rfq.order');
+Route::get('/rfq/{rfq}/order/receipt', [BuyerOrderController::class, 'receipt'])->name('buyer.rfq.order.receipt');
+
+// Public receipt verification. Open to anyone by design, so it is throttled
+// hard and discloses only ReceiptVerifier::publicPayload().
+Route::get('/verify', [ReceiptVerificationController::class, 'create'])->name('receipts.verify');
+Route::post('/verify', [ReceiptVerificationController::class, 'store'])
+    ->middleware('throttle:receipt-verify')->name('receipts.verify.store');
+Route::get('/verify/{token}', [ReceiptVerificationController::class, 'token'])
+    ->where('token', '[A-Za-z0-9]{16,64}')
+    ->middleware('throttle:receipt-verify')->name('receipts.verify.token');
 
 // Public company inquiry intake + email verification.
 Route::post('/companies/{company:slug}/inquiries', [InquiryController::class, 'store'])->middleware('throttle:inquiry-submit')->name('inquiry.store');

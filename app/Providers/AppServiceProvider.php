@@ -45,6 +45,14 @@ class AppServiceProvider extends ServiceProvider
         // for the one POST that actually creates an RFQ.
         RateLimiter::for('rfq-step', fn (Request $request) => Limit::perHour(120)->by('rfq-step-ip:'.$request->ip()));
 
+        // Public receipt verification is open to anyone, so it is the one place
+        // a stranger could grind receipt numbers. Budget is per-IP and tight
+        // enough that guessing a 5-char Crockford suffix is hopeless.
+        RateLimiter::for('receipt-verify', fn (Request $request) => [
+            Limit::perMinute(10)->by('receipt-verify-ip:'.$request->ip()),
+            Limit::perHour(60)->by('receipt-verify-ip-hour:'.$request->ip()),
+        ]);
+
         RateLimiter::for('inquiry-submit', fn (Request $request) => Limit::perHour(8)->by('inquiry-ip:'.$request->ip()));
     }
 

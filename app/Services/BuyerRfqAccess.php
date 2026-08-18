@@ -51,6 +51,24 @@ class BuyerRfqAccess
         return URL::signedRoute('buyer.rfq.quote.decline', $this->params($rfq, $quote));
     }
 
+    /** The award review screen for one quote (GET; the award itself is a POST). */
+    public function awardUrl(Rfq $rfq, Quote $quote): string
+    {
+        return URL::signedRoute('buyer.rfq.quote.award', $this->params($rfq, $quote));
+    }
+
+    /** The order that resulted from the award on this RFQ. */
+    public function orderUrl(Rfq $rfq): string
+    {
+        return URL::signedRoute('buyer.rfq.order', $this->params($rfq));
+    }
+
+    /** The printable receipt for that order. */
+    public function receiptUrl(Rfq $rfq): string
+    {
+        return URL::signedRoute('buyer.rfq.order.receipt', $this->params($rfq));
+    }
+
     /**
      * Build a link appropriate to how the current visitor got here: signed for
      * a guest holding a signed link, plain for the signed-in owner (so we never
@@ -63,6 +81,9 @@ class BuyerRfqAccess
             'quote' => 'buyer.rfq.quote',
             'accept' => 'buyer.rfq.quote.accept',
             'decline' => 'buyer.rfq.quote.decline',
+            'award' => 'buyer.rfq.quote.award',
+            'order' => 'buyer.rfq.order',
+            'receipt' => 'buyer.rfq.order.receipt',
         };
 
         if ($this->isAccountOwner($request, $rfq)) {

@@ -56,6 +56,12 @@ class Rfq extends Model
         return $this->hasMany(Quote::class);
     }
 
+    /** Orders awarded on this RFQ. At most one, since the award is exclusive. */
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class);
+    }
+
     /**
      * The registered buyer this RFQ belongs to, when `buyer_email` matched an
      * account. Null for the guest path, which relies on the signed link.

@@ -98,8 +98,10 @@ class BuyerQuoteController extends Controller
             throw ValidationException::withMessages(['confirm' => $e->getMessage()]);
         }
 
-        return redirect()->to($this->access->link($request, 'responses', $rfq))
-            ->with('quote_notice', 'You accepted '.$quote->company->name.'. Every other quote on this request has been declined.');
+        // The award produced an order (same transaction), so the buyer lands on
+        // it rather than back on the comparison screen.
+        return redirect()->to($this->access->link($request, 'order', $rfq))
+            ->with('quote_notice', 'You awarded this request to '.$quote->company->name.'. Every other quote has been declined.');
     }
 
     /** POST — decline one quote. A reason is mandatory. */

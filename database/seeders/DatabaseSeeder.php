@@ -31,6 +31,7 @@ class DatabaseSeeder extends Seeder
             DemoCompanySeeder::class,
             ProductSeeder::class,
             QuoteSeeder::class,
+            OrderSeeder::class,
         ]);
     }
 }

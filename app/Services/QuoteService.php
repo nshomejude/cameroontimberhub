@@ -39,6 +39,7 @@ class QuoteService
     public function __construct(
         private readonly QuoteReferenceGenerator $references,
         private readonly LeadFlowService $leads,
+        private readonly OrderService $orders,
     ) {}
 
     /* --------------------------------------------------------- eligibility */
@@ -212,6 +213,15 @@ class QuoteService
      * quote on the RFQ is declined and the RFQ is closed, all in one
      * transaction, with the rows locked so two concurrent accepts cannot both
      * win.
+     *
+     * The order is minted *inside this same transaction*, by a direct call
+     * rather than an event listener. An event would either fire after commit
+     * (leaving a window, and a queue failure, in which an accepted quote has no
+     * order) or have to be dispatched synchronously inside the transaction
+     * anyway — at which point the listener buys indirection and no atomicity.
+     * A direct call means one rollback boundary covers accept + decline
+     * siblings + close RFQ + create order + issue receipt: all of it lands, or
+     * none of it does.
      */
     public function accept(Quote $quote, ?User $actor = null): Quote
     {
@@ -244,6 +254,10 @@ class QuoteService
                     ->withProperties(['to' => RfqStatus::Closed->value, 'reason' => 'quote_accepted'])
                     ->log('RFQ status -> closed');
             }
+
+            // Award produces the order. Same transaction, so there is no state
+            // in which an accepted quote exists without its order.
+            $this->orders->createFromQuote($accepted, $actor);
 
             return $accepted;
         });

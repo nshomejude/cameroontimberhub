@@ -152,3 +152,78 @@
 /* Dark surface scale (for reference / reuse by components):
    page #14130f · card #1f1d18 · raised #26241e · border #2c2a24 / #34302a
    text #f1ece1 · soft #b3ab9b · forest tile #1b2c22 */
+
+/* ---------- Print ----------
+   The receipt is a real document people file and post, so printing it must
+   yield the sheet alone: no site chrome, no dark theme, no page break through
+   the middle of the items table. Screen-only controls carry `print:hidden`. */
+@media print {
+    body > header,
+    body > footer,
+    body > .tab-bar,
+    body > div.bg-bark-800,
+    #pull-indicator {
+        display: none !important;
+    }
+
+    html, body {
+        background: #fff !important;
+        color: #000 !important;
+        font-size: 11pt;
+    }
+
+    /* The app shell reserves space for the mobile tab bar; print must not. */
+    #app-main {
+        padding-bottom: 0 !important;
+    }
+
+    .receipt-page {
+        max-width: none;
+        padding: 0 !important;
+    }
+
+    /* The sheet itself: edge to edge, no card border or shadow. */
+    .receipt-sheet {
+        border: 0 !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        background: #fff !important;
+        color: #000 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    .receipt-sheet header,
+    .receipt-sheet table,
+    .receipt-sheet tr {
+        break-inside: avoid;
+    }
+
+    /* Repeat the column headers when the items table spans pages. */
+    .receipt-sheet thead {
+        display: table-header-group;
+    }
+
+    /* Background utilities are dropped by most print engines; the table head
+       and the total row have to stay legible. */
+    .receipt-sheet thead tr {
+        background: #0a5223 !important;
+        color: #fff !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    /* Scroll containers would clip onto a page that is never printed. */
+    .receipt-sheet .overflow-x-auto {
+        overflow: visible !important;
+    }
+
+    /* No "(https://…)" noise appended to every link. */
+    a[href]::after {
+        content: none !important;
+    }
+
+    @page {
+        margin: 14mm;
+    }
+}
