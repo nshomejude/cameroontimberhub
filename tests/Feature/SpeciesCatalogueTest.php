@@ -76,13 +76,14 @@ it('narrows the public species index by commercial category', function () {
         ->assertSee('Primarywood')
         ->assertSee('Specialwood');
 
-    $this->get(route('species.index', ['category' => TimberCategory::PrimaryHardwood->value]))
+    // The directory's category facet is multi-select, hence `category[]`.
+    $this->get(route('species.index', ['category' => [TimberCategory::PrimaryHardwood->value]]))
         ->assertOk()
         ->assertSee('Primarywood')
         ->assertDontSee('Specialwood');
 });
 
-it('narrows the public species index with the promoted toggle', function () {
+it('narrows the public species index to promoted species', function () {
     Species::factory()->create([
         'common_name' => 'Promotedwood',
         'commercial_category' => TimberCategory::PromotedSpecies,
@@ -94,7 +95,7 @@ it('narrows the public species index with the promoted toggle', function () {
         'is_promoted' => false,
     ]);
 
-    $this->get(route('species.index', ['promoted' => 1]))
+    $this->get(route('species.index', ['category' => [TimberCategory::PromotedSpecies->value]]))
         ->assertOk()
         ->assertSee('Promotedwood')
         ->assertDontSee('Regularwood');

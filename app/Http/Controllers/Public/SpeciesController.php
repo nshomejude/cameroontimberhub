@@ -2,58 +2,73 @@
 
 namespace App\Http\Controllers\Public;
 
-use App\Enums\TimberCategory;
 use App\Http\Controllers\Controller;
 use App\Models\Company;
 use App\Models\Species;
+use App\Services\SpeciesDirectoryService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class SpeciesController extends Controller
 {
-    public function index(Request $request): View
+    /**
+     * The directory itself is a Livewire component; the controller's job is the
+     * server-rendered SEO/AEO layer. It reads the same URL query state the
+     * Livewire component mounts from and runs it through the same service, so
+     * the ItemList always describes exactly the page the visitor is looking at.
+     */
+    public function index(Request $request, SpeciesDirectoryService $directory): View
     {
-        $category = TimberCategory::tryFrom((string) $request->query('category'));
-        $promotedOnly = $request->boolean('promoted');
+        $perPage = max(1, min(48, (int) ($request->query('perPage') ?: 12)));
 
-        $species = Species::published()
-            ->when($category, fn ($q) => $q->inCategory($category))
-            ->when($promotedOnly, fn ($q) => $q->promoted())
-            ->orderBy('sort_order')
-            ->orderBy('common_name')
-            ->paginate(24)
-            ->withQueryString();
-
-        // Facet counts come from the published set, not the filtered one, so the
-        // chips keep showing every category even while one is active.
-        $categoryCounts = Species::published()
-            ->selectRaw('commercial_category, count(*) as aggregate')
-            ->whereNotNull('commercial_category')
-            ->groupBy('commercial_category')
-            ->pluck('aggregate', 'commercial_category');
+        $species = $directory->search($this->filtersFromRequest($request), $perPage);
 
         $schema = [
             '@context' => 'https://schema.org',
             '@type' => 'ItemList',
-            'name' => 'Cameroon timber species',
+            'name' => 'Cameroon timber species directory',
+            'url' => url()->current(),
             'numberOfItems' => $species->total(),
-            'itemListElement' => $species->values()->map(fn (Species $sp, int $i): array => [
+            'itemListOrder' => 'https://schema.org/ItemListOrderAscending',
+            'itemListElement' => $species->values()->map(fn (Species $sp, int $i): array => array_filter([
                 '@type' => 'ListItem',
-                'position' => $species->firstItem() + $i,
+                'position' => ($species->firstItem() ?? 1) + $i,
                 'name' => $sp->common_name,
                 'url' => route('species.show', $sp->slug),
-            ])->all(),
+                'alternateName' => $sp->scientific_name,
+            ]))->all(),
         ];
 
         return view('public.species.index', [
-            'species' => $species,
-            'categories' => TimberCategory::cases(),
-            'categoryCounts' => $categoryCounts,
-            'activeCategory' => $category,
-            'promotedOnly' => $promotedOnly,
-            'promotedCount' => Species::published()->promoted()->count(),
             'schema' => $schema,
+            'breadcrumbs' => [
+                ['label' => 'Home', 'url' => route('home')],
+                ['label' => 'Timber Species', 'url' => route('species.index')],
+            ],
         ]);
+    }
+
+    /**
+     * Mirrors the `#[Url]` aliases on App\Livewire\SpeciesDirectory.
+     *
+     * @return array<string, mixed>
+     */
+    private function filtersFromRequest(Request $request): array
+    {
+        $list = fn (string $key): array => array_values(array_filter(
+            array_map('strval', (array) $request->query($key, [])),
+            fn (string $v): bool => $v !== ''
+        ));
+
+        return [
+            'q' => (string) $request->query('q', ''),
+            'categories' => $list('category'),
+            'properties' => $list('property'),
+            'applications' => $list('use'),
+            'region' => (string) $request->query('region', ''),
+            'inStock' => $request->boolean('stock'),
+            'sort' => (string) $request->query('sort', 'popularity'),
+        ];
     }
 
     public function show(string $slug): View
@@ -63,7 +78,12 @@ class SpeciesController extends Controller
         // "Verified exporters handling this species" — only publicly visible companies.
         $companies = Company::publiclyVisible()
             ->whereHas('species', fn ($q) => $q->whereKey($species->getKey()))
-            ->with(['species:id,slug,common_name', 'exportMarkets:id,company_id,country_code'])
+            ->with([
+                'species:id,slug,common_name',
+                'exportMarkets:id,company_id,country_code',
+                'products' => fn ($p) => $p->active()->select('id', 'company_id', 'product_type'),
+            ])
+            ->withCount(['products' => fn ($p) => $p->active()])
             ->orderByDesc('is_featured')
             ->orderByDesc('verified_at')
             ->limit(24)
