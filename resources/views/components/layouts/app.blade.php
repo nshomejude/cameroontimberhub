@@ -109,8 +109,8 @@
                 'url' => url('/'),
                 'logo' => url('/brand/logo-600.png'),
                 'description' => 'B2B marketplace connecting verified Cameroonian timber suppliers with international buyers.',
-                'email' => 'info@cameroontimberhub.com',
-                'telephone' => '+237612345678',
+                'email' => config('contact.emails.0'),
+                'telephone' => config('contact.phones.0'),
                 'address' => [
                     '@type' => 'PostalAddress',
                     'addressCountry' => 'CM',
@@ -168,14 +168,18 @@
                 @endforeach
             </ul>
             <div class="ml-auto flex items-center gap-5">
-                <a href="tel:+237612345678" class="flex items-center gap-1.5 transition hover:text-forest-200">
-                    <x-heroicon-s-phone class="h-3.5 w-3.5 text-forest-300" />
-                    +237 6 12 34 56 78
-                </a>
-                <a href="mailto:info@cameroontimberhub.com" class="flex items-center gap-1.5 transition hover:text-forest-200">
-                    <x-heroicon-s-envelope class="h-3.5 w-3.5 text-forest-300" />
-                    info@cameroontimberhub.com
-                </a>
+                @if ($headerPhone = config('contact.phones.0'))
+                    <a href="tel:{{ preg_replace('/[^0-9+]/', '', $headerPhone) }}" class="flex items-center gap-1.5 transition hover:text-forest-200">
+                        <x-heroicon-s-phone class="h-3.5 w-3.5 text-forest-300" />
+                        {{ $headerPhone }}
+                    </a>
+                @endif
+                @if ($headerEmail = config('contact.emails.0'))
+                    <a href="mailto:{{ $headerEmail }}" class="flex items-center gap-1.5 transition hover:text-forest-200">
+                        <x-heroicon-s-envelope class="h-3.5 w-3.5 text-forest-300" />
+                        {{ $headerEmail }}
+                    </a>
+                @endif
                 <button type="button" class="flex items-center gap-1 transition hover:text-forest-200">
                     EN <x-heroicon-m-chevron-down class="h-3 w-3" />
                 </button>
