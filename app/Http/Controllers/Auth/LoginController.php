@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Http\Controllers\Auth\Concerns\ProvidesAuthPageStats;
 use App\Http\Controllers\Auth\Concerns\RedirectsAfterAuth;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
@@ -12,11 +13,11 @@ use Illuminate\View\View;
 
 class LoginController extends Controller
 {
-    use RedirectsAfterAuth;
+    use ProvidesAuthPageStats, RedirectsAfterAuth;
 
     public function create(): View
     {
-        return view('auth.login');
+        return view('auth.login', ['stats' => $this->authPageStats()]);
     }
 
     public function store(Request $request): RedirectResponse
@@ -38,7 +39,7 @@ class LoginController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->to($this->redirectPathFor($request->user()));
+        return redirect()->intended($this->redirectPathFor($request->user()));
     }
 
     public function destroy(Request $request): RedirectResponse

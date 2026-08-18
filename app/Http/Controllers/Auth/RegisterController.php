@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Enums\CompanyStatus;
 use App\Enums\CompanyUserRole;
+use App\Http\Controllers\Auth\Concerns\ProvidesAuthPageStats;
 use App\Http\Controllers\Auth\Concerns\RedirectsAfterAuth;
 use App\Http\Controllers\Controller;
 use App\Models\Company;
@@ -18,11 +19,11 @@ use Illuminate\View\View;
 
 class RegisterController extends Controller
 {
-    use RedirectsAfterAuth;
+    use ProvidesAuthPageStats, RedirectsAfterAuth;
 
     public function create(): View
     {
-        return view('auth.register');
+        return view('auth.register', ['stats' => $this->authPageStats()]);
     }
 
     public function store(Request $request): RedirectResponse
@@ -32,7 +33,14 @@ class RegisterController extends Controller
             'name' => ['required', 'string', 'min:2', 'max:120'],
             'email' => ['required', 'email:rfc', 'max:180', Rule::unique('users', 'email')],
             'company_name' => ['exclude_unless:account_type,supplier', 'required', 'string', 'min:2', 'max:255'],
+            'company_phone' => ['exclude_unless:account_type,supplier', 'nullable', 'string', 'max:32'],
+            'company_city' => ['exclude_unless:account_type,supplier', 'nullable', 'string', 'max:120'],
+            'company_country' => ['exclude_unless:account_type,supplier', 'nullable', 'string', 'size:2'],
+            'company_registration_number' => ['exclude_unless:account_type,supplier', 'nullable', 'string', 'max:100'],
             'password' => ['required', 'confirmed', Password::defaults()],
+            'terms' => ['accepted'],
+        ], [], [
+            'terms' => 'terms of service',
         ]);
 
         $user = DB::transaction(function () use ($data): User {
@@ -49,6 +57,10 @@ class RegisterController extends Controller
                     'legal_name' => $data['company_name'],
                     'status' => CompanyStatus::Pending,
                     'created_by' => $user->id,
+                    'phone' => $data['company_phone'] ?? null,
+                    'city' => $data['company_city'] ?? null,
+                    'country_code' => $data['company_country'] ?? 'CM',
+                    'registration_number' => $data['company_registration_number'] ?? null,
                 ]);
 
                 $company->users()->attach($user, [
@@ -63,6 +75,6 @@ class RegisterController extends Controller
         Auth::login($user);
         $request->session()->regenerate();
 
-        return redirect()->to($this->redirectPathFor($user));
+        return redirect()->intended($this->redirectPathFor($user));
     }
 }

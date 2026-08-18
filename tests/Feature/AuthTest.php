@@ -14,7 +14,7 @@ it('lets a guest view the login page', function () {
 });
 
 it('lets a guest view the register page', function () {
-    $this->get('/register')->assertOk()->assertSee('Create your account', false);
+    $this->get('/register')->assertOk()->assertSee('Create Your Account', false);
 });
 
 it('registers a buyer with no company and sends them home', function () {
@@ -24,6 +24,7 @@ it('registers a buyer with no company and sends them home', function () {
         'email' => 'bea@example.com',
         'password' => 'Str0ng-Passw0rd!',
         'password_confirmation' => 'Str0ng-Passw0rd!',
+        'terms' => '1',
     ]);
 
     $response->assertRedirect(route('home'));
@@ -43,6 +44,7 @@ it('registers a supplier with a pending company and sends them to the dashboard'
         'company_name' => 'Douala Hardwoods SARL',
         'password' => 'Str0ng-Passw0rd!',
         'password_confirmation' => 'Str0ng-Passw0rd!',
+        'terms' => '1',
     ]);
 
     $response->assertRedirect('/dashboard');
@@ -64,6 +66,7 @@ it('requires a company name for supplier registration', function () {
         'email' => 'sam@example.com',
         'password' => 'Str0ng-Passw0rd!',
         'password_confirmation' => 'Str0ng-Passw0rd!',
+        'terms' => '1',
     ])->assertSessionHasErrors('company_name');
 
     expect(User::where('email', 'sam@example.com')->exists())->toBeFalse();
@@ -78,6 +81,7 @@ it('rejects a duplicate email on registration', function () {
         'email' => 'taken@example.com',
         'password' => 'Str0ng-Passw0rd!',
         'password_confirmation' => 'Str0ng-Passw0rd!',
+        'terms' => '1',
     ])->assertSessionHasErrors('email');
 
     $this->assertGuest();
