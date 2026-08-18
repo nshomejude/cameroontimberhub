@@ -22,6 +22,10 @@
      */
     $user = auth()->user();
 
+    // Real unread count (derived from last_read_at), or null when there is
+    // nothing to show — never a placeholder badge.
+    $unreadMessages = $user ? (app(\App\Services\MessagingService::class)->totalUnread($user) ?: null) : null;
+
     $groups = [
         [
             'label' => 'Marketplace',
@@ -35,6 +39,7 @@
         [
             'label' => 'My activity',
             'items' => [
+                ['label' => 'Messages', 'icon' => 'chat-bubble-left-right', 'url' => route('account.messages'), 'active' => request()->routeIs('account.messages*'), 'badge' => $unreadMessages],
                 ['label' => 'RFQ Center', 'icon' => 'document-text', 'url' => route('account.rfqs'), 'active' => request()->routeIs('account.rfqs')],
                 ['label' => 'Quotes', 'icon' => 'tag', 'url' => route('account.quotes'), 'active' => request()->routeIs('account.quotes')],
                 ['label' => 'Orders', 'icon' => 'clipboard-document-check', 'url' => route('account.orders'), 'active' => request()->routeIs('account.orders')],
@@ -55,6 +60,7 @@
     $tabs = [
         ['label' => 'Dashboard', 'icon' => 'squares-2x2', 'url' => route('account.index'), 'active' => request()->routeIs('account.index')],
         ['label' => 'Requests', 'icon' => 'document-text', 'url' => route('account.rfqs'), 'active' => request()->routeIs('account.rfqs')],
+        ['label' => 'Messages', 'icon' => 'chat-bubble-left-right', 'url' => route('account.messages'), 'active' => request()->routeIs('account.messages*'), 'badge' => $unreadMessages],
         ['label' => 'Quotes', 'icon' => 'tag', 'url' => route('account.quotes'), 'active' => request()->routeIs('account.quotes')],
         ['label' => 'Orders', 'icon' => 'clipboard-document-check', 'url' => route('account.orders'), 'active' => request()->routeIs('account.orders')],
     ];
@@ -134,6 +140,9 @@
                                ])>
                                 <x-dynamic-component :component="'heroicon-o-'.$item['icon']" class="h-5 w-5 shrink-0" />
                                 <span class="truncate">{{ $item['label'] }}</span>
+                                @if (($item['badge'] ?? null))
+                                    <span class="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-forest-600 px-1.5 text-[0.6875rem] font-bold text-white">{{ $item['badge'] }}</span>
+                                @endif
                             </a>
                         </li>
                     @endforeach
@@ -230,7 +239,7 @@
 </div>
 
 {{-- Bottom tab bar (mobile only), per the mobile mockup. --}}
-<nav class="tab-bar fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-sand-200 bg-white lg:hidden"
+<nav class="tab-bar fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-sand-200 bg-white lg:hidden"
      aria-label="Account sections">
     @foreach ($tabs as $tab)
         <a href="{{ $tab['url'] }}"
@@ -240,7 +249,12 @@
                'text-forest-700' => $tab['active'],
                'text-ink-soft' => ! $tab['active'],
            ])>
-            <x-dynamic-component :component="'heroicon-'.($tab['active'] ? 's' : 'o').'-'.$tab['icon']" class="h-6 w-6" />
+            <span class="relative">
+                <x-dynamic-component :component="'heroicon-'.($tab['active'] ? 's' : 'o').'-'.$tab['icon']" class="h-6 w-6" />
+                @if (($tab['badge'] ?? null))
+                    <span class="absolute -right-2.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-forest-600 px-1 text-[0.625rem] font-bold text-white">{{ $tab['badge'] }}</span>
+                @endif
+            </span>
             {{ $tab['label'] }}
         </a>
     @endforeach

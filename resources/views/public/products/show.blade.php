@@ -425,7 +425,12 @@
 
                             <div class="mt-5 grid gap-3 sm:grid-cols-2">
                                 <a href="{{ route('companies.show', $company->slug) }}" class="{{ $btnGhost }}">View Supplier Profile</a>
-                                <a href="{{ route('companies.show', $company->slug) }}#contact" class="{{ $btnPrimary }}">Send Message</a>
+                                {{-- In-platform thread, carrying this product
+                                     as context. Guests keep the old anchor. --}}
+                                <x-message-supplier :company="$company" :product="$product"
+                                                    label="Send Message"
+                                                    :fallback="route('companies.show', $company->slug).'#contact'"
+                                                    :class="$btnPrimary" />
                             </div>
 
                             @if ($supplierMeta->isNotEmpty())

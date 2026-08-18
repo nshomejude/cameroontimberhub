@@ -13,6 +13,7 @@ use App\Http\Controllers\Public\ContactController;
 use App\Http\Controllers\Public\DirectoryController;
 use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Public\InquiryController;
+use App\Http\Controllers\Public\MessageController;
 use App\Http\Controllers\Public\PageController;
 use App\Http\Controllers\Public\PricingController;
 use App\Http\Controllers\Public\ProductController;
@@ -145,6 +146,17 @@ Route::middleware(['auth', 'buyer'])->prefix('account')->name('account.')->group
     Route::get('/quotes', [AccountController::class, 'quotes'])->name('quotes');
     Route::get('/orders', [AccountController::class, 'orders'])->name('orders');
     Route::get('/receipts', [AccountController::class, 'receipts'])->name('receipts');
+
+    // Messaging. `/messages/new` and `/messages/start` are declared before the
+    // `{conversation}` binding so the static segments win. Every screen resolves
+    // the thread through MessagingService, which 404s a non-participant.
+    Route::get('/messages', [MessageController::class, 'index'])->name('messages');
+    Route::get('/messages/new', [MessageController::class, 'create'])->name('messages.create');
+    Route::post('/messages/start', [MessageController::class, 'start'])
+        ->middleware('throttle:message-start')->name('messages.start');
+    Route::get('/messages/{conversation}', [MessageController::class, 'show'])->name('messages.show');
+    Route::post('/messages/{conversation}', [MessageController::class, 'store'])
+        ->middleware('throttle:message-send')->name('messages.store');
 });
 
 // CMS catch-all — must be last. Resolves any published page by slug (legal, static, etc.).

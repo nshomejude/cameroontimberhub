@@ -54,6 +54,21 @@ class AppServiceProvider extends ServiceProvider
         ]);
 
         RateLimiter::for('inquiry-submit', fn (Request $request) => Limit::perHour(8)->by('inquiry-ip:'.$request->ip()));
+
+        // Messaging is authenticated, so the budget is per-account rather than
+        // per-IP: generous enough for a real negotiation, tight enough that a
+        // compromised account cannot firehose a supplier's inbox. Applied to
+        // the HTTP fallback route and re-checked inside the Livewire composer,
+        // which bypasses route middleware.
+        RateLimiter::for('message-send', fn (Request $request) => [
+            Limit::perMinute(20)->by('msg-send:'.($request->user()?->getAuthIdentifier() ?? $request->ip())),
+            Limit::perHour(300)->by('msg-send-hour:'.($request->user()?->getAuthIdentifier() ?? $request->ip())),
+        ]);
+
+        // Opening threads is rarer than posting in one, and each new thread
+        // notifies a supplier, so it gets a much smaller budget.
+        RateLimiter::for('message-start', fn (Request $request) => Limit::perHour(30)
+            ->by('msg-start:'.($request->user()?->getAuthIdentifier() ?? $request->ip())));
     }
 
     /**

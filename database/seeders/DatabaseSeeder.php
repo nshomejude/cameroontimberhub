@@ -32,6 +32,7 @@ class DatabaseSeeder extends Seeder
             ProductSeeder::class,
             QuoteSeeder::class,
             OrderSeeder::class,
+            MessagingSeeder::class,
         ]);
     }
 }

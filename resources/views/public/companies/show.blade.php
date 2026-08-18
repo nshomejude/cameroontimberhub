@@ -230,10 +230,7 @@
                     {{ $chat['label'] }}
                 </a>
             @endif
-            <a href="#contact-supplier" class="{{ $btnGhost }}">
-                <x-heroicon-o-envelope class="h-5 w-5" aria-hidden="true" />
-                Message Supplier
-            </a>
+            <x-message-supplier :company="$company" :class="$btnGhost" />
             <a href="{{ $quoteUrl }}" class="{{ $btnPrimary }}">
                 <x-heroicon-o-paper-airplane class="h-5 w-5" aria-hidden="true" />
                 Request Quote
