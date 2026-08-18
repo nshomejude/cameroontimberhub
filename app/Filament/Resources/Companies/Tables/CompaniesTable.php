@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Companies\Tables;
 
 use App\Enums\CompanyStatus;
+use App\Enums\SupplierType;
 use App\Models\Company;
 use App\Models\Plan;
 use App\Services\CompanyStatusService;
@@ -36,6 +37,26 @@ class CompaniesTable
                     ->searchable(['legal_name', 'trade_name'])
                     ->sortable(),
                 TextColumn::make('region')->searchable()->sortable()->toggleable(),
+                TextColumn::make('supplier_type')
+                    ->label('Type')
+                    ->badge()
+                    ->placeholder('—')
+                    ->formatStateUsing(fn (SupplierType $state): string => $state->label())
+                    ->color(fn (SupplierType $state): string => $state->color())
+                    ->sortable()
+                    ->toggleable(),
+                TextColumn::make('response_rate_percent')
+                    ->label('Response')
+                    ->placeholder('—')
+                    ->formatStateUsing(fn (?int $state): ?string => $state === null ? null : $state.'%')
+                    ->sortable()
+                    ->toggleable(),
+                TextColumn::make('years_experience')
+                    ->label('Experience')
+                    ->placeholder('—')
+                    ->formatStateUsing(fn (?int $state): ?string => $state === null ? null : $state.' yrs')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('status')
                     ->badge()
                     ->formatStateUsing(fn (CompanyStatus $state): string => $state->label())
@@ -52,6 +73,10 @@ class CompaniesTable
                 SelectFilter::make('status')
                     ->multiple()
                     ->options(collect(CompanyStatus::cases())->mapWithKeys(fn (CompanyStatus $s) => [$s->value => $s->label()])->all()),
+                SelectFilter::make('supplier_type')
+                    ->label('Supplier type')
+                    ->multiple()
+                    ->options(SupplierType::options()),
                 TernaryFilter::make('is_featured')->label('Featured'),
                 TrashedFilter::make(),
             ])

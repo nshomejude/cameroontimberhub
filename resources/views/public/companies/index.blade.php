@@ -1,6 +1,8 @@
 <x-layouts.app
-    title="Verified timber exporters in Cameroon"
-    description="Browse verified Cameroonian timber exporters by species, region, and export market. Documents reviewed by Cameroon Timber Hub.">
+    title="Supplier Directory — verified Cameroon timber suppliers"
+    description="Find and connect with verified timber suppliers, exporters and manufacturers across Cameroon. Filter by supplier type, species, specialisation and region."
+    :breadcrumbs="$breadcrumbs"
+    :schema="$schema">
 
     <livewire:company-directory />
 

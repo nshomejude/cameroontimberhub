@@ -2,7 +2,9 @@
 
 namespace App\Filament\Resources\Companies\Schemas;
 
+use App\Enums\SupplierType;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -33,6 +35,24 @@ class CompanyForm
                         TextInput::make('year_founded')->numeric()->minValue(1800)->maxValue((int) date('Y')),
                         TextInput::make('employee_count')->numeric()->minValue(0),
                         TextInput::make('annual_capacity_m3')->label('Annual capacity (m³)')->numeric(),
+                    ]),
+
+                Section::make('Directory listing')
+                    ->description('Drives the supplier-type facet and the metric strip on public directory cards. Leave a metric blank to hide it.')
+                    ->columns(3)
+                    ->schema([
+                        Select::make('supplier_type')
+                            ->label('Supplier type')
+                            ->options(SupplierType::options())
+                            ->native(false)
+                            ->placeholder('Not classified'),
+                        TextInput::make('response_rate_percent')
+                            ->label('Response rate (%)')
+                            ->numeric()->minValue(0)->maxValue(100)
+                            ->helperText('Share of buyer inquiries answered.'),
+                        TextInput::make('years_experience')
+                            ->label('Years of experience')
+                            ->numeric()->minValue(0)->maxValue(200),
                     ]),
 
                 Section::make('Location & contact')
