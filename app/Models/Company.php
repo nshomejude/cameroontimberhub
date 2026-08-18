@@ -334,6 +334,36 @@ class Company extends Model
         return ($this->verified_at ?? $this->created_at)?->format('M Y');
     }
 
+    /**
+     * The direct-chat target behind the mobile "Chat with Supplier" button.
+     *
+     * Only PUBLIC contacts are considered, WhatsApp is preferred over a plain
+     * telephone number, and null is returned when the supplier has published
+     * neither — the button is then not rendered at all rather than shipped dead.
+     *
+     * @return array{channel: string, url: string, label: string}|null
+     */
+    public function chatLink(): ?array
+    {
+        $public = $this->contacts->filter(fn (CompanyContact $c) => $c->is_public);
+
+        $digits = fn (?string $v): ?string => filled($v) ? (preg_replace('/\D+/', '', $v) ?: null) : null;
+
+        foreach ($public as $contact) {
+            if ($number = $digits($contact->whatsapp)) {
+                return ['channel' => 'whatsapp', 'url' => 'https://wa.me/'.$number, 'label' => 'Chat with Supplier'];
+            }
+        }
+
+        foreach ($public as $contact) {
+            if ($number = $digits($contact->phone)) {
+                return ['channel' => 'phone', 'url' => 'tel:+'.$number, 'label' => 'Call Supplier'];
+            }
+        }
+
+        return null;
+    }
+
     public function activeBadges(): HasMany
     {
         return $this->verificationBadges()

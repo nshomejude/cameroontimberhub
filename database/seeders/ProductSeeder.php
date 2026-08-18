@@ -82,6 +82,7 @@ class ProductSeeder extends Seeder
                 'company' => 'kuete-timber',
                 'species' => 'iroko',
                 'name' => 'Iroko Sawn Timber KD 50mm',
+                'tagline' => 'Premium African Hardwood – Export Quality',
                 'product_type' => ProductType::SawnTimber,
                 'description' => 'High quality Iroko (Milicia excelsa) sawn timber, kiln dried to 12-15% moisture content. Strong, durable and ideal for construction, furniture and flooring. Our Iroko sawn timber is carefully kiln dried to ensure dimensional stability and suitability for a wide range of applications both indoors and outdoors.',
                 'price_amount' => 650000,

@@ -221,3 +221,165 @@ it('paginates the marketplace and reports real facet counts', function () {
     expect($counts[ProductType::Logs->value])->toBe(14)
         ->and($counts[ProductType::Veneer->value])->toBe(3);
 });
+
+/* ---------------------------------------------------------------------------
+ | Mobile layout (< lg). Rendered server-side alongside the desktop layout.
+ |-------------------------------------------------------------------------- */
+
+it('renders the mobile-only blocks server-side rather than gating them behind JS', function () {
+    $company = visibleSupplier(['city' => 'Yaoundé']);
+    $product = Product::factory()->active()->for($company)->create([
+        'name' => 'Mobile Iroko Board',
+        'moq_quantity' => 20,
+    ]);
+
+    $html = $this->get(route('products.show', $product->slug))->assertOk()->getContent();
+
+    // The two branches exist side by side; only CSS decides which is visible.
+    expect($html)->toContain('class="lg:hidden"')
+        ->toContain('class="hidden lg:block"')
+        // Mobile-only landmarks.
+        ->toContain('id="m-price-heading"')
+        ->toContain('id="m-supplier-heading"')
+        ->toContain('id="m-details-heading"')
+        ->toContain('Minimum Order Quantity')
+        ->toContain('View Company')
+        ->toContain('Product Details');
+});
+
+it('shows the tagline only when the product records one', function () {
+    $company = visibleSupplier();
+
+    $with = Product::factory()->active()->for($company)->create([
+        'tagline' => 'Premium African Hardwood – Export Quality',
+    ]);
+    $this->get(route('products.show', $with->slug))
+        ->assertOk()
+        ->assertSee('Premium African Hardwood – Export Quality', false);
+
+    $without = Product::factory()->active()->for($company)->create(['tagline' => null]);
+    $this->get(route('products.show', $without->slug))
+        ->assertOk()
+        ->assertDontSee('Premium African Hardwood');
+});
+
+it('renders the gallery Video tile only when a real video url is recorded', function () {
+    $company = visibleSupplier();
+
+    $none = Product::factory()->active()->for($company)->create(['video_url' => null]);
+    $this->get(route('products.show', $none->slug))
+        ->assertOk()
+        ->assertDontSee('>Video<', false);
+
+    $withVideo = Product::factory()->active()->for($company)->create([
+        'video_url' => 'https://videos.example/iroko-mill.mp4',
+    ]);
+    $this->get(route('products.show', $withVideo->slug))
+        ->assertOk()
+        ->assertSee('https://videos.example/iroko-mill.mp4')
+        ->assertSee('>Video<', false);
+});
+
+it('hides the indicative USD line unless an FX rate is configured', function () {
+    $company = visibleSupplier();
+    $product = Product::factory()->active()->for($company)->create([
+        'price_amount' => 650000,
+        'price_currency' => 'XAF',
+    ]);
+
+    config()->set('timber.fx.usd_per_xaf', null);
+    $this->get(route('products.show', $product->slug))
+        ->assertOk()
+        ->assertDontSee('USD');
+
+    config()->set('timber.fx.usd_per_xaf', 0.00166);
+    $this->get(route('products.show', $product->slug))
+        ->assertOk()
+        ->assertSee('USD 1,079')
+        ->assertSee('indicative');
+});
+
+it('renders Chat with Supplier only when a public contact publishes whatsapp or a phone', function () {
+    // No public contact number at all → the quote button stands alone.
+    $silent = visibleSupplier();
+    $silent->contacts()->update(['phone' => null, 'whatsapp' => null]);
+    $quiet = Product::factory()->active()->for($silent)->create();
+
+    $this->get(route('products.show', $quiet->slug))
+        ->assertOk()
+        ->assertSee('Request Quote')
+        ->assertDontSee('Chat with Supplier')
+        ->assertDontSee('Call Supplier')
+        ->assertDontSee('wa.me');
+
+    // A public WhatsApp number → a well-formed wa.me link.
+    $chatty = visibleSupplier();
+    $chatty->contacts()->update(['whatsapp' => '+237 6 99 00 00 00']);
+    $loud = Product::factory()->active()->for($chatty)->create();
+
+    $this->get(route('products.show', $loud->slug))
+        ->assertOk()
+        ->assertSee('Chat with Supplier')
+        ->assertSee('https://wa.me/237699000000');
+
+    // A PRIVATE contact is never used, even when it holds a number.
+    $private = visibleSupplier();
+    $private->contacts()->update(['is_public' => false, 'whatsapp' => '+237 6 11 11 11 11']);
+    $hidden = Product::factory()->active()->for($private)->create();
+
+    $this->get(route('products.show', $hidden->slug))
+        ->assertOk()
+        ->assertDontSee('wa.me');
+});
+
+it('renders each mobile trust badge only when its backing signal exists', function () {
+    $bare = visibleSupplier(['response_rate_percent' => null, 'years_experience' => null]);
+    $plain = Product::factory()->active()->for($bare)->create([
+        'certification' => null,
+        'grade' => null,
+        'species_id' => null,
+    ]);
+
+    $this->get(route('products.show', $plain->slug))
+        ->assertOk()
+        ->assertDontSee('Sustainably Sourced')
+        ->assertDontSee('Premium Quality')
+        ->assertDontSee('Reliable Supply')
+        ->assertDontSee('Export Ready');
+
+    $strong = visibleSupplier(['response_rate_percent' => 94, 'years_experience' => 18]);
+    $strong->exportMarkets()->create(['country_code' => 'FR']);
+    $rich = Product::factory()->active()->for($strong)->create([
+        'certification' => 'Legal Origin Verified',
+        'grade' => 'Select & Better',
+    ]);
+
+    $this->get(route('products.show', $rich->slug))
+        ->assertOk()
+        ->assertSee('Sustainably Sourced')
+        ->assertSee('Premium Quality')
+        ->assertSee('Reliable Supply')
+        ->assertSee('Export Ready');
+});
+
+it('renders the supplier stat strip from real counts, never rounded marketing numbers', function () {
+    $company = visibleSupplier(['years_experience' => 18]);
+    $company->exportMarkets()->createMany([
+        ['country_code' => 'FR'], ['country_code' => 'NL'], ['country_code' => 'CN'],
+    ]);
+
+    $product = Product::factory()->active()->for($company)->create();
+    Product::factory()->count(2)->active()->for($company)->create();
+
+    $html = $this->get(route('products.show', $product->slug))->assertOk()->getContent();
+
+    expect($html)->toContain('Export Countries')
+        ->toContain('Years Experience')
+        ->not->toContain('25+')
+        ->not->toContain('15+')
+        ->not->toContain('120+');
+
+    // 3 real export markets, 3 real active products, 18 real years.
+    $strip = str($html)->after('m-supplier-heading')->before('m-details-heading')->value();
+    expect($strip)->toContain('>3</dd>')->toContain('>18</dd>');
+});

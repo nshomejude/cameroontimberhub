@@ -30,6 +30,7 @@ class DemoCompanySeeder extends Seeder
             'city' => 'Douala',
             'email' => 'sales@kuete.example',
             'phone' => '+237 6 99 00 00 00',
+            'whatsapp' => '+237 6 99 00 00 00',
             'supplier_type' => SupplierType::Exporter,
             'response_rate_percent' => 94,
             'years_experience' => 18,
@@ -259,6 +260,10 @@ class DemoCompanySeeder extends Seeder
         $logo = $attrs['logo_path'] ?? 'suppliers/'.$slug.'.png';
         unset($attrs['logo_path']);
 
+        // `whatsapp` belongs to the public contact row, not to the company.
+        $whatsapp = $attrs['whatsapp'] ?? null;
+        unset($attrs['whatsapp']);
+
         $company = Company::firstOrCreate(
             ['slug' => $slug],
             array_merge($attrs, [
@@ -279,16 +284,17 @@ class DemoCompanySeeder extends Seeder
             ])),
         ))->save();
 
-        if (! $company->contacts()->exists()) {
-            $company->contacts()->create([
-                'name' => 'Export Desk',
+        $company->contacts()->updateOrCreate(
+            ['name' => 'Export Desk'],
+            [
                 'title' => 'Sales',
                 'email' => $attrs['email'] ?? null,
                 'phone' => $attrs['phone'] ?? null,
+                'whatsapp' => $whatsapp,
                 'is_public' => true,
                 'sort_order' => 0,
-            ]);
-        }
+            ],
+        );
 
         $company->species()->syncWithoutDetaching(Species::whereIn('slug', $speciesSlugs)->pluck('id'));
 

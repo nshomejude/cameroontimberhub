@@ -75,7 +75,35 @@
     :breadcrumbs="$breadcrumbs"
     :schema="$schema">
 
-    <div class="bg-white pb-24 lg:pb-0">
+    <div class="bg-white pb-28 lg:pb-0">
+
+        {{-- ============================================================
+             MOBILE layout (< lg). A genuinely different composition from the
+             desktop page: dark hero band, spec chips, price block, supplier
+             card, trust strip and a compact details table. Everything below is
+             rendered server-side.
+        ============================================================= --}}
+        <div class="lg:hidden">
+            @if (session('status'))
+                <p role="status" class="mx-4 mt-4 rounded-lg border border-forest-200 bg-forest-50 px-4 py-3 text-[0.875rem] font-medium text-forest-800">
+                    {{ session('status') }}
+                </p>
+            @endif
+
+            <x-product-mobile.gallery :product="$product" :breadcrumbs="$breadcrumbs" :in-rfq-list="$inRfqList" />
+            <x-product-mobile.summary :product="$product" />
+            <x-product-mobile.price :product="$product" />
+            @if ($company)
+                <x-product-mobile.supplier :company="$company" :product-count="$supplierProductCount" />
+            @endif
+            <x-product-mobile.trust :product="$product" />
+            <x-product-mobile.details :product="$product" />
+        </div>
+
+        {{-- ============================================================
+             DESKTOP layout (lg and up) — approved and shipped; unchanged.
+        ============================================================= --}}
+        <div class="hidden lg:block">
         <div class="mx-auto max-w-[1400px] px-4 py-4 lg:px-6 lg:py-6">
 
             {{-- ---------------- Breadcrumb ---------------- --}}
@@ -610,6 +638,13 @@
                 </div>
             </section>
 
+        </div>
+        </div>
+
+        {{-- ============================================================
+             SHARED — rendered once for both layouts
+        ============================================================= --}}
+        <div class="mx-auto max-w-[1400px] px-4 pb-4 lg:px-6 lg:pb-6">
             {{-- ============================================================
                  SIMILAR PRODUCTS
             ============================================================= --}}
@@ -653,20 +688,5 @@
     {{-- ============================================================
          MOBILE sticky action bar — sits above the app tab bar
     ============================================================= --}}
-    <div class="fixed inset-x-0 z-30 border-t border-sand-200 bg-white px-4 py-3 lg:hidden"
-         style="bottom: calc(4.5rem + env(safe-area-inset-bottom))">
-        <div class="flex gap-3">
-            <form method="POST" action="{{ route('rfq-list.store', $product->slug) }}" class="flex-1">
-                @csrf
-                <button type="submit" class="{{ $btnGhost }}">
-                    <x-dynamic-component :component="$inRfqList ? 'heroicon-s-bookmark' : 'heroicon-o-bookmark'" class="h-5 w-5" />
-                    {{ $inRfqList ? 'Saved' : 'Add to RFQ' }}
-                </button>
-            </form>
-            <a href="{{ route('rfq.create') }}{{ $species ? '?species='.$species->slug : '' }}" class="{{ $btnPrimary }} flex-1">
-                <x-heroicon-o-paper-airplane class="h-5 w-5" />
-                Request Quote
-            </a>
-        </div>
-    </div>
+    <x-product-mobile.actions :product="$product" />
 </x-layouts.app>

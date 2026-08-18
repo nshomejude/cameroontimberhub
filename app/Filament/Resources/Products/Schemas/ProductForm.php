@@ -45,6 +45,10 @@ class ProductForm
                             ->helperText(fn ($state): ?string => $state ? ProductType::tryFrom($state)?->description() : 'The processing form this listing is traded in.')
                             ->required(),
                         TextInput::make('grade')->maxLength(120),
+                        TextInput::make('tagline')
+                            ->maxLength(160)
+                            ->columnSpanFull()
+                            ->helperText('Short strapline under the title on mobile, e.g. "Premium African Hardwood – Export Quality". Leave blank to omit the line.'),
                         Textarea::make('description')->rows(5)->columnSpanFull(),
                     ]),
 
@@ -86,6 +90,11 @@ class ProductForm
                         FileUpload::make('primary_image_path')
                             ->image()->imageEditor()
                             ->disk('public')->directory('products')
+                            ->columnSpanFull(),
+                        TextInput::make('video_url')
+                            ->url()->maxLength(512)
+                            ->label('Product video URL')
+                            ->helperText('The gallery "Video" tile is only shown when this is filled in.')
                             ->columnSpanFull(),
                         Repeater::make('images')
                             ->relationship()

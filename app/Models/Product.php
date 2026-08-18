@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\BadgeType;
 use App\Enums\PriceUnit;
 use App\Enums\ProductStatus;
 use App\Enums\ProductType;
@@ -144,6 +145,85 @@ class Product extends Model
         $qty = rtrim(rtrim(number_format((float) $this->moq_quantity, 2), '0'), '.');
 
         return $qty.' '.$this->moq_unit->label();
+    }
+
+    /**
+     * An INDICATIVE USD equivalent of the quoted price, e.g. "1,080".
+     *
+     * Returns null unless an operator-configured rate exists
+     * (`timber.fx.usd_per_xaf`) and the listing is genuinely priced in XAF.
+     * No rate is ever assumed — the UI simply drops the line.
+     */
+    public function indicativeUsdPrice(): ?string
+    {
+        $rate = config('timber.fx.usd_per_xaf');
+
+        if (! is_numeric($rate) || (float) $rate <= 0) {
+            return null;
+        }
+
+        if ($this->price_amount === null || $this->price_currency !== 'XAF') {
+            return null;
+        }
+
+        return number_format((float) $this->price_amount * (float) $rate);
+    }
+
+    /**
+     * The mobile trust strip. Each badge is derived from a real signal on the
+     * listing, its species or its supplier; a badge with no backing signal is
+     * simply absent rather than rendered as decoration.
+     *
+     * @return list<array{key: string, label: string, icon: string}>
+     */
+    public function trustBadges(): array
+    {
+        $company = $this->company;
+        $species = $this->species;
+
+        $legalPattern = '/legal origin|flegt|fsc|pefc|sustainab|sigif|cites/i';
+
+        $certifiedBadge = $company
+            ? $company->activeBadges
+                ->contains(fn ($b) => in_array($b->badge_type, [
+                    BadgeType::LegalTimberSupplier,
+                    BadgeType::SigifRegistered,
+                    BadgeType::SustainabilityProfile,
+                    BadgeType::CitesApproved,
+                ], true))
+            : false;
+
+        $exportReady = $company
+            && ($company->exportMarkets->isNotEmpty()
+                || $company->activeBadges->contains(fn ($b) => $b->badge_type === BadgeType::ExportReady));
+
+        $reliable = $company
+            && (((int) $company->response_rate_percent) >= 80 || ((int) $company->years_experience) >= 5);
+
+        $signals = [
+            // Sustainably Sourced ← a legal-origin / sustainability certification
+            // recorded on the listing, or an equivalent active supplier badge.
+            ['key' => 'sustainably-sourced', 'label' => 'Sustainably Sourced', 'icon' => 'sparkles',
+                'on' => (filled($this->certification) && preg_match($legalPattern, (string) $this->certification) === 1) || $certifiedBadge],
+
+            // Premium Quality ← a real grade on the listing, or a species the
+            // catalogue classifies in the specialty / precious band.
+            ['key' => 'premium-quality', 'label' => 'Premium Quality', 'icon' => 'star',
+                'on' => filled($this->grade) || (bool) $species?->isPremium()],
+
+            // Reliable Supply ← a real supplier responsiveness / longevity metric.
+            ['key' => 'reliable-supply', 'label' => 'Reliable Supply', 'icon' => 'truck',
+                'on' => $reliable],
+
+            // Export Ready ← the supplier actually records export markets.
+            ['key' => 'export-ready', 'label' => 'Export Ready', 'icon' => 'globe-europe-africa',
+                'on' => $exportReady],
+        ];
+
+        return array_values(array_map(
+            fn (array $s) => ['key' => $s['key'], 'label' => $s['label'], 'icon' => $s['icon']],
+            array_filter($signals, fn (array $s) => (bool) $s['on'])
+        ));
     }
 
     /** True only when a real buyer rating exists behind the star row. */

@@ -62,6 +62,7 @@ class ProductController extends Controller
             ->with([
                 'company.activeBadges',
                 'company.exportMarkets',
+                'company.contacts',
                 'company.species:id,slug,common_name',
                 'species',
                 'images',
