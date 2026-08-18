@@ -52,6 +52,11 @@ Route::get('/documents/{document}/download', DocumentDownloadController::class)
 Route::get('/request-quote', [RfqController::class, 'create'])->name('rfq.create');
 Route::post('/request-quote', [RfqController::class, 'store'])->middleware('throttle:rfq-submit')->name('rfq.store');
 Route::get('/request-quote/thanks', [RfqController::class, 'thanks'])->name('rfq.thanks');
+// Wizard steps. Each is a real GET URL so refresh and browser back/forward work
+// without JavaScript; the POST banks the step in the session and redirects.
+Route::get('/request-quote/step/{step}', [RfqController::class, 'step'])->name('rfq.step');
+Route::post('/request-quote/step/{step}', [RfqController::class, 'storeStep'])
+    ->middleware('throttle:rfq-step')->name('rfq.step.store');
 
 // Session-backed RFQ shortlist ("Add to RFQ List" on a product page).
 Route::post('/rfq-list/{slug}', [RfqListController::class, 'store'])->name('rfq-list.store');

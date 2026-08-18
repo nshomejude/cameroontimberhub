@@ -40,6 +40,11 @@ class AppServiceProvider extends ServiceProvider
             Limit::perHour(3)->by('rfq-email:'.strtolower((string) $request->input('buyer_email'))),
         ]);
 
+        // Wizard step saves write only to the session, so they get their own,
+        // much looser limiter — the strict rfq-submit budget above is reserved
+        // for the one POST that actually creates an RFQ.
+        RateLimiter::for('rfq-step', fn (Request $request) => Limit::perHour(120)->by('rfq-step-ip:'.$request->ip()));
+
         RateLimiter::for('inquiry-submit', fn (Request $request) => Limit::perHour(8)->by('inquiry-ip:'.$request->ip()));
     }
 

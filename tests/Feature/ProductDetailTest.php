@@ -192,9 +192,13 @@ it('adds a product to the session RFQ list and feeds it into the quote form', fu
 
     expect(app(RfqList::class)->count())->toBe(1);
 
-    $this->get(route('rfq.create'))
+    // The quote form is now a wizard: its entry point seeds the basket from the
+    // shortlist, and the line item surfaces once the buyer reaches step 2.
+    $this->get(route('rfq.create'))->assertOk();
+    $this->post(route('rfq.step.store', ['step' => 'details']), ['title' => 'Shortlisted board enquiry']);
+
+    $this->get(route('rfq.step', ['step' => 'products']))
         ->assertOk()
-        ->assertSee('Your RFQ list (1)')
         ->assertSee('Shortlisted Board');
 
     // Posting again toggles it back off.
