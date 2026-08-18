@@ -15,9 +15,17 @@
             @if($species->scientific_name)
                 <p class="mt-2 text-lg italic text-forest-200">{{ $species->scientific_name }}</p>
             @endif
-            @if($species->is_cites_listed)
-                <span class="mt-4 inline-block rounded-full bg-timber-400/20 px-3 py-1 text-xs font-semibold text-timber-200 ring-1 ring-timber-400/40">CITES listed{{ $species->cites_appendix ? ' — Appendix '.$species->cites_appendix : '' }}</span>
-            @endif
+            <div class="mt-4 flex flex-wrap gap-2">
+                @if($species->commercial_category)
+                    <span class="inline-block rounded-full bg-forest-400/20 px-3 py-1 text-xs font-semibold text-forest-100 ring-1 ring-forest-400/40">{{ $species->commercial_category->label() }}</span>
+                @endif
+                @if($species->is_promoted)
+                    <span class="inline-block rounded-full bg-sand-100/15 px-3 py-1 text-xs font-semibold text-sand-100 ring-1 ring-sand-100/30">Promoted species</span>
+                @endif
+                @if($species->is_cites_listed)
+                    <span class="inline-block rounded-full bg-timber-400/20 px-3 py-1 text-xs font-semibold text-timber-200 ring-1 ring-timber-400/40">CITES listed{{ $species->cites_appendix ? ' — Appendix '.$species->cites_appendix : '' }}</span>
+                @endif
+            </div>
         </div>
     </section>
 
@@ -27,6 +35,55 @@
                 <section>
                     <h2 class="font-display text-2xl font-semibold text-forest-950 dark:text-sand-100">About {{ $species->common_name }}</h2>
                     <div class="mt-4 whitespace-pre-line leading-relaxed text-ink-soft dark:text-[#b3ab9b]">{{ $species->description }}</div>
+                </section>
+            @endif
+
+            @php($classification = array_filter([
+                'Commercial category' => $species->commercial_category?->label(),
+                'Botanical family' => $species->family,
+                'Density (air-dry)' => $species->densityRange(),
+                'Durability class' => $species->durability_class,
+                'Janka hardness' => $species->janka_hardness ? number_format($species->janka_hardness).' N' : null,
+                'Trade names' => is_array($species->trade_names) && $species->trade_names ? implode(', ', $species->trade_names) : null,
+                'Local names' => is_array($species->local_names) && $species->local_names ? implode(', ', $species->local_names) : null,
+                'Regions harvested' => is_array($species->region_availability) && $species->region_availability ? implode(', ', $species->region_availability) : null,
+            ]))
+
+            @if($classification)
+                <section>
+                    <h2 class="font-display text-2xl font-semibold text-forest-950 dark:text-sand-100">Classification</h2>
+                    <dl class="mt-4 grid gap-3 sm:grid-cols-2">
+                        @foreach($classification as $label => $value)
+                            <div class="rounded-xl border border-sand-200 dark:border-[#2c2a24] bg-white dark:bg-[#1f1d18] px-4 py-3">
+                                <dt class="text-xs font-semibold uppercase tracking-wide text-ink-soft dark:text-[#b3ab9b]">{{ $label }}</dt>
+                                <dd class="mt-0.5 text-ink dark:text-[#f1ece1]">{{ $value }}</dd>
+                            </div>
+                        @endforeach
+                    </dl>
+                    @if($species->commercial_category)
+                        <p class="mt-3 text-xs text-ink-soft dark:text-[#b3ab9b]">Commercial category is a market grouping used in the timber trade. It is not a regulatory or legal classification.</p>
+                    @endif
+                </section>
+            @endif
+
+            @if(is_array($species->typical_uses) && count($species->typical_uses))
+                <section>
+                    <h2 class="font-display text-2xl font-semibold text-forest-950 dark:text-sand-100">Typical uses</h2>
+                    <ul class="mt-4 flex flex-wrap gap-2">
+                        @foreach($species->typical_uses as $use)
+                            <li class="rounded-full border border-sand-200 dark:border-[#2c2a24] bg-white dark:bg-[#1f1d18] px-3.5 py-1.5 text-sm text-ink dark:text-[#f1ece1]">{{ $use }}</li>
+                        @endforeach
+                    </ul>
+                </section>
+            @endif
+
+            @if($species->is_cites_listed)
+                <section>
+                    <h2 class="font-display text-2xl font-semibold text-forest-950 dark:text-sand-100">CITES status</h2>
+                    <div class="mt-4 rounded-xl border border-timber-200 dark:border-timber-400/30 bg-timber-50 dark:bg-timber-400/10 px-4 py-3 text-sm text-ink dark:text-[#f1ece1]">
+                        <p><span class="font-semibold">{{ $species->scientific_name ?: $species->common_name }}</span> is listed on CITES{{ $species->cites_appendix ? ' Appendix '.$species->cites_appendix : '' }}.</p>
+                        <p class="mt-1 text-ink-soft dark:text-[#b3ab9b]">Listings and their scope change over time. Confirm the current status and any documentation requirements with CITES and the relevant national authorities before trading.</p>
+                    </div>
                 </section>
             @endif
 

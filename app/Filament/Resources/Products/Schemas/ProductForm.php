@@ -39,6 +39,9 @@ class ProductForm
                             ->label('Species'),
                         Select::make('product_type')
                             ->options(ProductType::options())
+                            ->native(false)
+                            ->live()
+                            ->helperText(fn ($state): ?string => $state ? ProductType::tryFrom($state)?->description() : 'The processing form this listing is traded in.')
                             ->required(),
                         TextInput::make('grade')->maxLength(120),
                         Textarea::make('description')->rows(5)->columnSpanFull(),
