@@ -10,50 +10,61 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
+    /* The approved mockups set every heading in the same geometric sans as body
+       copy (no serif), so display and sans share a stack and differ by weight. */
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
-    --font-display: 'Fraunces', ui-serif, Georgia, 'Times New Roman', serif;
+    --font-display: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
 
-    /* Forest — primary brand green */
-    --color-forest-50: #f1f7f2;
-    --color-forest-100: #dcebe0;
-    --color-forest-200: #bad7c2;
-    --color-forest-300: #8fbb9d;
-    --color-forest-400: #5d9a71;
-    --color-forest-500: #3c7d52;
-    --color-forest-600: #2c6240;
-    --color-forest-700: #254f35;
-    --color-forest-800: #20402c;
-    --color-forest-900: #1b3425;
-    --color-forest-950: #0e1c14;
+    /* Forest — primary brand green. Values sampled directly from the approved
+       marketplace mockups in /frontpages (buttons #0a5223, dark bands #031c12,
+       utility bar #173526) so the build matches the design 1:1. */
+    --color-forest-50: #edf7f0;
+    --color-forest-100: #d3ebda;
+    --color-forest-200: #a8d7b8;
+    --color-forest-300: #74bc8d;
+    --color-forest-400: #439c66;
+    --color-forest-500: #1f7d45;
+    --color-forest-600: #15703d;
+    --color-forest-700: #0a5223;
+    --color-forest-800: #073e20;
+    --color-forest-900: #052d1a;
+    --color-forest-950: #031c12;
 
-    /* Timber — warm wood accent */
+    /* Slate-green chrome — utility bar and footer read cooler/greyer than the
+       button greens in the mockups, so they get their own tokens. */
+    --color-bark-700: #21362b;
+    --color-bark-800: #173526;
+    --color-bark-900: #12251b;
+
+    /* Timber — warm wood accent (logo wordmark, species swatches) */
     --color-timber-50: #faf6ef;
     --color-timber-100: #f3e7d2;
     --color-timber-200: #e6cca1;
     --color-timber-300: #d7ac6c;
-    --color-timber-400: #cb9248;
-    --color-timber-500: #bd7a32;
-    --color-timber-600: #a3612a;
+    --color-timber-400: #c38851;
+    --color-timber-500: #a9713e;
+    --color-timber-600: #8a5a30;
     --color-timber-700: #834b27;
     --color-timber-800: #6c3f25;
     --color-timber-900: #5a3622;
 
-    /* Sand — cream neutrals */
-    --color-sand-50: #fbf9f4;
-    --color-sand-100: #f5f0e6;
-    --color-sand-200: #ebe3d2;
-    --color-sand-300: #dcceb4;
-    --color-sand-400: #c4b08a;
+    /* Sand — near-white page/section neutrals */
+    --color-sand-50: #fbfaf8;
+    --color-sand-100: #f9f9f7;
+    --color-sand-200: #efefec;
+    --color-sand-300: #e0e0da;
+    --color-sand-400: #c2c2b8;
 
     /* Ink — warm near-black text */
-    --color-ink: #201e18;
-    --color-ink-soft: #5b554a;
+    --color-ink: #17201a;
+    --color-ink-soft: #5b6560;
 }
 
 @layer base {
     html {
-        /* Larger editorial base so body/UI text isn't cramped (default ~16px). */
-        font-size: 118.75%;
+        /* The mockups are drawn at a standard 16px root; the previous 118.75%
+           editorial scale would oversize every measurement taken from them. */
+        font-size: 100%;
         scroll-behavior: smooth;
     }
 
