@@ -5,7 +5,13 @@
 
       snapshot (payload) — which order is being repeated, the specification the
         buyer asked for, and the unit prices from LAST TIME;
-      live (related Rfq)  — whether the supplier has answered yet.
+      live (related Rfq)  — where the request has actually got to: still in
+        admin triage, approved and routed to the supplier, or priced.
+
+    That middle distinction matters. A reorder RFQ is NOT auto-approved: it
+    enters at `new` and an admin has to approve and route it before the
+    supplier can see or price it. So the card must never say or imply "sent to
+    the supplier" while it is still under review.
 
     The previous prices are the delicate part. They are shown because the buyer
     genuinely paid them and hiding them would make the request unreadable, but
@@ -30,8 +36,18 @@
     $currency = $message->payloadValue('currency');
     $lines = $message->payloadValue('lines') ?? [];
 
-    // Live: has the supplier on this thread put a quote against this request?
-    // The quotation itself renders as its own card further down the thread.
+    $reorders = app(\App\Services\ReorderService::class);
+
+    // Live, in two steps, because a reorder now has THREE honest states:
+    //
+    //   1. raised, but still in admin triage — the supplier cannot see it;
+    //   2. approved and routed to this supplier — they can price it;
+    //   3. priced — their quotation card is further down the thread.
+    //
+    // Both flags are read off the related Rfq on every render, so the card
+    // tracks the request as it moves rather than freezing at "sent".
+    $routed = $rfq ? $reorders->isRoutedToSupplier($rfq, $conversation->company_id) : false;
+
     $answered = $rfq
         ? $rfq->quotes->where('company_id', $conversation->company_id)
             ->whereNotIn('status', [\App\Enums\QuoteStatus::Withdrawn, \App\Enums\QuoteStatus::Draft])
@@ -65,8 +81,14 @@
                         @endif
                     </p>
                 </div>
-                <x-account.status-pill :label="$answered ? 'Quoted' : 'Awaiting pricing'"
-                                       :color="$answered ? 'success' : 'warning'" />
+                @php
+                    [$pillLabel, $pillColor] = match (true) {
+                        $answered => ['Quoted', 'success'],
+                        $routed => ['Awaiting pricing', 'warning'],
+                        default => ['Awaiting review', 'info'],
+                    };
+                @endphp
+                <x-account.status-pill :label="$pillLabel" :color="$pillColor" />
             </div>
 
             {{-- The specification being asked for. Quantity is the buyer's to
@@ -120,6 +142,9 @@
                     Prices shown are what was paid on order {{ $message->payloadValue('source_reference_code') }}.
                     They are for reference only — {{ $conversation->company?->name }} must confirm current pricing
                     before there is anything to accept.
+                    @unless ($routed)
+                        This request is being reviewed and has not reached them yet.
+                    @endunless
                 </span>
             </p>
 
@@ -127,7 +152,18 @@
         </div>
 
         {{-- ------------------------------------------------ supplier pricing --}}
-        @if (! $isBuyer && ! $answered)
+        {{--
+            Nothing pricing-shaped is drawn until the request has cleared admin
+            triage and been routed to this company. ReorderService::quote() and
+            QuoteService::assertQuotable() both refuse before then regardless of
+            what is on screen; hiding the button just stops the supplier
+            clicking something that cannot work yet.
+        --}}
+        @if (! $isBuyer && ! $answered && ! $routed)
+            <p class="mt-2 rounded-xl border border-sand-200 bg-white px-3.5 py-2.5 text-center text-[0.8125rem] text-ink-soft">
+                This reorder request is awaiting review. You will be able to price it once it is released to you.
+            </p>
+        @elseif (! $isBuyer && ! $answered)
             @if ($pricing)
                 <form wire:submit.prevent="submitReorderQuote" class="mt-2 rounded-2xl border border-forest-200 bg-white p-4">
                     <p class="font-display text-[0.9375rem] font-bold text-forest-950">Confirm your pricing</p>
@@ -199,7 +235,11 @@
             @endif
         @elseif ($isBuyer && ! $answered)
             <p class="mt-2 rounded-xl border border-sand-200 bg-white px-3.5 py-2.5 text-center text-[0.8125rem] text-ink-soft">
-                Waiting for {{ $conversation->company?->name }} to confirm pricing.
+                @if ($routed)
+                    Waiting for {{ $conversation->company?->name }} to confirm pricing.
+                @else
+                    Awaiting review before it reaches {{ $conversation->company?->name }}.
+                @endif
             </p>
         @endif
     </div>

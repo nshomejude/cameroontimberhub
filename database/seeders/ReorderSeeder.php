@@ -4,12 +4,17 @@ namespace Database\Seeders;
 
 use App\Enums\MessageType;
 use App\Enums\OrderStatus;
+use App\Enums\RfqStatus;
 use App\Models\Conversation;
 use App\Models\Order;
+use App\Models\User;
 use App\Services\ChatCommerceService;
+use App\Services\LeadFlowService;
 use App\Services\OrderLifecycleService;
 use App\Services\ReorderService;
+use App\Services\RfqTriageService;
 use Illuminate\Database\Seeder;
+use RuntimeException;
 use Throwable;
 
 /**
@@ -19,7 +24,12 @@ use Throwable;
  * The chain it produces is exactly the chain a human would produce, through the
  * same services and in the same order:
  *
- *   buyer reorders  -> REORDER REQUEST card (a new, private RFQ)
+ *   buyer reorders  -> REORDER REQUEST card (a new, private RFQ at `new`)
+ *   admin triages   -> RfqTriageService::approve() then ::route() to the
+ *                      supplier. NOT skipped and not faked: until this happens
+ *                      the supplier genuinely cannot price the request, so a
+ *                      demo that jumped over it would show a state the app
+ *                      cannot actually reach.
  *   supplier prices -> QUOTATION card (Phase 2, reused)
  *   buyer accepts   -> CONTRACT ACCEPTANCE + ORDER REFERENCE cards, and a
  *                      genuinely new Order through QuoteService::accept()
@@ -91,7 +101,26 @@ class ReorderSeeder extends Seeder
                 $rfq = $card->related;
             }
 
-            // 2. The supplier prices it. These are NEW figures the supplier
+            // 2. Admin triage. A reorder RFQ is NOT auto-approved — it arrives
+            //    at `new` like any other request — so the demo has to walk it
+            //    through the real triage service before the supplier can see
+            //    it. approve() then route(), both idempotent: route() only
+            //    creates the RfqCompany row (and the lead, and the exporter
+            //    notification) when one does not already exist.
+            $admin = $this->triageActor($buyer);
+
+            if ($rfq->refresh()->status !== RfqStatus::Approved) {
+                app(RfqTriageService::class)->approve($rfq, $admin);
+            }
+
+            app(RfqTriageService::class)->route(
+                $rfq->refresh(),
+                [$conversation->company_id],
+                $admin,
+                app(LeadFlowService::class),
+            );
+
+            // 3. The supplier prices it. These are NEW figures the supplier
             //    states today — deliberately not the source order's prices.
             $quote = $rfq->quotes()->where('company_id', $conversation->company_id)->first();
 
@@ -109,7 +138,7 @@ class ReorderSeeder extends Seeder
                 ]);
             }
 
-            // 3. The buyer accepts through the unchanged Phase 2 path, which
+            // 4. The buyer accepts through the unchanged Phase 2 path, which
             //    mints the new order, its receipt and its cards.
             if ($quote->refresh()->status->isOpen()) {
                 $commerce->acceptQuotation($conversation->refresh(), $quote->refresh(), $buyer);
@@ -123,7 +152,7 @@ class ReorderSeeder extends Seeder
                 return;
             }
 
-            // 4-6. The Phase 3 cards, reused verbatim on the new order.
+            // 5-7. The Phase 3 cards, reused verbatim on the new order.
             $lifecycle->issueProformaInvoice($conversation->refresh(), $newOrder, $supplier);
 
             if (! $this->hasCardForOrder($conversation, MessageType::PaymentRequest, $newOrder)) {
@@ -154,6 +183,25 @@ class ReorderSeeder extends Seeder
         } catch (Throwable $e) {
             $this->command?->warn('ReorderSeeder: stopped — '.$e->getMessage());
         }
+    }
+
+    /**
+     * A real staff account to attribute the triage decisions to.
+     *
+     * The approval is written to the activity log against whoever this is, so
+     * it must not be the buyer or the supplier — attributing an admin decision
+     * to a party in the trade would put a false name on an audit record. If no
+     * staff account exists the seeder stops rather than inventing one.
+     */
+    private function triageActor(User $buyer): User
+    {
+        $admin = User::role(['super_admin', 'admin'])->whereKeyNot($buyer->getKey())->first();
+
+        if ($admin === null) {
+            throw new RuntimeException('no admin or super_admin account to attribute triage to. Run RolesAndPermissionsSeeder and create a staff user first.');
+        }
+
+        return $admin;
     }
 
     /**

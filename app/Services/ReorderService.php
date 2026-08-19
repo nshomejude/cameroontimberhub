@@ -10,7 +10,6 @@ use App\Models\Message;
 use App\Models\Order;
 use App\Models\Quote;
 use App\Models\Rfq;
-use App\Models\RfqCompany;
 use App\Models\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
@@ -30,7 +29,9 @@ use RuntimeException;
  *
  * Instead a reorder is a REQUEST that re-enters the existing, audited path:
  *
- *      buyer: request()  ->  a new Rfq (private, routed to that one supplier)
+ *      buyer: request()  ->  a new Rfq, private, status `new`
+ *      admin: triage     ->  RfqTriageService::approve() then ::route() to the
+ *                            supplier named on the source order
  *      supplier: quote() ->  a new Quote, priced by the supplier, submitted
  *      buyer: accept     ->  ChatCommerceService::acceptQuotation()
  *                            -> QuoteService::accept() (lock, decline siblings,
@@ -41,6 +42,21 @@ use RuntimeException;
  * accepted quote per RFQ, one order per quote, a contract-acceptance record
  * against the terms the buyer actually saw, and an activity trail throughout.
  * The source order is never written to.
+ *
+ * Triage is NOT skipped
+ * ---------------------
+ * A reorder RFQ is private — it never joins the public pool and is only ever
+ * routed to the one supplier it names — but private is not pre-approved. It
+ * enters at `new` and waits for an admin exactly like any other request. This
+ * service never writes `approved`, never creates the `RfqCompany` routing row
+ * and never mints a lead; all three are RfqTriageService's job, and route()
+ * there refuses to route anything that is not already approved.
+ *
+ * That ordering is what makes the supplier boundary real rather than advisory:
+ * quote() below goes through QuoteService::open() -> assertQuotable(), which
+ * demands BOTH an approved RFQ and a routing row for the quoting company. An
+ * un-triaged reorder satisfies neither, so there is no state in which a
+ * supplier can price a request no admin has seen.
  *
  * Pricing — the crux
  * ------------------
@@ -87,7 +103,6 @@ class ReorderService
         private readonly ChatCommerceService $commerce,
         private readonly IntakeService $intake,
         private readonly QuoteService $quotes,
-        private readonly LeadFlowService $leads,
     ) {}
 
     /* --------------------------------------------------------- eligibility */
@@ -123,6 +138,42 @@ class ReorderService
         if (! in_array($order->status, self::ELIGIBLE_STATUSES, true)) {
             throw new RuntimeException('You can reorder once this order has been delivered.');
         }
+    }
+
+    /**
+     * Has an admin approved this reorder AND routed it to $companyId?
+     *
+     * Both halves are required, and both are read from the real rows rather
+     * than inferred: `approved` alone means an admin looked at it, and a
+     * routing row alone cannot exist without approval (RfqTriageService::route()
+     * refuses otherwise), but the pair is what QuoteService::assertQuotable()
+     * will demand a moment later. The card uses this to decide what it may
+     * honestly claim, and the supplier's button uses it to decide whether to
+     * draw at all — neither is the control, only the courtesy.
+     */
+    public function isRoutedToSupplier(Rfq $rfq, int|string $companyId): bool
+    {
+        if ($rfq->status !== RfqStatus::Approved) {
+            return false;
+        }
+
+        // Read the eager-loaded relation when the thread already batched it
+        // (MessagingService morphWiths `routings` for exactly this), so a
+        // thread of reorder cards does not pay a query per card.
+        if ($rfq->relationLoaded('routings')) {
+            return $rfq->routings->contains(fn ($routing) => (int) $routing->company_id === (int) $companyId);
+        }
+
+        return $rfq->routings()->where('company_id', $companyId)->exists();
+    }
+
+    /**
+     * Still sitting in triage: raised, but not yet approved and routed, so the
+     * supplier cannot see or price it.
+     */
+    public function awaitingReview(Rfq $rfq, int|string $companyId): bool
+    {
+        return ! $this->isRoutedToSupplier($rfq, $companyId);
     }
 
     /** The open reorder request against this order, if one is already running. */
@@ -239,31 +290,26 @@ class ReorderService
 
             $rfq->refresh();
 
-            // A reorder is a private, directed repeat of a trade this platform
-            // already recorded between these two parties, so it is approved and
-            // routed to that one supplier rather than sitting in public triage.
-            // Both moves are logged against the buyer who caused them.
+            // A reorder is PRIVATE — it is a directed repeat of one trade
+            // between these two parties, so it never joins the public RFQ pool
+            // and is never routed to anyone but the supplier it names.
+            //
+            // But private is not the same as pre-approved. The RFQ enters at
+            // `new` and waits for admin triage exactly like any other request:
+            // this service does not set `approved`, does not create the
+            // RfqCompany routing row, and does not mint a lead. Routing happens
+            // only through RfqTriageService::route(), which refuses to route
+            // anything that is not approved — so there is no state in which a
+            // supplier can quote a reorder no admin has looked at.
             $rfq->forceFill(['visibility' => 'private'])->save();
 
-            if ($rfq->status !== RfqStatus::Approved) {
-                $rfq->forceFill(['status' => RfqStatus::Approved->value])->save();
-
-                activity('rfq')->performedOn($rfq)->causedBy($buyer)->event('status_changed')
-                    ->withProperties(['to' => RfqStatus::Approved->value, 'reason' => 'reorder'])
-                    ->log('RFQ status -> approved');
-            }
-
-            $routing = RfqCompany::firstOrCreate(
-                ['rfq_id' => $rfq->getKey(), 'company_id' => $source->company_id],
-                ['status' => 'sent', 'routed_at' => now()],
-            );
-
-            if ($routing->wasRecentlyCreated) {
-                $this->leads->createFromRouting($routing);
-            }
-
             activity('order')->performedOn($source)->causedBy($buyer)->event('reorder_requested')
-                ->withProperties(['rfq_id' => $rfq->getKey(), 'conversation_id' => $conversation->getKey()])
+                ->withProperties([
+                    'rfq_id' => $rfq->getKey(),
+                    'conversation_id' => $conversation->getKey(),
+                    'company_id' => $source->company_id,
+                    'status' => $rfq->status->value,
+                ])
                 ->log('Buyer requested a reorder');
 
             return $this->writeCard($conversation, $buyer, $source, $rfq->refresh(), $quantities);
@@ -293,6 +339,16 @@ class ReorderService
         $rfq->loadMissing('items');
         $conversation->loadMissing('company');
         $company = $conversation->company;
+
+        // The triage boundary, stated up front so the refusal happens before
+        // any write is attempted and the supplier gets a sentence that explains
+        // itself. It is NOT the only guard: QuoteService::assertQuotable()
+        // re-checks approval AND routing inside open() a few lines below, and
+        // that check is the authoritative one. This is the readable half of a
+        // rule the quote path enforces regardless.
+        if (! $this->isRoutedToSupplier($rfq, $company->getKey())) {
+            throw new RuntimeException('This reorder request is still being reviewed and has not been sent to you yet.');
+        }
 
         $lines = is_array($data['lines'] ?? null) ? $data['lines'] : [];
 

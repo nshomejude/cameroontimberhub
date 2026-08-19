@@ -9,6 +9,7 @@ use App\Enums\RfqStatus;
 use App\Livewire\Messaging\Thread;
 use App\Models\Company;
 use App\Models\Conversation;
+use App\Models\Lead;
 use App\Models\Order;
 use App\Models\Quote;
 use App\Models\QuoteItem;
@@ -17,9 +18,11 @@ use App\Models\RfqCompany;
 use App\Models\User;
 use App\Services\ChatCommerceService;
 use App\Services\CompanyReviewService;
+use App\Services\LeadFlowService;
 use App\Services\MessagingService;
 use App\Services\OrderLifecycleService;
 use App\Services\ReorderService;
+use App\Services\RfqTriageService;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
@@ -121,11 +124,44 @@ function roScene(float $unitPrice = 620.00): array
 }
 
 /** The whole reorder chain, up to the new order. */
+/**
+ * An admin account to attribute triage decisions to — never the buyer and
+ * never the supplier, so the approval on the activity log is honest.
+ */
+function roAdmin(): User
+{
+    $admin = User::factory()->create(['email' => 'roadmin'.uniqid().'@example.com']);
+    $admin->assignRole('admin');
+
+    return $admin;
+}
+
+/**
+ * Admin triage: approve the reorder RFQ and route it to the supplier.
+ *
+ * A reorder RFQ is NOT auto-approved, so every test that needs a quotable
+ * request has to go through here — which is the point: if this step were
+ * skippable the supplier boundary would be decorative.
+ */
+function roTriage(Rfq $rfq, Company $company): Rfq
+{
+    $admin = roAdmin();
+    $triage = app(RfqTriageService::class);
+
+    $triage->approve($rfq, $admin);
+    $triage->route($rfq->refresh(), [$company->getKey()], $admin, app(LeadFlowService::class));
+
+    return $rfq->refresh();
+}
+
 function roRunChain(Conversation $c, Order $source, User $buyer, User $staff, float $newPrice = 700.00): array
 {
     $card = roReorders()->request($c, $source, $buyer, []);
     /** @var Rfq $rfq */
     $rfq = $card->related;
+
+    // The admin step is part of the real chain now.
+    roTriage($rfq, $c->company);
 
     $quote = roReorders()->quote($c->refresh(), $rfq->refresh(), $staff, [
         'lines' => $rfq->items->mapWithKeys(fn ($i) => [(int) $i->getKey() => ['unit_price' => $newPrice]])->all(),
@@ -238,6 +274,146 @@ it('refuses a reorder of an order that has not landed yet', function () {
         ->toThrow(RuntimeException::class, 'delivered');
 });
 
+/* ================================================================ ADMIN TRIAGE */
+
+it('leaves a fresh reorder in triage, unrouted and with no lead', function () {
+    [$c, $buyer, $company, , $source] = roScene();
+
+    $card = roReorders()->request($c, $source, $buyer);
+    /** @var Rfq $rfq */
+    $rfq = $card->related;
+
+    // Entered like any other request: `new`, not approved.
+    expect($rfq->status)->toBe(RfqStatus::New)
+        // Private, so it never joins the public pool...
+        ->and($rfq->visibility)->toBe('private')
+        // ...but private is NOT pre-approved: nothing has been routed, and no
+        // lead exists, because routing is triage's job alone.
+        ->and(RfqCompany::where('rfq_id', $rfq->getKey())->exists())->toBeFalse()
+        ->and($rfq->routings()->count())->toBe(0)
+        ->and(Lead::where('rfq_id', $rfq->getKey())->exists())->toBeFalse();
+
+    // The provenance link survives all of this.
+    expect($rfq->reorder_of_order_id)->toBe($source->getKey());
+
+    // And the service agrees the supplier has not been reached.
+    expect(roReorders()->isRoutedToSupplier($rfq, $company->getKey()))->toBeFalse()
+        ->and(roReorders()->awaitingReview($rfq, $company->getKey()))->toBeTrue();
+});
+
+it('refuses a supplier quote until the request is approved and routed', function () {
+    [$c, $buyer, $company, $staff, $source] = roScene();
+
+    $rfq = roReorders()->request($c, $source, $buyer)->related;
+
+    $price = fn () => $rfq->refresh()->items
+        ->mapWithKeys(fn ($i) => [(int) $i->getKey() => ['unit_price' => 700]])->all();
+
+    // 1. Raised, still in triage: refused.
+    expect(fn () => roReorders()->quote($c->refresh(), $rfq->refresh(), $staff, ['lines' => $price()]))
+        ->toThrow(RuntimeException::class, 'still being reviewed');
+
+    expect(Quote::where('rfq_id', $rfq->getKey())->exists())->toBeFalse();
+
+    // 2. Approved but NOT yet routed: still refused. Approval alone is not
+    //    enough — the supplier must actually have been given the request.
+    app(RfqTriageService::class)->approve($rfq->refresh(), roAdmin());
+
+    expect($rfq->refresh()->status)->toBe(RfqStatus::Approved)
+        ->and(roReorders()->isRoutedToSupplier($rfq->refresh(), $company->getKey()))->toBeFalse();
+
+    expect(fn () => roReorders()->quote($c->refresh(), $rfq->refresh(), $staff, ['lines' => $price()]))
+        ->toThrow(RuntimeException::class, 'still being reviewed');
+
+    expect(Quote::where('rfq_id', $rfq->getKey())->exists())->toBeFalse();
+
+    // 3. Routed to this company: now, and only now, it can be priced.
+    app(RfqTriageService::class)->route($rfq->refresh(), [$company->getKey()], roAdmin(), app(LeadFlowService::class));
+
+    $quote = roReorders()->quote($c->refresh(), $rfq->refresh(), $staff, ['lines' => $price()]);
+
+    expect($quote->status)->toBe(QuoteStatus::Submitted)
+        ->and((float) $quote->items->first()->unit_price)->toBe(700.00);
+});
+
+it('refuses a quote from a company the reorder was routed away from', function () {
+    [$c, $buyer, , $staff, $source] = roScene();
+    [, , $otherCompany] = roScene();
+
+    $rfq = roReorders()->request($c, $source, $buyer)->related;
+
+    // Approved and routed — but to somebody else entirely.
+    $triage = app(RfqTriageService::class);
+    $admin = roAdmin();
+    $triage->approve($rfq->refresh(), $admin);
+    $triage->route($rfq->refresh(), [$otherCompany->getKey()], $admin, app(LeadFlowService::class));
+
+    expect(fn () => roReorders()->quote($c->refresh(), $rfq->refresh(), $staff, [
+        'lines' => $rfq->refresh()->items->mapWithKeys(fn ($i) => [(int) $i->getKey() => ['unit_price' => 700]])->all(),
+    ]))->toThrow(RuntimeException::class, 'still being reviewed');
+
+    expect(Quote::where('rfq_id', $rfq->getKey())->where('company_id', $c->company_id)->exists())->toBeFalse();
+});
+
+it('completes the accept to order chain once triage has run', function () {
+    [$c, $buyer, $company, $staff, $source] = roScene(620.00);
+
+    $rfq = roReorders()->request($c, $source, $buyer)->related;
+
+    roTriage($rfq, $company);
+
+    expect($rfq->refresh()->status)->toBe(RfqStatus::Approved)
+        ->and(roReorders()->isRoutedToSupplier($rfq->refresh(), $company->getKey()))->toBeTrue()
+        // Triage minted the routing and the lead, through the ordinary path.
+        ->and(RfqCompany::where('rfq_id', $rfq->getKey())->where('company_id', $company->getKey())->exists())->toBeTrue();
+
+    $quote = roReorders()->quote($c->refresh(), $rfq->refresh(), $staff, [
+        'lines' => $rfq->refresh()->items->mapWithKeys(fn ($i) => [(int) $i->getKey() => ['unit_price' => 700]])->all(),
+    ]);
+
+    app(ChatCommerceService::class)->acceptQuotation($c->refresh(), $quote->refresh(), $buyer);
+
+    $new = Order::where('quote_id', $quote->getKey())->firstOrFail();
+
+    expect($new->reorder_of_order_id)->toBe($source->getKey())
+        ->and($new->status)->toBe(OrderStatus::Awarded)
+        ->and((float) $new->items->first()->unit_price)->toBe(700.00)
+        ->and($new->receipt)->not->toBeNull()
+        // The reorder RFQ is closed by the award, exactly like any other.
+        ->and($rfq->refresh()->status)->toBe(RfqStatus::Closed);
+});
+
+it('shows an awaiting-review card that never claims the supplier has it', function () {
+    [$c, $buyer, $company, $staff, $source] = roScene();
+
+    $rfq = roReorders()->request($c, $source, $buyer)->related;
+
+    // Buyer's view while it is in triage.
+    Livewire::actingAs($buyer)
+        ->test(Thread::class, ['conversationId' => $c->getKey()])
+        ->assertSee('Awaiting review')
+        ->assertSee('Awaiting review before it reaches')
+        ->assertDontSee('Waiting for '.$company->name.' to confirm pricing');
+
+    // Supplier's view: told it exists, given nothing to press.
+    Livewire::actingAs($staff)
+        ->test(Thread::class, ['conversationId' => $c->getKey()])
+        ->assertSee('awaiting review')
+        ->assertDontSee('Price this reorder');
+
+    // After triage the copy flips to the pricing state on both sides.
+    roTriage($rfq, $company);
+
+    Livewire::actingAs($buyer)
+        ->test(Thread::class, ['conversationId' => $c->getKey()])
+        ->assertSee('Awaiting pricing')
+        ->assertDontSee('Awaiting review before it reaches');
+
+    Livewire::actingAs($staff)
+        ->test(Thread::class, ['conversationId' => $c->getKey()])
+        ->assertSee('Price this reorder');
+});
+
 /* ============================================== A REORDER IS A NEW, REAL ORDER */
 
 it('creates a genuinely new order through the audited path and leaves the original untouched', function () {
@@ -269,10 +445,12 @@ it('creates a genuinely new order through the audited path and leaves the origin
 });
 
 it('does not carry the previous price into the new order', function () {
-    [$c, $buyer, , $staff, $source] = roScene(620.00);
+    [$c, $buyer, $company, $staff, $source] = roScene(620.00);
 
     $card = roReorders()->request($c, $source, $buyer);
     $rfq = $card->related;
+
+    roTriage($rfq, $company);
 
     // The request itself holds NO agreed price. The previous unit price rides
     // along only as clearly-labelled reference material in the card payload.
@@ -318,7 +496,7 @@ it('never lets a buyer set the price of their own reorder', function () {
 });
 
 it('accepts a changed quantity from the buyer but still re-prices it', function () {
-    [$c, $buyer, , $staff, $source] = roScene(620.00);
+    [$c, $buyer, $company, $staff, $source] = roScene(620.00);
 
     $itemId = (int) $source->items->first()->getKey();
 
@@ -326,6 +504,8 @@ it('accepts a changed quantity from the buyer but still re-prices it', function 
     $rfq = $card->related;
 
     expect((float) $rfq->items->first()->quantity)->toBe(80.0);
+
+    roTriage($rfq, $company);
 
     $quote = roReorders()->quote($c->refresh(), $rfq->refresh(), $staff, [
         'lines' => [(int) $rfq->items->first()->getKey() => ['unit_price' => 700]],
@@ -501,9 +681,10 @@ it('keeps review eligibility and one-per-order across a reorder', function () {
 });
 
 it('renders the supplier pricing form with empty, required unit prices', function () {
-    [$c, $buyer, , $staff, $source] = roScene(620.00);
+    [$c, $buyer, $company, $staff, $source] = roScene(620.00);
 
-    roReorders()->request($c, $source, $buyer);
+    // Triage first: the form only exists once the request has reached them.
+    roTriage(roReorders()->request($c, $source, $buyer)->related, $company);
 
     // Supplier parity: the same Thread component the exporter panel mounts.
     $component = Livewire::actingAs($staff)

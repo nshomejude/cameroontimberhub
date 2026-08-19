@@ -32,8 +32,9 @@
                     the supplier has agreed to one.
                 --}}
                 <p class="mt-1 text-[0.75rem] text-ink-soft">
-                    Adjust the quantities you need. {{ $conversation->company?->name }} will confirm current
-                    pricing and send a new quotation — the previous prices do not carry over.
+                    Adjust the quantities you need. Your request is reviewed before it reaches
+                    {{ $conversation->company?->name }}, who then confirm current pricing and send a new
+                    quotation — the previous prices do not carry over.
                 </p>
 
                 @foreach ($order->items as $item)
@@ -90,7 +91,8 @@
                 <div class="min-w-0 flex-1">
                     <p class="font-display text-[0.9375rem] font-bold text-forest-950">Order this again</p>
                     <p class="text-[0.8125rem] text-ink-soft">
-                        Repeat this order with the same supplier. They confirm current pricing before you accept.
+                        Repeat this order with the same supplier. Your request is reviewed first, and they
+                        confirm current pricing before you accept.
                     </p>
                 </div>
             </div>

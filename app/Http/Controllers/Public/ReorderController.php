@@ -57,7 +57,7 @@ class ReorderController extends Controller
             return back()->with('error', $e->getMessage());
         }
 
-        return back()->with('status', 'Reorder request sent. The supplier will confirm pricing.');
+        return back()->with('status', 'Reorder request raised. It is reviewed before it reaches the supplier, who then confirms pricing.');
     }
 
     /**
