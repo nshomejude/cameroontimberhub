@@ -624,7 +624,11 @@ class MessagingService
                     Quote::class => ['supersededBy', 'rfq'],
                     QuoteCounterOffer::class => ['quote:id,reference_code'],
                     ContractAcceptance::class => [],
-                    Rfq::class => [],
+                    // The RFQ card reads its live status; the Phase 4 reorder
+                    // card additionally asks whether the supplier has answered
+                    // yet, which is "does a live quote exist on this RFQ".
+                    // Batched here so a thread of reorder chains stays bounded.
+                    Rfq::class => ['quotes:id,rfq_id,company_id,status,reference_code'],
                     // Phase 3 lifecycle cards read their live half off the
                     // order: the proforma reads the snapshot lines, the
                     // documents card lists the uploaded files, and the

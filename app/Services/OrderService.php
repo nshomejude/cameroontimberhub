@@ -103,6 +103,11 @@ class OrderService
                     : null,
                 'buyer_notes' => $rfq->notes,
                 'awarded_at' => now(),
+
+                // Provenance only. Carried from the RFQ so a card can say
+                // "Reorder" without walking back through the quote; it grants
+                // nothing and no figure is inherited with it.
+                'reorder_of_order_id' => $rfq->reorder_of_order_id,
             ]);
 
             $order->save();

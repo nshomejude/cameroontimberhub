@@ -438,7 +438,14 @@ class BuyerDashboard
     public function orderPage(User $user, int $perPage = 10): LengthAwarePaginator
     {
         return $this->orders($user)
-            ->with(['rfq:id,reference_code,buyer_email,user_id', 'company:id,slug,legal_name,trade_name', 'receipt'])
+            // `conversation` so the reorder link on a delivered/completed row
+            // can point at the thread without a query per row.
+            ->with([
+                'rfq:id,reference_code,buyer_email,user_id',
+                'company:id,slug,legal_name,trade_name',
+                'receipt',
+                'conversation:id,order_id',
+            ])
             ->orderByDesc('awarded_at')
             ->orderByDesc('id')
             ->paginate($perPage)

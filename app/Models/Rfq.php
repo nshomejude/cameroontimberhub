@@ -56,6 +56,24 @@ class Rfq extends Model
         return $this->hasMany(Quote::class);
     }
 
+    /**
+     * The past order this request repeats, when it was raised as a reorder.
+     *
+     * Provenance and scoping: it is what proves a reorder RFQ belongs to a
+     * given buyer/supplier pair, so a request from another thread never
+     * resolves. It confers no price and no terms — the supplier still has to
+     * quote it from scratch.
+     */
+    public function reorderOfOrder(): BelongsTo
+    {
+        return $this->belongsTo(Order::class, 'reorder_of_order_id');
+    }
+
+    public function isReorder(): bool
+    {
+        return $this->reorder_of_order_id !== null;
+    }
+
     /** Orders awarded on this RFQ. At most one, since the award is exclusive. */
     public function orders(): HasMany
     {

@@ -32,6 +32,15 @@
             @if ($order)
                 <x-account.status-pill :label="$order->status->label()" :color="$order->status->color()" />
             @endif
+            {{-- The mockup's "Reorder ⟳" chip. Backed by a real column: this
+                 order was awarded from a quote against a reorder request. It is
+                 provenance only — no figure on this order was inherited. --}}
+            @if ($order?->isReorder())
+                <span class="inline-flex items-center gap-1 rounded-full bg-forest-50 px-2.5 py-1 text-[0.6875rem] font-bold text-forest-800 ring-1 ring-inset ring-forest-200">
+                    <x-heroicon-o-arrow-path class="h-3 w-3" />
+                    Reorder
+                </span>
+            @endif
         </div>
 
         <dl class="mt-3 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-sand-200 pt-3 text-[0.8125rem]">
@@ -73,4 +82,18 @@
 
         <p class="mt-2 text-right text-[0.6875rem] text-ink-soft">{{ $message->created_at->format('g:i A') }}</p>
     </div>
+
+    {{-- Reorder, surfaced on the order card itself once the goods have landed.
+         Draws nothing unless this viewer is the buyer and the order is
+         genuinely eligible — the partial asks ReorderService, and the service
+         refuses the action regardless of what was drawn. --}}
+    @if ($order)
+        @include('public.messages.partials.reorder-prompt', [
+            'order' => $order,
+            'isBuyer' => $isBuyer,
+            'user' => $user,
+            'conversation' => $conversation,
+            'reorderForOrderId' => $reorderForOrderId ?? null,
+        ])
+    @endif
 </div>

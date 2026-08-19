@@ -24,7 +24,8 @@
                         <th scope="col" class="py-3 pr-3 font-semibold">Status</th>
                         <th scope="col" class="py-3 pr-3 font-semibold">Payment</th>
                         <th scope="col" class="py-3 pr-3 font-semibold">Awarded</th>
-                        <th scope="col" class="py-3 pr-5 font-semibold">Receipt</th>
+                        <th scope="col" class="py-3 pr-3 font-semibold">Receipt</th>
+                        <th scope="col" class="py-3 pr-5 font-semibold"><span class="sr-only">Reorder</span></th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-sand-200">
@@ -39,12 +40,29 @@
                             <td class="py-3 pr-3"><x-account.status-pill :label="$order->status->label()" :color="$order->status->color()" /></td>
                             <td class="py-3 pr-3"><x-account.status-pill :label="$order->payment_status->label()" :color="$order->payment_status->color()" /></td>
                             <td class="py-3 pr-3 text-ink-soft">{{ $order->awarded_at?->isoFormat('D MMM YYYY') ?? '—' }}</td>
-                            <td class="py-3 pr-5">
+                            <td class="py-3 pr-3">
                                 @if ($order->receipt)
                                     <a href="{{ $access->link(request(), 'receipt', $order->rfq) }}"
                                        class="font-semibold text-forest-700 transition hover:text-forest-900">{{ $order->receipt->receipt_number }}</a>
                                 @else
                                     <span class="text-ink-soft">—</span>
+                                @endif
+                            </td>
+                            {{--
+                                Reorder, surfaced where a buyer looks for a past
+                                order. It is a LINK into the conversation, not an
+                                action: a reorder is a request the supplier must
+                                price, and it belongs in the thread where both
+                                parties can see it. Shown only on orders that are
+                                genuinely eligible and only when a thread exists.
+                            --}}
+                            <td class="py-3 pr-5 text-right">
+                                @if ($order->conversation && app(\App\Services\ReorderService::class)->canReorder(auth()->user(), $order))
+                                    <a href="{{ route('account.messages.show', $order->conversation) }}"
+                                       class="inline-flex items-center gap-1 rounded-lg border border-forest-700 px-2.5 py-1.5 text-[0.75rem] font-bold text-forest-700 transition hover:bg-forest-50">
+                                        <x-heroicon-o-arrow-path class="h-3.5 w-3.5" />
+                                        Reorder
+                                    </a>
                                 @endif
                             </td>
                         </tr>
@@ -74,6 +92,13 @@
                             <span class="text-[0.75rem] text-ink-soft">{{ $order->payment_status->label() }}</span>
                         @endif
                     </div>
+                    @if ($order->conversation && app(\App\Services\ReorderService::class)->canReorder(auth()->user(), $order))
+                        <a href="{{ route('account.messages.show', $order->conversation) }}"
+                           class="mt-3 flex items-center justify-center gap-1.5 rounded-xl border border-forest-700 px-3 py-2 text-[0.8125rem] font-bold text-forest-700 transition hover:bg-forest-50">
+                            <x-heroicon-o-arrow-path class="h-4 w-4" />
+                            Reorder in chat
+                        </a>
+                    @endif
                 </li>
             @endforeach
         </ul>

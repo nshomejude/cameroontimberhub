@@ -8,9 +8,10 @@
 
     From the mockup, deliberately NOT built:
       - "NEED SUPPORT? / Contact Support" — there is no support desk behind it.
-      - "Reorder / Ask for Quotation / Browse Products" next-steps row. Reorder
-        is a Phase 4 concern and a button that silently starts a new RFQ from a
-        completed order is not something to guess at.
+      - "Ask for Quotation / Browse Products / View Suppliers" next-steps row.
+        Generic navigation dressed as transaction follow-up. Reorder — the one
+        item in that row with real meaning here — is built, in Phase 4, as the
+        shared reorder prompt below.
       - The pre-filled 5/5 star row in one comp. Stars are an INPUT here and
         start empty; showing five filled stars before the buyer has chosen is
         both a fabricated rating and a nudge.
@@ -159,5 +160,21 @@
                 @endif
             </div>
         @endif
+
+        {{-- ------------------------------------------------ reorder prompt --}}
+        {{--
+            "Order again", the other half of the post-transaction surface the
+            mockup shows beside "rate your experience".
+
+            What it does NOT do is place an order. It opens a REQUEST that the
+            supplier has to price before there is anything to accept.
+        --}}
+        @include("public.messages.partials.reorder-prompt", [
+            "order" => $order,
+            "isBuyer" => $isBuyer,
+            "user" => $user,
+            "conversation" => $conversation,
+            "reorderForOrderId" => $reorderForOrderId,
+        ])
     </div>
 @endif

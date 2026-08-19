@@ -110,6 +110,11 @@
                 'trackingForOrderId' => $trackingForOrderId,
                 'paymentForOrderId' => $paymentForOrderId,
                 'reviewForOrderId' => $reviewForOrderId,
+                // Phase 4: which reorder form (the buyer's request, or the
+                // supplier's pricing) is open, so the cards render their own
+                // editors without owning the state.
+                'reorderForOrderId' => $reorderForOrderId,
+                'quotingReorderRfqId' => $quotingReorderRfqId,
             ])
         @empty
             <p class="py-8 text-center text-[0.875rem] text-ink-soft">No messages yet. Say hello.</p>

@@ -96,6 +96,13 @@ class AppServiceProvider extends ServiceProvider
         // find that out by brute force.
         RateLimiter::for('order-review', fn (Request $request) => Limit::perMinute(5)
             ->by('order-review:'.($request->user()?->getAuthIdentifier() ?? $request->ip())));
+
+        // A reorder writes an RFQ, a routing row, a lead and a card, and sends
+        // the verification mail — the same cost profile as `chat-rfq`, so the
+        // same hourly budget. The database's partial unique index is what makes
+        // a double submission harmless; this only stops a grind.
+        RateLimiter::for('chat-reorder', fn (Request $request) => Limit::perHour(12)
+            ->by('chat-reorder:'.($request->user()?->getAuthIdentifier() ?? $request->ip())));
     }
 
     /**

@@ -9,9 +9,11 @@ use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\Quote;
 use App\Models\QuoteCounterOffer;
+use App\Models\Rfq;
 use App\Services\ChatCommerceService;
 use App\Services\MessagingService;
 use App\Services\OrderLifecycleService;
+use App\Services\ReorderService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\RecordsNotFoundException;
 use Illuminate\Support\Facades\RateLimiter;
@@ -477,6 +479,170 @@ class Thread extends Component
 
             $this->reset('reviewForm', 'reviewForOrderId');
         }, 'reviewForm.rating');
+    }
+
+    /* ------------------------------------------------------ Phase 4: reorder */
+
+    /**
+     * Reorder, from both sides.
+     *
+     * Buyer: `openReorder()` / `submitReorder()` — asks the supplier to repeat
+     * a delivered or completed order. The form collects QUANTITIES and text
+     * only. There is deliberately no price field on the buyer's side of this
+     * component, and ReorderService reads none, so nothing a buyer types can
+     * become the price of the new order.
+     *
+     * Supplier: `openReorderQuote()` / `submitReorderQuote()` — prices the
+     * request. The unit price inputs live here and only here, and are required.
+     */
+
+    /** Source order id whose reorder form is open, if any. */
+    public ?int $reorderForOrderId = null;
+
+    /** Reorder RFQ id whose supplier pricing form is open, if any. */
+    public ?int $quotingReorderRfqId = null;
+
+    /** @var array<string, mixed> */
+    public array $reorderForm = [
+        'quantities' => [],
+        'shipping_port' => '',
+        'deadline' => '',
+        'notes' => '',
+    ];
+
+    /** @var array<string, mixed> */
+    public array $reorderQuoteForm = [
+        'lines' => [],
+        'lead_time_days' => '',
+        'validity_days' => '',
+        'payment_terms' => '',
+        'shipping_amount' => '',
+    ];
+
+    public function openReorder(int $orderId): void
+    {
+        $user = auth()->user();
+        $conversation = app(MessagingService::class)->find($user, $this->conversationId);
+        $order = app(OrderLifecycleService::class)->threadOrder($conversation, $orderId);
+
+        $this->reset('reorderForm');
+        $this->resetErrorBag();
+
+        // Pre-filled with what was ordered last time, which is a fact about the
+        // buyer's own past order and is theirs to change. No price is
+        // pre-filled anywhere, because there is no price field to fill.
+        $this->reorderForm['quantities'] = $order->items
+            ->mapWithKeys(fn ($item) => [(string) $item->getKey() => rtrim(rtrim((string) $item->quantity, '0'), '.')])
+            ->all();
+
+        $this->reorderForOrderId = (int) $order->getKey();
+    }
+
+    public function cancelReorder(): void
+    {
+        $this->reorderForOrderId = null;
+    }
+
+    public function submitReorder(): void
+    {
+        $this->validate([
+            'reorderForm.quantities' => ['required', 'array', 'min:1'],
+            'reorderForm.quantities.*' => ['required', 'numeric', 'min:0.01', 'max:99999999'],
+            'reorderForm.shipping_port' => ['nullable', 'string', 'max:120'],
+            'reorderForm.deadline' => ['nullable', 'date', 'after_or_equal:today'],
+            'reorderForm.notes' => ['nullable', 'string', 'max:1000'],
+        ], [], ['reorderForm.quantities.*' => 'quantity']);
+
+        if (! $this->allow('chat-reorder', 12, 3600, 'reorderForm.quantities')) {
+            return;
+        }
+
+        $orderId = (int) $this->reorderForOrderId;
+
+        $this->lifecycleAction($orderId, function ($svc, $conv, $order, $user) {
+            app(ReorderService::class)->request($conv, $order, $user, [
+                'quantities' => $this->reorderForm['quantities'],
+                'shipping_port' => $this->reorderForm['shipping_port'] ?: null,
+                'deadline' => $this->reorderForm['deadline'] ?: null,
+                'notes' => $this->reorderForm['notes'] ?: null,
+            ]);
+
+            $this->reset('reorderForm', 'reorderForOrderId');
+        }, 'reorderForm.quantities');
+    }
+
+    /* ------------------------------------------- supplier prices the reorder */
+
+    public function openReorderQuote(int $rfqId): void
+    {
+        $rfq = $this->threadReorderRfq($rfqId);
+
+        $this->reset('reorderQuoteForm');
+        $this->resetErrorBag();
+
+        // Every unit price starts EMPTY. Carrying last time's figure in here as
+        // a default would make "confirm" a single click on a price the supplier
+        // never actually re-stated, which is the whole thing this phase must
+        // not do. The previous price is shown as reference text on the card.
+        $this->reorderQuoteForm['lines'] = $rfq->items
+            ->mapWithKeys(fn ($item) => [(string) $item->getKey() => ['unit_price' => '']])
+            ->all();
+
+        $this->quotingReorderRfqId = (int) $rfq->getKey();
+    }
+
+    public function cancelReorderQuote(): void
+    {
+        $this->quotingReorderRfqId = null;
+    }
+
+    public function submitReorderQuote(): void
+    {
+        $this->validate([
+            'reorderQuoteForm.lines' => ['required', 'array', 'min:1'],
+            'reorderQuoteForm.lines.*.unit_price' => ['required', 'numeric', 'min:0.01', 'max:99999999'],
+            'reorderQuoteForm.lead_time_days' => ['nullable', 'integer', 'min:0', 'max:3650'],
+            'reorderQuoteForm.validity_days' => ['nullable', 'integer', 'min:1', 'max:365'],
+            'reorderQuoteForm.payment_terms' => ['nullable', 'string', 'max:255'],
+            'reorderQuoteForm.shipping_amount' => ['nullable', 'numeric', 'min:0', 'max:999999999'],
+        ], [], ['reorderQuoteForm.lines.*.unit_price' => 'unit price']);
+
+        if (! $this->allow('chat-decision', 10, 60, 'reorderQuoteForm.lines')) {
+            return;
+        }
+
+        $rfqId = (int) $this->quotingReorderRfqId;
+        $user = auth()->user();
+        $conversation = app(MessagingService::class)->find($user, $this->conversationId);
+        $rfq = $this->threadReorderRfq($rfqId);
+
+        try {
+            app(ReorderService::class)->quote($conversation, $rfq, $user, $this->reorderQuoteForm);
+
+            $this->reset('reorderQuoteForm', 'quotingReorderRfqId');
+        } catch (HttpExceptionInterface|RecordsNotFoundException $e) {
+            throw $e;
+        } catch (RuntimeException $e) {
+            $this->addError('reorderQuoteForm.lines', $e->getMessage());
+        }
+    }
+
+    /**
+     * A reorder RFQ id, resolved only if it repeats an order that belongs to
+     * both sides of this thread. Never a bare Rfq::find().
+     */
+    private function threadReorderRfq(int $rfqId): Rfq
+    {
+        $conversation = app(MessagingService::class)->find(auth()->user(), $this->conversationId);
+
+        return Rfq::query()
+            ->whereNotNull('reorder_of_order_id')
+            ->whereHas('reorderOfOrder', fn ($q) => $q
+                ->where('company_id', $conversation->company_id)
+                ->where('user_id', $conversation->user_id))
+            ->with('items')
+            ->whereKey($rfqId)
+            ->firstOr(fn () => abort(404));
     }
 
     /**

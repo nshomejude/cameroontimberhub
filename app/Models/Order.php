@@ -105,6 +105,36 @@ class Order extends Model
         return $this->hasOne(CompanyReview::class);
     }
 
+    /**
+     * The earlier order this one repeats, when it came from a reorder request.
+     *
+     * Provenance, nothing more: this order's money, terms and status are its
+     * own, copied from its own accepted quote at award time exactly like any
+     * other order.
+     */
+    public function reorderOf(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'reorder_of_order_id');
+    }
+
+    public function isReorder(): bool
+    {
+        return $this->reorder_of_order_id !== null;
+    }
+
+    /**
+     * The conversation this order is attached to, if the parties have one.
+     *
+     * Used to send a buyer from `/account/orders` to the place a reorder
+     * actually happens. A reorder is a conversation between two parties, not a
+     * one-click purchase, so the account screen links into the thread rather
+     * than starting anything itself.
+     */
+    public function conversation(): HasOne
+    {
+        return $this->hasOne(Conversation::class);
+    }
+
     /* ----------------------------------------------------------- helpers */
 
     /**

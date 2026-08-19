@@ -22,6 +22,7 @@ use App\Http\Controllers\Public\PricingController;
 use App\Http\Controllers\Public\ProductController;
 use App\Http\Controllers\Public\ProgrammaticExporterController;
 use App\Http\Controllers\Public\ReceiptVerificationController;
+use App\Http\Controllers\Public\ReorderController;
 use App\Http\Controllers\Public\RfqController;
 use App\Http\Controllers\Public\RfqListController;
 use App\Http\Controllers\Public\SearchController;
@@ -230,7 +231,24 @@ Route::middleware(['auth'])->prefix('messages')->name('chat.')->group(function (
         Route::post('/complete', [OrderLifecycleController::class, 'complete'])->name('complete');
         Route::post('/review', [OrderLifecycleController::class, 'review'])
             ->middleware('throttle:order-review')->name('review');
+
+        /*
+         * -------------------------------------------------- Phase 4: reorder
+         *
+         * Buyer-only, POST, CSRF, and on its own tight bucket because each one
+         * writes an RFQ and sends mail — the same reasoning as `chat-rfq`. It
+         * is nested under the source order because that order is exactly what
+         * authorises it: you may reorder the orders you own, and nothing else.
+         */
+        Route::post('/reorder', [ReorderController::class, 'store'])
+            ->middleware('throttle:chat-reorder')->name('reorder');
     });
+
+    // Supplier prices a reorder request. Keyed by the reorder RFQ rather than
+    // by an order, because at this point no new order exists yet — which is
+    // precisely the guarantee this phase rests on.
+    Route::post('/{conversation}/reorders/{rfq}/quote', [ReorderController::class, 'quote'])
+        ->middleware('throttle:chat-decision')->name('reorder.quote');
 });
 
 // Private order documents (proof of delivery, shipping papers). Auth-gated and

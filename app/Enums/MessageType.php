@@ -82,6 +82,21 @@ enum MessageType: string
     /** A review the buyer left about the supplier after completion. */
     case CompanyReview = 'company_review';
 
+    /*
+     * ------------------------------------------------------- Phase 4: reorder
+     *
+     * ONE new case, deliberately. A reorder is a repeat *request*, not a repeat
+     * order: it snapshots the specification the buyer is asking to repeat and
+     * points at the live reorder RFQ. Everything downstream of it — the
+     * supplier's quotation, the new order reference, the proforma, the payment
+     * request, the payment confirmation, the milestone trail — is an existing
+     * Phase 1–3 card, because the reorder travels the ordinary audited path and
+     * the resulting order is an ordinary order.
+     */
+
+    /** Buyer asks to repeat a past order. Carries no agreed price. */
+    case ReorderRequest = 'reorder_request';
+
     /** Blade partial under resources/views/public/messages/types/. */
     public function partial(): string
     {
@@ -107,6 +122,7 @@ enum MessageType: string
             self::OrderDocuments,
             self::TransactionCompleted,
             self::CompanyReview,
+            self::ReorderRequest,
         ], true);
     }
 
@@ -137,6 +153,7 @@ enum MessageType: string
             self::OrderDocuments => 'Shared order documents',
             self::TransactionCompleted => 'Closed the transaction',
             self::CompanyReview => 'Left a review',
+            self::ReorderRequest => 'Asked to reorder',
         };
     }
 
