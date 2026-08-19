@@ -8,7 +8,9 @@ use App\Models\Order;
 use App\Services\OrderService;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -40,6 +42,12 @@ class OrdersTable
                 TextColumn::make('items_count')->counts('items')->label('Lines'),
                 TextColumn::make('awarded_at')->label('Awarded')->dateTime('d M Y H:i')->sortable(),
                 TextColumn::make('expected_delivery_at')->label('Expected delivery')->date('d M Y')->placeholder('—')->toggleable(),
+                // Phase 3 shipment facts. Supplier-entered, no carrier feed
+                // behind them, so both are toggleable and show a dash when the
+                // supplier has not filled them in.
+                TextColumn::make('carrier')->label('Carrier')->placeholder('—')->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('tracking_number')->label('Tracking no.')->placeholder('—')->searchable()->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('documents_count')->counts('documents')->label('Docs')->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 SelectFilter::make('status')->options(OrderStatus::options()),
@@ -52,7 +60,84 @@ class OrdersTable
                     static::step('startProduction', 'Start production', 'heroicon-o-cog-6-tooth', 'warning', OrderStatus::InProduction),
                     static::step('ship', 'Mark shipped', 'heroicon-o-truck', 'warning', OrderStatus::Shipped),
                     static::step('deliver', 'Mark delivered', 'heroicon-o-inbox-arrow-down', 'success', OrderStatus::Delivered),
-                    static::step('complete', 'Complete order', 'heroicon-o-archive-box', 'success', OrderStatus::Completed),
+
+                    /*
+                     * "Complete order" is deliberately NOT offered here.
+                     *
+                     * Phase 3 makes completion the BUYER's act — it is their
+                     * confirmation that the goods arrived acceptably, and it is
+                     * what makes them eligible to review this supplier. A
+                     * supplier who could close their own order could manufacture
+                     * that eligibility, so the button is gone from the supplier
+                     * panel and OrderLifecycleService::complete() refuses the
+                     * supplier regardless. Platform staff retain the move in the
+                     * admin panel for genuine intervention.
+                     */
+
+                    /*
+                     * Shipment details. There is no carrier integration behind
+                     * any of this: every field is typed by a human here, and the
+                     * buyer's card renders only the ones that are non-empty.
+                     */
+                    Action::make('shipment')->label('Shipment details')->icon('heroicon-o-truck')->color('info')
+                        ->visible(fn (Order $r): bool => ! $r->status->isTerminal())
+                        ->fillForm(fn (Order $r): array => $r->only([
+                            'carrier', 'tracking_number', 'tracking_url', 'shipping_method',
+                            'vessel_name', 'voyage_number', 'container_number',
+                            'port_of_loading', 'port_of_discharge',
+                        ]) + [
+                            'etd' => $r->etd?->toDateString(),
+                            'eta' => $r->eta?->toDateString(),
+                        ])
+                        ->schema([
+                            TextInput::make('carrier')->maxLength(120),
+                            TextInput::make('tracking_number')->label('Tracking number')->maxLength(120),
+                            TextInput::make('tracking_url')->label('Carrier tracking link')->url()->maxLength(500)
+                                ->helperText('Must be an http(s) address. It is shown to the buyer as an outbound link to the carrier.'),
+                            TextInput::make('shipping_method')->maxLength(120),
+                            TextInput::make('vessel_name')->label('Vessel')->maxLength(120),
+                            TextInput::make('voyage_number')->label('Voyage')->maxLength(60),
+                            TextInput::make('container_number')->label('Container')->maxLength(60),
+                            TextInput::make('port_of_loading')->maxLength(120),
+                            TextInput::make('port_of_discharge')->maxLength(120),
+                            DatePicker::make('etd')->label('Departed'),
+                            DatePicker::make('eta')->label('Estimated arrival'),
+                        ])
+                        ->action(fn (Order $record, array $data) => static::run(function () use ($record, $data) {
+                            $record->forceFill(array_map(
+                                fn ($v) => ($v === '' || $v === null) ? null : $v,
+                                $data,
+                            ))->save();
+
+                            activity('order')->performedOn($record)->causedBy(auth()->user())
+                                ->event('tracking_updated')
+                                ->log('Supplier updated the shipment details');
+                        }, 'Shipment details saved')),
+
+                    /*
+                     * Record an OFF-PLATFORM payment.
+                     *
+                     * ⚠ This marketplace processes no payments. The form takes
+                     * an amount and a free-text method name and nothing else —
+                     * no card, bank or account details are collected anywhere,
+                     * because there is no payment system to hand them to.
+                     * OrderService::recordPayment() owns the arithmetic, the
+                     * status derivation and the audit entry.
+                     */
+                    Action::make('recordPayment')->label('Record a payment')->icon('heroicon-o-banknotes')->color('success')
+                        ->visible(fn (Order $r): bool => $r->status !== OrderStatus::Cancelled)
+                        ->schema([
+                            TextInput::make('amount')->label('Total received to date')->numeric()
+                                ->required()->minValue(0)
+                                ->helperText('The cumulative amount that has actually reached you, in the order currency.'),
+                            TextInput::make('method')->label('How it arrived')->maxLength(80)
+                                ->placeholder('e.g. Bank transfer')
+                                ->helperText('A name only. Never enter account numbers or any payment credential.'),
+                        ])
+                        ->action(fn (Order $record, array $data) => static::run(
+                            fn () => app(OrderService::class)->recordPayment($record, $data['amount'], $data['method'] ?? null, auth()->user()),
+                            'Payment recorded',
+                        )),
 
                     Action::make('cancel')->label('Cancel order')->icon('heroicon-o-x-circle')->color('danger')
                         ->visible(fn (Order $r): bool => static::allows($r, OrderStatus::Cancelled))

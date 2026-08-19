@@ -16,6 +16,8 @@ class CompanyController extends Controller
     /** How many products the profile shows before deferring to the marketplace. */
     private const PRODUCT_PREVIEW = 8;
 
+    private const REVIEW_PREVIEW = 10;
+
     public function show(string $slug): View
     {
         // Resolve only through the public-visibility scope; anything else is a
@@ -77,6 +79,12 @@ class CompanyController extends Controller
             'productCount' => $productCount,
             'categories' => $categories,
             'documents' => $company->publicDocuments,
+            // Real buyer reviews, each one earned by a completed order. Before
+            // Phase 3 there was no reviews table at all and this section did
+            // not exist; `rating_avg` / `rating_count` are now recomputed from
+            // exactly these rows by CompanyReviewService.
+            'reviews' => $company->publishedReviews()->with('order:id,reference_code')->limit(self::REVIEW_PREVIEW)->get(),
+            'reviewCount' => $company->reviews()->published()->count(),
             'breadcrumbs' => $breadcrumbs,
             'schema' => $this->schema($company, $badges, $productCount),
         ]);

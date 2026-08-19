@@ -407,12 +407,37 @@ it('renders a long thread with a bounded query count', function () {
 
     $this->actingAs($buyer)->get(route('account.messages.show', $conversation))->assertOk();
 
-    $count = count(DB::getQueryLog());
+    $few = count(DB::getQueryLog());
     DB::disableQueryLog();
 
-    // Nineteen messages (fifteen bubbles + four order cards, all pointing at
-    // the same order) must not cost nineteen lookups.
-    expect($count)->toBeLessThan(30);
+    // Twenty more order cards, all pointing at the same order.
+    foreach (range(1, 20) as $i) {
+        msgService()->postOrderReference($conversation, $staff, $order);
+    }
+
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    $this->actingAs($buyer)->get(route('account.messages.show', $conversation))->assertOk();
+
+    $many = count(DB::getQueryLog());
+    DB::disableQueryLog();
+
+    // The real guarantee is that the count does NOT move with the number of
+    // cards: five times the cards must cost the same queries, because
+    // MessagingService::messages() batches the polymorphic `related` load and
+    // everything hanging off it.
+    //
+    // The ceiling is a secondary backstop. It sits at 34 rather than the
+    // original 30 because Phase 3 added three batched eager-loads to the Order
+    // morph (items, documents, review) so the lifecycle cards do not each go
+    // back to the database — a constant +2 here, and the saving grows with
+    // every lifecycle card in a real thread.
+    // Twenty extra cards may cost at most one extra query (the read-state
+    // write differs between a first and a subsequent visit); an N+1 would show
+    // up as twenty.
+    expect($many - $few)->toBeLessThanOrEqual(1)
+        ->and($many)->toBeLessThan(34);
 });
 
 /* ------------------------------------------------------ starting a thread */

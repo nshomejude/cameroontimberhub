@@ -105,6 +105,11 @@
                 // side of the thread the viewer is on.
                 'isBuyer' => $isBuyer,
                 'counteringQuoteId' => $counteringQuoteId,
+                // Phase 3: which lifecycle form (if any) is open, so a card can
+                // render its own inline editor without owning the state.
+                'trackingForOrderId' => $trackingForOrderId,
+                'paymentForOrderId' => $paymentForOrderId,
+                'reviewForOrderId' => $reviewForOrderId,
             ])
         @empty
             <p class="py-8 text-center text-[0.875rem] text-ink-soft">No messages yet. Say hello.</p>

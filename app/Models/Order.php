@@ -43,6 +43,9 @@ class Order extends Model
             'lead_time_days' => 'integer',
             'expected_delivery_at' => 'date',
             'payment_recorded_at' => 'datetime',
+            'payment_due_at' => 'date',
+            'etd' => 'date',
+            'eta' => 'date',
             'awarded_at' => 'datetime',
             'confirmed_at' => 'datetime',
             'production_started_at' => 'datetime',
@@ -91,7 +94,91 @@ class Order extends Model
         return $this->hasOne(Receipt::class)->whereNull('voided_at');
     }
 
+    /** Proof-of-delivery and shipping papers uploaded against this order. */
+    public function documents(): HasMany
+    {
+        return $this->hasMany(OrderDocument::class)->orderBy('id');
+    }
+
+    public function review(): HasOne
+    {
+        return $this->hasOne(CompanyReview::class);
+    }
+
     /* ----------------------------------------------------------- helpers */
+
+    /**
+     * The shipment facts a human actually typed in, as label => value pairs,
+     * with every empty one dropped.
+     *
+     * This is the honest core of the tracking card. There is no carrier API
+     * here: if the supplier has not entered a carrier, the caller gets no
+     * "Carrier" key at all, so the card renders no empty label rather than the
+     * mockup's "To be assigned" placeholder.
+     *
+     * @return array<string, string>
+     */
+    public function shipmentFacts(): array
+    {
+        $facts = [
+            'Carrier' => $this->carrier,
+            'Tracking number' => $this->tracking_number,
+            'Shipping method' => $this->shipping_method,
+            'Vessel' => $this->vessel_name,
+            'Voyage' => $this->voyage_number,
+            'Container' => $this->container_number,
+            'Port of loading' => $this->port_of_loading,
+            'Port of discharge' => $this->port_of_discharge,
+            'Departed' => $this->etd?->isoFormat('D MMM YYYY'),
+            'Estimated arrival' => $this->eta?->isoFormat('D MMM YYYY'),
+        ];
+
+        return array_filter(
+            array_map(fn ($value) => is_string($value) ? trim($value) : $value, $facts),
+            fn ($value) => $value !== null && $value !== '',
+        );
+    }
+
+    public function hasShipmentFacts(): bool
+    {
+        return $this->shipmentFacts() !== [];
+    }
+
+    /**
+     * The supplier's tracking link, only when it is a real absolute http(s)
+     * URL. A carrier reference typed into the wrong box never becomes an
+     * `href`, and a `javascript:` value is refused outright.
+     */
+    public function trackingLink(): ?string
+    {
+        $url = trim((string) $this->tracking_url);
+
+        if ($url === '' || ! filter_var($url, FILTER_VALIDATE_URL)) {
+            return null;
+        }
+
+        return in_array(parse_url($url, PHP_URL_SCHEME), ['http', 'https'], true) ? $url : null;
+    }
+
+    /**
+     * Delivery facts recorded when the supplier marked it delivered.
+     *
+     * @return array<string, string>
+     */
+    public function deliveryFacts(): array
+    {
+        return array_filter([
+            'Delivered on' => $this->delivered_at?->isoFormat('D MMM YYYY, h:mm A'),
+            'Received by' => $this->delivered_to_name,
+            'Delivery location' => $this->delivery_location,
+        ], fn ($value) => $value !== null && trim((string) $value) !== '');
+    }
+
+    /** True once the buyer may leave a review: the order is closed. */
+    public function isReviewable(): bool
+    {
+        return $this->status === OrderStatus::Completed;
+    }
 
     /** "USD 18,500.00" — currency code up front, never a guessed symbol. */
     public function money(float|string|null $amount): string

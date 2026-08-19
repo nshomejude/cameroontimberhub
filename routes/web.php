@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\DocumentDownloadController;
+use App\Http\Controllers\OrderDocumentDownloadController;
 use App\Http\Controllers\Public\AccountController;
 use App\Http\Controllers\Public\BuyerOrderController;
 use App\Http\Controllers\Public\BuyerQuoteController;
@@ -15,6 +16,7 @@ use App\Http\Controllers\Public\DirectoryController;
 use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Public\InquiryController;
 use App\Http\Controllers\Public\MessageController;
+use App\Http\Controllers\Public\OrderLifecycleController;
 use App\Http\Controllers\Public\PageController;
 use App\Http\Controllers\Public\PricingController;
 use App\Http\Controllers\Public\ProductController;
@@ -186,7 +188,57 @@ Route::middleware(['auth'])->prefix('messages')->name('chat.')->group(function (
 
     Route::post('/{conversation}/counter-offers/{offer}/respond', [ChatCommerceController::class, 'respondToCounter'])
         ->middleware('throttle:chat-decision')->name('counter.respond');
+
+    /*
+     * ---------------------------------------------- Phase 3: order lifecycle
+     *
+     * Every one of these is POST and CSRF-protected. There is deliberately no
+     * GET that advances an order, records a payment, attaches a document or
+     * publishes a review — a prefetch or a crawler must never be able to move
+     * money-adjacent state.
+     *
+     * The buyer/supplier split is enforced in OrderLifecycleService, not by
+     * middleware, for the same reason the quotation routes are: which side of
+     * a thread you are on is a property of that thread, and a stranger 404s in
+     * MessagingService long before any role is considered.
+     */
+    /*
+     * The printable proforma invoice sheet. GET, because it changes nothing:
+     * it is a read-only document view of the order snapshot, rendered with the
+     * same @media print machinery as the receipt. Participation is re-checked
+     * inside the controller, so a stranger 404s.
+     */
+    Route::get('/{conversation}/orders/{order}/proforma', [OrderLifecycleController::class, 'proformaSheet'])
+        ->name('order.proforma.sheet');
+
+    Route::prefix('/{conversation}/orders/{order}')->name('order.')->middleware('throttle:chat-decision')->group(function () {
+        // supplier-only
+        Route::post('/proforma', [OrderLifecycleController::class, 'proforma'])->name('proforma');
+        Route::post('/payment-request', [OrderLifecycleController::class, 'requestPayment'])->name('payment.request');
+        Route::post('/payment-record', [OrderLifecycleController::class, 'recordPayment'])->name('payment.record');
+        Route::post('/confirm', [OrderLifecycleController::class, 'confirm'])->name('confirm');
+        Route::post('/production', [OrderLifecycleController::class, 'startProduction'])->name('production');
+        Route::post('/ship', [OrderLifecycleController::class, 'ship'])->name('ship');
+        Route::post('/tracking', [OrderLifecycleController::class, 'updateTracking'])->name('tracking');
+        Route::post('/deliver', [OrderLifecycleController::class, 'deliver'])->name('deliver');
+
+        // Uploads get their own tighter bucket — they cost disk, not just rows.
+        Route::post('/documents', [OrderLifecycleController::class, 'attachDocuments'])
+            ->middleware('throttle:order-upload')->name('documents');
+
+        // buyer-only
+        Route::post('/complete', [OrderLifecycleController::class, 'complete'])->name('complete');
+        Route::post('/review', [OrderLifecycleController::class, 'review'])
+            ->middleware('throttle:order-review')->name('review');
+    });
 });
+
+// Private order documents (proof of delivery, shipping papers). Auth-gated and
+// then authorised against the order itself; the bytes live on the private
+// `documents` disk and have no public URL of any kind.
+Route::get('/order-documents/{document}/download', OrderDocumentDownloadController::class)
+    ->middleware(['auth'])
+    ->name('order-documents.download');
 
 // CMS catch-all — must be last. Resolves any published page by slug (legal, static, etc.).
 Route::get('/{slug}', [PageController::class, 'show'])

@@ -48,6 +48,40 @@ enum MessageType: string
     /** The recorded acceptance of a quotation's terms. Never a signature. */
     case ContractAcceptance = 'contract_acceptance';
 
+    /*
+     * ------------------------------------------------- Phase 3: order lifecycle
+     *
+     * All six of these follow the same split as the Phase 1 order card: the
+     * payload snapshots the money and the identity as they stood when the card
+     * was posted, while `related` points at the live Order so the status pill,
+     * the milestone trail, the tracking fields and the settlement state are
+     * always read fresh.
+     */
+
+    /** Proforma invoice — a document view of the order snapshot. Not fiscal. */
+    case ProformaInvoice = 'proforma_invoice';
+
+    /** What is owed and how the supplier asks to be paid. Moves no money. */
+    case PaymentRequest = 'payment_request';
+
+    /** Settlement recorded by an authorised party. Driven by payment_status. */
+    case PaymentConfirmed = 'payment_confirmed';
+
+    /** Production / shipment / tracking, all read live off the order. */
+    case ShipmentUpdate = 'shipment_update';
+
+    /** Delivery recorded, with proof-of-delivery files if any were uploaded. */
+    case OrderDelivered = 'order_delivered';
+
+    /** The order's uploaded shipping documents, listed live. */
+    case OrderDocuments = 'order_documents';
+
+    /** The order is closed. Summary + the review prompt. */
+    case TransactionCompleted = 'transaction_completed';
+
+    /** A review the buyer left about the supplier after completion. */
+    case CompanyReview = 'company_review';
+
     /** Blade partial under resources/views/public/messages/types/. */
     public function partial(): string
     {
@@ -65,6 +99,14 @@ enum MessageType: string
             self::Quotation,
             self::CounterOffer,
             self::ContractAcceptance,
+            self::ProformaInvoice,
+            self::PaymentRequest,
+            self::PaymentConfirmed,
+            self::ShipmentUpdate,
+            self::OrderDelivered,
+            self::OrderDocuments,
+            self::TransactionCompleted,
+            self::CompanyReview,
         ], true);
     }
 
@@ -87,6 +129,14 @@ enum MessageType: string
             self::Quotation => 'Sent a quotation',
             self::CounterOffer => 'Sent a counter-offer',
             self::ContractAcceptance => 'Accepted the quotation terms',
+            self::ProformaInvoice => 'Shared a proforma invoice',
+            self::PaymentRequest => 'Sent a payment request',
+            self::PaymentConfirmed => 'Recorded a payment',
+            self::ShipmentUpdate => 'Shared a shipment update',
+            self::OrderDelivered => 'Recorded the delivery',
+            self::OrderDocuments => 'Shared order documents',
+            self::TransactionCompleted => 'Closed the transaction',
+            self::CompanyReview => 'Left a review',
         };
     }
 

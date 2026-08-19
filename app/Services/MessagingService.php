@@ -6,6 +6,7 @@ use App\Enums\ConversationStatus;
 use App\Enums\ConversationTopic;
 use App\Enums\MessageType;
 use App\Models\Company;
+use App\Models\CompanyReview;
 use App\Models\ContractAcceptance;
 use App\Models\Conversation;
 use App\Models\ConversationParticipant;
@@ -624,6 +625,14 @@ class MessagingService
                     QuoteCounterOffer::class => ['quote:id,reference_code'],
                     ContractAcceptance::class => [],
                     Rfq::class => [],
+                    // Phase 3 lifecycle cards read their live half off the
+                    // order: the proforma reads the snapshot lines, the
+                    // documents card lists the uploaded files, and the
+                    // completion card asks whether a review exists. Batching
+                    // them here keeps a thread of fifty lifecycle cards at the
+                    // same bounded query count as a thread of one.
+                    Order::class => ['items', 'documents', 'review'],
+                    CompanyReview::class => ['company:id,legal_name,trade_name'],
                 ]),
             ])
             ->orderBy('created_at')

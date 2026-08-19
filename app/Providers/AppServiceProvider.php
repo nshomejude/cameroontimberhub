@@ -83,6 +83,19 @@ class AppServiceProvider extends ServiceProvider
             Limit::perMinute(10)->by('chat-decision:'.($request->user()?->getAuthIdentifier() ?? $request->ip())),
             Limit::perHour(120)->by('chat-decision-hour:'.($request->user()?->getAuthIdentifier() ?? $request->ip())),
         ]);
+
+        // Document uploads cost disk, not just rows, so they get a tighter
+        // budget than the rest of the lifecycle actions.
+        RateLimiter::for('order-upload', fn (Request $request) => [
+            Limit::perMinute(6)->by('order-upload:'.($request->user()?->getAuthIdentifier() ?? $request->ip())),
+            Limit::perHour(60)->by('order-upload-hour:'.($request->user()?->getAuthIdentifier() ?? $request->ip())),
+        ]);
+
+        // A buyer can leave at most one review per order and the database
+        // enforces it; this budget exists only to blunt a scripted attempt to
+        // find that out by brute force.
+        RateLimiter::for('order-review', fn (Request $request) => Limit::perMinute(5)
+            ->by('order-review:'.($request->user()?->getAuthIdentifier() ?? $request->ip())));
     }
 
     /**

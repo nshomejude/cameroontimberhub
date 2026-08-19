@@ -84,6 +84,27 @@ class CompanyForm
                             ->columnSpanFull(),
                     ]),
 
+                /*
+                 * Settlement instructions shown on the buyer's payment-request
+                 * card.
+                 *
+                 * ⚠ This marketplace processes no payments and holds no funds.
+                 * This is free text the supplier maintains so a buyer can pay
+                 * them directly; the platform neither validates it, uses it,
+                 * nor transmits anything to a bank. It is shown only to a buyer
+                 * who has an order with this company, never on a public page.
+                 */
+                Section::make('Payment instructions')
+                    ->collapsed()
+                    ->schema([
+                        Textarea::make('payment_instructions')
+                            ->label('How buyers should pay you')
+                            ->rows(5)
+                            ->maxLength(2000)
+                            ->helperText('Shown to a buyer alongside a payment request on one of your orders. Cameroon Timber Hub does not process payments — buyers settle with you directly. Do not paste anything here you would not want an existing customer to read.')
+                            ->columnSpanFull(),
+                    ]),
+
                 Section::make('Gallery')
                     ->collapsed()
                     ->schema([

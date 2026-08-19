@@ -301,6 +301,31 @@ class Company extends Model
         return $years === null || $years <= 0 ? $query : $query->where('years_experience', '>=', $years);
     }
 
+    /**
+     * Buyer reviews of this supplier. `rating_avg` / `rating_count` are
+     * recomputed from the published rows here by CompanyReviewService, so the
+     * relation is the source and the columns are the cache.
+     */
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(CompanyReview::class);
+    }
+
+    public function publishedReviews(): HasMany
+    {
+        return $this->reviews()->published()->latest();
+    }
+
+    /**
+     * True when the supplier has published settlement instructions. There is
+     * no payment integration; this is free text the supplier maintains so a
+     * buyer can pay them off-platform.
+     */
+    public function hasPaymentInstructions(): bool
+    {
+        return trim((string) $this->payment_instructions) !== '';
+    }
+
     /** Status-agnostic scope for the exporter dashboard: only the user's company. */
     public function scopeDashboardOwned(Builder $query, User $user): Builder
     {

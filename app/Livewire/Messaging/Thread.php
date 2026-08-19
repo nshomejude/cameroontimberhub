@@ -11,6 +11,7 @@ use App\Models\Quote;
 use App\Models\QuoteCounterOffer;
 use App\Services\ChatCommerceService;
 use App\Services\MessagingService;
+use App\Services\OrderLifecycleService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\RecordsNotFoundException;
 use Illuminate\Support\Facades\RateLimiter;
@@ -276,6 +277,238 @@ class Thread extends Component
 
             $commerce->respondToCounter($offer->setRelation('conversation', $conversation), $user, $decision);
         });
+    }
+
+    /* ------------------------------------------------ Phase 3: order lifecycle */
+
+    /**
+     * The in-thread order lifecycle actions.
+     *
+     * Exactly the same discipline as the quotation actions above: the
+     * conversation is re-resolved through MessagingService on every call (so a
+     * tampered `conversationId` 404s), the order is re-resolved through
+     * OrderLifecycleService::threadOrder() (so an order id from another thread
+     * 404s), the limiter is re-checked because Livewire bypasses route
+     * middleware, and the buyer/supplier rule is decided *only* by
+     * OrderLifecycleService.
+     *
+     * Nothing in this class or the views it renders decides who may act. The
+     * buttons are hidden from the wrong side as a courtesy; the service refuses
+     * them as the actual control.
+     */
+
+    /** Which order's tracking / payment / review form is open, if any. */
+    public ?int $trackingForOrderId = null;
+
+    public ?int $paymentForOrderId = null;
+
+    public ?int $reviewForOrderId = null;
+
+    /** @var array<string, mixed> */
+    public array $trackingForm = [
+        'carrier' => '',
+        'tracking_number' => '',
+        'tracking_url' => '',
+        'shipping_method' => '',
+        'vessel_name' => '',
+        'voyage_number' => '',
+        'container_number' => '',
+        'port_of_loading' => '',
+        'port_of_discharge' => '',
+        'etd' => '',
+        'eta' => '',
+    ];
+
+    /**
+     * Amount and a free-text method name. There is deliberately no field here
+     * for a card number, a bank account or any other credential — this records
+     * a payment that already happened elsewhere and the platform must never be
+     * the thing holding those details.
+     *
+     * @var array<string, mixed>
+     */
+    public array $paymentForm = [
+        'amount' => '',
+        'method' => '',
+    ];
+
+    /** @var array<string, mixed> */
+    public array $reviewForm = [
+        'rating' => '',
+        'title' => '',
+        'body' => '',
+    ];
+
+    public function issueProforma(int $orderId): void
+    {
+        $this->lifecycleAction($orderId, fn ($svc, $conv, $order, $user) => $svc->issueProformaInvoice($conv, $order, $user));
+    }
+
+    public function sendPaymentRequest(int $orderId): void
+    {
+        $this->lifecycleAction($orderId, fn ($svc, $conv, $order, $user) => $svc->requestPayment($conv, $order, $user));
+    }
+
+    public function confirmOrder(int $orderId): void
+    {
+        $this->lifecycleAction($orderId, fn ($svc, $conv, $order, $user) => $svc->confirm($conv, $order, $user));
+    }
+
+    public function startProduction(int $orderId): void
+    {
+        $this->lifecycleAction($orderId, fn ($svc, $conv, $order, $user) => $svc->startProduction($conv, $order, $user));
+    }
+
+    public function shipOrder(int $orderId): void
+    {
+        $this->lifecycleAction($orderId, fn ($svc, $conv, $order, $user) => $svc->ship($conv, $order, $user));
+    }
+
+    public function deliverOrder(int $orderId): void
+    {
+        $this->lifecycleAction($orderId, fn ($svc, $conv, $order, $user) => $svc->deliver($conv, $order, $user));
+    }
+
+    /** Buyer only — the supplier cannot close their own transaction. */
+    public function completeOrder(int $orderId): void
+    {
+        $this->lifecycleAction($orderId, fn ($svc, $conv, $order, $user) => $svc->complete($conv, $order, $user));
+    }
+
+    /* ------------------------------------------------------- tracking form */
+
+    public function openTracking(int $orderId): void
+    {
+        $this->trackingForOrderId = $orderId;
+        $this->reset('trackingForm');
+        $this->resetErrorBag();
+    }
+
+    public function cancelTracking(): void
+    {
+        $this->trackingForOrderId = null;
+    }
+
+    public function saveTracking(): void
+    {
+        $this->validate([
+            'trackingForm.carrier' => ['nullable', 'string', 'max:120'],
+            'trackingForm.tracking_number' => ['nullable', 'string', 'max:120'],
+            'trackingForm.tracking_url' => ['nullable', 'url:http,https', 'max:500'],
+            'trackingForm.shipping_method' => ['nullable', 'string', 'max:120'],
+            'trackingForm.vessel_name' => ['nullable', 'string', 'max:120'],
+            'trackingForm.voyage_number' => ['nullable', 'string', 'max:60'],
+            'trackingForm.container_number' => ['nullable', 'string', 'max:60'],
+            'trackingForm.port_of_loading' => ['nullable', 'string', 'max:120'],
+            'trackingForm.port_of_discharge' => ['nullable', 'string', 'max:120'],
+            'trackingForm.etd' => ['nullable', 'date'],
+            'trackingForm.eta' => ['nullable', 'date'],
+        ], [], ['trackingForm.tracking_url' => 'tracking link']);
+
+        $orderId = (int) $this->trackingForOrderId;
+
+        $this->lifecycleAction($orderId, function ($svc, $conv, $order, $user) {
+            $svc->updateTracking($conv, $order, $user, $this->trackingForm);
+
+            $this->reset('trackingForm', 'trackingForOrderId');
+        }, 'trackingForm.carrier');
+    }
+
+    /* -------------------------------------------------------- payment form */
+
+    public function openPayment(int $orderId): void
+    {
+        $this->paymentForOrderId = $orderId;
+        $this->reset('paymentForm');
+        $this->resetErrorBag();
+    }
+
+    public function cancelPayment(): void
+    {
+        $this->paymentForOrderId = null;
+    }
+
+    public function savePayment(): void
+    {
+        $this->validate([
+            'paymentForm.amount' => ['required', 'numeric', 'min:0', 'max:999999999'],
+            'paymentForm.method' => ['nullable', 'string', 'max:80'],
+        ], [], ['paymentForm.amount' => 'amount received']);
+
+        $orderId = (int) $this->paymentForOrderId;
+
+        $this->lifecycleAction($orderId, function ($svc, $conv, $order, $user) {
+            $svc->recordPayment($conv, $order, $user, $this->paymentForm['amount'], $this->paymentForm['method'] ?: null);
+
+            $this->reset('paymentForm', 'paymentForOrderId');
+        }, 'paymentForm.amount');
+    }
+
+    /* --------------------------------------------------------- review form */
+
+    public function openReview(int $orderId): void
+    {
+        $this->reviewForOrderId = $orderId;
+        $this->reset('reviewForm');
+        $this->resetErrorBag();
+    }
+
+    public function cancelReview(): void
+    {
+        $this->reviewForOrderId = null;
+    }
+
+    public function submitReview(): void
+    {
+        $this->validate([
+            'reviewForm.rating' => ['required', 'integer', 'min:1', 'max:5'],
+            'reviewForm.title' => ['nullable', 'string', 'max:160'],
+            'reviewForm.body' => ['nullable', 'string', 'max:2000'],
+        ], [], ['reviewForm.rating' => 'rating']);
+
+        $orderId = (int) $this->reviewForOrderId;
+
+        $this->lifecycleAction($orderId, function ($svc, $conv, $order, $user) {
+            $svc->review($conv, $order, $user, [
+                'rating' => (int) $this->reviewForm['rating'],
+                'title' => $this->reviewForm['title'] ?: null,
+                'body' => $this->reviewForm['body'] ?: null,
+            ]);
+
+            $this->reset('reviewForm', 'reviewForOrderId');
+        }, 'reviewForm.rating');
+    }
+
+    /**
+     * Shared plumbing for every lifecycle action.
+     *
+     * A RuntimeException here is a domain refusal — "you cannot ship an order
+     * that was never confirmed", "you have already reviewed this order" — which
+     * is the expected outcome of clicking a button that went stale while it was
+     * on screen, so it becomes an inline error. Authorisation failures are
+     * HttpExceptions and are re-thrown so a 403 stays a 403.
+     */
+    private function lifecycleAction(int $orderId, callable $action, string $errorField = 'body'): void
+    {
+        if (! $this->allow('order-lifecycle', 20, 60, $errorField)) {
+            return;
+        }
+
+        $user = auth()->user();
+        $conversation = app(MessagingService::class)->find($user, $this->conversationId);
+        $lifecycle = app(OrderLifecycleService::class);
+
+        // Scoped: an order that is not this thread's 404s here, so an id from
+        // another buyer's conversation is indistinguishable from a missing one.
+        $order = $lifecycle->threadOrder($conversation, $orderId);
+
+        try {
+            $action($lifecycle, $conversation, $order, $user);
+        } catch (HttpExceptionInterface|RecordsNotFoundException $e) {
+            throw $e;
+        } catch (RuntimeException $e) {
+            $this->addError($errorField, $e->getMessage());
+        }
     }
 
     /* --------------------------------------------------- commerce plumbing */

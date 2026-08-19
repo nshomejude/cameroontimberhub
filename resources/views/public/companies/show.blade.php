@@ -419,6 +419,73 @@
                                                 Buyers should conduct final due diligence before any transaction.
                                             </p>
                                         </section>
+
+                                        {{--
+                                            Buyer reviews.
+
+                                            Phase 3 added the `company_reviews`
+                                            table; before it, this platform had
+                                            `rating_avg` / `rating_count` columns
+                                            with nothing behind them and no
+                                            review content anywhere, which
+                                            earlier phases deliberately refused
+                                            to fabricate.
+
+                                            Every row here is a real review left
+                                            by a real buyer against a completed
+                                            order they owned, one per order,
+                                            enforced by a unique index. The
+                                            section is absent entirely when
+                                            there are none — no "Be the first to
+                                            review" shell, no empty star strip.
+
+                                            Bodies are escaped by Blade. This is
+                                            the one place on a public page where
+                                            buyer-authored free text is shown to
+                                            strangers, so nothing here uses
+                                            {!! !!} and nothing un-escapes to
+                                            "render formatting".
+                                        --}}
+                                        @if ($reviews->isNotEmpty())
+                                            <section class="{{ $card }} p-5">
+                                                <div class="flex flex-wrap items-baseline justify-between gap-2">
+                                                    <h2 class="text-[1.0625rem] font-bold text-ink">Buyer reviews</h2>
+                                                    <span class="text-[0.8125rem] text-ink-soft">{{ number_format($reviewCount) }} total</span>
+                                                </div>
+
+                                                @if ($company->hasRating())
+                                                    <div class="mt-3 flex items-center gap-3 rounded-lg bg-sand-100 p-3">
+                                                        <span class="font-display text-[2rem] font-semibold leading-none text-forest-800">{{ rtrim(rtrim(number_format((float) $company->rating_avg, 1), '0'), '.') }}</span>
+                                                        <x-star-rating :rating="$company->rating_avg" :count="$company->rating_count" />
+                                                    </div>
+                                                @endif
+
+                                                <ul class="mt-3 divide-y divide-sand-200 border-t border-sand-200">
+                                                    @foreach ($reviews as $review)
+                                                        <li class="py-3">
+                                                            <div class="flex flex-wrap items-baseline justify-between gap-2">
+                                                                <span class="text-[0.875rem] font-semibold text-ink">{{ $review->rating }}/5</span>
+                                                                <span class="text-[0.75rem] text-ink-soft">{{ $review->created_at->format('d M Y') }}</span>
+                                                            </div>
+                                                            @if ($review->title)
+                                                                <p class="mt-1 text-[0.875rem] font-semibold text-ink">{{ $review->title }}</p>
+                                                            @endif
+                                                            @if ($review->body)
+                                                                <p class="mt-1 whitespace-pre-line text-[0.8125rem] leading-relaxed text-ink-soft">{{ $review->body }}</p>
+                                                            @endif
+                                                            <p class="mt-1.5 text-[0.75rem] text-ink-soft">
+                                                                {{ $review->authorDisplayName() }} · verified order
+                                                            </p>
+                                                        </li>
+                                                    @endforeach
+                                                </ul>
+
+                                                <p class="mt-3 border-t border-sand-200 pt-3 text-[0.75rem] leading-relaxed text-ink-soft">
+                                                    Reviews can only be left by a buyer who completed an order with this supplier
+                                                    on Cameroon Timber Hub, and each order can be reviewed once.
+                                                </p>
+                                            </section>
+                                        @endif
                                     </div>
                                 </div>
                                 @break
