@@ -6,11 +6,17 @@ use App\Enums\ConversationStatus;
 use App\Enums\ConversationTopic;
 use App\Enums\MessageType;
 use App\Models\Company;
+use App\Models\ContractAcceptance;
 use App\Models\Conversation;
 use App\Models\ConversationParticipant;
 use App\Models\Message;
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\Quote;
+use App\Models\QuoteCounterOffer;
+use App\Models\QuoteItem;
+use App\Models\Rfq;
+use App\Models\RfqItem;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -282,6 +288,168 @@ class MessagingService
         ]);
     }
 
+    /* -------------------------------------------------- phase 2: commerce */
+
+    /**
+     * The RFQ card posted by the in-thread RFQ composer.
+     *
+     * The payload snapshots the request as it was sent — a later admin edit to
+     * the RFQ must not silently change what the supplier was asked for. The
+     * RFQ's triage status is NOT snapshotted; it is read live off the related
+     * Rfq, so a card in a thread shows where the request actually stands.
+     */
+    public function postRfqReference(Conversation $conversation, ?User $sender, Rfq $rfq): Message
+    {
+        $rfq->loadMissing('items.species');
+
+        return $this->write($conversation, [
+            'sender_user_id' => $sender?->getKey(),
+            'type' => MessageType::RfqReference->value,
+            'payload' => [
+                'reference_code' => $rfq->reference_code,
+                'title' => $rfq->title,
+                'incoterm' => $rfq->incoterm?->value,
+                'shipping_port' => $rfq->shipping_port,
+                'destination_country_code' => $rfq->destination_country_code,
+                'deadline' => $rfq->deadline?->toDateString(),
+                'notes' => $rfq->notes,
+                'items' => $rfq->items->map(fn (RfqItem $item) => [
+                    'species' => $item->species?->common_name ?: $item->species_text,
+                    'form' => $item->form?->label(),
+                    'grade' => $item->grade,
+                    'dimensions' => $item->dimensions,
+                    'moisture_content' => $item->moisture_content,
+                    'quantity' => $item->quantity === null ? null : rtrim(rtrim(number_format((float) $item->quantity, 2, '.', ''), '0'), '.'),
+                    'unit' => $item->unit,
+                ])->all(),
+            ],
+            'related_type' => $rfq->getMorphClass(),
+            'related_id' => $rfq->getKey(),
+        ]);
+    }
+
+    /**
+     * The quotation card (mockups: "Quotation shortcode" / "RFQ from Chat").
+     *
+     * Every figure is snapshotted, because an agreed price must never move
+     * retroactively. `status` and the validity countdown are read live off the
+     * related Quote, so a quote that expires, is withdrawn, is revised or is
+     * accepted updates this card in place without a second message being
+     * written — which is precisely the Phase 1 contract.
+     */
+    public function postQuotation(Conversation $conversation, ?User $sender, Quote $quote): Message
+    {
+        $quote->loadMissing(['items.species', 'company', 'rfq']);
+
+        return $this->write($conversation, [
+            'sender_user_id' => $sender?->getKey(),
+            'sender_company_id' => $conversation->company_id,
+            'type' => MessageType::Quotation->value,
+            'payload' => $this->quotationTerms($quote),
+            'related_type' => $quote->getMorphClass(),
+            'related_id' => $quote->getKey(),
+        ]);
+    }
+
+    /**
+     * The canonical terms snapshot for a quote.
+     *
+     * Shared by the quotation card and by the contract-acceptance record, on
+     * purpose: the hash a buyer's acceptance is recorded against must be a hash
+     * of *the same array* that was rendered above the button they pressed, not
+     * of a separately assembled lookalike.
+     *
+     * @return array<string, mixed>
+     */
+    public function quotationTerms(Quote $quote): array
+    {
+        $quote->loadMissing(['items.species', 'company', 'rfq']);
+
+        return [
+            'reference_code' => $quote->reference_code,
+            'revision' => (int) ($quote->revision ?? 1),
+            'supplier_name' => $quote->company?->name,
+            'rfq_reference' => $quote->rfq?->reference_code,
+            'currency' => $quote->currency->value,
+            'subtotal_amount' => (string) $quote->subtotal_amount,
+            'shipping_amount' => $quote->shipping_amount === null ? null : (string) $quote->shipping_amount,
+            'tax_amount' => $quote->tax_amount === null ? null : (string) $quote->tax_amount,
+            'total_amount' => (string) $quote->total_amount,
+            'incoterm' => $quote->incoterm?->value,
+            'lead_time_days' => $quote->lead_time_days,
+            'payment_terms' => $quote->payment_terms,
+            'validity_days' => $quote->validity_days,
+            'valid_until' => $quote->valid_until?->toDateString(),
+            'submitted_at' => $quote->submitted_at?->toIso8601String(),
+            'notes' => $quote->notes,
+            'items' => $quote->items->map(fn (QuoteItem $item) => [
+                'description' => $item->description,
+                'specification' => $item->specification(),
+                'quantity' => rtrim(rtrim(number_format((float) $item->quantity, 2, '.', ''), '0'), '.'),
+                'unit' => $item->unit?->value,
+                'unit_label' => $item->unit?->label(),
+                'unit_price' => (string) $item->unit_price,
+                'line_total' => (string) $item->line_total,
+            ])->all(),
+        ];
+    }
+
+    /**
+     * One negotiation round. Live status comes off the QuoteCounterOffer, so
+     * the card's buttons disappear the moment the other side answers.
+     */
+    public function postCounterOffer(Conversation $conversation, User $sender, QuoteCounterOffer $offer): Message
+    {
+        $participant = $this->participantFor($sender, $conversation);
+
+        return $this->write($conversation, [
+            'sender_user_id' => $sender->getKey(),
+            'sender_company_id' => $participant->isSupplier() ? $conversation->company_id : null,
+            'type' => MessageType::CounterOffer->value,
+            'payload' => [
+                'party' => $offer->party,
+                'quote_reference' => $offer->quote?->reference_code,
+                'currency' => $offer->currency->value,
+                'quantity' => $offer->quantity === null ? null : rtrim(rtrim(number_format((float) $offer->quantity, 2, '.', ''), '0'), '.'),
+                'unit' => $offer->unit?->value,
+                'unit_label' => $offer->unit?->label(),
+                'unit_price' => (string) $offer->unit_price,
+                'total_amount' => (string) $offer->total_amount,
+                'incoterm' => $offer->incoterm?->value,
+                'lead_time_days' => $offer->lead_time_days,
+                'payment_terms' => $offer->payment_terms,
+                'note' => $offer->note,
+                'proposed_at' => $offer->created_at?->toIso8601String(),
+            ],
+            'related_type' => $offer->getMorphClass(),
+            'related_id' => $offer->getKey(),
+        ]);
+    }
+
+    /**
+     * The acceptance record card.
+     *
+     * Purely factual: who, when, from where, and the hash of the terms they
+     * were shown. Nothing here claims a signature — see ContractAcceptance.
+     */
+    public function postContractAcceptance(Conversation $conversation, ContractAcceptance $acceptance): Message
+    {
+        return $this->write($conversation, [
+            'type' => MessageType::ContractAcceptance->value,
+            'payload' => [
+                'quote_reference' => $acceptance->quote?->reference_code,
+                'accepted_by_name' => $acceptance->accepted_by_name,
+                'accepted_at' => $acceptance->accepted_at?->toIso8601String(),
+                'ip_address' => $acceptance->ip_address,
+                'terms_hash' => $acceptance->terms_hash,
+                'currency' => data_get($acceptance->terms, 'currency'),
+                'total_amount' => data_get($acceptance->terms, 'total_amount'),
+            ],
+            'related_type' => $acceptance->getMorphClass(),
+            'related_id' => $acceptance->getKey(),
+        ]);
+    }
+
     /** @param  array<string, mixed>  $attributes */
     private function write(Conversation $conversation, array $attributes): Message
     {
@@ -442,7 +610,22 @@ class MessagingService
         $conversation->loadMissing('participants');
 
         $messages = $conversation->messages()
-            ->with(['sender:id,name', 'senderCompany:id,legal_name,trade_name,logo_path', 'replyTo', 'related'])
+            ->with([
+                'sender:id,name',
+                'senderCompany:id,legal_name,trade_name,logo_path',
+                'replyTo',
+                // morphWith so the Phase 2 cards' own live lookups are batched
+                // too: a quotation card asks whether its quote was superseded
+                // and which RFQ it belongs to, and without this that would be
+                // two queries PER CARD. With it, a thread of fifty quotations
+                // still costs the same bounded handful as a thread of one.
+                'related' => fn ($morphTo) => $morphTo->morphWith([
+                    Quote::class => ['supersededBy', 'rfq'],
+                    QuoteCounterOffer::class => ['quote:id,reference_code'],
+                    ContractAcceptance::class => [],
+                    Rfq::class => [],
+                ]),
+            ])
             ->orderBy('created_at')
             ->orderBy('id')
             ->limit($limit)

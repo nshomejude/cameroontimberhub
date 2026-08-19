@@ -31,6 +31,7 @@ class Quote extends Model
             'total_amount' => 'decimal:2',
             'lead_time_days' => 'integer',
             'validity_days' => 'integer',
+            'revision' => 'integer',
             'valid_until' => 'date',
             'submitted_at' => 'datetime',
             'viewed_at' => 'datetime',
@@ -64,6 +65,30 @@ class Quote extends Model
         return $this->hasOne(Order::class);
     }
 
+    /** Negotiation rounds recorded against this quote, oldest first. */
+    public function counterOffers(): HasMany
+    {
+        return $this->hasMany(QuoteCounterOffer::class)->orderBy('id');
+    }
+
+    /** The quote this one replaced after a negotiation settled. */
+    public function supersedes(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'supersedes_quote_id');
+    }
+
+    /** The revision that replaced this quote, if any. */
+    public function supersededBy(): HasOne
+    {
+        return $this->hasOne(self::class, 'supersedes_quote_id');
+    }
+
+    /** The recorded acceptance of this quote's terms. At most one. */
+    public function acceptance(): HasOne
+    {
+        return $this->hasOne(ContractAcceptance::class);
+    }
+
     /* ------------------------------------------------------------- scopes */
 
     /**
@@ -92,6 +117,38 @@ class Quote extends Model
     public function isActionable(): bool
     {
         return $this->status->isOpen() && ! $this->isExpired();
+    }
+
+    /**
+     * True when this quote was withdrawn *because* a negotiation replaced it.
+     *
+     * Uses the loaded relation when it is there so a thread full of quotation
+     * cards does not fire one query per card.
+     */
+    public function isSuperseded(): bool
+    {
+        return $this->relationLoaded('supersededBy')
+            ? $this->supersededBy !== null
+            : $this->supersededBy()->exists();
+    }
+
+    /**
+     * Status as it should read in a thread. Identical to the raw status in
+     * every case but one: a quote withdrawn to make way for its own revision is
+     * "Revised", because "Withdrawn" would say the supplier walked away.
+     */
+    public function threadStatusLabel(): string
+    {
+        return $this->status === QuoteStatus::Withdrawn && $this->isSuperseded()
+            ? 'Revised'
+            : $this->status->label();
+    }
+
+    public function threadStatusColor(): string
+    {
+        return $this->status === QuoteStatus::Withdrawn && $this->isSuperseded()
+            ? 'info'
+            : $this->status->color();
     }
 
     /**

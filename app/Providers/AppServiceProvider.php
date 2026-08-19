@@ -69,6 +69,20 @@ class AppServiceProvider extends ServiceProvider
         // notifies a supplier, so it gets a much smaller budget.
         RateLimiter::for('message-start', fn (Request $request) => Limit::perHour(30)
             ->by('msg-start:'.($request->user()?->getAuthIdentifier() ?? $request->ip())));
+
+        // In-thread commerce. Tighter than prose because each action writes to
+        // the RFQ/quote/order tables and, for an RFQ, sends mail. Accepting is
+        // as cheap as a click, so the budget also exists to blunt a stolen
+        // session hammering accept against every open quote. Applied to the
+        // plain routes and re-checked inside the Livewire actions, which do not
+        // pass through route middleware.
+        RateLimiter::for('chat-rfq', fn (Request $request) => Limit::perHour(12)
+            ->by('chat-rfq:'.($request->user()?->getAuthIdentifier() ?? $request->ip())));
+
+        RateLimiter::for('chat-decision', fn (Request $request) => [
+            Limit::perMinute(10)->by('chat-decision:'.($request->user()?->getAuthIdentifier() ?? $request->ip())),
+            Limit::perHour(120)->by('chat-decision-hour:'.($request->user()?->getAuthIdentifier() ?? $request->ip())),
+        ]);
     }
 
     /**

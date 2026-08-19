@@ -8,6 +8,7 @@ use App\Http\Controllers\DocumentDownloadController;
 use App\Http\Controllers\Public\AccountController;
 use App\Http\Controllers\Public\BuyerOrderController;
 use App\Http\Controllers\Public\BuyerQuoteController;
+use App\Http\Controllers\Public\ChatCommerceController;
 use App\Http\Controllers\Public\CompanyController;
 use App\Http\Controllers\Public\ContactController;
 use App\Http\Controllers\Public\DirectoryController;
@@ -157,6 +158,34 @@ Route::middleware(['auth', 'buyer'])->prefix('account')->name('account.')->group
     Route::get('/messages/{conversation}', [MessageController::class, 'show'])->name('messages.show');
     Route::post('/messages/{conversation}', [MessageController::class, 'store'])
         ->middleware('throttle:message-send')->name('messages.store');
+});
+
+// In-thread commerce: RFQ composer, quotation accept/decline/withdraw, and the
+// negotiation ledger.
+//
+// Deliberately outside the `buyer` group: a supplier is a legitimate actor on
+// half of these (issuing, withdrawing, countering) and EnsureBuyerAccount would
+// bounce them to their own panel before the action ran. The *role* rule is not
+// a middleware concern anyway — which side of a given thread you are on is a
+// property of that thread, so ChatCommerceService decides it, and a
+// non-participant never gets that far because MessagingService 404s first.
+//
+// Every route is POST. There is no GET that changes state anywhere in here.
+Route::middleware(['auth'])->prefix('messages')->name('chat.')->group(function () {
+    Route::post('/{conversation}/rfq', [ChatCommerceController::class, 'storeRfq'])
+        ->middleware('throttle:chat-rfq')->name('rfq');
+
+    Route::post('/{conversation}/quotes/{quote}/accept', [ChatCommerceController::class, 'acceptQuote'])
+        ->middleware('throttle:chat-decision')->name('quote.accept');
+    Route::post('/{conversation}/quotes/{quote}/decline', [ChatCommerceController::class, 'declineQuote'])
+        ->middleware('throttle:chat-decision')->name('quote.decline');
+    Route::post('/{conversation}/quotes/{quote}/withdraw', [ChatCommerceController::class, 'withdrawQuote'])
+        ->middleware('throttle:chat-decision')->name('quote.withdraw');
+    Route::post('/{conversation}/quotes/{quote}/counter', [ChatCommerceController::class, 'counter'])
+        ->middleware('throttle:chat-decision')->name('quote.counter');
+
+    Route::post('/{conversation}/counter-offers/{offer}/respond', [ChatCommerceController::class, 'respondToCounter'])
+        ->middleware('throttle:chat-decision')->name('counter.respond');
 });
 
 // CMS catch-all — must be last. Resolves any published page by slug (legal, static, etc.).

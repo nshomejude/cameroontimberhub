@@ -2,8 +2,11 @@
 
 namespace App\Filament\Exporter\Resources\Quotes\Tables;
 
+use App\Enums\ConversationTopic;
 use App\Enums\QuoteStatus;
 use App\Models\Quote;
+use App\Services\ChatCommerceService;
+use App\Services\MessagingService;
 use App\Services\QuoteService;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
@@ -48,6 +51,40 @@ class QuotesTable
                         try {
                             $quotes->submit($record, auth()->user());
                             Notification::make()->title('Quote submitted')->success()->send();
+                        } catch (RuntimeException $e) {
+                            Notification::make()->title($e->getMessage())->danger()->send();
+                        }
+                    }),
+
+                // Supplier-side parity for the mockup's quotation card: the
+                // supplier is the only party who may put a quotation into a
+                // conversation, and this is where they do it.
+                //
+                // Only offered when the RFQ actually belongs to a registered
+                // account — a guest RFQ has no buyer to open a thread with, and
+                // inventing one would be worse than hiding the button.
+                Action::make('shareInChat')
+                    ->label('Share in chat')
+                    ->icon('heroicon-m-chat-bubble-left-right')
+                    ->color('gray')
+                    ->requiresConfirmation()
+                    ->modalDescription('Posts this quotation into your conversation with the buyer, where they can accept, decline or counter it. Starts the conversation if there is not one already.')
+                    ->visible(fn (Quote $record): bool => in_array($record->status, [QuoteStatus::Submitted, QuoteStatus::Viewed], true)
+                        && $record->rfq?->user_id !== null)
+                    ->action(function (Quote $record, MessagingService $messaging, ChatCommerceService $commerce) {
+                        try {
+                            $record->loadMissing(['rfq.user', 'company']);
+
+                            $conversation = $messaging->start(
+                                buyer: $record->rfq->user,
+                                company: $record->company,
+                                topic: ConversationTopic::Rfq,
+                                subject: 'Quotation '.$record->reference_code,
+                            );
+
+                            $commerce->issueQuotation($conversation, $record, auth()->user());
+
+                            Notification::make()->title('Quotation shared in the conversation')->success()->send();
                         } catch (RuntimeException $e) {
                             Notification::make()->title($e->getMessage())->danger()->send();
                         }

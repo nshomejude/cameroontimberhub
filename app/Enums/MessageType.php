@@ -36,6 +36,18 @@ enum MessageType: string
     /** The product context header card at the top of the thread. */
     case ProductReference = 'product_reference';
 
+    /** RFQ posted from the in-thread composer — snapshot lines, live status. */
+    case RfqReference = 'rfq_reference';
+
+    /** Supplier quotation card — snapshot money, live quote status. */
+    case Quotation = 'quotation';
+
+    /** One negotiation round: a proposed price/quantity/terms from one side. */
+    case CounterOffer = 'counter_offer';
+
+    /** The recorded acceptance of a quotation's terms. Never a signature. */
+    case ContractAcceptance = 'contract_acceptance';
+
     /** Blade partial under resources/views/public/messages/types/. */
     public function partial(): string
     {
@@ -45,7 +57,15 @@ enum MessageType: string
     /** True when this type renders a structured card rather than a bubble. */
     public function isCard(): bool
     {
-        return in_array($this, [self::OrderReference, self::OrderStatus, self::ProductReference], true);
+        return in_array($this, [
+            self::OrderReference,
+            self::OrderStatus,
+            self::ProductReference,
+            self::RfqReference,
+            self::Quotation,
+            self::CounterOffer,
+            self::ContractAcceptance,
+        ], true);
     }
 
     /** Only prose typed by a person may be deleted by its author. */
@@ -63,6 +83,10 @@ enum MessageType: string
             self::OrderReference => 'Shared an order reference',
             self::OrderStatus => 'Shared the order status',
             self::ProductReference => 'Shared a product',
+            self::RfqReference => 'Sent a request for quote',
+            self::Quotation => 'Sent a quotation',
+            self::CounterOffer => 'Sent a counter-offer',
+            self::ContractAcceptance => 'Accepted the quotation terms',
         };
     }
 

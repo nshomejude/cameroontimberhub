@@ -101,14 +101,154 @@
                 'user' => $user,
                 'conversation' => $conversation,
                 'messaging' => $messaging,
+                // Resolved once in the component. No card recomputes which
+                // side of the thread the viewer is on.
+                'isBuyer' => $isBuyer,
+                'counteringQuoteId' => $counteringQuoteId,
             ])
         @empty
             <p class="py-8 text-center text-[0.875rem] text-ink-soft">No messages yet. Say hello.</p>
         @endforelse
     </div>
 
+    {{-- ---------------------------------------------------- RFQ composer --}}
+    {{--
+        Mockup: "REQUEST FOR QUOTE (RFQ)" sitting inline in the thread, opened
+        from the "+" beside the composer.
+
+        Buyer only, and only structurally: the supplier never sees the trigger,
+        and ChatCommerceService::assertBuyer() refuses the action regardless.
+
+        The fields are the ones the RFQ schema actually has. There is no
+        "Attach Files" row from the mockup because messaging still has no
+        attachment storage — shipping the buttons would be three dead controls.
+    --}}
+    @if ($isBuyer)
+        <div class="border-t border-sand-200 bg-sand-100 px-4 py-3">
+            @if ($showRfqForm)
+                <form wire:submit.prevent="submitRfq" class="rounded-2xl border border-sand-200 bg-white p-4">
+                    <div class="flex items-start gap-2.5">
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-forest-700 text-white">
+                            <x-heroicon-o-document-text class="h-5 w-5" />
+                        </span>
+                        <div class="min-w-0 flex-1">
+                            <p class="font-display text-[0.9375rem] font-bold text-forest-950">Request for quote</p>
+                            <p class="text-[0.75rem] text-ink-soft">Fill in the details below to request a quotation.</p>
+                        </div>
+                        <button type="button" wire:click="toggleRfqForm" class="shrink-0 text-ink-soft hover:text-ink" aria-label="Close request form">
+                            <x-heroicon-m-x-mark class="h-5 w-5" />
+                        </button>
+                    </div>
+
+                    <div class="mt-3 grid grid-cols-2 gap-3 text-[0.8125rem]">
+                        <div class="col-span-2">
+                            <label for="rfq-species" class="block text-[0.75rem] font-semibold text-ink-soft">Species / product <span class="text-red-600">*</span></label>
+                            <input id="rfq-species" type="text" maxlength="180" wire:model="rfqForm.species_text"
+                                   class="mt-1 w-full rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 outline-none focus:border-forest-500">
+                        </div>
+
+                        <div>
+                            <label for="rfq-quantity" class="block text-[0.75rem] font-semibold text-ink-soft">Quantity <span class="text-red-600">*</span></label>
+                            <input id="rfq-quantity" type="number" step="0.01" min="0.01" wire:model="rfqForm.quantity"
+                                   class="mt-1 w-full rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 outline-none focus:border-forest-500">
+                        </div>
+                        <div>
+                            <label for="rfq-unit" class="block text-[0.75rem] font-semibold text-ink-soft">Unit <span class="text-red-600">*</span></label>
+                            <select id="rfq-unit" wire:model="rfqForm.unit"
+                                    class="mt-1 w-full rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 outline-none focus:border-forest-500">
+                                @foreach ($unitOptions as $value => $label)
+                                    <option value="{{ $value }}">{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="rfq-form" class="block text-[0.75rem] font-semibold text-ink-soft">Form</label>
+                            <select id="rfq-form" wire:model="rfqForm.form"
+                                    class="mt-1 w-full rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 outline-none focus:border-forest-500">
+                                <option value="">—</option>
+                                @foreach ($formOptions as $value => $label)
+                                    <option value="{{ $value }}">{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label for="rfq-grade" class="block text-[0.75rem] font-semibold text-ink-soft">Grade</label>
+                            <input id="rfq-grade" type="text" maxlength="60" wire:model="rfqForm.grade"
+                                   class="mt-1 w-full rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 outline-none focus:border-forest-500">
+                        </div>
+
+                        <div class="col-span-2">
+                            <label for="rfq-dimensions" class="block text-[0.75rem] font-semibold text-ink-soft">Dimensions</label>
+                            <input id="rfq-dimensions" type="text" maxlength="255" wire:model="rfqForm.dimensions"
+                                   class="mt-1 w-full rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 outline-none focus:border-forest-500">
+                        </div>
+
+                        <div>
+                            <label for="rfq-moisture" class="block text-[0.75rem] font-semibold text-ink-soft">Moisture</label>
+                            <input id="rfq-moisture" type="text" maxlength="60" wire:model="rfqForm.moisture_content"
+                                   class="mt-1 w-full rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 outline-none focus:border-forest-500">
+                        </div>
+                        <div>
+                            <label for="rfq-incoterm" class="block text-[0.75rem] font-semibold text-ink-soft">Delivery terms</label>
+                            <select id="rfq-incoterm" wire:model="rfqForm.incoterm"
+                                    class="mt-1 w-full rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 outline-none focus:border-forest-500">
+                                <option value="">—</option>
+                                @foreach ($incotermOptions as $value => $label)
+                                    <option value="{{ $value }}">{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="rfq-port" class="block text-[0.75rem] font-semibold text-ink-soft">Destination port</label>
+                            <input id="rfq-port" type="text" maxlength="120" wire:model="rfqForm.shipping_port"
+                                   class="mt-1 w-full rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 outline-none focus:border-forest-500">
+                        </div>
+                        <div>
+                            <label for="rfq-deadline" class="block text-[0.75rem] font-semibold text-ink-soft">Required by</label>
+                            <input id="rfq-deadline" type="date" wire:model="rfqForm.deadline"
+                                   class="mt-1 w-full rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 outline-none focus:border-forest-500">
+                        </div>
+
+                        <div class="col-span-2">
+                            <label for="rfq-notes" class="block text-[0.75rem] font-semibold text-ink-soft">Additional requirements</label>
+                            <textarea id="rfq-notes" rows="2" maxlength="500" wire:model="rfqForm.notes"
+                                      placeholder="Eg. surface finish, certification, packaging."
+                                      class="mt-1 w-full resize-y rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 outline-none focus:border-forest-500"></textarea>
+                        </div>
+                    </div>
+
+                    @foreach (['rfqForm.species_text', 'rfqForm.quantity', 'rfqForm.unit', 'rfqForm.deadline'] as $field)
+                        @if ($fieldError = $errors->first($field))
+                            <p class="mt-2 text-[0.8125rem] font-medium text-red-700">{{ $fieldError }}</p>
+                        @endif
+                    @endforeach
+
+                    <button type="submit"
+                            class="mt-3 w-full rounded-xl bg-forest-800 px-4 py-2.5 text-[0.875rem] font-bold text-white transition hover:bg-forest-900">
+                        Send request for quote
+                    </button>
+                </form>
+            @else
+                <button type="button" wire:click="toggleRfqForm"
+                        class="flex w-full items-center justify-center gap-2 rounded-xl border border-forest-700 bg-white px-4 py-2.5 text-[0.875rem] font-bold text-forest-700 transition hover:bg-forest-50">
+                    <x-heroicon-m-plus class="h-4 w-4" />
+                    Post a requirement (RFQ)
+                </button>
+            @endif
+        </div>
+    @endif
+
     {{-- -------------------------------------------------------- composer --}}
     <div class="border-t border-sand-200 bg-white px-4 py-3">
+        @if (session('chat_status'))
+            <p class="mb-2 rounded-xl bg-forest-50 px-3 py-2 text-[0.8125rem] font-medium text-forest-800">{{ session('chat_status') }}</p>
+        @endif
+        @if (session('chat_error'))
+            <p class="mb-2 rounded-xl bg-red-50 px-3 py-2 text-[0.8125rem] font-medium text-red-700">{{ session('chat_error') }}</p>
+        @endif
+
         @if ($replyTo)
             <div class="mb-2 flex items-center gap-2 rounded-xl border-l-2 border-forest-500 bg-sand-100 px-3 py-2">
                 <span class="min-w-0 flex-1 truncate text-[0.8125rem] text-ink-soft">Replying to: {{ $replyTo->preview(60) }}</span>
