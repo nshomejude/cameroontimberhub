@@ -61,9 +61,14 @@ class HomeController extends Controller
     }
 
     /**
-     * Platform counters for the hero panel / mobile stats band. Real aggregates
-     * win; the mockup figures are the floor so an empty demo database still
-     * renders the approved design.
+     * Platform counters for the hero panel / mobile stats band.
+     *
+     * These are public factual claims about the size of the marketplace, so
+     * they report real aggregates only. The mockup's figures (200+ suppliers,
+     * 5,000+ products, 1,200+ RFQs) were previously used as a floor via
+     * max($actual, $floor), which meant the homepage advertised 200+ verified
+     * suppliers while the platform had 13 -- a misrepresentation to buyers.
+     * A tile with nothing behind it is dropped rather than padded.
      *
      * @return array<string, array{value: string, label: string}>
      */
@@ -77,18 +82,34 @@ class HomeController extends Controller
             ->distinct()
             ->count('country_code');
 
-        return [
-            'suppliers' => ['value' => $this->counter($suppliers, 200), 'label' => 'Verified Suppliers'],
-            'products' => ['value' => $this->counter($products, 5000), 'label' => 'Timber Products'],
-            'rfqs' => ['value' => $this->counter($rfqs, 1200), 'label' => 'RFQs Completed'],
-            'countries' => ['value' => $this->counter($countries, 50), 'label' => 'Countries Served'],
-        ];
+        return array_filter([
+            'suppliers' => $this->counter($suppliers, 'Verified Suppliers'),
+            'products' => $this->counter($products, 'Timber Products'),
+            'rfqs' => $this->counter($rfqs, 'RFQs Completed'),
+            'countries' => $this->counter($countries, 'Countries Served'),
+        ]);
     }
 
-    /** Renders "200+" style counters, falling back to the approved design figure. */
-    private function counter(int $actual, int $floor): string
+    /**
+     * One counter tile, or null when there is nothing real to show.
+     *
+     * The "+" suffix is only added once a figure is large enough to be a
+     * genuine approximation; below that the exact count is shown, because
+     * "13+" reads as rounding when it is simply 13.
+     *
+     * @return array{value: string, label: string}|null
+     */
+    private function counter(int $actual, string $label): ?array
     {
-        return number_format(max($actual, $floor)).'+';
+        if ($actual <= 0) {
+            return null;
+        }
+
+        $value = $actual >= 100
+            ? number_format((int) (floor($actual / 100) * 100)).'+'
+            : number_format($actual);
+
+        return ['value' => $value, 'label' => $label];
     }
 
     /**
@@ -145,6 +166,7 @@ class HomeController extends Controller
 
     /**
      * ItemList of the featured catalogue plus the visible FAQ, as a JSON-LD
+     *
      * @graph so answer engines can enumerate products and lift Q&A pairs.
      *
      * @param  Collection<int, Product>  $products

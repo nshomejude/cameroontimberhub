@@ -6,6 +6,18 @@ use Filament\Facades\Filament;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
+it('never advertises more suppliers or products than really exist', function () {
+    // Regression guard. The homepage counters previously used the mockup's
+    // figures as a floor via max($actual, $floor), so the hero advertised
+    // "200+ Verified Suppliers" and "5,000+ Timber Products" on a platform
+    // that had 13 and 9 -- a false claim to buyers on the most public page.
+    $response = $this->get('/')->assertOk();
+
+    foreach (['200+', '5,000+', '1,200+', '50+'] as $inflated) {
+        $response->assertDontSee($inflated);
+    }
+});
+
 it('serves the public home page', function () {
     $response = $this->get('/');
 
