@@ -53,6 +53,14 @@ class AppServiceProvider extends ServiceProvider
             Limit::perHour(60)->by('receipt-verify-ip-hour:'.$request->ip()),
         ]);
 
+        // One-click demo logins. Nobody legitimately needs more than a handful
+        // a minute, and the budget blunts a script cycling demo sessions to
+        // farm CSRF-valid authenticated sessions.
+        RateLimiter::for('demo-login', fn (Request $request) => [
+            Limit::perMinute(6)->by('demo-login-ip:'.$request->ip()),
+            Limit::perHour(30)->by('demo-login-ip-hour:'.$request->ip()),
+        ]);
+
         RateLimiter::for('inquiry-submit', fn (Request $request) => Limit::perHour(8)->by('inquiry-ip:'.$request->ip()));
 
         // Messaging is authenticated, so the budget is per-account rather than

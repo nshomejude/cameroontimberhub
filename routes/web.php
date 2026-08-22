@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Auth\DemoLoginController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
@@ -126,6 +127,16 @@ Route::get('/exporters/{species}', [ProgrammaticExporterController::class, 'show
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'create'])->name('login');
     Route::post('/login', [LoginController::class, 'store'])->middleware('throttle:6,1')->name('login.store');
+    // One-click demo logins. POST-only and CSRF-protected on purpose: a GET
+    // would let a link, a prefetch or a crawler authenticate someone. The
+    // persona segment is constrained to the three literal keys in
+    // config('demo.personas') at the route level as well as in the controller,
+    // and the whole feature 404s unless DEMO_LOGINS_ENABLED is true.
+    Route::post('/demo-login/{persona}', DemoLoginController::class)
+        ->where('persona', 'buyer|supplier|admin')
+        ->middleware('throttle:demo-login')
+        ->name('demo.login');
+
     Route::get('/register', [RegisterController::class, 'create'])->name('register');
     Route::post('/register', [RegisterController::class, 'store'])->middleware('throttle:6,1')->name('register.store');
 

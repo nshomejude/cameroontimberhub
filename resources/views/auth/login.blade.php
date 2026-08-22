@@ -157,6 +157,35 @@
                             </button>
                         </form>
 
+                        {{-- One-click demo logins. Rendered only when
+                             DEMO_LOGINS_ENABLED is true; the route enforces the
+                             same flag, so hiding this is not the security
+                             boundary. See config/demo.php. --}}
+                        @if (config('demo.enabled') === true)
+                            <div class="mt-7 border-t border-sand-200 pt-6">
+                                <div class="flex items-center gap-2">
+                                    <h2 class="text-[0.8125rem] font-semibold uppercase tracking-[0.08em] text-ink-soft">Explore a demo account</h2>
+                                </div>
+                                <p class="mt-1 text-[0.8125rem] text-ink-soft">
+                                    Sign in instantly with sample data — no password needed.
+                                </p>
+
+                                <div class="mt-4 grid gap-2.5 sm:grid-cols-3">
+                                    @foreach (config('demo.personas', []) as $key => $persona)
+                                        <form method="POST" action="{{ route('demo.login', $key) }}">
+                                            @csrf
+                                            <button type="submit"
+                                                    class="flex w-full flex-col items-center gap-1.5 rounded-xl border border-sand-300 bg-white px-3 py-3.5 text-center transition hover:border-forest-400 hover:bg-forest-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest-600">
+                                                <x-dynamic-component :component="'heroicon-o-'.$persona['icon']" class="h-5 w-5 text-forest-700" aria-hidden="true" />
+                                                <span class="text-[0.8125rem] font-semibold text-ink">{{ $persona['label'] }}</span>
+                                                <span class="text-[0.6875rem] leading-tight text-ink-soft">{{ $persona['description'] }}</span>
+                                            </button>
+                                        </form>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
+
                         <p class="mt-7 text-center text-[0.875rem] text-ink-soft">
                             Don't have an account?
                             <a href="{{ route('register') }}"
