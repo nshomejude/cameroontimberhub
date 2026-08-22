@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureApiBuyer;
 use App\Http\Middleware\EnsureBuyerAccount;
 use App\Http\Middleware\EnsureExporterOnboarded;
 use App\Http\Middleware\HandleSlugRedirects;
@@ -12,6 +13,9 @@ use Illuminate\Http\Request;
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
+        // Buyer-facing JSON API (React Native client). Stateless, token-authed.
+        api: __DIR__.'/../routes/api.php',
+        apiPrefix: 'api',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
@@ -28,6 +32,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'exporter.onboarded' => EnsureExporterOnboarded::class,
             'buyer' => EnsureBuyerAccount::class,
+            'api.buyer' => EnsureApiBuyer::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

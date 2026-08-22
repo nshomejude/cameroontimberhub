@@ -84,7 +84,10 @@ class ProductCatalogueService
         $supplier = trim((string) ($filters['supplier'] ?? ''));
 
         return $query
-            ->when($q !== '', fn (Builder $b) => $b->whereRaw("search_vector @@ plainto_tsquery('english', ?)", [$q]))
+            // Qualified: the facet queries join `species`, which has a
+            // `search_vector` column of its own, so a bare reference here is
+            // ambiguous the moment free text and a facet count meet.
+            ->when($q !== '', fn (Builder $b) => $b->whereRaw("products.search_vector @@ plainto_tsquery('english', ?)", [$q]))
             ->when($supplier !== '', fn (Builder $b) => $b->whereHas('company', fn ($c) => $c->where('companies.slug', $supplier)))
             ->when($region !== '', fn (Builder $b) => $b->whereHas('company', fn ($c) => $c->where('region', $region)))
             ->when($skipGroup !== 'types' && $types !== [], fn (Builder $b) => $b->whereIn('products.product_type', $types))

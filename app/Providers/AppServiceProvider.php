@@ -111,6 +111,43 @@ class AppServiceProvider extends ServiceProvider
         // a double submission harmless; this only stops a grind.
         RateLimiter::for('chat-reorder', fn (Request $request) => Limit::perHour(12)
             ->by('chat-reorder:'.($request->user()?->getAuthIdentifier() ?? $request->ip())));
+
+        $this->registerApiRateLimiters();
+    }
+
+    /**
+     * Mobile API limiters. Deliberately the same shape as their web
+     * counterparts — a native client is not a reason to relax a budget.
+     *
+     * Auth endpoints are keyed per-IP *and* per-address so a credential-stuffing
+     * run cannot spread across addresses from one host, nor grind one account
+     * from many hosts. `api-rfq` mirrors `rfq-submit` exactly: an RFQ costs a
+     * row, a risk evaluation and an outbound mail whichever client raised it.
+     */
+    protected function registerApiRateLimiters(): void
+    {
+        RateLimiter::for('api-login', fn (Request $request) => [
+            Limit::perMinute(5)->by('api-login-ip:'.$request->ip()),
+            Limit::perMinute(5)->by('api-login-email:'.strtolower((string) $request->input('email'))),
+            Limit::perHour(30)->by('api-login-ip-hour:'.$request->ip()),
+        ]);
+
+        RateLimiter::for('api-register', fn (Request $request) => [
+            Limit::perHour(5)->by('api-register-ip:'.$request->ip()),
+            Limit::perDay(10)->by('api-register-ip-day:'.$request->ip()),
+        ]);
+
+        RateLimiter::for('api-rfq', fn (Request $request) => [
+            Limit::perHour(5)->by('api-rfq-ip:'.$request->ip()),
+            Limit::perHour(3)->by('api-rfq-user:'.($request->user()?->getAuthIdentifier() ?? $request->ip())),
+        ]);
+
+        // Accepting or declining is one click, so the budget exists mainly to
+        // blunt a stolen token hammering every open quote on an account.
+        RateLimiter::for('api-decision', fn (Request $request) => [
+            Limit::perMinute(10)->by('api-decision:'.($request->user()?->getAuthIdentifier() ?? $request->ip())),
+            Limit::perHour(120)->by('api-decision-hour:'.($request->user()?->getAuthIdentifier() ?? $request->ip())),
+        ]);
     }
 
     /**
