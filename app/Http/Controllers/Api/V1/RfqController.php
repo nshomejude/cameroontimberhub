@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\StoreRfqRequest;
 use App\Http\Resources\Api\V1\QuoteResource;
 use App\Http\Resources\Api\V1\RfqResource;
+use App\Models\Company;
 use App\Services\BuyerApiScope;
 use App\Services\IntakeService;
 use Illuminate\Http\JsonResponse;
@@ -39,6 +40,18 @@ use Illuminate\Http\Response;
  * The moment account email verification is switched on, this path starts
  * satisfying the gate with no further change. What it never does is mint a
  * verified RFQ merely because a bearer token was present.
+ *
+ * Which leaves the client with an RFQ it cannot release on its own, so
+ * `resendVerification()` below re-sends the signed link on demand. That is an
+ * interim path, not the fix. The real unblock is one of two operational
+ * changes, neither of which belongs in this controller:
+ *
+ *   1. Switch on account email verification — make `User` implement
+ *      MustVerifyEmail and have registration stamp `email_verified_at`. The
+ *      condition in `store()` then starts satisfying the gate by itself.
+ *   2. Configure real SMTP. Production currently runs `MAIL_MAILER=log`, so
+ *      the signed link is written to a log file and never delivered; resending
+ *      it changes nothing until a transport exists.
  */
 class RfqController extends Controller
 {
@@ -81,21 +94,23 @@ class RfqController extends Controller
                 'target_currency' => $data['target_currency'] ?? null,
                 'deadline' => $data['deadline'] ?? null,
                 'notes' => $data['notes'],
+                // Descriptive, not identity: the organisation the buyer is
+                // purchasing for. The web wizard collects it on the contact
+                // step and stores it in `rfqs.buyer_company`; the API accepts
+                // it on the same terms rather than dropping it silently.
+                'buyer_company' => $data['buyer_company'] ?? null,
             ],
-            array_map(fn (array $item): array => [
-                'species_id' => $item['species_id'] ?? null,
-                'species_text' => $item['species_text'] ?? null,
-                'form' => $item['form'],
-                'grade' => $item['grade'] ?? null,
-                'dimensions' => $item['dimensions'] ?? null,
-                'quantity' => $item['quantity'],
-                'unit' => $item['unit'],
-                'moisture_content' => $item['moisture_content'] ?? null,
-            ], $data['items']),
+            // Line items arrive with `species_slug` already resolved to a
+            // published `species_id` by StoreRfqRequest — an unresolvable slug
+            // never reaches here, it 422s with a field key.
+            $request->itemsForIntake(),
             'api',
         );
 
-        // See the class docblock: satisfied, never skipped.
+        // See the class docblock: satisfied, never skipped. When it is NOT
+        // satisfied the RFQ stays unverified and the client's only lever is
+        // POST /rfqs/{reference}/resend-verification — see the docblock for
+        // why that is an interim path and what the real unblock is.
         if ($buyer->email_verified_at !== null
             && strtolower(trim((string) $buyer->email)) === strtolower(trim((string) $rfq->buyer_email))) {
             $intake->verifyRfq($rfq);
@@ -120,6 +135,41 @@ class RfqController extends Controller
         return new RfqResource($rfq);
     }
 
+    /**
+     * Re-send the signed 48-hour verification link for one of the buyer's own
+     * RFQs.
+     *
+     * Scoped through BuyerApiScope, so another buyer's reference 404s rather
+     * than 403s — the endpoint leaks no more than `show()` does. An RFQ that is
+     * already verified is a no-op 200, not an error: the client asking twice is
+     * a retry, not a fault, and answering 409 would only teach it to guess.
+     *
+     * This mints a fresh link through the same IntakeService helper
+     * `createRfq()` uses; it does not verify anything itself.
+     */
+    public function resendVerification(Request $request, string $reference, IntakeService $intake): JsonResponse
+    {
+        $rfq = $this->scope->rfq($request->user(), $reference);
+
+        $alreadyVerified = $rfq->email_verified_at !== null;
+
+        if (! $alreadyVerified) {
+            $intake->sendRfqVerificationMail($rfq);
+        }
+
+        return response()->json([
+            'message' => $alreadyVerified
+                ? 'This request is already verified.'
+                : 'We have re-sent the confirmation email.',
+            'data' => [
+                'reference' => $rfq->reference_code,
+                'email_verified' => $alreadyVerified,
+                'email_verification_required' => ! $alreadyVerified,
+                'sent' => ! $alreadyVerified,
+            ],
+        ]);
+    }
+
     /** Quotes suppliers have returned on one of the buyer's own RFQs. */
     public function quotes(Request $request, string $reference): AnonymousResourceCollection
     {
@@ -127,7 +177,7 @@ class RfqController extends Controller
 
         $quotes = $rfq->quotes()
             ->buyerVisible()
-            ->with(['items', 'company:id,slug,legal_name,trade_name,city,region,status,logo_path,verified_at,is_featured,years_experience,response_rate_percent,orders_completed,rating_avg,rating_count,supplier_type,country_code'])
+            ->with(['items', Company::cardEagerLoad()])
             ->orderByDesc('submitted_at')
             ->get();
 

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\ProductStatus;
 use App\Enums\ProductType;
+use App\Models\Company;
 use App\Models\Product;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -49,7 +50,7 @@ class ProductCatalogueService
     public function search(array $filters, int $perPage = 12): LengthAwarePaginator
     {
         return $this->query($filters)
-            ->with(['company:id,slug,legal_name,trade_name,city,region,status,logo_path', 'species:id,slug,common_name'])
+            ->with([Company::cardEagerLoad(), 'species:id,slug,common_name'])
             ->paginate($perPage)
             ->withQueryString();
     }

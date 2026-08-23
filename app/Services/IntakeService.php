@@ -59,9 +59,22 @@ class IntakeService
         $rfq->load('items');
         $this->risk->evaluate($rfq);
 
-        Mail::to($rfq->buyer_email)->send(new RfqVerificationMail($rfq, $this->rfqVerifyUrl($rfq)));
+        $this->sendRfqVerificationMail($rfq);
 
         return $rfq;
+    }
+
+    /**
+     * Send (or re-send) the signed 48-hour confirmation link for an RFQ.
+     *
+     * Always addressed to `rfqs.buyer_email` — the address recorded on the row,
+     * never one supplied by the caller — so a resend cannot be redirected to a
+     * third party. `rfqVerifyUrl()` mints a fresh temporary signed URL each
+     * time, so an expired link is recoverable without touching the RFQ.
+     */
+    public function sendRfqVerificationMail(Rfq $rfq): void
+    {
+        Mail::to($rfq->buyer_email)->send(new RfqVerificationMail($rfq, $this->rfqVerifyUrl($rfq)));
     }
 
     public function createInquiry(Company $company, array $data): CompanyInquiry

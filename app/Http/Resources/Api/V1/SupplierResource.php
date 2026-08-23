@@ -15,6 +15,13 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * gate. Internal columns (`created_by`, verification workflow state, payment
  * instructions, private contacts, plan/subscription) are not in the list.
  *
+ * This is the single contract for an embedded supplier: SupplierDetailResource
+ * extends it rather than restating it, so a card rendered inside a product
+ * listing and one rendered on a product detail page agree key for key. The
+ * columns it reads are declared once as `Company::CARD_COLUMNS`; any query that
+ * eager-loads a supplier for this resource must select that list (via
+ * `Company::cardEagerLoad()`), or fields silently render as `null`.
+ *
  * @mixin Company
  */
 class SupplierResource extends JsonResource

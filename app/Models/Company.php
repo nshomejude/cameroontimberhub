@@ -28,6 +28,38 @@ class Company extends Model
 
     protected $guarded = ['id'];
 
+    /**
+     * The `companies` columns needed to render a supplier card — the summary
+     * shape embedded in product listings, quote payloads and the supplier
+     * directory.
+     *
+     * It lives on the model because it is a statement about this table, and
+     * because the query layer (ProductCatalogueService, SearchService) must be
+     * able to name it without depending on the HTTP layer that consumes it.
+     *
+     * A partial select is the failure mode this exists to prevent: a column
+     * left out here comes back `null` from the relation, and the presenter
+     * cannot tell "unverified" from "never loaded" — so the same key silently
+     * means two different things in a list payload and in a detail payload.
+     *
+     * @var list<string>
+     */
+    public const CARD_COLUMNS = [
+        'id', 'slug', 'legal_name', 'trade_name', 'city', 'region', 'country_code',
+        'status', 'logo_path', 'supplier_type', 'is_featured', 'verified_at',
+        'years_experience', 'response_rate_percent', 'orders_completed',
+        'rating_avg', 'rating_count',
+    ];
+
+    /**
+     * Eager-load spec for a supplier-card relation, e.g.
+     * `Product::with(Company::cardEagerLoad())`.
+     */
+    public static function cardEagerLoad(string $relation = 'company'): string
+    {
+        return $relation.':'.implode(',', self::CARD_COLUMNS);
+    }
+
     protected function casts(): array
     {
         return [

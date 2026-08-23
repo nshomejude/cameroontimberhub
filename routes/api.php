@@ -64,6 +64,14 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             ->middleware('throttle:api-rfq')->name('rfqs.store');
 
         Route::get('rfqs/{reference}', [RfqController::class, 'show'])->name('rfqs.show');
+
+        // The buyer's only self-service lever on an RFQ stuck behind the email
+        // verification gate. Rate-limited on its own budget: it costs an
+        // outbound mail, and a resend loop must not be able to use someone's
+        // inbox as a hose.
+        Route::post('rfqs/{reference}/resend-verification', [RfqController::class, 'resendVerification'])
+            ->middleware('throttle:api-rfq-verify')->name('rfqs.resend-verification');
+
         Route::get('rfqs/{reference}/quotes', [RfqController::class, 'quotes'])->name('rfqs.quotes');
 
         Route::get('quotes/{reference}', [QuoteController::class, 'show'])->name('quotes.show');

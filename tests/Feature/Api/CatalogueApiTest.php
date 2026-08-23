@@ -2,6 +2,7 @@
 
 use App\Enums\CompanyStatus;
 use App\Enums\ProductType;
+use App\Enums\SupplierType;
 use App\Models\Company;
 use App\Models\Product;
 use App\Models\Species;
@@ -107,6 +108,100 @@ it('holds product listing queries to a bounded count regardless of page size', f
 
     // Eager-loaded: no per-row supplier or species lookup.
     expect($queries)->toBeLessThan(25);
+});
+
+/**
+ * The embedded supplier is ONE contract.
+ *
+ * The list used to eager-load a narrower column set than the detail query, so
+ * `verified_at`, `rating`, `supplier_type` and `country_code` came back null on
+ * a card and populated on the detail page — same key, two meanings, and a
+ * marketplace card that could not render a verified badge. Both now select
+ * Company::CARD_COLUMNS, so this compares field by field rather than merely
+ * asserting the keys exist.
+ */
+it('embeds an identical, fully populated supplier in the product list and the product detail', function () {
+    $company = Company::factory()->publiclyVisible()->create([
+        'legal_name' => 'Bounded Timber Sarl',
+        'trade_name' => 'Bounded Timber',
+        'city' => 'Douala',
+        'region' => 'Littoral',
+        'country_code' => 'CM',
+        'supplier_type' => SupplierType::Manufacturer,
+        'years_experience' => 14,
+        'response_rate_percent' => 92,
+        'orders_completed' => 37,
+        'rating_avg' => 4.5,
+        'rating_count' => 12,
+        'is_featured' => true,
+    ]);
+
+    $product = Product::factory()->active()->for($company)->create(['name' => 'Bounded Board']);
+
+    $listSupplier = collect($this->getJson('/api/v1/products')->assertOk()->json('data'))
+        ->firstWhere('slug', $product->slug)['supplier'];
+
+    $detailSupplier = $this->getJson('/api/v1/products/'.$product->slug)->assertOk()->json('data.supplier');
+
+    // The detail resource extends the card, so every card key must be present
+    // on the detail and carry exactly the same value.
+    expect(array_keys($listSupplier))->not->toBeEmpty();
+
+    foreach ($listSupplier as $key => $value) {
+        expect($detailSupplier)->toHaveKey($key);
+        expect($detailSupplier[$key])->toEqual($value, "supplier.{$key} differs between list and detail");
+    }
+
+    // And the fields that were silently null on the card are really populated —
+    // an assertion of equality alone would pass if both sides were null.
+    expect($listSupplier['verified_at'])->not->toBeNull()
+        ->and($listSupplier['country_code'])->toBe('CM')
+        ->and($listSupplier['supplier_type'])->toBe(SupplierType::Manufacturer->value)
+        ->and($listSupplier['is_featured'])->toBeTrue()
+        ->and($listSupplier['years_experience'])->toBe(14)
+        ->and($listSupplier['response_rate_percent'])->toBe(92)
+        ->and($listSupplier['orders_completed'])->toBe(37)
+        ->and($listSupplier['rating'])->toBe(['average' => 4.5, 'count' => 12])
+        ->and($listSupplier['name'])->toBe('Bounded Timber');
+});
+
+/**
+ * The wider select must come from the existing eager load, not from a per-row
+ * lookup — widening the columns is only a fix if it stays one query.
+ */
+it('keeps the product listing query count bounded with the full supplier card columns', function () {
+    $company = Company::factory()->publiclyVisible()->create(['supplier_type' => SupplierType::Manufacturer]);
+    Product::factory()->count(12)->active()->for($company)->create();
+
+    DB::enableQueryLog();
+    $response = $this->getJson('/api/v1/products?per_page=12')->assertOk()->assertJsonCount(12, 'data');
+    $queries = count(DB::getQueryLog());
+    DB::disableQueryLog();
+
+    // Every card is fully rendered...
+    foreach ($response->json('data') as $row) {
+        expect($row['supplier']['verified_at'])->not->toBeNull()
+            ->and($row['supplier']['supplier_type'])->toBe(SupplierType::Manufacturer->value)
+            ->and($row['supplier']['country_code'])->not->toBeNull();
+    }
+
+    // ...without one supplier query per row.
+    expect($queries)->toBeLessThan(25);
+});
+
+it('embeds the same supplier card shape in search results', function () {
+    $company = Company::factory()->publiclyVisible()->create([
+        'legal_name' => 'Searchable Timber Sarl',
+        'supplier_type' => SupplierType::Manufacturer,
+    ]);
+    Product::factory()->active()->for($company)->create(['name' => 'Searchable Sapele Board']);
+
+    $supplier = $this->getJson('/api/v1/search?q=Searchable&type=products')
+        ->assertOk()->json('data.0.supplier');
+
+    expect($supplier['verified_at'])->not->toBeNull()
+        ->and($supplier['supplier_type'])->toBe(SupplierType::Manufacturer->value)
+        ->and($supplier['country_code'])->toBe('CM');
 });
 
 /* -------------------------------------------------------------- species */

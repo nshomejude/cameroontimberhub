@@ -142,6 +142,16 @@ class AppServiceProvider extends ServiceProvider
             Limit::perHour(3)->by('api-rfq-user:'.($request->user()?->getAuthIdentifier() ?? $request->ip())),
         ]);
 
+        // Re-sending a verification link costs an outbound mail to an address
+        // the platform has not yet proven it owns, so the budget is tighter
+        // than RFQ creation itself and keyed per RFQ as well as per account:
+        // one buyer cannot spend the whole allowance on a single reference.
+        RateLimiter::for('api-rfq-verify', fn (Request $request) => [
+            Limit::perHour(3)->by('api-rfq-verify-rfq:'.$request->route('reference')),
+            Limit::perHour(10)->by('api-rfq-verify-user:'.($request->user()?->getAuthIdentifier() ?? $request->ip())),
+            Limit::perHour(20)->by('api-rfq-verify-ip:'.$request->ip()),
+        ]);
+
         // Accepting or declining is one click, so the budget exists mainly to
         // blunt a stolen token hammering every open quote on an account.
         RateLimiter::for('api-decision', fn (Request $request) => [

@@ -2,6 +2,7 @@
 
 use App\Mail\RfqVerificationMail;
 use App\Models\Rfq;
+use App\Models\Species;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Support\Facades\Mail;
@@ -200,4 +201,281 @@ it('returns the RFQ detail with its line items', function () {
         ->assertJsonPath('data.reference', $rfq->reference_code)
         ->assertJsonPath('data.items.0.species_text', 'Iroko')
         ->assertJsonPath('data.quotes_count', 0);
+});
+
+/* ------------------------------------------------------- species linking */
+
+/**
+ * `species_slug` is the handle a client actually holds — /species is keyed by
+ * slug and never exposes numeric ids. It used to be dropped on the floor: the
+ * item was written with `species_id` null and the API answered 201, so the
+ * client believed the catalogue link had been made.
+ */
+it('resolves species_slug on a line item to the real catalogue species', function () {
+    $buyer = User::factory()->create();
+    $iroko = Species::factory()->create(['slug' => 'iroko', 'common_name' => 'Iroko']);
+    Species::factory()->create(['slug' => 'sapele', 'common_name' => 'Sapele']);
+
+    $response = $this->actingAs($buyer, 'sanctum')
+        ->postJson('/api/v1/rfqs', apiRfqPayload([
+            'items' => [[
+                'species_slug' => 'iroko',
+                'form' => 'sawn',
+                'quantity' => 60,
+                'unit' => 'm3',
+            ]],
+        ]))
+        ->assertCreated()
+        ->assertJsonPath('data.items.0.species.slug', 'iroko')
+        ->assertJsonPath('data.items.0.species.common_name', 'Iroko');
+
+    $item = Rfq::whereReferenceCode($response->json('data.reference'))->firstOrFail()->items()->firstOrFail();
+
+    // The link is real in the database, not merely echoed back.
+    expect((int) $item->species_id)->toBe($iroko->id);
+});
+
+it('matches the slug case-insensitively and lets species_slug win over a posted species_id', function () {
+    $buyer = User::factory()->create();
+    $iroko = Species::factory()->create(['slug' => 'iroko']);
+    $sapele = Species::factory()->create(['slug' => 'sapele']);
+
+    $reference = $this->actingAs($buyer, 'sanctum')
+        ->postJson('/api/v1/rfqs', apiRfqPayload([
+            'items' => [[
+                'species_slug' => 'IROKO',
+                'species_id' => $sapele->id,
+                'form' => 'sawn',
+                'quantity' => 60,
+                'unit' => 'm3',
+            ]],
+        ]))
+        ->assertCreated()
+        ->json('data.reference');
+
+    expect((int) Rfq::whereReferenceCode($reference)->firstOrFail()->items()->firstOrFail()->species_id)
+        ->toBe($iroko->id);
+});
+
+it('still accepts a bare species_id', function () {
+    $buyer = User::factory()->create();
+    $species = Species::factory()->create(['slug' => 'ayous']);
+
+    $reference = $this->actingAs($buyer, 'sanctum')
+        ->postJson('/api/v1/rfqs', apiRfqPayload([
+            'items' => [['species_id' => $species->id, 'form' => 'sawn', 'quantity' => 10, 'unit' => 'm3']],
+        ]))
+        ->assertCreated()
+        ->json('data.reference');
+
+    expect((int) Rfq::whereReferenceCode($reference)->firstOrFail()->items()->firstOrFail()->species_id)
+        ->toBe($species->id);
+});
+
+/**
+ * The whole point of the fix: a slug that does not resolve is loud. Silently
+ * nulling the link was the worst outcome because the client could not tell.
+ */
+it('422s an unknown species_slug with a mappable field key and writes nothing', function () {
+    $buyer = User::factory()->create();
+
+    $this->actingAs($buyer, 'sanctum')
+        ->postJson('/api/v1/rfqs', apiRfqPayload([
+            'items' => [['species_slug' => 'unobtainium', 'form' => 'sawn', 'quantity' => 5, 'unit' => 'm3']],
+        ]))
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('items.0.species_slug');
+
+    expect(Rfq::count())->toBe(0);
+    Mail::assertNothingSent();
+});
+
+/** An unpublished species answers exactly as a nonexistent one — no draft-row oracle. */
+it('422s an unpublished species_slug just as it does an unknown one', function () {
+    $buyer = User::factory()->create();
+    Species::factory()->unpublished()->create(['slug' => 'secretwood']);
+
+    $this->actingAs($buyer, 'sanctum')
+        ->postJson('/api/v1/rfqs', apiRfqPayload([
+            'items' => [['species_slug' => 'secretwood', 'form' => 'sawn', 'quantity' => 5, 'unit' => 'm3']],
+        ]))
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('items.0.species_slug');
+
+    expect(Rfq::count())->toBe(0);
+});
+
+it('reports the failing line item by index when only one of several slugs is bad', function () {
+    $buyer = User::factory()->create();
+    Species::factory()->create(['slug' => 'iroko']);
+
+    $this->actingAs($buyer, 'sanctum')
+        ->postJson('/api/v1/rfqs', apiRfqPayload([
+            'items' => [
+                ['species_slug' => 'iroko', 'form' => 'sawn', 'quantity' => 5, 'unit' => 'm3'],
+                ['species_slug' => 'nope', 'form' => 'sawn', 'quantity' => 5, 'unit' => 'm3'],
+            ],
+        ]))
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('items.1.species_slug')
+        ->assertJsonMissingValidationErrors('items.0.species_slug');
+});
+
+/** Free text stays first-class: an RFQ may legitimately name timber the catalogue does not list. */
+it('still accepts species_text for a species that is not in the catalogue', function () {
+    $buyer = User::factory()->create();
+
+    $reference = $this->actingAs($buyer, 'sanctum')
+        ->postJson('/api/v1/rfqs', apiRfqPayload([
+            'items' => [['species_text' => 'Bubinga (unlisted)', 'form' => 'sawn', 'quantity' => 8, 'unit' => 'm3']],
+        ]))
+        ->assertCreated()
+        ->assertJsonPath('data.items.0.species_text', 'Bubinga (unlisted)')
+        ->json('data.reference');
+
+    $item = Rfq::whereReferenceCode($reference)->firstOrFail()->items()->firstOrFail();
+
+    expect($item->species_id)->toBeNull()
+        ->and($item->species_text)->toBe('Bubinga (unlisted)');
+});
+
+it('422s a line item that names no species at all', function () {
+    $buyer = User::factory()->create();
+
+    $this->actingAs($buyer, 'sanctum')
+        ->postJson('/api/v1/rfqs', apiRfqPayload([
+            'items' => [['form' => 'sawn', 'quantity' => 5, 'unit' => 'm3']],
+        ]))
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('items.0.species_text');
+});
+
+/* --------------------------------------------------------- buyer_company */
+
+/**
+ * `rfqs.buyer_company` already exists (2026_06_22_120010_create_rfqs_table) and
+ * the web wizard collects it on the contact step, so the API persists it rather
+ * than rejecting it. It is descriptive, not identifying — unlike buyer_name and
+ * buyer_email, which are still taken from the token only.
+ */
+it('round-trips buyer_company into the RFQ', function () {
+    $buyer = User::factory()->create(['name' => 'Claire Buyer', 'email' => 'claire@example.com']);
+
+    $response = $this->actingAs($buyer, 'sanctum')
+        ->postJson('/api/v1/rfqs', apiRfqPayload(['buyer_company' => 'Northgate Joinery BV']))
+        ->assertCreated()
+        ->assertJsonPath('data.buyer_company', 'Northgate Joinery BV');
+
+    $rfq = Rfq::whereReferenceCode($response->json('data.reference'))->firstOrFail();
+
+    expect($rfq->buyer_company)->toBe('Northgate Joinery BV')
+        // Persisting a company name must not have loosened identity.
+        ->and($rfq->buyer_name)->toBe('Claire Buyer')
+        ->and($rfq->buyer_email)->toBe('claire@example.com');
+
+    // And it survives a re-read, not just the create response.
+    $this->actingAs($buyer, 'sanctum')->getJson('/api/v1/rfqs/'.$rfq->reference_code)
+        ->assertOk()
+        ->assertJsonPath('data.buyer_company', 'Northgate Joinery BV');
+});
+
+it('accepts an RFQ with no buyer_company and 422s an oversized one', function () {
+    $buyer = User::factory()->create();
+
+    $this->actingAs($buyer, 'sanctum')
+        ->postJson('/api/v1/rfqs', apiRfqPayload())
+        ->assertCreated()
+        ->assertJsonPath('data.buyer_company', null);
+
+    $this->actingAs($buyer, 'sanctum')
+        ->postJson('/api/v1/rfqs', apiRfqPayload(['buyer_company' => str_repeat('a', 200)]))
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('buyer_company');
+});
+
+/* ------------------------------------------------ resend verification */
+
+it('exposes the verification state on every RFQ payload, with a resend path', function () {
+    $buyer = User::factory()->create(['email_verified_at' => null]);
+    $rfq = Rfq::factory()->create(['user_id' => $buyer->id, 'email_verified_at' => null]);
+
+    $this->actingAs($buyer, 'sanctum')->getJson('/api/v1/rfqs/'.$rfq->reference_code)
+        ->assertOk()
+        ->assertJsonPath('data.verification.required', true)
+        ->assertJsonPath('data.verification.verified', false)
+        ->assertJsonPath('data.verification.resend_path', '/api/v1/rfqs/'.$rfq->reference_code.'/resend-verification');
+
+    // Also on the list, so a client that reloads can still explain a stalled RFQ.
+    $this->actingAs($buyer, 'sanctum')->getJson('/api/v1/rfqs')
+        ->assertOk()
+        ->assertJsonPath('data.0.verification.required', true);
+});
+
+it('re-sends the verification email for the buyer own unverified RFQ', function () {
+    $buyer = User::factory()->create();
+    $rfq = Rfq::factory()->create([
+        'user_id' => $buyer->id,
+        'buyer_email' => 'claire@example.com',
+        'email_verified_at' => null,
+    ]);
+
+    $this->actingAs($buyer, 'sanctum')
+        ->postJson('/api/v1/rfqs/'.$rfq->reference_code.'/resend-verification')
+        ->assertOk()
+        ->assertJsonPath('data.reference', $rfq->reference_code)
+        ->assertJsonPath('data.sent', true)
+        ->assertJsonPath('data.email_verification_required', true);
+
+    // Addressed to the RFQ's own recorded address, never a caller-supplied one.
+    Mail::assertSent(RfqVerificationMail::class, fn ($mail) => $mail->hasTo('claire@example.com'));
+
+    // Resending does NOT verify the RFQ — the gate still needs the signed link.
+    expect($rfq->fresh()->email_verified_at)->toBeNull();
+});
+
+/** A retry is not a fault: already-verified is a 200 no-op, not a 409. */
+it('is a no-op 200 when the RFQ is already verified', function () {
+    $buyer = User::factory()->create();
+    $rfq = Rfq::factory()->create(['user_id' => $buyer->id, 'email_verified_at' => now()]);
+
+    $this->actingAs($buyer, 'sanctum')
+        ->postJson('/api/v1/rfqs/'.$rfq->reference_code.'/resend-verification')
+        ->assertOk()
+        ->assertJsonPath('data.sent', false)
+        ->assertJsonPath('data.email_verified', true)
+        ->assertJsonPath('data.email_verification_required', false);
+
+    Mail::assertNothingSent();
+});
+
+it('404s a resend for another buyer RFQ rather than confirming it exists', function () {
+    $buyer = User::factory()->create();
+    $theirs = Rfq::factory()->create(['user_id' => User::factory()->create()->id, 'email_verified_at' => null]);
+    $guestRfq = Rfq::factory()->create(['user_id' => null, 'email_verified_at' => null]);
+
+    foreach ([$theirs->reference_code, $guestRfq->reference_code, 'RFQ-2026-ZZZZZ'] as $reference) {
+        $this->actingAs($buyer, 'sanctum')
+            ->postJson('/api/v1/rfqs/'.$reference.'/resend-verification')
+            ->assertNotFound();
+    }
+
+    Mail::assertNothingSent();
+});
+
+it('requires authentication to resend', function () {
+    $rfq = Rfq::factory()->create(['user_id' => User::factory()->create()->id]);
+
+    $this->postJson('/api/v1/rfqs/'.$rfq->reference_code.'/resend-verification')->assertUnauthorized();
+});
+
+it('rate-limits resend-verification per RFQ', function () {
+    $buyer = User::factory()->create();
+    $rfq = Rfq::factory()->create(['user_id' => $buyer->id, 'email_verified_at' => null]);
+    $url = '/api/v1/rfqs/'.$rfq->reference_code.'/resend-verification';
+
+    foreach (range(1, 3) as $ignored) {
+        $this->actingAs($buyer, 'sanctum')->postJson($url)->assertOk();
+    }
+
+    $this->actingAs($buyer, 'sanctum')->postJson($url)->assertStatus(429);
 });

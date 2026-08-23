@@ -36,6 +36,21 @@ class RfqResource extends JsonResource
             'status_label' => $this->status->label(),
             'email_verified' => $this->email_verified_at !== null,
             'email_verified_at' => $this->email_verified_at?->toIso8601String(),
+
+            // An unverified RFQ is not routed to suppliers until the buyer
+            // opens the emailed signed link, so the client has to be able to
+            // render "check your email" and offer a resend from ANY payload —
+            // not only from the 201 that created it. Previously the state was
+            // only legible in the create response's `meta`, which left a client
+            // that reloaded its list with no way to explain a stalled RFQ.
+            'verification' => [
+                'required' => $this->email_verified_at === null,
+                'verified' => $this->email_verified_at !== null,
+                'verified_at' => $this->email_verified_at?->toIso8601String(),
+                'resend_path' => $this->email_verified_at === null
+                    ? '/api/v1/rfqs/'.$this->reference_code.'/resend-verification'
+                    : null,
+            ],
             'buyer_name' => $this->buyer_name,
             'buyer_company' => $this->buyer_company,
             'buyer_email' => $this->buyer_email,
