@@ -28,7 +28,7 @@
                 @endif
             </h3>
 
-            <p class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[0.8125rem] text-ink-soft">
+            <p class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[1.0625rem] text-ink-soft">
                 @if ($verified)
                     <span class="inline-flex items-center gap-1 font-semibold text-forest-700">
                         <x-heroicon-o-check-badge class="h-4 w-4" aria-hidden="true" />
@@ -44,7 +44,7 @@
     </div>
 
     <a href="{{ route('companies.show', $company->slug) }}"
-       class="mt-4 flex w-full items-center justify-center gap-1.5 rounded-lg border border-sand-300 px-4 py-2.5 text-[0.9375rem] font-semibold text-ink transition hover:border-forest-600 hover:text-forest-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500 focus-visible:ring-offset-2">
+       class="mt-4 flex w-full items-center justify-center gap-1.5 rounded-lg border border-sand-300 px-4 py-2.5 text-[1.125rem] font-semibold text-ink transition hover:border-forest-600 hover:text-forest-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500 focus-visible:ring-offset-2">
         View Company
         <x-heroicon-m-chevron-right class="h-4 w-4" aria-hidden="true" />
     </a>
@@ -55,7 +55,7 @@
             @foreach ($stats as $i => $stat)
                 <div @class(['px-2', 'border-l border-sand-200' => $i > 0])>
                     <dd class="text-[1.125rem] font-bold leading-none text-ink">{{ $stat['value'] }}</dd>
-                    <dt class="mt-1 text-[0.75rem] text-ink-soft">{{ $stat['label'] }}</dt>
+                    <dt class="mt-1 text-[0.9375rem] text-ink-soft">{{ $stat['label'] }}</dt>
                 </div>
             @endforeach
         </dl>

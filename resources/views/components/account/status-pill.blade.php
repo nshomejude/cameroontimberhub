@@ -15,6 +15,6 @@
     };
 @endphp
 
-<span {{ $attributes->class(['inline-flex items-center rounded-full px-2.5 py-1 text-[0.6875rem] font-bold ring-1 ring-inset', $classes]) }}>
+<span {{ $attributes->class(['inline-flex items-center rounded-full px-2.5 py-1 text-[0.875rem] font-bold ring-1 ring-inset', $classes]) }}>
     {{ $label }}
 </span>

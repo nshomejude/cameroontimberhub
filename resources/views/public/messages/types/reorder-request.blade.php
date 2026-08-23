@@ -61,7 +61,7 @@
     <div class="py-1" id="m{{ $message->getKey() }}">
         <div class="mb-2 flex items-center gap-3">
             <span class="h-px flex-1 bg-sand-300"></span>
-            <span class="text-[0.6875rem] font-bold uppercase tracking-[0.14em] text-ink-soft">Reorder request</span>
+            <span class="text-[0.875rem] font-bold uppercase tracking-[0.14em] text-ink-soft">Reorder request</span>
             <span class="h-px flex-1 bg-sand-300"></span>
         </div>
 
@@ -71,10 +71,10 @@
                     <x-heroicon-o-arrow-path class="h-5 w-5" />
                 </span>
                 <div class="min-w-0 flex-1">
-                    <p class="font-display text-[0.9375rem] font-bold text-forest-950">
+                    <p class="font-display text-[1.125rem] font-bold text-forest-950">
                         Repeat order {{ $message->payloadValue('source_reference_code') }}
                     </p>
-                    <p class="text-[0.8125rem] text-ink-soft">
+                    <p class="text-[1.0625rem] text-ink-soft">
                         Request {{ $message->payloadValue('rfq_reference_code') }}
                         @if ($iso = $message->payloadValue('source_completed_at'))
                             · previously delivered {{ \Illuminate\Support\Carbon::parse($iso)->isoFormat('D MMM YYYY') }}
@@ -94,9 +94,9 @@
             {{-- The specification being asked for. Quantity is the buyer's to
                  state; price is not, and the column says so. --}}
             <div class="mt-3 overflow-x-auto border-t border-sand-200 pt-3">
-                <table class="w-full min-w-[22rem] text-left text-[0.8125rem]">
+                <table class="w-full min-w-[22rem] text-left text-[1.0625rem]">
                     <thead>
-                        <tr class="text-[0.6875rem] uppercase tracking-wide text-ink-soft">
+                        <tr class="text-[0.875rem] uppercase tracking-wide text-ink-soft">
                             <th class="pb-1 font-semibold">Item</th>
                             <th class="pb-1 text-right font-semibold">Requested</th>
                             <th class="pb-1 text-right font-semibold">Previous price</th>
@@ -108,7 +108,7 @@
                                 <td class="py-2 pr-2 align-top">
                                     <span class="font-medium text-ink">{{ $line['description'] ?? $line['species_name'] }}</span>
                                     @if (! empty($line['grade']) || ! empty($line['dimensions']))
-                                        <span class="block text-[0.75rem] text-ink-soft">
+                                        <span class="block text-[0.9375rem] text-ink-soft">
                                             {{ collect([$line['grade'] ?? null, $line['dimensions'] ?? null])->filter()->join(' · ') }}
                                         </span>
                                     @endif
@@ -127,16 +127,16 @@
             </div>
 
             @if ($port = $message->payloadValue('shipping_port'))
-                <p class="mt-2 text-[0.8125rem] text-ink-soft">Delivery port: <span class="font-medium text-ink">{{ $port }}</span></p>
+                <p class="mt-2 text-[1.0625rem] text-ink-soft">Delivery port: <span class="font-medium text-ink">{{ $port }}</span></p>
             @endif
 
             @if ($notes = $message->payloadValue('notes'))
-                <p class="mt-2 rounded-xl bg-sand-50 px-3 py-2 text-[0.8125rem] text-ink">{{ $notes }}</p>
+                <p class="mt-2 rounded-xl bg-sand-50 px-3 py-2 text-[1.0625rem] text-ink">{{ $notes }}</p>
             @endif
 
             {{-- The correction to the mockup's promise, stated plainly on the
                  card itself rather than buried in a tooltip. --}}
-            <p class="mt-3 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50/60 px-3 py-2 text-[0.75rem] text-ink">
+            <p class="mt-3 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50/60 px-3 py-2 text-[0.9375rem] text-ink">
                 <x-heroicon-o-information-circle class="mt-px h-4 w-4 shrink-0 text-amber-600" />
                 <span>
                     Prices shown are what was paid on order {{ $message->payloadValue('source_reference_code') }}.
@@ -148,7 +148,7 @@
                 </span>
             </p>
 
-            <p class="mt-2 text-right text-[0.6875rem] text-ink-soft">{{ $message->created_at->format('g:i A') }}</p>
+            <p class="mt-2 text-right text-[0.875rem] text-ink-soft">{{ $message->created_at->format('g:i A') }}</p>
         </div>
 
         {{-- ------------------------------------------------ supplier pricing --}}
@@ -160,81 +160,81 @@
             clicking something that cannot work yet.
         --}}
         @if (! $isBuyer && ! $answered && ! $routed)
-            <p class="mt-2 rounded-xl border border-sand-200 bg-white px-3.5 py-2.5 text-center text-[0.8125rem] text-ink-soft">
+            <p class="mt-2 rounded-xl border border-sand-200 bg-white px-3.5 py-2.5 text-center text-[1.0625rem] text-ink-soft">
                 This reorder request is awaiting review. You will be able to price it once it is released to you.
             </p>
         @elseif (! $isBuyer && ! $answered)
             @if ($pricing)
                 <form wire:submit.prevent="submitReorderQuote" class="mt-2 rounded-2xl border border-forest-200 bg-white p-4">
-                    <p class="font-display text-[0.9375rem] font-bold text-forest-950">Confirm your pricing</p>
-                    <p class="mt-1 text-[0.75rem] text-ink-soft">
+                    <p class="font-display text-[1.125rem] font-bold text-forest-950">Confirm your pricing</p>
+                    <p class="mt-1 text-[0.9375rem] text-ink-soft">
                         Enter today's unit price for each line. Nothing is pre-filled from the previous order —
                         the buyer is accepting the price you state here, not the one they paid last time.
                     </p>
 
                     @foreach ($rfq->items as $item)
-                        <label class="mt-3 block text-[0.75rem] font-semibold text-ink">
+                        <label class="mt-3 block text-[0.9375rem] font-semibold text-ink">
                             {{ $item->species_text }}
                             <span class="font-normal text-ink-soft">
                                 — {{ rtrim(rtrim((string) $item->quantity, '0'), '.') }} {{ $item->unit }}
                             </span>
                             <span class="mt-1 flex items-center gap-2">
-                                <span class="text-[0.75rem] font-semibold text-ink-soft">{{ $rfq->target_currency }}</span>
+                                <span class="text-[0.9375rem] font-semibold text-ink-soft">{{ $rfq->target_currency }}</span>
                                 <input type="number" step="0.01" min="0.01" inputmode="decimal"
                                        wire:model="reorderQuoteForm.lines.{{ $item->getKey() }}.unit_price"
-                                       class="w-full rounded-xl border border-sand-300 px-3 py-2 text-[0.875rem]"
+                                       class="w-full rounded-xl border border-sand-300 px-3 py-2 text-[1.0625rem]"
                                        placeholder="Unit price">
                             </span>
                         </label>
                     @endforeach
 
                     <div class="mt-3 grid grid-cols-2 gap-2">
-                        <label class="block text-[0.75rem] font-semibold text-ink">
+                        <label class="block text-[0.9375rem] font-semibold text-ink">
                             Lead time (days)
                             <input type="number" min="0" max="3650" wire:model="reorderQuoteForm.lead_time_days"
-                                   class="mt-1 w-full rounded-xl border border-sand-300 px-3 py-2 text-[0.875rem]">
+                                   class="mt-1 w-full rounded-xl border border-sand-300 px-3 py-2 text-[1.0625rem]">
                         </label>
-                        <label class="block text-[0.75rem] font-semibold text-ink">
+                        <label class="block text-[0.9375rem] font-semibold text-ink">
                             Valid for (days)
                             <input type="number" min="1" max="365" wire:model="reorderQuoteForm.validity_days"
-                                   class="mt-1 w-full rounded-xl border border-sand-300 px-3 py-2 text-[0.875rem]">
+                                   class="mt-1 w-full rounded-xl border border-sand-300 px-3 py-2 text-[1.0625rem]">
                         </label>
-                        <label class="col-span-2 block text-[0.75rem] font-semibold text-ink">
+                        <label class="col-span-2 block text-[0.9375rem] font-semibold text-ink">
                             Shipping amount
                             <input type="number" step="0.01" min="0" wire:model="reorderQuoteForm.shipping_amount"
-                                   class="mt-1 w-full rounded-xl border border-sand-300 px-3 py-2 text-[0.875rem]">
+                                   class="mt-1 w-full rounded-xl border border-sand-300 px-3 py-2 text-[1.0625rem]">
                         </label>
-                        <label class="col-span-2 block text-[0.75rem] font-semibold text-ink">
+                        <label class="col-span-2 block text-[0.9375rem] font-semibold text-ink">
                             Payment terms
                             <input type="text" maxlength="255" wire:model="reorderQuoteForm.payment_terms"
-                                   class="mt-1 w-full rounded-xl border border-sand-300 px-3 py-2 text-[0.875rem]">
+                                   class="mt-1 w-full rounded-xl border border-sand-300 px-3 py-2 text-[1.0625rem]">
                         </label>
                     </div>
 
                     @foreach ($errors->keys() as $key)
                         @if (\Illuminate\Support\Str::startsWith($key, 'reorderQuoteForm'))
-                            <p class="mt-2 text-[0.75rem] font-medium text-red-700">{{ $errors->first($key) }}</p>
+                            <p class="mt-2 text-[0.9375rem] font-medium text-red-700">{{ $errors->first($key) }}</p>
                         @endif
                     @endforeach
 
                     <div class="mt-3 flex gap-2">
-                        <button type="submit" class="flex-1 rounded-xl bg-forest-700 px-3.5 py-2.5 text-[0.875rem] font-semibold text-white">
+                        <button type="submit" class="flex-1 rounded-xl bg-forest-700 px-3.5 py-2.5 text-[1.0625rem] font-semibold text-white">
                             Send quotation
                         </button>
                         <button type="button" wire:click="cancelReorderQuote"
-                                class="rounded-xl border border-sand-300 px-3.5 py-2.5 text-[0.875rem] font-semibold text-ink-soft">
+                                class="rounded-xl border border-sand-300 px-3.5 py-2.5 text-[1.0625rem] font-semibold text-ink-soft">
                             Cancel
                         </button>
                     </div>
                 </form>
             @else
                 <button type="button" wire:click="openReorderQuote({{ $rfq->getKey() }})"
-                        class="mt-2 w-full rounded-xl bg-forest-700 px-3.5 py-2.5 text-[0.875rem] font-semibold text-white">
+                        class="mt-2 w-full rounded-xl bg-forest-700 px-3.5 py-2.5 text-[1.0625rem] font-semibold text-white">
                     Price this reorder
                 </button>
             @endif
         @elseif ($isBuyer && ! $answered)
-            <p class="mt-2 rounded-xl border border-sand-200 bg-white px-3.5 py-2.5 text-center text-[0.8125rem] text-ink-soft">
+            <p class="mt-2 rounded-xl border border-sand-200 bg-white px-3.5 py-2.5 text-center text-[1.0625rem] text-ink-soft">
                 @if ($routed)
                     Waiting for {{ $conversation->company?->name }} to confirm pricing.
                 @else

@@ -30,11 +30,11 @@
             ? 'border-red-400 focus-within:border-red-500 focus-within:ring-red-100'
             : 'border-sand-300 focus-within:border-forest-500 focus-within:ring-forest-100');
 
-    $control = 'w-full border-0 bg-transparent py-3 text-[0.9375rem] text-ink placeholder:text-ink-soft/60 focus:outline-none focus:ring-0';
+    $control = 'w-full border-0 bg-transparent py-3 text-[1.125rem] text-ink placeholder:text-ink-soft/60 focus:outline-none focus:ring-0';
 @endphp
 
 <div {{ $attributes->class(['space-y-1.5']) }}>
-    <label for="{{ $id }}" class="block text-[0.8125rem] font-semibold text-ink">
+    <label for="{{ $id }}" class="block text-[1.0625rem] font-semibold text-ink">
         {{ $label }}
         @if ($required)
             <span aria-hidden="true" class="text-red-600">*</span><span class="sr-only">(required)</span>
@@ -86,11 +86,11 @@
     </div>
 
     @if ($help)
-        <p id="{{ $id }}-help" class="text-[0.75rem] leading-snug text-ink-soft">{{ $help }}</p>
+        <p id="{{ $id }}-help" class="text-[0.9375rem] leading-snug text-ink-soft">{{ $help }}</p>
     @endif
 
     @if ($error)
-        <p id="{{ $id }}-error" class="flex items-start gap-1.5 text-[0.75rem] font-medium text-red-700">
+        <p id="{{ $id }}-error" class="flex items-start gap-1.5 text-[0.9375rem] font-medium text-red-700">
             <x-heroicon-m-exclamation-circle class="mt-px h-3.5 w-3.5 shrink-0" aria-hidden="true" />
             <span>{{ $error }}</span>
         </p>

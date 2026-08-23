@@ -17,14 +17,14 @@
         @foreach ($chips as [$key, $label, $icon, $count])
             <button type="button" wire:click="setFilter('{{ $key }}')"
                     @class([
-                        'flex shrink-0 items-center gap-2 rounded-full px-4 py-2.5 text-[0.875rem] font-semibold transition',
+                        'flex shrink-0 items-center gap-2 rounded-full px-4 py-2.5 text-[1.0625rem] font-semibold transition',
                         'bg-forest-800 text-white' => $filter === $key,
                         'border border-sand-300 bg-white text-ink hover:bg-sand-50' => $filter !== $key,
                     ])>
                 <x-dynamic-component :component="'heroicon-o-'.$icon" class="h-4 w-4" />
                 {{ $label }}
                 @if ($count)
-                    <span class="rounded-full bg-forest-600 px-1.5 text-[0.6875rem] font-bold text-white">{{ $count }}</span>
+                    <span class="rounded-full bg-forest-600 px-1.5 text-[0.875rem] font-bold text-white">{{ $count }}</span>
                 @endif
             </button>
         @endforeach
@@ -35,13 +35,13 @@
         <x-heroicon-m-magnifying-glass class="ml-3 h-4 w-4 shrink-0 text-ink-soft" />
         <input id="inbox-search" type="search" wire:model.live.debounce.400ms="search"
                placeholder="Search name or message…"
-               class="min-w-0 flex-1 bg-transparent px-3 py-2.5 text-[0.875rem] outline-none placeholder:text-ink-soft">
+               class="min-w-0 flex-1 bg-transparent px-3 py-2.5 text-[1.0625rem] outline-none placeholder:text-ink-soft">
     </div>
 
     @if ($conversations->isEmpty())
         <div class="rounded-2xl border border-dashed border-sand-300 bg-white p-8 text-center">
             <p class="font-display text-[1rem] font-bold text-forest-950">No conversations here</p>
-            <p class="mt-1 text-[0.875rem] text-ink-soft">
+            <p class="mt-1 text-[1.0625rem] text-ink-soft">
                 @if ($filter === 'all')
                     Message a verified supplier to start one.
                 @else
@@ -66,7 +66,7 @@
                             @if ($logo)
                                 <img src="{{ $logo }}" alt="" class="h-full w-full object-cover">
                             @else
-                                <span class="flex h-full w-full items-center justify-center text-[0.875rem] font-bold text-forest-800">
+                                <span class="flex h-full w-full items-center justify-center text-[1.0625rem] font-bold text-forest-800">
                                     {{ $conversation->counterpartyInitials($user) }}
                                 </span>
                             @endif
@@ -74,14 +74,14 @@
 
                         <span class="min-w-0 flex-1">
                             <span class="flex items-center gap-1.5">
-                                <span @class(['truncate text-[0.9375rem] text-forest-950', 'font-bold' => $count > 0, 'font-semibold' => $count === 0])>
+                                <span @class(['truncate text-[1.125rem] text-forest-950', 'font-bold' => $count > 0, 'font-semibold' => $count === 0])>
                                     {{ $conversation->counterpartyName($user) }}
                                 </span>
                                 @if ($conversation->counterpartyIsVerified($user))
                                     <x-heroicon-s-check-badge class="h-4 w-4 shrink-0 text-forest-600" />
                                     <span class="sr-only">Verified supplier</span>
                                 @endif
-                                <span class="ml-auto shrink-0 pl-2 text-[0.75rem] {{ $count > 0 ? 'font-semibold text-forest-700' : 'text-ink-soft' }}">
+                                <span class="ml-auto shrink-0 pl-2 text-[0.9375rem] {{ $count > 0 ? 'font-semibold text-forest-700' : 'text-ink-soft' }}">
                                     @if ($conversation->last_message_at?->isToday())
                                         {{ $conversation->last_message_at->format('g:i A') }}
                                     @elseif ($conversation->last_message_at?->isYesterday())
@@ -93,11 +93,11 @@
                             </span>
 
                             <span class="mt-0.5 flex items-start gap-2">
-                                <span @class(['line-clamp-2 min-w-0 flex-1 text-[0.875rem] leading-snug', 'text-ink' => $count > 0, 'text-ink-soft' => $count === 0])>
+                                <span @class(['line-clamp-2 min-w-0 flex-1 text-[1.0625rem] leading-snug', 'text-ink' => $count > 0, 'text-ink-soft' => $count === 0])>
                                     {{ $last?->preview() ?? 'No messages yet' }}
                                 </span>
                                 @if ($count > 0)
-                                    <span class="mt-0.5 flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-forest-600 px-1.5 text-[0.6875rem] font-bold text-white">
+                                    <span class="mt-0.5 flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-forest-600 px-1.5 text-[0.875rem] font-bold text-white">
                                         {{ $count }}
                                     </span>
                                     <span class="sr-only">{{ $count }} unread</span>

@@ -10,7 +10,7 @@
             </a>
 
             <h1 class="text-center text-[1.5rem] font-bold tracking-tight text-forest-800">Choose a new password</h1>
-            <p class="mt-2 text-center text-[0.9375rem] leading-relaxed text-ink-soft">
+            <p class="mt-2 text-center text-[1.125rem] leading-relaxed text-ink-soft">
                 Your new password must be at least 8 characters long.
             </p>
 
@@ -53,7 +53,7 @@
                     :toggle="true" />
 
                 <button type="submit"
-                        class="flex w-full items-center justify-center gap-2.5 rounded-xl bg-forest-800 px-6 py-3.5 text-[0.9375rem] font-semibold text-white transition hover:bg-forest-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest-600">
+                        class="flex w-full items-center justify-center gap-2.5 rounded-xl bg-forest-800 px-6 py-3.5 text-[1.125rem] font-semibold text-white transition hover:bg-forest-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest-600">
                     <x-heroicon-o-lock-closed class="h-5 w-5" aria-hidden="true" />
                     Reset password
                 </button>

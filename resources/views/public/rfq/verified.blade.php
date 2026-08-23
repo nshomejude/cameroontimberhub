@@ -52,7 +52,7 @@
                 class="mt-4 font-display text-2xl font-semibold text-forest-950 focus-visible:outline-none dark:text-sand-100 sm:text-3xl">
                 Your request is confirmed
             </h1>
-            <p class="mt-2 max-w-2xl text-[0.9375rem] leading-relaxed text-ink-soft dark:text-[#b3ab9b]">
+            <p class="mt-2 max-w-2xl text-[1.125rem] leading-relaxed text-ink-soft dark:text-[#b3ab9b]">
                 Thank you — we've confirmed your email address. Request
                 <strong class="font-semibold text-forest-800 dark:text-forest-300">{{ $rfq->reference_code }}</strong>
                 @if ($routedCount > 0)
@@ -65,18 +65,18 @@
 
             <dl class="mt-6 grid gap-4 sm:grid-cols-3">
                 <div class="rounded-xl bg-white px-4 py-3 dark:bg-[#1f1d18]">
-                    <dt class="text-[0.6875rem] uppercase tracking-wide text-ink-soft dark:text-[#8f887b]">Reference</dt>
-                    <dd class="mt-0.5 text-[0.9375rem] font-bold text-forest-800 dark:text-forest-300">{{ $rfq->reference_code }}</dd>
+                    <dt class="text-[0.875rem] uppercase tracking-wide text-ink-soft dark:text-[#8f887b]">Reference</dt>
+                    <dd class="mt-0.5 text-[1.125rem] font-bold text-forest-800 dark:text-forest-300">{{ $rfq->reference_code }}</dd>
                 </div>
                 @if ($rfq->title)
                     <div class="rounded-xl bg-white px-4 py-3 dark:bg-[#1f1d18]">
-                        <dt class="text-[0.6875rem] uppercase tracking-wide text-ink-soft dark:text-[#8f887b]">Title</dt>
-                        <dd class="mt-0.5 text-[0.9375rem] font-semibold text-ink dark:text-[#e4ddcf]">{{ $rfq->title }}</dd>
+                        <dt class="text-[0.875rem] uppercase tracking-wide text-ink-soft dark:text-[#8f887b]">Title</dt>
+                        <dd class="mt-0.5 text-[1.125rem] font-semibold text-ink dark:text-[#e4ddcf]">{{ $rfq->title }}</dd>
                     </div>
                 @endif
                 <div class="rounded-xl bg-white px-4 py-3 dark:bg-[#1f1d18]">
-                    <dt class="text-[0.6875rem] uppercase tracking-wide text-ink-soft dark:text-[#8f887b]">Products</dt>
-                    <dd class="mt-0.5 text-[0.9375rem] font-semibold text-ink dark:text-[#e4ddcf]">
+                    <dt class="text-[0.875rem] uppercase tracking-wide text-ink-soft dark:text-[#8f887b]">Products</dt>
+                    <dd class="mt-0.5 text-[1.125rem] font-semibold text-ink dark:text-[#e4ddcf]">
                         {{ trans_choice(':count product|:count products', $rfq->items->count(), ['count' => $rfq->items->count()]) }}
                     </dd>
                 </div>
@@ -84,7 +84,7 @@
 
             <div class="mt-6 flex flex-wrap gap-3">
                 <a href="{{ route('directory') }}"
-                   class="inline-flex items-center gap-2 rounded-full bg-forest-700 px-6 py-3 text-[0.875rem] font-semibold text-white transition hover:bg-forest-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500 focus-visible:ring-offset-2">
+                   class="inline-flex items-center gap-2 rounded-full bg-forest-700 px-6 py-3 text-[1.0625rem] font-semibold text-white transition hover:bg-forest-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500 focus-visible:ring-offset-2">
                     Browse verified exporters <x-heroicon-m-arrow-right class="h-4 w-4" />
                 </a>
             </div>
@@ -98,7 +98,7 @@
                 </div>
                 <ul class="divide-y divide-sand-200 px-5 dark:divide-[#2c2a24]">
                     @foreach ($rfq->items as $item)
-                        <li class="py-3 text-[0.875rem] text-ink dark:text-[#e4ddcf]">{{ $item->label() }}</li>
+                        <li class="py-3 text-[1.0625rem] text-ink dark:text-[#e4ddcf]">{{ $item->label() }}</li>
                     @endforeach
                 </ul>
             </section>

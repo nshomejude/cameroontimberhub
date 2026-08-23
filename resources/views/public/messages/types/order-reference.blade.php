@@ -17,7 +17,7 @@
 <div class="py-1">
     <div class="mb-2 flex items-center gap-3">
         <span class="h-px flex-1 bg-sand-300"></span>
-        <span class="text-[0.6875rem] font-bold uppercase tracking-[0.14em] text-ink-soft">Order reference</span>
+        <span class="text-[0.875rem] font-bold uppercase tracking-[0.14em] text-ink-soft">Order reference</span>
         <span class="h-px flex-1 bg-sand-300"></span>
     </div>
 
@@ -36,14 +36,14 @@
                  order was awarded from a quote against a reorder request. It is
                  provenance only — no figure on this order was inherited. --}}
             @if ($order?->isReorder())
-                <span class="inline-flex items-center gap-1 rounded-full bg-forest-50 px-2.5 py-1 text-[0.6875rem] font-bold text-forest-800 ring-1 ring-inset ring-forest-200">
+                <span class="inline-flex items-center gap-1 rounded-full bg-forest-50 px-2.5 py-1 text-[0.875rem] font-bold text-forest-800 ring-1 ring-inset ring-forest-200">
                     <x-heroicon-o-arrow-path class="h-3 w-3" />
                     Reorder
                 </span>
             @endif
         </div>
 
-        <dl class="mt-3 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-sand-200 pt-3 text-[0.8125rem]">
+        <dl class="mt-3 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-sand-200 pt-3 text-[1.0625rem]">
             <div>
                 <dt class="text-ink-soft">Order date</dt>
                 <dd class="font-medium text-ink">
@@ -73,14 +73,14 @@
 
         @if ($orderUrl)
             <a href="{{ $orderUrl }}"
-               class="mt-3 flex items-center gap-2 rounded-xl border border-sand-200 px-3.5 py-2.5 text-[0.875rem] font-semibold text-forest-700 transition hover:bg-sand-50">
+               class="mt-3 flex items-center gap-2 rounded-xl border border-sand-200 px-3.5 py-2.5 text-[1.0625rem] font-semibold text-forest-700 transition hover:bg-sand-50">
                 <x-heroicon-o-document-text class="h-4 w-4" />
                 View order details
                 <x-heroicon-m-chevron-right class="ml-auto h-4 w-4" />
             </a>
         @endif
 
-        <p class="mt-2 text-right text-[0.6875rem] text-ink-soft">{{ $message->created_at->format('g:i A') }}</p>
+        <p class="mt-2 text-right text-[0.875rem] text-ink-soft">{{ $message->created_at->format('g:i A') }}</p>
     </div>
 
     {{-- Reorder, surfaced on the order card itself once the goods have landed.

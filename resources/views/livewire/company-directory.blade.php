@@ -1,5 +1,5 @@
 @php
-    $select = 'appearance-none rounded-lg border border-sand-300 bg-white py-2 pl-3 pr-8 text-[0.8125rem] text-ink transition focus:border-forest-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-forest-200';
+    $select = 'appearance-none rounded-lg border border-sand-300 bg-white py-2 pl-3 pr-8 text-[1.0625rem] text-ink transition focus:border-forest-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-forest-200';
     $total = $companies->total();
 @endphp
 
@@ -24,7 +24,7 @@
 
             {{-- Breadcrumb --}}
             <nav aria-label="Breadcrumb">
-                <ol class="flex items-center gap-2 text-[0.75rem] text-ink-soft">
+                <ol class="flex items-center gap-2 text-[0.9375rem] text-ink-soft">
                     <li><a href="{{ route('home') }}" class="rounded transition hover:text-forest-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-300">Home</a></li>
                     <li aria-hidden="true">/</li>
                     <li><span aria-current="page" class="font-medium text-ink">Suppliers</span></li>
@@ -35,7 +35,7 @@
             <div class="mt-3 flex items-start gap-8">
                 <div class="min-w-0 flex-1">
                     <h1 class="text-[1.875rem] font-bold tracking-tight text-ink">Supplier Directory</h1>
-                    <p class="mt-1.5 text-[0.875rem] text-ink-soft">
+                    <p class="mt-1.5 text-[1.0625rem] text-ink-soft">
                         Find and connect with verified timber suppliers, exporters and manufacturers across Cameroon.
                     </p>
                 </div>
@@ -48,7 +48,7 @@
                             </span>
                             <div class="min-w-0">
                                 <dd class="text-[1.125rem] font-bold leading-tight text-forest-800">{{ $stat['value'] }}</dd>
-                                <dt class="truncate text-[0.75rem] text-ink-soft">{{ $stat['label'] }}</dt>
+                                <dt class="truncate text-[0.9375rem] text-ink-soft">{{ $stat['label'] }}</dt>
                             </div>
                         </div>
                     @endforeach
@@ -62,7 +62,7 @@
                         <button type="button" wire:click="setView('{{ $mode }}')"
                                 aria-pressed="{{ $view === $mode ? 'true' : 'false' }}"
                                 @class([
-                                    'inline-flex items-center gap-2 rounded-md px-4 py-2 text-[0.8125rem] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500',
+                                    'inline-flex items-center gap-2 rounded-md px-4 py-2 text-[1.0625rem] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500',
                                     'bg-forest-700 text-white' => $view === $mode,
                                     'text-ink-soft hover:text-forest-700' => $view !== $mode,
                                 ])>
@@ -127,7 +127,7 @@
     <div x-data="{ drawer: false }" @close-filter-drawer.window="drawer = false" class="lg:hidden">
         <div class="px-4 pt-5">
             <h1 class="text-[1.75rem] font-bold leading-tight tracking-tight text-ink">Supplier Directory</h1>
-            <p class="mt-2 text-[0.9375rem] leading-relaxed text-ink-soft">
+            <p class="mt-2 text-[1.125rem] leading-relaxed text-ink-soft">
                 Connect with verified timber suppliers, exporters and manufacturers in Cameroon.
             </p>
 
@@ -138,10 +138,10 @@
                     <x-heroicon-o-magnifying-glass class="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-ink-soft" />
                     <input id="m-search" type="search" wire:model.live.debounce.400ms="search"
                            placeholder="Search suppliers, company name..."
-                           class="w-full rounded-xl border border-sand-300 bg-white py-3 pl-11 pr-3 text-[0.9375rem] text-ink placeholder:text-ink-soft/70 focus:border-forest-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-forest-200">
+                           class="w-full rounded-xl border border-sand-300 bg-white py-3 pl-11 pr-3 text-[1.125rem] text-ink placeholder:text-ink-soft/70 focus:border-forest-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-forest-200">
                 </div>
                 <button type="button" @click="drawer = true"
-                        class="flex shrink-0 items-center gap-2 rounded-xl bg-forest-800 px-5 text-[0.9375rem] font-semibold text-white transition hover:bg-forest-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500 focus-visible:ring-offset-2">
+                        class="flex shrink-0 items-center gap-2 rounded-xl bg-forest-800 px-5 text-[1.125rem] font-semibold text-white transition hover:bg-forest-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500 focus-visible:ring-offset-2">
                     <x-heroicon-o-adjustments-horizontal class="h-5 w-5" />
                     Filters
                 </button>
@@ -153,7 +153,7 @@
             <button type="button" wire:click="selectType('')"
                     aria-pressed="{{ $types === [] ? 'true' : 'false' }}"
                     @class([
-                        'inline-flex shrink-0 items-center gap-2 rounded-full border px-4 py-2.5 text-[0.875rem] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500',
+                        'inline-flex shrink-0 items-center gap-2 rounded-full border px-4 py-2.5 text-[1.0625rem] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500',
                         'border-forest-700 text-forest-700' => $types === [],
                         'border-sand-300 text-ink' => $types !== [],
                     ])>
@@ -164,7 +164,7 @@
                 <button type="button" wire:click="selectType('{{ $facet['value'] }}')"
                         aria-pressed="{{ $types === [$facet['value']] ? 'true' : 'false' }}"
                         @class([
-                            'inline-flex shrink-0 items-center gap-2 rounded-full border px-4 py-2.5 text-[0.875rem] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500',
+                            'inline-flex shrink-0 items-center gap-2 rounded-full border px-4 py-2.5 text-[1.0625rem] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500',
                             'border-forest-700 text-forest-700' => $types === [$facet['value']],
                             'border-sand-300 text-ink' => $types !== [$facet['value']],
                         ])>
@@ -176,11 +176,11 @@
 
         {{-- Count + sort --}}
         <div class="mt-4 flex items-center gap-3 px-4">
-            <p class="text-[0.9375rem] text-ink">{{ $total }} {{ Str::plural('Supplier', $total) }} Found</p>
+            <p class="text-[1.125rem] text-ink">{{ $total }} {{ Str::plural('Supplier', $total) }} Found</p>
             <div class="relative ml-auto">
                 <label for="m-sort" class="sr-only">Sort suppliers by</label>
                 <select id="m-sort" wire:model.live="sort"
-                        class="appearance-none rounded-xl border border-sand-300 bg-white py-3 pl-4 pr-10 text-[0.9375rem] text-ink focus:border-forest-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-forest-200">
+                        class="appearance-none rounded-xl border border-sand-300 bg-white py-3 pl-4 pr-10 text-[1.125rem] text-ink focus:border-forest-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-forest-200">
                     @foreach ($sortOptions as $value => $label)
                         <option value="{{ $value }}">Sort: {{ $label }}</option>
                     @endforeach
@@ -216,7 +216,7 @@
                  x-transition:leave-start="translate-y-0" x-transition:leave-end="translate-y-full"
                  class="absolute inset-x-0 bottom-0 flex max-h-[88vh] flex-col rounded-t-2xl bg-white shadow-2xl">
                 <div class="flex items-center justify-between border-b border-sand-200 px-5 py-3">
-                    <span class="text-[0.9375rem] font-bold text-ink">Filter suppliers</span>
+                    <span class="text-[1.125rem] font-bold text-ink">Filter suppliers</span>
                     <button type="button" @click="drawer = false"
                             class="flex h-9 w-9 items-center justify-center rounded-lg text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500"
                             aria-label="Close filters">

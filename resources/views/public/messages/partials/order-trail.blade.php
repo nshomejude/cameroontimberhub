@@ -54,12 +54,12 @@
                 </div>
 
                 <p @class([
-                    'mt-1.5 px-1 text-[0.6875rem] font-semibold leading-tight',
+                    'mt-1.5 px-1 text-[0.875rem] font-semibold leading-tight',
                     'text-forest-800' => $reached,
                     'text-ink-soft' => ! $reached,
                 ])>{{ $milestone['status']->label() }}</p>
 
-                <p class="px-1 text-[0.625rem] leading-tight text-ink-soft">
+                <p class="px-1 text-[0.8125rem] leading-tight text-ink-soft">
                     @if ($milestone['at'])
                         {{ $milestone['at']->isoFormat('D MMM YYYY') }}<br>{{ $milestone['at']->format('g:i A') }}
                     @else

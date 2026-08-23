@@ -22,7 +22,7 @@
     <div class="py-1" id="m{{ $message->getKey() }}">
         <div class="mb-2 flex items-center gap-3">
             <span class="h-px flex-1 bg-sand-300"></span>
-            <span class="text-[0.6875rem] font-bold uppercase tracking-[0.14em] text-ink-soft">Review published</span>
+            <span class="text-[0.875rem] font-bold uppercase tracking-[0.14em] text-ink-soft">Review published</span>
             <span class="h-px flex-1 bg-sand-300"></span>
         </div>
 
@@ -32,10 +32,10 @@
                     <x-heroicon-m-star class="h-5 w-5" />
                 </span>
                 <div class="min-w-0 flex-1">
-                    <p class="font-display text-[0.9375rem] font-bold text-forest-950">
+                    <p class="font-display text-[1.125rem] font-bold text-forest-950">
                         {{ $review->rating }} out of 5
                     </p>
-                    <p class="text-[0.75rem] text-ink-soft">
+                    <p class="text-[0.9375rem] text-ink-soft">
                         by {{ $review->author_name }}
                         @if ($review->created_at)
                             · {{ $review->created_at->isoFormat('D MMM YYYY') }}
@@ -45,20 +45,20 @@
             </div>
 
             @if ($review->title)
-                <p class="mt-3 border-t border-sand-200 pt-3 text-[0.875rem] font-semibold text-ink">{{ $review->title }}</p>
+                <p class="mt-3 border-t border-sand-200 pt-3 text-[1.0625rem] font-semibold text-ink">{{ $review->title }}</p>
             @endif
 
             @if ($review->body)
                 {{-- Escaped by Blade. `whitespace-pre-line` preserves the
                      buyer's line breaks without any markup being emitted. --}}
-                <p @class(['whitespace-pre-line text-[0.8125rem] leading-relaxed text-ink', 'mt-3 border-t border-sand-200 pt-3' => ! $review->title, 'mt-1.5' => (bool) $review->title])>{{ $review->body }}</p>
+                <p @class(['whitespace-pre-line text-[1.0625rem] leading-relaxed text-ink', 'mt-3 border-t border-sand-200 pt-3' => ! $review->title, 'mt-1.5' => (bool) $review->title])>{{ $review->body }}</p>
             @endif
 
-            <p class="mt-3 text-[0.6875rem] text-ink-soft">
+            <p class="mt-3 text-[0.875rem] text-ink-soft">
                 Left after a completed order on this platform.
             </p>
 
-            <p class="mt-2 text-right text-[0.6875rem] text-ink-soft">{{ $message->created_at->format('g:i A') }}</p>
+            <p class="mt-2 text-right text-[0.875rem] text-ink-soft">{{ $message->created_at->format('g:i A') }}</p>
         </div>
     </div>
 @endif

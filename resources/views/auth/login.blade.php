@@ -58,7 +58,7 @@
                         </h2>
                         <span class="mt-6 block h-1 w-14 rounded-full bg-timber-400" aria-hidden="true"></span>
 
-                        <p class="mt-6 max-w-sm text-[0.9375rem] leading-relaxed text-sand-200/90">
+                        <p class="mt-6 max-w-sm text-[1.125rem] leading-relaxed text-sand-200/90">
                             Access your account to connect with verified suppliers, explore quality
                             timber, and grow your business globally.
                         </p>
@@ -70,15 +70,15 @@
                                         <x-dynamic-component :component="'heroicon-o-'.$benefit['icon']" class="h-5 w-5" aria-hidden="true" />
                                     </span>
                                     <div>
-                                        <p class="text-[0.9375rem] font-semibold text-white">{{ $benefit['title'] }}</p>
-                                        <p class="mt-0.5 max-w-xs text-[0.8125rem] leading-relaxed text-sand-200/75">{{ $benefit['text'] }}</p>
+                                        <p class="text-[1.125rem] font-semibold text-white">{{ $benefit['title'] }}</p>
+                                        <p class="mt-0.5 max-w-xs text-[1.0625rem] leading-relaxed text-sand-200/75">{{ $benefit['text'] }}</p>
                                     </div>
                                 </li>
                             @endforeach
                         </ul>
 
                         @if ($stats['suppliers'] ?? null)
-                            <p class="mt-10 flex w-fit items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-5 py-4 text-[0.875rem] text-sand-100">
+                            <p class="mt-10 flex w-fit items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-5 py-4 text-[1.0625rem] text-sand-100">
                                 <x-heroicon-s-check-badge class="h-6 w-6 shrink-0 text-timber-300" aria-hidden="true" />
                                 <span>
                                     <strong class="font-semibold text-white" data-stat="suppliers">{{ number_format($stats['suppliers']) }}</strong>
@@ -100,13 +100,13 @@
                             <span class="lg:hidden">Welcome Back</span>
                             <span class="hidden lg:inline">Login to Your Account</span>
                         </h1>
-                        <p class="mt-2 text-center text-[0.9375rem] leading-relaxed text-ink-soft">
+                        <p class="mt-2 text-center text-[1.125rem] leading-relaxed text-ink-soft">
                             <span class="lg:hidden">Sign in to your account and continue your timber trading journey.</span>
                             <span class="hidden lg:inline">Enter your credentials to access your account.</span>
                         </p>
 
                         @if (session('status'))
-                            <p role="status" class="mt-6 rounded-xl border border-forest-200 bg-forest-50 px-4 py-3 text-[0.8125rem] text-forest-800">
+                            <p role="status" class="mt-6 rounded-xl border border-forest-200 bg-forest-50 px-4 py-3 text-[1.0625rem] text-forest-800">
                                 {{ session('status') }}
                             </p>
                         @endif
@@ -139,19 +139,19 @@
                                 :toggle="true" />
 
                             <div class="flex flex-wrap items-center justify-between gap-3">
-                                <label for="auth-remember" class="flex items-center gap-2 text-[0.8125rem] text-ink-soft">
+                                <label for="auth-remember" class="flex items-center gap-2 text-[1.0625rem] text-ink-soft">
                                     <input id="auth-remember" type="checkbox" name="remember" value="1" @checked(old('remember'))
                                            class="h-4 w-4 rounded border-sand-400 text-forest-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest-600">
                                     Remember me
                                 </label>
                                 <a href="{{ route('password.request') }}"
-                                   class="text-[0.8125rem] font-semibold text-forest-700 underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest-600">
+                                   class="text-[1.0625rem] font-semibold text-forest-700 underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest-600">
                                     Forgot Password?
                                 </a>
                             </div>
 
                             <button type="submit"
-                                    class="flex w-full items-center justify-center gap-2.5 rounded-xl bg-forest-800 px-6 py-3.5 text-[0.9375rem] font-semibold text-white transition hover:bg-forest-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest-600">
+                                    class="flex w-full items-center justify-center gap-2.5 rounded-xl bg-forest-800 px-6 py-3.5 text-[1.125rem] font-semibold text-white transition hover:bg-forest-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest-600">
                                 <x-heroicon-o-lock-closed class="h-5 w-5" aria-hidden="true" />
                                 Sign In
                             </button>
@@ -164,9 +164,9 @@
                         @if (config('demo.enabled') === true)
                             <div class="mt-7 border-t border-sand-200 pt-6">
                                 <div class="flex items-center gap-2">
-                                    <h2 class="text-[0.8125rem] font-semibold uppercase tracking-[0.08em] text-ink-soft">Explore a demo account</h2>
+                                    <h2 class="text-[1.0625rem] font-semibold uppercase tracking-[0.08em] text-ink-soft">Explore a demo account</h2>
                                 </div>
-                                <p class="mt-1 text-[0.8125rem] text-ink-soft">
+                                <p class="mt-1 text-[1.0625rem] text-ink-soft">
                                     Sign in instantly with sample data — no password needed.
                                 </p>
 
@@ -177,8 +177,8 @@
                                             <button type="submit"
                                                     class="flex w-full flex-col items-center gap-1.5 rounded-xl border border-sand-300 bg-white px-3 py-3.5 text-center transition hover:border-forest-400 hover:bg-forest-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest-600">
                                                 <x-dynamic-component :component="'heroicon-o-'.$persona['icon']" class="h-5 w-5 text-forest-700" aria-hidden="true" />
-                                                <span class="text-[0.8125rem] font-semibold text-ink">{{ $persona['label'] }}</span>
-                                                <span class="text-[0.6875rem] leading-tight text-ink-soft">{{ $persona['description'] }}</span>
+                                                <span class="text-[1.0625rem] font-semibold text-ink">{{ $persona['label'] }}</span>
+                                                <span class="text-[0.875rem] leading-tight text-ink-soft">{{ $persona['description'] }}</span>
                                             </button>
                                         </form>
                                     @endforeach
@@ -186,7 +186,7 @@
                             </div>
                         @endif
 
-                        <p class="mt-7 text-center text-[0.875rem] text-ink-soft">
+                        <p class="mt-7 text-center text-[1.0625rem] text-ink-soft">
                             Don't have an account?
                             <a href="{{ route('register') }}"
                                class="font-semibold text-forest-700 underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest-600">Create Account</a>
@@ -200,7 +200,7 @@
                 @foreach ($assurances as $item)
                     <li class="flex flex-col items-center gap-2 px-1 text-center lg:flex-row lg:gap-3 lg:px-6 lg:text-left">
                         <x-dynamic-component :component="'heroicon-o-'.$item['icon']" class="h-6 w-6 shrink-0 text-forest-700" aria-hidden="true" />
-                        <span class="text-[0.6875rem] font-medium leading-tight text-ink lg:text-[0.875rem] lg:font-semibold">{{ $item['label'] }}</span>
+                        <span class="text-[0.875rem] font-medium leading-tight text-ink lg:text-[1.0625rem] lg:font-semibold">{{ $item['label'] }}</span>
                     </li>
                 @endforeach
             </ul>

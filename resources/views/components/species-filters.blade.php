@@ -18,27 +18,27 @@
 
     $regions = $regions ?? collect();
 
-    $facetSearch = 'w-full rounded-lg border border-sand-300 bg-white py-2 pl-3 pr-9 text-[0.8125rem] text-ink placeholder:text-ink-soft/70 focus:border-forest-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-forest-200';
+    $facetSearch = 'w-full rounded-lg border border-sand-300 bg-white py-2 pl-3 pr-9 text-[1.0625rem] text-ink placeholder:text-ink-soft/70 focus:border-forest-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-forest-200';
     $box = 'h-4 w-4 shrink-0 rounded border-sand-400 text-forest-700 accent-forest-700 focus-visible:ring-2 focus-visible:ring-forest-300 focus-visible:ring-offset-1';
     $radio = 'h-4 w-4 shrink-0 border-sand-400 text-forest-700 accent-forest-700 focus-visible:ring-2 focus-visible:ring-forest-300 focus-visible:ring-offset-1';
-    $row = 'flex cursor-pointer items-center gap-2.5 py-[0.3125rem] text-[0.8125rem] text-ink';
-    $count = 'rounded-full bg-sand-100 px-2 py-0.5 text-[0.6875rem] font-semibold tabular-nums text-ink-soft';
+    $row = 'flex cursor-pointer items-center gap-2.5 py-[0.3125rem] text-[1.0625rem] text-ink';
+    $count = 'rounded-full bg-sand-100 px-2 py-0.5 text-[0.875rem] font-semibold tabular-nums text-ink-soft';
 @endphp
 
 <div class="flex h-full flex-col">
     <div class="flex-1 space-y-1 overflow-y-auto px-5 py-5">
 
         <div class="flex items-center justify-between pb-2">
-            <h2 class="text-[0.9375rem] font-bold text-ink">Filter Species</h2>
+            <h2 class="text-[1.125rem] font-bold text-ink">Filter Species</h2>
             <button type="button" wire:click="resetFilters"
-                    class="rounded text-[0.8125rem] font-semibold text-forest-700 transition hover:text-forest-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-300">
+                    class="rounded text-[1.0625rem] font-semibold text-forest-700 transition hover:text-forest-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-300">
                 Clear All
             </button>
         </div>
 
         {{-- Search species --}}
         <div class="pb-4">
-            <label for="{{ $fid('search') }}" class="text-[0.8125rem] font-bold text-ink">Search Species</label>
+            <label for="{{ $fid('search') }}" class="text-[1.0625rem] font-bold text-ink">Search Species</label>
             <div class="relative mt-2.5">
                 <input id="{{ $fid('search') }}" type="search" wire:model.live.debounce.400ms="search"
                        placeholder="Search by name or scientific name..." class="{{ $facetSearch }}">
@@ -104,7 +104,7 @@
                         @endforeach
                         @if (count($applicationFacets) > $facetLimit)
                             <button type="button" @click="expanded = !expanded" :aria-expanded="expanded ? 'true' : 'false'"
-                                    class="mt-1 inline-flex items-center gap-1 rounded text-[0.8125rem] font-semibold text-forest-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-300">
+                                    class="mt-1 inline-flex items-center gap-1 rounded text-[1.0625rem] font-semibold text-forest-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-300">
                                 <span x-text="expanded ? 'View Less' : 'View More'">View More</span>
                                 <x-heroicon-m-chevron-down class="h-4 w-4 transition" ::class="expanded && 'rotate-180'" />
                             </button>
@@ -130,7 +130,7 @@
                     <div class="relative pb-1">
                         <label for="{{ $fid('region') }}" class="sr-only">Origin region</label>
                         <select id="{{ $fid('region') }}" wire:model.live="region"
-                                class="w-full appearance-none rounded-lg border border-sand-300 bg-white py-2.5 pl-3 pr-9 text-[0.8125rem] text-ink focus:border-forest-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-forest-200">
+                                class="w-full appearance-none rounded-lg border border-sand-300 bg-white py-2.5 pl-3 pr-9 text-[1.0625rem] text-ink focus:border-forest-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-forest-200">
                             <option value="">Select Region</option>
                             @foreach ($regions as $r)
                                 <option value="{{ $r['value'] }}">{{ $r['value'] }} ({{ $r['count'] }})</option>
@@ -148,7 +148,7 @@
              mobile it closes the drawer, on desktop it returns focus to results. --}}
         <div class="border-t border-sand-200 bg-white px-5 py-4">
             <button type="button" @click="$dispatch('close-filter-drawer')"
-                    class="flex w-full items-center justify-center gap-2 rounded-lg bg-forest-800 px-5 py-3 text-[0.875rem] font-semibold text-white transition hover:bg-forest-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-300 focus-visible:ring-offset-2">
+                    class="flex w-full items-center justify-center gap-2 rounded-lg bg-forest-800 px-5 py-3 text-[1.0625rem] font-semibold text-white transition hover:bg-forest-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-300 focus-visible:ring-offset-2">
                 <x-heroicon-o-funnel class="h-4 w-4" />
                 Apply Filters
             </button>

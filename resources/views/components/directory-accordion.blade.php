@@ -12,7 +12,7 @@
         <button type="button" @click="open = !open"
                 :aria-expanded="open ? 'true' : 'false'"
                 aria-controls="{{ $id }}-panel"
-                class="flex w-full items-center justify-between rounded py-3 text-left text-[0.8125rem] font-bold text-ink transition hover:text-forest-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-300">
+                class="flex w-full items-center justify-between rounded py-3 text-left text-[1.0625rem] font-bold text-ink transition hover:text-forest-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-300">
             {{ $title }}
             <x-heroicon-m-chevron-down class="h-4 w-4 text-ink-soft transition" ::class="open && 'rotate-180'" />
         </button>

@@ -14,11 +14,11 @@
     </span>
     <h3 class="mt-4 font-display text-lg font-bold text-forest-950">{{ $title }}</h3>
     @if ($body)
-        <p class="mt-2 max-w-md text-[0.875rem] leading-relaxed text-ink-soft">{{ $body }}</p>
+        <p class="mt-2 max-w-md text-[1.0625rem] leading-relaxed text-ink-soft">{{ $body }}</p>
     @endif
     @if ($ctaUrl && $ctaLabel)
         <a href="{{ $ctaUrl }}"
-           class="mt-5 inline-flex items-center gap-2 rounded-full bg-forest-700 px-5 py-2.5 text-[0.875rem] font-semibold text-white transition hover:bg-forest-800">
+           class="mt-5 inline-flex items-center gap-2 rounded-full bg-forest-700 px-5 py-2.5 text-[1.0625rem] font-semibold text-white transition hover:bg-forest-800">
             {{ $ctaLabel }} <x-heroicon-m-arrow-right class="h-4 w-4" />
         </a>
     @endif

@@ -36,7 +36,7 @@
 <div class="py-1" id="m{{ $message->getKey() }}">
     <div class="mb-2 flex items-center gap-3">
         <span class="h-px flex-1 bg-sand-300"></span>
-        <span class="text-[0.6875rem] font-bold uppercase tracking-[0.14em] text-ink-soft">Proforma invoice</span>
+        <span class="text-[0.875rem] font-bold uppercase tracking-[0.14em] text-ink-soft">Proforma invoice</span>
         <span class="h-px flex-1 bg-sand-300"></span>
     </div>
 
@@ -46,10 +46,10 @@
                 <x-heroicon-o-document-text class="h-5 w-5" />
             </span>
             <div class="min-w-0 flex-1">
-                <p class="font-display text-[0.9375rem] font-bold text-forest-950">
+                <p class="font-display text-[1.125rem] font-bold text-forest-950">
                     Proforma invoice for order {{ $message->payloadValue('reference_code') }}
                 </p>
-                <p class="text-[0.75rem] text-ink-soft">
+                <p class="text-[0.9375rem] text-ink-soft">
                     @if ($iso = $message->payloadValue('issued_at'))
                         Prepared {{ \Illuminate\Support\Carbon::parse($iso)->isoFormat('D MMM YYYY, h:mm A') }}
                     @endif
@@ -62,7 +62,7 @@
         </div>
 
         {{-- ---------------------------------------------------- parties --}}
-        <dl class="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 border-t border-sand-200 pt-3 text-[0.8125rem]">
+        <dl class="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 border-t border-sand-200 pt-3 text-[1.0625rem]">
             <div>
                 <dt class="text-ink-soft">Supplier</dt>
                 <dd class="font-medium text-ink">{{ $message->payloadValue('supplier_name') }}</dd>
@@ -78,9 +78,9 @@
         {{-- ------------------------------------------------------ lines --}}
         @if ($items !== [])
             <div class="mt-3 overflow-x-auto border-t border-sand-200 pt-3">
-                <table class="w-full min-w-[26rem] text-left text-[0.8125rem]">
+                <table class="w-full min-w-[26rem] text-left text-[1.0625rem]">
                     <thead>
-                        <tr class="text-[0.6875rem] uppercase tracking-wide text-ink-soft">
+                        <tr class="text-[0.875rem] uppercase tracking-wide text-ink-soft">
                             <th class="pb-1.5 font-semibold">Description</th>
                             <th class="pb-1.5 text-right font-semibold">Qty</th>
                             <th class="pb-1.5 text-right font-semibold">Unit price</th>
@@ -99,7 +99,7 @@
                                         ]);
                                     @endphp
                                     @if ($spec !== [])
-                                        <span class="block text-[0.75rem] text-ink-soft">{{ implode(' · ', $spec) }}</span>
+                                        <span class="block text-[0.9375rem] text-ink-soft">{{ implode(' · ', $spec) }}</span>
                                     @endif
                                 </td>
                                 <td class="py-2 text-right whitespace-nowrap text-ink">
@@ -116,7 +116,7 @@
         @endif
 
         {{-- ---------------------------------------------------- totals --}}
-        <dl class="mt-3 space-y-1.5 border-t border-sand-200 pt-3 text-[0.8125rem]">
+        <dl class="mt-3 space-y-1.5 border-t border-sand-200 pt-3 text-[1.0625rem]">
             <div class="flex items-center justify-between gap-4">
                 <dt class="text-ink-soft">Subtotal</dt>
                 <dd class="font-medium text-ink">{{ $currency }} {{ number_format((float) $message->payloadValue('subtotal_amount', 0), 2) }}</dd>
@@ -155,7 +155,7 @@
             ]);
         @endphp
         @if ($terms !== [])
-            <dl class="mt-3 space-y-1.5 border-t border-sand-200 pt-3 text-[0.8125rem]">
+            <dl class="mt-3 space-y-1.5 border-t border-sand-200 pt-3 text-[1.0625rem]">
                 @foreach ($terms as $label => $value)
                     <div class="flex items-start justify-between gap-4">
                         <dt class="text-ink-soft">{{ $label }}</dt>
@@ -166,7 +166,7 @@
         @endif
 
         {{-- The sentence that keeps the rest of the card true. --}}
-        <p class="mt-3 rounded-xl bg-sand-50 p-3 text-[0.75rem] leading-relaxed text-ink-soft">
+        <p class="mt-3 rounded-xl bg-sand-50 p-3 text-[0.9375rem] leading-relaxed text-ink-soft">
             This proforma restates the agreed order as it was recorded when the quotation was
             accepted. It is not a tax invoice, carries no tax identification, and is not a
             receipt or evidence of payment.
@@ -174,12 +174,12 @@
 
         @if ($order)
             <a href="{{ route('chat.order.proforma.sheet', [$conversation, $order]) }}"
-               class="mt-3 flex items-center justify-center gap-2 rounded-xl border border-sand-200 px-3.5 py-2.5 text-[0.875rem] font-semibold text-forest-700 transition hover:bg-sand-50">
+               class="mt-3 flex items-center justify-center gap-2 rounded-xl border border-sand-200 px-3.5 py-2.5 text-[1.0625rem] font-semibold text-forest-700 transition hover:bg-sand-50">
                 <x-heroicon-m-printer class="h-4 w-4" />
                 View / print proforma
             </a>
         @endif
 
-        <p class="mt-2 text-right text-[0.6875rem] text-ink-soft">{{ $message->created_at->format('g:i A') }}</p>
+        <p class="mt-2 text-right text-[0.875rem] text-ink-soft">{{ $message->created_at->format('g:i A') }}</p>
     </div>
 </div>

@@ -17,7 +17,7 @@
 
     <div class="mb-4 flex justify-end lg:hidden">
         <a href="{{ route('account.messages.create') }}"
-           class="flex items-center gap-2 rounded-xl bg-forest-800 px-4 py-2.5 text-[0.875rem] font-bold text-white transition hover:bg-forest-900">
+           class="flex items-center gap-2 rounded-xl bg-forest-800 px-4 py-2.5 text-[1.0625rem] font-bold text-white transition hover:bg-forest-900">
             <x-heroicon-m-pencil-square class="h-4 w-4" /> New
         </a>
     </div>
@@ -28,7 +28,7 @@
         <div @class(['lg:w-[22rem] lg:shrink-0', 'hidden lg:block' => $conversation !== null])>
             <div class="mb-4 hidden justify-end lg:flex">
                 <a href="{{ route('account.messages.create') }}"
-                   class="flex items-center gap-2 rounded-xl bg-forest-800 px-4 py-2.5 text-[0.875rem] font-bold text-white transition hover:bg-forest-900">
+                   class="flex items-center gap-2 rounded-xl bg-forest-800 px-4 py-2.5 text-[1.0625rem] font-bold text-white transition hover:bg-forest-900">
                     <x-heroicon-m-pencil-square class="h-4 w-4" /> New conversation
                 </a>
             </div>
@@ -52,7 +52,7 @@
                     <div>
                         <x-heroicon-o-chat-bubble-left-right class="mx-auto h-10 w-10 text-sand-400" />
                         <p class="mt-3 font-display text-[1rem] font-bold text-forest-950">Select a conversation</p>
-                        <p class="mt-1 text-[0.875rem] text-ink-soft">Or start a new one with a verified supplier.</p>
+                        <p class="mt-1 text-[1.0625rem] text-ink-soft">Or start a new one with a verified supplier.</p>
                     </div>
                 </div>
             @endif

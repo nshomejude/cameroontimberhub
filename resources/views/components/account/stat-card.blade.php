@@ -12,13 +12,13 @@
             <x-dynamic-component :component="'heroicon-o-'.$stat['icon']" class="h-5 w-5" />
         </span>
         <div class="min-w-0">
-            <p class="text-[0.75rem] font-medium text-ink-soft lg:text-[0.8125rem]">{{ $stat['label'] }}</p>
+            <p class="text-[0.9375rem] font-medium text-ink-soft lg:text-[1.0625rem]">{{ $stat['label'] }}</p>
             <p class="mt-1 font-display text-[1.75rem] font-bold leading-none text-forest-950">{{ number_format($stat['value']) }}</p>
         </div>
     </div>
 
     @if ($stat['delta'])
-        <p class="mt-3 flex items-center gap-1 text-[0.75rem]">
+        <p class="mt-3 flex items-center gap-1 text-[0.9375rem]">
             @if ($stat['delta']['direction'] === 'up')
                 <x-heroicon-m-arrow-trending-up class="h-4 w-4 text-forest-500" />
                 <span class="font-bold text-forest-600">{{ $stat['delta']['percent'] }}%</span>
@@ -29,6 +29,6 @@
             <span class="text-ink-soft">{{ $stat['delta']['period'] }}</span>
         </p>
     @elseif (! empty($stat['hint']))
-        <p class="mt-3 text-[0.75rem] leading-snug text-ink-soft">{{ $stat['hint'] }}</p>
+        <p class="mt-3 text-[0.9375rem] leading-snug text-ink-soft">{{ $stat['hint'] }}</p>
     @endif
 </a>

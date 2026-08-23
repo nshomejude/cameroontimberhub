@@ -4,7 +4,7 @@
     <legend class="sr-only">Your contact details</legend>
 
     @auth
-        <p class="rounded-xl bg-forest-50 px-4 py-3 text-[0.8125rem] text-forest-900 dark:bg-forest-950 dark:text-forest-200">
+        <p class="rounded-xl bg-forest-50 px-4 py-3 text-[1.0625rem] text-forest-900 dark:bg-forest-950 dark:text-forest-200">
             <x-heroicon-m-user-circle class="mr-1 inline h-4 w-4 align-text-bottom" />
             We've pre-filled your account details. Edit anything that should be different for this request.
         </p>

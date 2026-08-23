@@ -37,7 +37,7 @@
                         </h2>
                         <span class="mt-5 block h-1 w-14 rounded-full bg-timber-400" aria-hidden="true"></span>
 
-                        <p class="mt-5 max-w-xs text-[0.9375rem] leading-relaxed text-sand-200/90">
+                        <p class="mt-5 max-w-xs text-[1.125rem] leading-relaxed text-sand-200/90">
                             Create your account and connect with verified timber suppliers and buyers worldwide.
                         </p>
 
@@ -48,14 +48,14 @@
                                         <x-dynamic-component :component="'heroicon-o-'.$benefit['icon']" class="h-5 w-5" aria-hidden="true" />
                                     </span>
                                     <div>
-                                        <p class="text-[0.9375rem] font-semibold text-white">{{ $benefit['title'] }}</p>
-                                        <p class="mt-0.5 max-w-[15rem] text-[0.8125rem] leading-relaxed text-sand-200/75">{{ $benefit['text'] }}</p>
+                                        <p class="text-[1.125rem] font-semibold text-white">{{ $benefit['title'] }}</p>
+                                        <p class="mt-0.5 max-w-[15rem] text-[1.0625rem] leading-relaxed text-sand-200/75">{{ $benefit['text'] }}</p>
                                     </div>
                                 </li>
                             @endforeach
                         </ul>
 
-                        <p class="mt-auto flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3.5 text-[0.8125rem] leading-snug text-sand-100">
+                        <p class="mt-auto flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3.5 text-[1.0625rem] leading-snug text-sand-100">
                             <x-heroicon-o-lock-closed class="h-5 w-5 shrink-0 text-timber-300" aria-hidden="true" />
                             Your data is protected in transit and your enquiries stay private to you.
                         </p>
@@ -75,7 +75,7 @@
                             <img src="/brand/logo-600.png" alt="Cameroon Timber Hub" width="600" height="200" class="h-16 w-auto shrink-0">
                             <div>
                                 <p class="text-[1.375rem] font-bold leading-tight text-forest-800">Create Your Account</p>
-                                <p class="mt-1 text-[0.8125rem] leading-snug text-ink-soft">Join timber professionals and grow your business.</p>
+                                <p class="mt-1 text-[1.0625rem] leading-snug text-ink-soft">Join timber professionals and grow your business.</p>
                             </div>
                         </div>
                     </div>
@@ -84,16 +84,16 @@
 
                         <div class="hidden lg:block">
                             <h1 class="text-[1.75rem] font-bold tracking-tight text-forest-800">Create Your Account</h1>
-                            <p class="mt-1.5 text-[0.9375rem] text-ink-soft">
+                            <p class="mt-1.5 text-[1.125rem] text-ink-soft">
                                 Join timber professionals and grow your business.
                                 @if ($stats['suppliers'] ?? null)
-                                    <span class="block text-[0.875rem]">
+                                    <span class="block text-[1.0625rem]">
                                         <strong data-stat="suppliers">{{ number_format($stats['suppliers']) }}</strong>
                                         verified {{ Str::plural('supplier', $stats['suppliers']) }} are already listed.
                                     </span>
                                 @endif
                             </p>
-                            <p class="mt-3 inline-flex items-center gap-2 rounded-lg bg-forest-50 px-3 py-2 text-[0.75rem] font-medium text-forest-800">
+                            <p class="mt-3 inline-flex items-center gap-2 rounded-lg bg-forest-50 px-3 py-2 text-[0.9375rem] font-medium text-forest-800">
                                 <x-heroicon-o-shield-check class="h-4 w-4" aria-hidden="true" />
                                 All fields marked with <span aria-hidden="true">*</span> are required
                             </p>
@@ -112,7 +112,7 @@
 
                             {{-- ===== Personal information ===== --}}
                             <section aria-labelledby="sec-personal">
-                                <h2 id="sec-personal" class="flex items-center gap-2 border-b border-sand-200 pb-3 text-[0.9375rem] font-bold text-forest-800">
+                                <h2 id="sec-personal" class="flex items-center gap-2 border-b border-sand-200 pb-3 text-[1.125rem] font-bold text-forest-800">
                                     <x-heroicon-o-user class="h-5 w-5" aria-hidden="true" />
                                     Personal Information
                                 </h2>
@@ -142,7 +142,7 @@
 
                             {{-- ===== Business information ===== --}}
                             <section aria-labelledby="sec-business">
-                                <h2 id="sec-business" class="flex items-center gap-2 border-b border-sand-200 pb-3 text-[0.9375rem] font-bold text-forest-800">
+                                <h2 id="sec-business" class="flex items-center gap-2 border-b border-sand-200 pb-3 text-[1.125rem] font-bold text-forest-800">
                                     <x-heroicon-o-briefcase class="h-5 w-5" aria-hidden="true" />
                                     Business Information
                                 </h2>
@@ -152,7 +152,7 @@
                                          Company and attaches the user as its owner on the company_user
                                          pivot; "buyer" creates a plain user with no company. --}}
                                     <fieldset>
-                                        <legend class="text-[0.8125rem] font-semibold text-ink">
+                                        <legend class="text-[1.0625rem] font-semibold text-ink">
                                             I am a <span aria-hidden="true" class="text-red-600">*</span><span class="sr-only">(required)</span>
                                         </legend>
                                         <div class="mt-1.5 grid grid-cols-2 gap-3">
@@ -170,17 +170,17 @@
                                                            @if ($errors->has('account_type')) aria-invalid="true" aria-describedby="auth-account-type-error" @endif
                                                            @checked(old('account_type', 'buyer') === $value)>
                                                     <span>
-                                                        <span class="flex items-center gap-1.5 text-[0.875rem] font-semibold text-ink">
+                                                        <span class="flex items-center gap-1.5 text-[1.0625rem] font-semibold text-ink">
                                                             <x-dynamic-component :component="'heroicon-o-'.$icon" class="h-4 w-4 text-forest-700" aria-hidden="true" />
                                                             {{ $label }}
                                                         </span>
-                                                        <span class="mt-0.5 block text-[0.75rem] text-ink-soft">{{ $hint }}</span>
+                                                        <span class="mt-0.5 block text-[0.9375rem] text-ink-soft">{{ $hint }}</span>
                                                     </span>
                                                 </label>
                                             @endforeach
                                         </div>
                                         @error('account_type')
-                                            <p id="auth-account-type-error" class="mt-1.5 text-[0.75rem] font-medium text-red-700">{{ $message }}</p>
+                                            <p id="auth-account-type-error" class="mt-1.5 text-[0.9375rem] font-medium text-red-700">{{ $message }}</p>
                                         @enderror
                                     </fieldset>
 
@@ -237,7 +237,7 @@
 
                             {{-- ===== Security ===== --}}
                             <section aria-labelledby="sec-security">
-                                <h2 id="sec-security" class="flex items-center gap-2 border-b border-sand-200 pb-3 text-[0.9375rem] font-bold text-forest-800">
+                                <h2 id="sec-security" class="flex items-center gap-2 border-b border-sand-200 pb-3 text-[1.125rem] font-bold text-forest-800">
                                     <x-heroicon-o-lock-closed class="h-5 w-5" aria-hidden="true" />
                                     Security
                                 </h2>
@@ -265,7 +265,7 @@
                                 </div>
 
                                 {{-- These mirror the rules the server actually enforces. --}}
-                                <ul class="mt-4 space-y-1.5 text-[0.8125rem] text-ink-soft">
+                                <ul class="mt-4 space-y-1.5 text-[1.0625rem] text-ink-soft">
                                     @foreach (['At least 8 characters', 'Both passwords must match'] as $rule)
                                         <li class="flex items-center gap-2">
                                             <x-heroicon-o-check-circle class="h-4 w-4 shrink-0 text-forest-600" aria-hidden="true" />
@@ -276,7 +276,7 @@
                             </section>
 
                             <div>
-                                <label for="auth-terms" class="flex items-start gap-3 text-[0.875rem] leading-relaxed text-ink-soft">
+                                <label for="auth-terms" class="flex items-start gap-3 text-[1.0625rem] leading-relaxed text-ink-soft">
                                     <input id="auth-terms" type="checkbox" name="terms" value="1" @checked(old('terms'))
                                            @if ($errors->has('terms')) aria-invalid="true" aria-describedby="auth-terms-error" @endif
                                            class="mt-1 h-4 w-4 shrink-0 rounded border-sand-400 text-forest-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest-600">
@@ -288,18 +288,18 @@
                                     </span>
                                 </label>
                                 @error('terms')
-                                    <p id="auth-terms-error" class="mt-1.5 text-[0.75rem] font-medium text-red-700">{{ $message }}</p>
+                                    <p id="auth-terms-error" class="mt-1.5 text-[0.9375rem] font-medium text-red-700">{{ $message }}</p>
                                 @enderror
                             </div>
 
                             <button type="submit"
-                                    class="flex w-full items-center justify-center gap-2.5 rounded-xl bg-forest-800 px-6 py-3.5 text-[0.9375rem] font-semibold text-white transition hover:bg-forest-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest-600 lg:w-auto lg:px-10">
+                                    class="flex w-full items-center justify-center gap-2.5 rounded-xl bg-forest-800 px-6 py-3.5 text-[1.125rem] font-semibold text-white transition hover:bg-forest-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest-600 lg:w-auto lg:px-10">
                                 <x-heroicon-o-user-plus class="h-5 w-5" aria-hidden="true" />
                                 Create Account
                             </button>
                         </form>
 
-                        <p class="mt-7 text-center text-[0.875rem] text-ink-soft lg:text-left">
+                        <p class="mt-7 text-center text-[1.0625rem] text-ink-soft lg:text-left">
                             Already have an account?
                             <a href="{{ route('login') }}"
                                class="font-semibold text-forest-700 underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest-600">Sign In</a>

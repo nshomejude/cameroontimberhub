@@ -10,7 +10,7 @@
 
     <div class="flex items-stretch gap-4">
         <div class="min-w-0 flex-1">
-            <p class="text-[0.9375rem] text-ink-soft">Price (FOB)</p>
+            <p class="text-[1.125rem] text-ink-soft">Price (FOB)</p>
 
             @if ($product->price_amount !== null)
                 <p class="mt-1 flex flex-wrap items-baseline gap-x-1.5 text-[1.625rem] font-bold leading-none text-ink">
@@ -26,7 +26,7 @@
                 {{-- Optional, operator-configured indicative conversion. Hidden
                      entirely when no FX rate is configured. --}}
                 @if ($usd !== null)
-                    <p class="mt-1.5 text-[0.875rem] text-ink-soft">(~ USD {{ $usd }} / {{ $product->price_unit->label() }} — indicative)</p>
+                    <p class="mt-1.5 text-[1.0625rem] text-ink-soft">(~ USD {{ $usd }} / {{ $product->price_unit->label() }} — indicative)</p>
                 @endif
             @else
                 <p class="mt-1 text-[1.25rem] font-bold text-forest-700">Price on request</p>
@@ -37,7 +37,7 @@
             <div class="flex min-w-0 flex-1 items-start gap-2.5 border-l border-forest-200 pl-4">
                 <x-heroicon-o-cube class="mt-0.5 h-7 w-7 shrink-0 text-forest-700" aria-hidden="true" />
                 <div class="min-w-0">
-                    <p class="text-[0.875rem] leading-tight text-ink-soft">Minimum Order Quantity</p>
+                    <p class="text-[1.0625rem] leading-tight text-ink-soft">Minimum Order Quantity</p>
                     <p class="mt-1 text-[1.25rem] font-bold leading-none text-ink">{{ $moq }}</p>
                 </div>
             </div>

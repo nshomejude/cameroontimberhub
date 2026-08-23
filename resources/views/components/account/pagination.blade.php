@@ -29,7 +29,7 @@
         $previous = $p;
     }
 
-    $btn = 'flex h-9 min-w-9 items-center justify-center rounded-lg border px-3 text-[0.8125rem] font-semibold transition';
+    $btn = 'flex h-9 min-w-9 items-center justify-center rounded-lg border px-3 text-[1.0625rem] font-semibold transition';
 @endphp
 
 @if ($paginator->total() > 0)
@@ -49,7 +49,7 @@
 
                 @foreach ($items as $item)
                     @if ($item === null)
-                        <span class="px-1 text-[0.8125rem] text-ink-soft" aria-hidden="true">…</span>
+                        <span class="px-1 text-[1.0625rem] text-ink-soft" aria-hidden="true">…</span>
                     @elseif ($item === $current)
                         <span aria-current="page" class="{{ $btn }} border-forest-700 bg-forest-700 text-white">{{ $item }}</span>
                     @else
@@ -71,7 +71,7 @@
             </nav>
         @endif
 
-        <p class="text-[0.8125rem] text-ink-soft sm:ml-auto">
+        <p class="text-[1.0625rem] text-ink-soft sm:ml-auto">
             Showing {{ $paginator->firstItem() ?? 0 }} to {{ $paginator->lastItem() ?? 0 }} of {{ number_format($paginator->total()) }} {{ $noun }}
         </p>
     </div>

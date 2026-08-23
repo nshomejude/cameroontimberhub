@@ -23,7 +23,7 @@
 <div class="py-1">
     <div class="mb-2 flex items-center gap-3">
         <span class="h-px flex-1 bg-sand-300"></span>
-        <span class="text-[0.6875rem] font-bold uppercase tracking-[0.14em] text-ink-soft">Request for quote</span>
+        <span class="text-[0.875rem] font-bold uppercase tracking-[0.14em] text-ink-soft">Request for quote</span>
         <span class="h-px flex-1 bg-sand-300"></span>
     </div>
 
@@ -36,7 +36,7 @@
                 <p class="font-display text-[1rem] font-bold text-forest-950">
                     {{ $message->payloadValue('title') ?: 'Request for quote' }}
                 </p>
-                <p class="text-[0.75rem] font-semibold tracking-wide text-ink-soft">
+                <p class="text-[0.9375rem] font-semibold tracking-wide text-ink-soft">
                     {{ $message->payloadValue('reference_code') }}
                 </p>
             </div>
@@ -46,7 +46,7 @@
         </div>
 
         @foreach ($items as $item)
-            <div class="mt-3 rounded-xl bg-sand-50 p-3 text-[0.8125rem]">
+            <div class="mt-3 rounded-xl bg-sand-50 p-3 text-[1.0625rem]">
                 <p class="font-semibold text-ink">
                     {{ $item['species'] ?? 'Timber' }}
                     @if (! empty($item['quantity']))
@@ -67,7 +67,7 @@
             </div>
         @endforeach
 
-        <dl class="mt-3 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-sand-200 pt-3 text-[0.8125rem]">
+        <dl class="mt-3 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-sand-200 pt-3 text-[1.0625rem]">
             @if ($message->payloadValue('incoterm'))
                 <div>
                     <dt class="text-ink-soft">Delivery terms</dt>
@@ -91,18 +91,18 @@
         </dl>
 
         @if ($notes = $message->payloadValue('notes'))
-            <p class="mt-3 whitespace-pre-line break-words rounded-xl bg-sand-50 p-3 text-[0.8125rem] text-ink">{{ $notes }}</p>
+            <p class="mt-3 whitespace-pre-line break-words rounded-xl bg-sand-50 p-3 text-[1.0625rem] text-ink">{{ $notes }}</p>
         @endif
 
         {{-- Said plainly rather than implied: a request from a conversation
              still goes through the same review as one from the public form, so
              the supplier is not left wondering why they cannot quote yet. --}}
         @if ($rfq && ! $rfq->isVerified())
-            <p class="mt-3 text-[0.75rem] text-ink-soft">Awaiting email confirmation from the buyer.</p>
+            <p class="mt-3 text-[0.9375rem] text-ink-soft">Awaiting email confirmation from the buyer.</p>
         @elseif ($rfq && $rfq->status === \App\Enums\RfqStatus::New)
-            <p class="mt-3 text-[0.75rem] text-ink-soft">Submitted for review. Quoting opens once it is approved.</p>
+            <p class="mt-3 text-[0.9375rem] text-ink-soft">Submitted for review. Quoting opens once it is approved.</p>
         @endif
 
-        <p class="mt-2 text-right text-[0.6875rem] text-ink-soft">{{ $message->created_at->format('g:i A') }}</p>
+        <p class="mt-2 text-right text-[0.875rem] text-ink-soft">{{ $message->created_at->format('g:i A') }}</p>
     </div>
 </div>

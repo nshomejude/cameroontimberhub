@@ -105,7 +105,7 @@
             <a href="{{ route('home') }}" class="flex min-w-0 items-center gap-2.5">
                 <img src="{{ asset('brand/icon-96.png') }}" alt="" class="h-9 w-9 shrink-0 rounded-full">
                 <span class="min-w-0">
-                    <span class="block font-display text-[0.9375rem] font-bold leading-tight tracking-tight text-white">Cameroon<br>Timber Hub</span>
+                    <span class="block font-display text-[1.125rem] font-bold leading-tight tracking-tight text-white">Cameroon<br>Timber Hub</span>
                     <span class="mt-0.5 block text-[0.5625rem] font-semibold uppercase tracking-[0.18em] text-timber-300">Connect · Trade · Grow</span>
                 </span>
             </a>
@@ -118,30 +118,30 @@
 
         {{-- Identity block (mobile mockup shows it inside the drawer). --}}
         <div class="mx-5 flex items-center gap-3 border-y border-white/10 py-4 lg:hidden">
-            <span class="flex h-10 w-10 items-center justify-center rounded-full bg-forest-600 text-[0.8125rem] font-bold text-white">{{ $initials }}</span>
+            <span class="flex h-10 w-10 items-center justify-center rounded-full bg-forest-600 text-[1.0625rem] font-bold text-white">{{ $initials }}</span>
             <span class="min-w-0">
-                <span class="block truncate text-[0.9375rem] font-semibold text-white">{{ $user?->name }}</span>
-                <span class="block text-[0.75rem] text-sand-400">Buyer account</span>
+                <span class="block truncate text-[1.125rem] font-semibold text-white">{{ $user?->name }}</span>
+                <span class="block text-[0.9375rem] text-sand-400">Buyer account</span>
             </span>
         </div>
 
         <nav class="mt-2 flex-1 px-3 pb-4">
             @foreach ($groups as $group)
-                <p class="px-3 pb-1.5 pt-4 text-[0.625rem] font-bold uppercase tracking-[0.16em] text-timber-300">{{ $group['label'] }}</p>
+                <p class="px-3 pb-1.5 pt-4 text-[0.8125rem] font-bold uppercase tracking-[0.16em] text-timber-300">{{ $group['label'] }}</p>
                 <ul class="space-y-0.5">
                     @foreach ($group['items'] as $item)
                         <li>
                             <a href="{{ $item['url'] }}"
                                @if ($item['active']) aria-current="page" @endif
                                @class([
-                                   'flex items-center gap-3 rounded-xl px-3 py-2.5 text-[0.875rem] font-medium transition',
+                                   'flex items-center gap-3 rounded-xl px-3 py-2.5 text-[1.0625rem] font-medium transition',
                                    'bg-gradient-to-r from-[#6b3a16] to-[#8a5a30] text-white shadow-sm' => $item['active'],
                                    'text-sand-200/85 hover:bg-white/5 hover:text-white' => ! $item['active'],
                                ])>
                                 <x-dynamic-component :component="'heroicon-o-'.$item['icon']" class="h-5 w-5 shrink-0" />
                                 <span class="truncate">{{ $item['label'] }}</span>
                                 @if (($item['badge'] ?? null))
-                                    <span class="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-forest-600 px-1.5 text-[0.6875rem] font-bold text-white">{{ $item['badge'] }}</span>
+                                    <span class="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-forest-600 px-1.5 text-[0.875rem] font-bold text-white">{{ $item['badge'] }}</span>
                                 @endif
                             </a>
                         </li>
@@ -156,12 +156,12 @@
                         <x-heroicon-o-cube class="h-5 w-5" />
                     </span>
                     <div class="min-w-0">
-                        <p class="text-[0.875rem] font-semibold text-white">Need bulk timber?</p>
-                        <p class="mt-1 text-[0.75rem] leading-relaxed text-sand-300/90">Post an RFQ and get competitive quotes from verified suppliers.</p>
+                        <p class="text-[1.0625rem] font-semibold text-white">Need bulk timber?</p>
+                        <p class="mt-1 text-[0.9375rem] leading-relaxed text-sand-300/90">Post an RFQ and get competitive quotes from verified suppliers.</p>
                     </div>
                 </div>
                 <a href="{{ route('rfq.create') }}"
-                   class="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-white px-4 py-2.5 text-[0.8125rem] font-bold text-forest-800 transition hover:bg-sand-200">
+                   class="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-white px-4 py-2.5 text-[1.0625rem] font-bold text-forest-800 transition hover:bg-sand-200">
                     Post an RFQ <x-heroicon-m-arrow-right class="h-4 w-4" />
                 </a>
             </div>
@@ -169,7 +169,7 @@
             <form method="POST" action="{{ route('logout') }}" class="mt-4">
                 @csrf
                 <button type="submit"
-                        class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[0.875rem] font-medium text-sand-200/85 transition hover:bg-white/5 hover:text-white">
+                        class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[1.0625rem] font-medium text-sand-200/85 transition hover:bg-white/5 hover:text-white">
                     <x-heroicon-o-arrow-right-on-rectangle class="h-5 w-5 shrink-0" />
                     Log out
                 </button>
@@ -194,7 +194,7 @@
                         {{ $heading ?? $title ?? 'Dashboard' }}
                     </h1>
                     @if ($subheading)
-                        <p class="hidden truncate text-[0.8125rem] text-ink-soft lg:block">{{ $subheading }}</p>
+                        <p class="hidden truncate text-[1.0625rem] text-ink-soft lg:block">{{ $subheading }}</p>
                     @endif
                 </div>
 
@@ -204,7 +204,7 @@
                     <div class="flex w-full items-center rounded-xl border border-sand-300 bg-sand-50 focus-within:border-forest-500">
                         <input id="account-search" type="search" name="q" value="{{ request('q') }}"
                                placeholder="Search timber species, products, suppliers…"
-                               class="min-w-0 flex-1 bg-transparent px-4 py-2.5 text-[0.875rem] text-ink outline-none placeholder:text-ink-soft">
+                               class="min-w-0 flex-1 bg-transparent px-4 py-2.5 text-[1.0625rem] text-ink outline-none placeholder:text-ink-soft">
                         <button type="submit" class="m-1 flex h-9 w-10 items-center justify-center rounded-lg bg-forest-700 text-white transition hover:bg-forest-800" aria-label="Search">
                             <x-heroicon-m-magnifying-glass class="h-4 w-4" />
                         </button>
@@ -213,10 +213,10 @@
 
                 <div class="ml-auto flex shrink-0 items-center gap-3 lg:ml-0">
                     <div class="hidden text-right lg:block">
-                        <p class="text-[0.875rem] font-semibold leading-tight text-ink">{{ $user?->name }}</p>
-                        <p class="text-[0.75rem] text-ink-soft">Buyer</p>
+                        <p class="text-[1.0625rem] font-semibold leading-tight text-ink">{{ $user?->name }}</p>
+                        <p class="text-[0.9375rem] text-ink-soft">Buyer</p>
                     </div>
-                    <span class="flex h-10 w-10 items-center justify-center rounded-full bg-forest-700 text-[0.8125rem] font-bold text-white">{{ $initials }}</span>
+                    <span class="flex h-10 w-10 items-center justify-center rounded-full bg-forest-700 text-[1.0625rem] font-bold text-white">{{ $initials }}</span>
                 </div>
             </div>
         </header>
@@ -225,7 +225,7 @@
             {{ $slot }}
         </main>
 
-        <footer class="hidden border-t border-sand-200 bg-white px-6 py-4 text-[0.75rem] text-ink-soft lg:block">
+        <footer class="hidden border-t border-sand-200 bg-white px-6 py-4 text-[0.9375rem] text-ink-soft lg:block">
             <div class="flex flex-wrap items-center gap-4">
                 <span>&copy; {{ date('Y') }} {{ config('app.name') }}. All rights reserved.</span>
                 <span class="ml-auto flex gap-4">
@@ -245,14 +245,14 @@
         <a href="{{ $tab['url'] }}"
            @if ($tab['active']) aria-current="page" @endif
            @class([
-               'flex flex-col items-center gap-1 py-2.5 text-[0.6875rem] font-semibold',
+               'flex flex-col items-center gap-1 py-2.5 text-[0.875rem] font-semibold',
                'text-forest-700' => $tab['active'],
                'text-ink-soft' => ! $tab['active'],
            ])>
             <span class="relative">
                 <x-dynamic-component :component="'heroicon-'.($tab['active'] ? 's' : 'o').'-'.$tab['icon']" class="h-6 w-6" />
                 @if (($tab['badge'] ?? null))
-                    <span class="absolute -right-2.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-forest-600 px-1 text-[0.625rem] font-bold text-white">{{ $tab['badge'] }}</span>
+                    <span class="absolute -right-2.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-forest-600 px-1 text-[0.8125rem] font-bold text-white">{{ $tab['badge'] }}</span>
                 @endif
             </span>
             {{ $tab['label'] }}

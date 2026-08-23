@@ -25,7 +25,7 @@
                 </span>
                 <div>
                     <h1 class="font-display text-2xl font-semibold sm:text-3xl">Verify a receipt</h1>
-                    <p class="mt-2 max-w-2xl text-[0.9375rem] text-forest-100/80">
+                    <p class="mt-2 max-w-2xl text-[1.125rem] text-forest-100/80">
                         Enter the receipt number printed on a Cameroon Timber Hub receipt to check that we issued it,
                         and that its supplier, date and amount match the document in front of you.
                     </p>
@@ -39,8 +39,8 @@
                     ['Private by design', 'Verification never reveals who the buyer is or what was ordered.'],
                 ] as [$heading, $copy])
                     <li class="rounded-xl bg-white/5 px-4 py-3">
-                        <p class="text-[0.8125rem] font-semibold text-white">{{ $heading }}</p>
-                        <p class="mt-1 text-[0.75rem] leading-relaxed text-forest-100/70">{{ $copy }}</p>
+                        <p class="text-[1.0625rem] font-semibold text-white">{{ $heading }}</p>
+                        <p class="mt-1 text-[0.9375rem] leading-relaxed text-forest-100/70">{{ $copy }}</p>
                     </li>
                 @endforeach
             </ul>
@@ -53,7 +53,7 @@
         <section aria-labelledby="verify-form"
                  class="rounded-2xl border border-sand-200 bg-white p-5 dark:border-[#2c2a24] dark:bg-[#1f1d18] sm:p-7">
             <h2 id="verify-form" class="font-display text-[1.0625rem] font-bold text-forest-950 dark:text-sand-100">Enter receipt number</h2>
-            <p class="mt-1 text-[0.875rem] text-ink-soft dark:text-[#8f887b]">
+            <p class="mt-1 text-[1.0625rem] text-ink-soft dark:text-[#8f887b]">
                 For example: RCT-{{ date('Y') }}-A1B2C
             </p>
 
@@ -63,15 +63,15 @@
                 <input type="text" id="reference" name="reference" value="{{ $reference }}" required maxlength="64"
                        autocomplete="off" spellcheck="false"
                        placeholder="RCT-{{ date('Y') }}-A1B2C"
-                       class="w-full rounded-xl border border-sand-300 bg-white px-4 py-3 text-[0.9375rem] text-ink placeholder:text-ink-soft/60 focus:border-forest-500 focus:outline-none focus:ring-2 focus:ring-forest-500/30 dark:border-[#3a372f] dark:bg-[#26241e] dark:text-[#e4ddcf]">
+                       class="w-full rounded-xl border border-sand-300 bg-white px-4 py-3 text-[1.125rem] text-ink placeholder:text-ink-soft/60 focus:border-forest-500 focus:outline-none focus:ring-2 focus:ring-forest-500/30 dark:border-[#3a372f] dark:bg-[#26241e] dark:text-[#e4ddcf]">
                 <button type="submit"
-                        class="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-forest-700 px-6 py-3 text-[0.9375rem] font-semibold text-white transition hover:bg-forest-800">
+                        class="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-forest-700 px-6 py-3 text-[1.125rem] font-semibold text-white transition hover:bg-forest-800">
                     <x-heroicon-m-magnifying-glass class="h-4 w-4" /> Verify receipt
                 </button>
             </form>
 
             @error('reference')
-                <p role="alert" class="mt-2 text-[0.875rem] text-red-700 dark:text-red-300">{{ $message }}</p>
+                <p role="alert" class="mt-2 text-[1.0625rem] text-red-700 dark:text-red-300">{{ $message }}</p>
             @enderror
         </section>
 
@@ -83,7 +83,7 @@
                     <x-heroicon-o-x-circle class="mt-0.5 h-6 w-6 shrink-0 text-red-600 dark:text-red-300" />
                     <div>
                         <h2 class="font-display text-lg font-bold text-red-900 dark:text-red-100">Not recognised</h2>
-                        <p class="mt-1 text-[0.875rem] text-red-800 dark:text-red-200">
+                        <p class="mt-1 text-[1.0625rem] text-red-800 dark:text-red-200">
                             We hold no receipt with that number. Check the number for typos. If it is printed on a
                             document claiming to come from {{ config('app.name') }}, treat that document as unverified.
                         </p>
@@ -96,7 +96,7 @@
                 <section aria-labelledby="verify-result"
                          class="rounded-2xl border border-sand-200 bg-white p-5 dark:border-[#2c2a24] dark:bg-[#1f1d18] sm:p-7">
                     <h2 id="verify-result" class="font-display text-[1.0625rem] font-bold text-forest-950 dark:text-sand-100">Receipt details</h2>
-                    <p class="mt-1 text-[0.8125rem] text-ink-soft dark:text-[#8f887b]">
+                    <p class="mt-1 text-[1.0625rem] text-ink-soft dark:text-[#8f887b]">
                         This is the complete set of facts we disclose about a receipt.
                     </p>
 
@@ -110,14 +110,14 @@
                             'Supplier' => $result['supplier_name'].($result['supplier_verified'] ? ' (verified supplier)' : ''),
                             'Order status' => $result['order_status'],
                         ] as $label => $value)
-                            <div class="flex flex-wrap justify-between gap-2 py-3 text-[0.9375rem]">
+                            <div class="flex flex-wrap justify-between gap-2 py-3 text-[1.125rem]">
                                 <dt class="text-ink-soft dark:text-[#8f887b]">{{ $label }}</dt>
                                 <dd class="text-right font-semibold text-ink dark:text-[#e4ddcf]">{{ $value }}</dd>
                             </div>
                         @endforeach
                     </dl>
 
-                    <p class="mt-4 rounded-xl bg-sand-100 px-4 py-3 text-[0.8125rem] leading-relaxed text-ink-soft dark:bg-[#26241e] dark:text-[#b3ab9b]">
+                    <p class="mt-4 rounded-xl bg-sand-100 px-4 py-3 text-[1.0625rem] leading-relaxed text-ink-soft dark:bg-[#26241e] dark:text-[#b3ab9b]">
                         A receipt records an order placed on this marketplace. It is not a proof of payment —
                         {{ config('app.name') }} processes no payments. The buyer's identity and the order's line items
                         are private and are never shown here.
@@ -130,7 +130,7 @@
                         'border-forest-200 bg-forest-50 dark:border-forest-900 dark:bg-[#1b2c22]' => $result['is_valid'],
                         'border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950' => ! $result['is_valid'],
                     ])>
-                        <h2 class="text-[0.6875rem] font-semibold uppercase tracking-wider text-ink-soft dark:text-[#b3ab9b]">Verification status</h2>
+                        <h2 class="text-[0.875rem] font-semibold uppercase tracking-wider text-ink-soft dark:text-[#b3ab9b]">Verification status</h2>
                         <div class="mt-3 flex items-start gap-3">
                             @if ($result['is_valid'])
                                 <x-heroicon-o-shield-check class="h-9 w-9 shrink-0 text-forest-700 dark:text-forest-300" />
@@ -143,7 +143,7 @@
                                     'text-forest-800 dark:text-forest-200' => $result['is_valid'],
                                     'text-red-800 dark:text-red-200' => ! $result['is_valid'],
                                 ])>{{ $result['status'] }}</p>
-                                <p class="mt-1 text-[0.8125rem] text-ink-soft dark:text-[#b3ab9b]">
+                                <p class="mt-1 text-[1.0625rem] text-ink-soft dark:text-[#b3ab9b]">
                                     @if ($result['is_valid'])
                                         We issued this receipt and it has not been withdrawn.
                                     @else
@@ -154,7 +154,7 @@
                             </div>
                         </div>
 
-                        <dl class="mt-4 space-y-2 border-t border-black/5 pt-3 text-[0.8125rem] dark:border-white/10">
+                        <dl class="mt-4 space-y-2 border-t border-black/5 pt-3 text-[1.0625rem] dark:border-white/10">
                             <div class="flex justify-between gap-3">
                                 <dt class="text-ink-soft dark:text-[#b3ab9b]">Checked on</dt>
                                 <dd class="text-right font-medium text-ink dark:text-[#e4ddcf]">{{ $result['checked_at']->isoFormat('D MMM YYYY, HH:mm') }}</dd>
@@ -168,7 +168,7 @@
 
                     <section class="rounded-2xl border border-sand-200 bg-white p-5 dark:border-[#2c2a24] dark:bg-[#1f1d18]">
                         <h2 class="font-display text-[1.0625rem] font-bold text-forest-950 dark:text-sand-100">What this check covers</h2>
-                        <ul class="mt-3 space-y-2 text-[0.8125rem] text-ink-soft dark:text-[#8f887b]">
+                        <ul class="mt-3 space-y-2 text-[1.0625rem] text-ink-soft dark:text-[#8f887b]">
                             @foreach ([
                                 'The receipt number exists in our records.',
                                 'The supplier, issue date and amount shown here are the ones we hold.',
@@ -180,7 +180,7 @@
                                 </li>
                             @endforeach
                         </ul>
-                        <p class="mt-3 text-[0.75rem] leading-relaxed text-ink-soft dark:text-[#b3ab9b]">
+                        <p class="mt-3 text-[0.9375rem] leading-relaxed text-ink-soft dark:text-[#b3ab9b]">
                             It does not confirm that any money changed hands, or that goods were shipped or received.
                         </p>
                     </section>
@@ -188,7 +188,7 @@
             </div>
         @endif
 
-        <section class="mt-8 rounded-2xl border border-sand-200 bg-white p-5 text-[0.875rem] text-ink-soft dark:border-[#2c2a24] dark:bg-[#1f1d18] dark:text-[#8f887b] sm:p-7">
+        <section class="mt-8 rounded-2xl border border-sand-200 bg-white p-5 text-[1.0625rem] text-ink-soft dark:border-[#2c2a24] dark:bg-[#1f1d18] dark:text-[#8f887b] sm:p-7">
             <h2 class="font-display text-[1.0625rem] font-bold text-forest-950 dark:text-sand-100">Still unsure?</h2>
             <p class="mt-2">
                 If a document does not verify, or the details here do not match what you were sent,

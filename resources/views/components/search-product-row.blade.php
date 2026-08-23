@@ -33,9 +33,9 @@
         @endif
 
         @if ($product->is_best_seller)
-            <span class="absolute left-0 top-2.5 rounded-r-md bg-forest-700 px-2.5 py-1 text-[0.6875rem] font-semibold text-white">Best Seller</span>
+            <span class="absolute left-0 top-2.5 rounded-r-md bg-forest-700 px-2.5 py-1 text-[0.875rem] font-semibold text-white">Best Seller</span>
         @elseif ($product->is_featured)
-            <span class="absolute left-0 top-2.5 rounded-r-md bg-timber-700 px-2.5 py-1 text-[0.6875rem] font-semibold text-white">Featured</span>
+            <span class="absolute left-0 top-2.5 rounded-r-md bg-timber-700 px-2.5 py-1 text-[0.875rem] font-semibold text-white">Featured</span>
         @endif
     </div>
 
@@ -60,15 +60,15 @@
         </div>
 
         @if ($spec !== '')
-            <p class="text-[0.8125rem] text-ink-soft">{{ $spec }}</p>
+            <p class="text-[1.0625rem] text-ink-soft">{{ $spec }}</p>
         @endif
 
         @if ($moq)
-            <p class="text-[0.8125rem] text-ink-soft">MOQ: {{ $moq }}</p>
+            <p class="text-[1.0625rem] text-ink-soft">MOQ: {{ $moq }}</p>
         @endif
 
         @if ($company)
-            <p class="flex flex-wrap items-center gap-1 text-[0.8125rem] text-ink-soft">
+            <p class="flex flex-wrap items-center gap-1 text-[1.0625rem] text-ink-soft">
                 <span>Supplier:</span>
                 <span class="font-semibold text-forest-700">{{ $company->trade_name ?: $company->legal_name }}</span>
                 @if ($verified)
@@ -78,7 +78,7 @@
             </p>
 
             @if ($place !== '')
-                <p class="flex items-center gap-1 text-[0.8125rem] text-ink-soft">
+                <p class="flex items-center gap-1 text-[1.0625rem] text-ink-soft">
                     <x-heroicon-o-map-pin class="h-3.5 w-3.5 shrink-0" aria-hidden="true" />{{ $place }}
                 </p>
             @endif
@@ -86,7 +86,7 @@
 
         <div class="mt-1 flex flex-wrap items-end justify-between gap-2">
             @if ($verified)
-                <span class="inline-flex items-center gap-1.5 rounded-md bg-forest-50 px-2 py-1 text-[0.75rem] font-medium text-forest-700">
+                <span class="inline-flex items-center gap-1.5 rounded-md bg-forest-50 px-2 py-1 text-[0.9375rem] font-medium text-forest-700">
                     <x-heroicon-o-shield-check class="h-3.5 w-3.5" aria-hidden="true" /> Verified Supplier
                 </span>
             @else
@@ -96,14 +96,14 @@
             <div class="flex flex-col items-end gap-2">
                 @if ($price)
                     <p class="whitespace-nowrap text-[1.0625rem] font-bold text-forest-700">
-                        {{ $price }}@if ($product->price_unit)<span class="ml-0.5 text-[0.75rem] font-medium text-ink-soft">/{{ $product->price_unit->label() }}</span>@endif
+                        {{ $price }}@if ($product->price_unit)<span class="ml-0.5 text-[0.9375rem] font-medium text-ink-soft">/{{ $product->price_unit->label() }}</span>@endif
                     </p>
                 @else
-                    <p class="text-[0.8125rem] font-medium text-ink-soft">Quote on request</p>
+                    <p class="text-[1.0625rem] font-medium text-ink-soft">Quote on request</p>
                 @endif
 
                 <a href="{{ route('rfq.create', ['product' => $product->slug]) }}"
-                   class="relative z-10 inline-flex items-center justify-center rounded-lg bg-forest-800 px-4 py-2 text-[0.8125rem] font-semibold text-white transition hover:bg-forest-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500 focus-visible:ring-offset-2">
+                   class="relative z-10 inline-flex items-center justify-center rounded-lg bg-forest-800 px-4 py-2 text-[1.0625rem] font-semibold text-white transition hover:bg-forest-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500 focus-visible:ring-offset-2">
                     Request Quote
                 </a>
             </div>

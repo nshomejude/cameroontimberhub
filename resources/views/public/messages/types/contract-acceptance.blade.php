@@ -26,7 +26,7 @@
 <div class="py-1" id="m{{ $message->getKey() }}">
     <div class="mb-2 flex items-center gap-3">
         <span class="h-px flex-1 bg-sand-300"></span>
-        <span class="text-[0.6875rem] font-bold uppercase tracking-[0.14em] text-ink-soft">Acceptance recorded</span>
+        <span class="text-[0.875rem] font-bold uppercase tracking-[0.14em] text-ink-soft">Acceptance recorded</span>
         <span class="h-px flex-1 bg-sand-300"></span>
     </div>
 
@@ -38,10 +38,10 @@
             <div class="min-w-0 flex-1">
                 {{-- Plain statement of fact, in the past tense, naming the
                      actor and the moment. Nothing is asserted beyond it. --}}
-                <p class="font-display text-[0.9375rem] font-bold text-forest-950">
+                <p class="font-display text-[1.125rem] font-bold text-forest-950">
                     Accepted by {{ $message->payloadValue('accepted_by_name') }}
                 </p>
-                <p class="text-[0.8125rem] text-ink-soft">
+                <p class="text-[1.0625rem] text-ink-soft">
                     @if ($iso = $message->payloadValue('accepted_at'))
                         on {{ \Illuminate\Support\Carbon::parse($iso)->isoFormat('D MMMM YYYY [at] HH:mm') }} (UTC{{ \Illuminate\Support\Carbon::parse($iso)->format('P') }})
                     @endif
@@ -49,7 +49,7 @@
             </div>
         </div>
 
-        <dl class="mt-3 space-y-2 border-t border-forest-200 pt-3 text-[0.8125rem]">
+        <dl class="mt-3 space-y-2 border-t border-forest-200 pt-3 text-[1.0625rem]">
             <div class="flex items-start justify-between gap-4">
                 <dt class="text-ink-soft">Quotation</dt>
                 <dd class="font-semibold text-ink">{{ $message->payloadValue('quote_reference') }}</dd>
@@ -68,7 +68,7 @@
             @endif
             <div class="flex items-start justify-between gap-4">
                 <dt class="shrink-0 text-ink-soft">Terms fingerprint</dt>
-                <dd class="break-all text-right font-mono text-[0.75rem] text-ink">
+                <dd class="break-all text-right font-mono text-[0.9375rem] text-ink">
                     {{ $acceptance?->shortHash() ?? substr((string) $message->payloadValue('terms_hash'), 0, 16) }}…
                 </dd>
             </div>
@@ -76,7 +76,7 @@
 
         {{-- The disclaimer is part of the record, not fine print bolted on: it
              is the sentence that keeps the rest of the card true. --}}
-        <p class="mt-3 rounded-xl bg-white/70 p-3 text-[0.75rem] leading-relaxed text-ink-soft">
+        <p class="mt-3 rounded-xl bg-white/70 p-3 text-[0.9375rem] leading-relaxed text-ink-soft">
             This is a record kept by Cameroon Timber Hub of an acceptance made through this
             conversation. It stores the account that accepted, the time, the network address
             the request came from, and a SHA-256 fingerprint of the exact quotation figures
@@ -85,6 +85,6 @@
             standing of any agreement between the parties.
         </p>
 
-        <p class="mt-2 text-right text-[0.6875rem] text-ink-soft">{{ $message->created_at->format('g:i A') }}</p>
+        <p class="mt-2 text-right text-[0.875rem] text-ink-soft">{{ $message->created_at->format('g:i A') }}</p>
     </div>
 </div>

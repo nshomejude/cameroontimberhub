@@ -18,7 +18,7 @@
             @if ($avatar = $conversation->counterpartyLogoUrl($user))
                 <img src="{{ $avatar }}" alt="" class="h-full w-full object-cover">
             @else
-                <span class="flex h-full w-full items-center justify-center text-[0.625rem] font-bold text-forest-800">
+                <span class="flex h-full w-full items-center justify-center text-[0.8125rem] font-bold text-forest-800">
                     {{ $conversation->counterpartyInitials($user) }}
                 </span>
             @endif
@@ -27,19 +27,19 @@
 
     <div class="max-w-[78%] min-w-0">
         @if ($message->replyTo)
-            <div class="mb-1 truncate rounded-t-xl border-l-2 border-forest-500 bg-sand-200/70 px-3 py-1.5 text-[0.75rem] text-ink-soft">
+            <div class="mb-1 truncate rounded-t-xl border-l-2 border-forest-500 bg-sand-200/70 px-3 py-1.5 text-[0.9375rem] text-ink-soft">
                 {{ $message->replyTo->preview(70) }}
             </div>
         @endif
 
         <div @class([
-                'rounded-2xl px-3.5 py-2.5 text-[0.9375rem] leading-relaxed shadow-sm',
+                'rounded-2xl px-3.5 py-2.5 text-[1.125rem] leading-relaxed shadow-sm',
                 'bg-forest-100 text-ink rounded-br-md' => $mine,
                 'bg-white text-ink ring-1 ring-sand-200 rounded-bl-md' => ! $mine,
             ])>
             <p class="whitespace-pre-line break-words">{{ $message->body }}</p>
 
-            <p class="mt-1 flex items-center justify-end gap-1 text-[0.6875rem] text-ink-soft">
+            <p class="mt-1 flex items-center justify-end gap-1 text-[0.875rem] text-ink-soft">
                 <span>{{ $message->created_at->format('g:i A') }}</span>
                 @if ($mine)
                     {{-- Real read state: derived from the counterparty's
@@ -53,7 +53,7 @@
 
         {{-- Message actions. Only what can be backed honestly: reply, copy
              (client-side), and delete-your-own. --}}
-        <div class="mt-1 flex gap-3 text-[0.6875rem] font-semibold text-ink-soft {{ $mine ? 'justify-end' : 'justify-start' }}">
+        <div class="mt-1 flex gap-3 text-[0.875rem] font-semibold text-ink-soft {{ $mine ? 'justify-end' : 'justify-start' }}">
             <button type="button" wire:click="reply({{ $message->getKey() }})" class="transition hover:text-forest-700">Reply</button>
             <button type="button"
                     x-data

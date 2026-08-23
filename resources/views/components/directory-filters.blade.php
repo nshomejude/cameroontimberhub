@@ -21,11 +21,11 @@
 
     $regions = $regions ?? collect();
 
-    $facetSearch = 'w-full rounded-lg border border-sand-300 bg-white py-2 pl-3 pr-9 text-[0.8125rem] text-ink placeholder:text-ink-soft/70 focus:border-forest-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-forest-200';
+    $facetSearch = 'w-full rounded-lg border border-sand-300 bg-white py-2 pl-3 pr-9 text-[1.0625rem] text-ink placeholder:text-ink-soft/70 focus:border-forest-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-forest-200';
     $box = 'h-4 w-4 shrink-0 rounded border-sand-400 text-forest-700 accent-forest-700 focus-visible:ring-2 focus-visible:ring-forest-300 focus-visible:ring-offset-1';
     $radio = 'h-4 w-4 shrink-0 border-sand-400 text-forest-700 accent-forest-700 focus-visible:ring-2 focus-visible:ring-forest-300 focus-visible:ring-offset-1';
-    $row = 'flex cursor-pointer items-center gap-2.5 py-[0.3125rem] text-[0.8125rem] text-ink';
-    $sectionTitle = 'text-[0.8125rem] font-bold text-ink';
+    $row = 'flex cursor-pointer items-center gap-2.5 py-[0.3125rem] text-[1.0625rem] text-ink';
+    $sectionTitle = 'text-[1.0625rem] font-bold text-ink';
 
     $matches = fn (array $facet, string $needle): bool => $needle === ''
         || str_contains(strtolower($facet['label']), strtolower($needle));
@@ -35,9 +35,9 @@
     <div class="flex-1 space-y-6 overflow-y-auto px-5 py-5">
 
         <div class="flex items-center justify-between">
-            <h2 class="text-[0.9375rem] font-bold text-ink">Filters</h2>
+            <h2 class="text-[1.125rem] font-bold text-ink">Filters</h2>
             <button type="button" wire:click="resetFilters"
-                    class="rounded text-[0.8125rem] font-semibold text-forest-700 transition hover:text-forest-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-300">
+                    class="rounded text-[1.0625rem] font-semibold text-forest-700 transition hover:text-forest-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-300">
                 Clear All
             </button>
         </div>
@@ -66,7 +66,7 @@
                         <input id="{{ $fid('type-'.$facet['value']) }}" type="checkbox" class="{{ $box }}"
                                value="{{ $facet['value'] }}" wire:model.live="types">
                         <span class="flex-1">{{ $facet['label'] }}</span>
-                        <span class="text-[0.75rem] tabular-nums text-ink-soft">{{ $facet['count'] }}</span>
+                        <span class="text-[0.9375rem] tabular-nums text-ink-soft">{{ $facet['count'] }}</span>
                     </label>
                 @endforeach
             </div>
@@ -90,13 +90,13 @@
                             <input id="{{ $fid('spec-'.$facet['value']) }}" type="checkbox" class="{{ $box }}"
                                    value="{{ $facet['value'] }}" wire:model.live="specs">
                             <span class="flex-1">{{ $facet['label'] }}</span>
-                            <span class="text-[0.75rem] tabular-nums text-ink-soft">{{ $facet['count'] }}</span>
+                            <span class="text-[0.9375rem] tabular-nums text-ink-soft">{{ $facet['count'] }}</span>
                         </label>
                     @endforeach
                 </div>
                 @if ($visibleSpecs->count() > $facetLimit)
                     <button type="button" @click="expanded = !expanded" :aria-expanded="expanded ? 'true' : 'false'"
-                            class="mt-1 inline-flex items-center gap-1 rounded text-[0.8125rem] font-medium text-forest-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-300">
+                            class="mt-1 inline-flex items-center gap-1 rounded text-[1.0625rem] font-medium text-forest-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-300">
                         <span x-text="expanded ? 'Show less' : 'Show more'">Show more</span>
                         <x-heroicon-m-chevron-down class="h-4 w-4 transition" ::class="expanded && 'rotate-180'" />
                     </button>
@@ -122,13 +122,13 @@
                             <input id="{{ $fid('sp-'.$facet['value']) }}" type="checkbox" class="{{ $box }}"
                                    value="{{ $facet['value'] }}" wire:model.live="speciesIn">
                             <span class="flex-1">{{ $facet['label'] }}</span>
-                            <span class="text-[0.75rem] tabular-nums text-ink-soft">{{ $facet['count'] }}</span>
+                            <span class="text-[0.9375rem] tabular-nums text-ink-soft">{{ $facet['count'] }}</span>
                         </label>
                     @endforeach
                 </div>
                 @if ($visibleSpecies->count() > $facetLimit)
                     <button type="button" @click="expanded = !expanded" :aria-expanded="expanded ? 'true' : 'false'"
-                            class="mt-1 inline-flex items-center gap-1 rounded text-[0.8125rem] font-medium text-forest-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-300">
+                            class="mt-1 inline-flex items-center gap-1 rounded text-[1.0625rem] font-medium text-forest-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-300">
                         <span x-text="expanded ? 'Show less' : 'Show more'">Show more</span>
                         <x-heroicon-m-chevron-down class="h-4 w-4 transition" ::class="expanded && 'rotate-180'" />
                     </button>
@@ -149,7 +149,7 @@
                             <input id="{{ $fid('region-'.Str::slug($r['value'])) }}" type="radio"
                                    value="{{ $r['value'] }}" wire:model.live="region" class="{{ $radio }}">
                             <span class="flex-1">{{ $r['value'] }}</span>
-                            <span class="text-[0.75rem] tabular-nums text-ink-soft">{{ $r['count'] }}</span>
+                            <span class="text-[0.9375rem] tabular-nums text-ink-soft">{{ $r['count'] }}</span>
                         </label>
                     @endforeach
                 </x-directory-accordion>
@@ -162,7 +162,7 @@
                             <input id="{{ $fid('cert-'.$facet['value']) }}" type="checkbox" class="{{ $box }}"
                                    value="{{ $facet['value'] }}" wire:model.live="certs">
                             <span class="flex-1">{{ $facet['label'] }}</span>
-                            <span class="text-[0.75rem] tabular-nums text-ink-soft">{{ $facet['count'] }}</span>
+                            <span class="text-[0.9375rem] tabular-nums text-ink-soft">{{ $facet['count'] }}</span>
                         </label>
                     @endforeach
                 </x-directory-accordion>
@@ -179,7 +179,7 @@
                             <input id="{{ $fid('years-'.$facet['value']) }}" type="radio"
                                    value="{{ $facet['value'] }}" wire:model.live="minYears" class="{{ $radio }}">
                             <span class="flex-1">{{ $facet['label'] }}</span>
-                            <span class="text-[0.75rem] tabular-nums text-ink-soft">{{ $facet['count'] }}</span>
+                            <span class="text-[0.9375rem] tabular-nums text-ink-soft">{{ $facet['count'] }}</span>
                         </label>
                     @endforeach
                 </x-directory-accordion>
@@ -192,7 +192,7 @@
              mobile it closes the drawer, on desktop it returns focus to results. --}}
         <div class="border-t border-sand-200 bg-white px-5 py-4">
             <button type="button" @click="$dispatch('close-filter-drawer')"
-                    class="flex w-full items-center justify-center gap-2 rounded-lg bg-forest-700 px-5 py-3 text-[0.875rem] font-semibold text-white transition hover:bg-forest-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-300 focus-visible:ring-offset-2">
+                    class="flex w-full items-center justify-center gap-2 rounded-lg bg-forest-700 px-5 py-3 text-[1.0625rem] font-semibold text-white transition hover:bg-forest-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-300 focus-visible:ring-offset-2">
                 <x-heroicon-o-funnel class="h-4 w-4" />
                 Apply Filters
             </button>

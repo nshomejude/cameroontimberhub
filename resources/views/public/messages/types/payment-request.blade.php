@@ -36,7 +36,7 @@
 <div class="py-1" id="m{{ $message->getKey() }}">
     <div class="mb-2 flex items-center gap-3">
         <span class="h-px flex-1 bg-sand-300"></span>
-        <span class="text-[0.6875rem] font-bold uppercase tracking-[0.14em] text-ink-soft">Payment request</span>
+        <span class="text-[0.875rem] font-bold uppercase tracking-[0.14em] text-ink-soft">Payment request</span>
         <span class="h-px flex-1 bg-sand-300"></span>
     </div>
 
@@ -46,17 +46,17 @@
                 <x-heroicon-o-banknotes class="h-5 w-5" />
             </span>
             <div class="min-w-0 flex-1">
-                <p class="font-display text-[0.9375rem] font-bold text-forest-950">
+                <p class="font-display text-[1.125rem] font-bold text-forest-950">
                     Payment requested for {{ $message->payloadValue('reference_code') }}
                 </p>
                 {{-- LIVE settlement state, straight off the order. --}}
                 @if ($order)
-                    <p class="text-[0.75rem] text-ink-soft">{{ $order->payment_status->label() }}</p>
+                    <p class="text-[0.9375rem] text-ink-soft">{{ $order->payment_status->label() }}</p>
                 @endif
             </div>
         </div>
 
-        <dl class="mt-3 space-y-2 border-t border-amber-200 pt-3 text-[0.8125rem]">
+        <dl class="mt-3 space-y-2 border-t border-amber-200 pt-3 text-[1.0625rem]">
             <div class="flex items-center justify-between gap-4">
                 <dt class="text-ink-soft">Order total</dt>
                 <dd class="font-medium text-ink">{{ $currency }} {{ number_format((float) $message->payloadValue('total_amount', 0), 2) }}</dd>
@@ -81,7 +81,7 @@
             @if ($reference = $order?->payment_reference)
                 <div class="flex items-start justify-between gap-4">
                     <dt class="text-ink-soft">Payment reference</dt>
-                    <dd class="text-right font-mono text-[0.8125rem] font-medium text-ink">{{ $reference }}</dd>
+                    <dd class="text-right font-mono text-[1.0625rem] font-medium text-ink">{{ $reference }}</dd>
                 </div>
             @endif
 
@@ -97,20 +97,20 @@
              published some. Escaped, and wrapped rather than linkified. --}}
         @if (trim((string) $instructions) !== '')
             <div class="mt-3 rounded-xl border border-amber-200 bg-white p-3">
-                <p class="text-[0.6875rem] font-bold uppercase tracking-wide text-ink-soft">How this supplier asks to be paid</p>
-                <p class="mt-1 whitespace-pre-line text-[0.8125rem] leading-relaxed text-ink">{{ $instructions }}</p>
+                <p class="text-[0.875rem] font-bold uppercase tracking-wide text-ink-soft">How this supplier asks to be paid</p>
+                <p class="mt-1 whitespace-pre-line text-[1.0625rem] leading-relaxed text-ink">{{ $instructions }}</p>
             </div>
         @endif
 
         {{-- Not fine print: the sentence that stops this card being a lie. --}}
-        <p class="mt-3 rounded-xl bg-white/80 p-3 text-[0.75rem] leading-relaxed text-ink-soft">
+        <p class="mt-3 rounded-xl bg-white/80 p-3 text-[0.9375rem] leading-relaxed text-ink-soft">
             Cameroon Timber Hub does not process payments and holds no funds. Settle directly
             with the supplier using the details they have given you, and never send payment
             credentials through this conversation. Once the supplier records your payment it
             will appear here.
         </p>
 
-        <p class="mt-2 text-right text-[0.6875rem] text-ink-soft">{{ $message->created_at->format('g:i A') }}</p>
+        <p class="mt-2 text-right text-[0.875rem] text-ink-soft">{{ $message->created_at->format('g:i A') }}</p>
     </div>
 
     {{-- ------------------------------------------------- supplier action --}}
@@ -124,43 +124,43 @@
         <div class="mt-2">
             @if ($paymentForOrderId === $order->getKey())
                 <form wire:submit.prevent="savePayment" class="rounded-2xl border border-sand-200 bg-white p-4">
-                    <p class="font-display text-[0.875rem] font-bold text-forest-950">Record a payment you have received</p>
-                    <p class="mt-1 text-[0.75rem] text-ink-soft">
+                    <p class="font-display text-[1.0625rem] font-bold text-forest-950">Record a payment you have received</p>
+                    <p class="mt-1 text-[0.9375rem] text-ink-soft">
                         This records money that already reached you elsewhere. Do not enter bank or
                         card details — only the amount and how it arrived.
                     </p>
 
-                    <label class="mt-3 block text-[0.75rem] font-semibold text-ink">
+                    <label class="mt-3 block text-[0.9375rem] font-semibold text-ink">
                         Amount received ({{ $order->currency->value }})
                         <input type="number" step="0.01" min="0" wire:model="paymentForm.amount"
-                               class="mt-1 w-full rounded-xl border border-sand-300 px-3 py-2 text-[0.875rem]">
+                               class="mt-1 w-full rounded-xl border border-sand-300 px-3 py-2 text-[1.0625rem]">
                     </label>
 
-                    <label class="mt-2 block text-[0.75rem] font-semibold text-ink">
+                    <label class="mt-2 block text-[0.9375rem] font-semibold text-ink">
                         How it arrived (optional)
                         <input type="text" maxlength="80" wire:model="paymentForm.method" placeholder="e.g. Bank transfer"
-                               class="mt-1 w-full rounded-xl border border-sand-300 px-3 py-2 text-[0.875rem]">
+                               class="mt-1 w-full rounded-xl border border-sand-300 px-3 py-2 text-[1.0625rem]">
                     </label>
 
                     {{-- $errors->first(), never @error: the @error directive
                          binds its own $message and would shadow the Message
                          model this partial is rendering. --}}
                     @if ($errors->has('paymentForm.amount'))
-                        <p class="mt-2 text-[0.75rem] font-medium text-red-700">{{ $errors->first('paymentForm.amount') }}</p>
+                        <p class="mt-2 text-[0.9375rem] font-medium text-red-700">{{ $errors->first('paymentForm.amount') }}</p>
                     @endif
 
                     <div class="mt-3 flex gap-2">
-                        <button type="submit" class="flex-1 rounded-xl bg-forest-700 px-3.5 py-2.5 text-[0.875rem] font-semibold text-white">
+                        <button type="submit" class="flex-1 rounded-xl bg-forest-700 px-3.5 py-2.5 text-[1.0625rem] font-semibold text-white">
                             Record payment
                         </button>
-                        <button type="button" wire:click="cancelPayment" class="rounded-xl border border-sand-300 px-3.5 py-2.5 text-[0.875rem] font-semibold text-ink-soft">
+                        <button type="button" wire:click="cancelPayment" class="rounded-xl border border-sand-300 px-3.5 py-2.5 text-[1.0625rem] font-semibold text-ink-soft">
                             Cancel
                         </button>
                     </div>
                 </form>
             @else
                 <button type="button" wire:click="openPayment({{ $order->getKey() }})"
-                        class="w-full rounded-xl border border-sand-200 bg-white px-3.5 py-2.5 text-[0.875rem] font-semibold text-forest-700 transition hover:bg-sand-50">
+                        class="w-full rounded-xl border border-sand-200 bg-white px-3.5 py-2.5 text-[1.0625rem] font-semibold text-forest-700 transition hover:bg-sand-50">
                     Record a payment received
                 </button>
             @endif

@@ -30,7 +30,7 @@
         <h2 id="m-details-heading" class="text-[1.25rem] font-bold text-ink">Product Details</h2>
 
         <div class="mt-3 overflow-hidden rounded-xl border border-sand-200">
-            <table class="w-full text-left text-[0.875rem]">
+            <table class="w-full text-left text-[1.0625rem]">
                 <caption class="sr-only">Product details for {{ $product->name }}</caption>
                 <tbody>
                     @foreach ($rows as $i => [$label, $value])

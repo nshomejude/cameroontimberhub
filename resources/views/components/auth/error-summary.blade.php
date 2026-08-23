@@ -5,7 +5,7 @@
 --}}
 @if ($errors->any())
     <div role="alert" tabindex="-1" data-auth-error-summary
-         class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[0.8125rem] text-red-800">
+         class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[1.0625rem] text-red-800">
         <p class="flex items-center gap-2 font-semibold">
             <x-heroicon-m-exclamation-triangle class="h-4 w-4 shrink-0" aria-hidden="true" />
             {{ $errors->count() === 1 ? 'There is a problem with your submission' : 'There are '.$errors->count().' problems with your submission' }}

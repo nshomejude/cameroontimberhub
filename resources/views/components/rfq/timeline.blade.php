@@ -39,7 +39,7 @@
                 <div class="min-w-0 flex-1">
                     <div class="flex flex-wrap items-baseline justify-between gap-x-3">
                         <h3 @class([
-                            'text-[0.875rem] font-bold',
+                            'text-[1.0625rem] font-bold',
                             'text-forest-800 dark:text-forest-300' => $s['state'] === 'current',
                             'text-ink dark:text-[#e4ddcf]' => $s['state'] === 'done',
                             'text-ink-soft dark:text-[#8f887b]' => $s['state'] === 'todo',
@@ -48,10 +48,10 @@
                             <span class="sr-only">— {{ ['done' => 'completed', 'current' => 'in progress', 'todo' => 'not started'][$s['state']] }}</span>
                         </h3>
                         @if (! empty($s['when']))
-                            <span class="text-[0.75rem] text-ink-soft dark:text-[#8f887b]">{{ $s['when'] }}</span>
+                            <span class="text-[0.9375rem] text-ink-soft dark:text-[#8f887b]">{{ $s['when'] }}</span>
                         @endif
                     </div>
-                    <p class="mt-0.5 text-[0.8125rem] leading-relaxed text-ink-soft dark:text-[#b3ab9b]">{{ $s['body'] }}</p>
+                    <p class="mt-0.5 text-[1.0625rem] leading-relaxed text-ink-soft dark:text-[#b3ab9b]">{{ $s['body'] }}</p>
                 </div>
             </li>
         @endforeach

@@ -27,9 +27,9 @@
         @endif
 
         @if ($product->is_best_seller)
-            <span class="absolute left-0 top-3 rounded-r-md bg-forest-700 py-1 pl-3 pr-3 text-[0.6875rem] font-semibold text-white">Best Seller</span>
+            <span class="absolute left-0 top-3 rounded-r-md bg-forest-700 py-1 pl-3 pr-3 text-[0.875rem] font-semibold text-white">Best Seller</span>
         @elseif ($product->is_featured)
-            <span class="absolute left-0 top-3 rounded-r-md bg-timber-700 py-1 pl-3 pr-3 text-[0.6875rem] font-semibold text-white">Featured</span>
+            <span class="absolute left-0 top-3 rounded-r-md bg-timber-700 py-1 pl-3 pr-3 text-[0.875rem] font-semibold text-white">Featured</span>
         @endif
 
         <form method="POST" action="{{ route('rfq-list.store', $product->slug) }}"
@@ -44,27 +44,27 @@
     </div>
 
     <div class="flex flex-1 flex-col {{ $compact ? 'px-3 pb-3 pt-3' : 'px-4 pb-4 pt-4' }}">
-        <h3 class="{{ $compact ? 'text-[0.875rem]' : 'text-[1rem]' }} font-bold leading-tight text-ink">
+        <h3 class="{{ $compact ? 'text-[1.0625rem]' : 'text-[1rem]' }} font-bold leading-tight text-ink">
             <a href="{{ $url }}" class="rounded transition after:absolute after:inset-0 hover:text-forest-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500">
                 {{ $product->name }}
             </a>
         </h3>
 
         @if ($price)
-            <p class="mt-1.5 {{ $compact ? 'text-[0.9375rem]' : 'text-[1.0625rem]' }} font-bold text-forest-700">
+            <p class="mt-1.5 {{ $compact ? 'text-[1.125rem]' : 'text-[1.0625rem]' }} font-bold text-forest-700">
                 {{ number_format((float) $product->price_amount) }}
-                <span class="text-[0.75rem] font-semibold text-ink-soft">{{ $product->currencyLabel() }} /{{ $product->price_unit->label() }}</span>
+                <span class="text-[0.9375rem] font-semibold text-ink-soft">{{ $product->currencyLabel() }} /{{ $product->price_unit->label() }}</span>
             </p>
         @else
-            <p class="mt-1.5 text-[0.8125rem] font-semibold text-ink-soft">Price on request</p>
+            <p class="mt-1.5 text-[1.0625rem] font-semibold text-ink-soft">Price on request</p>
         @endif
 
         @if ($moq)
-            <p class="mt-1 text-[0.75rem] text-ink-soft">MOQ: {{ $moq }}</p>
+            <p class="mt-1 text-[0.9375rem] text-ink-soft">MOQ: {{ $moq }}</p>
         @endif
 
         @if ($company)
-            <p class="mt-auto flex items-center gap-1.5 pt-3 text-[0.75rem] text-ink-soft">
+            <p class="mt-auto flex items-center gap-1.5 pt-3 text-[0.9375rem] text-ink-soft">
                 <img src="{{ $company->logoUrl() }}" alt="" loading="lazy" width="32" height="32"
                      class="h-4 w-4 shrink-0 rounded-full object-cover">
                 <span class="truncate">{{ $company->name }}</span>

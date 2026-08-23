@@ -33,7 +33,7 @@
         <div class="relative mx-auto max-w-[80rem] px-5 pb-7 pt-8 lg:px-8 lg:pb-10 lg:pt-12">
             <h1 class="text-[2rem] font-bold leading-tight tracking-tight text-white lg:text-[2.75rem]">Search Results</h1>
 
-            <p class="mt-1.5 text-[0.9375rem] text-sand-200/90" aria-live="polite">
+            <p class="mt-1.5 text-[1.125rem] text-sand-200/90" aria-live="polite">
                 @if ($q !== '')
                     {{ number_format($total) }} {{ Str::plural('result', $total) }} found for
                     <span class="font-semibold text-forest-300">“{{ $q }}”</span>
@@ -48,7 +48,7 @@
                 <x-heroicon-o-magnifying-glass class="ml-1.5 h-5 w-5 shrink-0 text-ink-soft" aria-hidden="true" />
                 <input id="search-q" type="search" name="q" value="{{ $q }}"
                        placeholder="Search products, suppliers, species…"
-                       class="min-w-0 flex-1 border-0 bg-transparent p-0 text-[0.9375rem] text-ink placeholder:text-ink-soft/70 focus:outline-none focus:ring-0">
+                       class="min-w-0 flex-1 border-0 bg-transparent p-0 text-[1.125rem] text-ink placeholder:text-ink-soft/70 focus:outline-none focus:ring-0">
 
                 @if ($q !== '')
                     <a href="{{ route('search') }}" class="rounded-full p-1.5 text-ink-soft transition hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500" aria-label="Clear search">
@@ -63,7 +63,7 @@
                     @endif
                 @endforeach
 
-                <button type="submit" class="rounded-lg bg-forest-800 px-4 py-2 text-[0.875rem] font-semibold text-white transition hover:bg-forest-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500">
+                <button type="submit" class="rounded-lg bg-forest-800 px-4 py-2 text-[1.0625rem] font-semibold text-white transition hover:bg-forest-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500">
                     Search
                 </button>
             </form>
@@ -78,13 +78,13 @@
                 <a href="{{ $urlWith(['type' => $key, 'page' => null]) }}"
                    @if ($type === $key) aria-current="page" @endif
                    @class([
-                       'inline-flex shrink-0 items-center gap-1.5 rounded-full border px-4 py-2 text-[0.875rem] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500',
+                       'inline-flex shrink-0 items-center gap-1.5 rounded-full border px-4 py-2 text-[1.0625rem] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500',
                        'border-forest-700 bg-forest-50 text-forest-800' => $type === $key,
                        'border-sand-300 bg-white text-ink-soft hover:border-forest-300 hover:text-forest-700' => $type !== $key,
                    ])>
                     {{ $label }}
                     <span @class([
-                        'rounded-full px-1.5 py-0.5 text-[0.6875rem] font-bold',
+                        'rounded-full px-1.5 py-0.5 text-[0.875rem] font-bold',
                         'bg-forest-700 text-white' => $type === $key,
                         'bg-sand-200 text-ink-soft' => $type !== $key,
                     ])>{{ number_format($counts[$key]) }}</span>
@@ -108,7 +108,7 @@
                     <div>
                         <label for="facet-{{ $facet['name'] }}" class="sr-only">{{ $facet['label'] }}</label>
                         <select id="facet-{{ $facet['name'] }}" name="{{ $facet['name'] }}" onchange="this.form.submit()"
-                                class="w-full rounded-lg border border-sand-300 bg-white px-3 py-2.5 text-[0.875rem] font-medium text-ink focus:border-forest-500 focus:outline-none focus:ring-2 focus:ring-forest-500/30">
+                                class="w-full rounded-lg border border-sand-300 bg-white px-3 py-2.5 text-[1.0625rem] font-medium text-ink focus:border-forest-500 focus:outline-none focus:ring-2 focus:ring-forest-500/30">
                             <option value="">{{ $facet['label'] }}</option>
                             @foreach ($facet['options'] as $value => $optLabel)
                                 <option value="{{ $value }}" @selected($filters[$facet['name']] === (string) $value)>{{ $optLabel }}</option>
@@ -123,13 +123,13 @@
 
         {{-- ================= COUNT + SORT ================= --}}
         <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
-            <p class="text-[0.9375rem] text-ink" aria-live="polite">
+            <p class="text-[1.125rem] text-ink" aria-live="polite">
                 <span class="font-bold">{{ number_format($total) }} {{ Str::plural(Str::singular($typeLabels[$type]), $total) }}</span>
                 @if ($type === 'products' && $supplierCount > 0)
                     <span class="text-ink-soft">from {{ number_format($supplierCount) }} {{ Str::plural('supplier', $supplierCount) }}</span>
                 @endif
                 @if ($activeFilterCount > 0)
-                    <a href="{{ route('search', ['q' => $q, 'type' => $type]) }}" class="ml-2 text-[0.8125rem] font-semibold text-forest-700 underline hover:text-forest-800">Clear filters ({{ $activeFilterCount }})</a>
+                    <a href="{{ route('search', ['q' => $q, 'type' => $type]) }}" class="ml-2 text-[1.0625rem] font-semibold text-forest-700 underline hover:text-forest-800">Clear filters ({{ $activeFilterCount }})</a>
                 @endif
             </p>
 
@@ -140,7 +140,7 @@
                     @endforeach
                     <label for="sort" class="sr-only">Sort results</label>
                     <select id="sort" name="sort" onchange="this.form.submit()"
-                            class="rounded-lg border border-sand-300 bg-white px-3 py-2 text-[0.875rem] font-medium text-ink focus:border-forest-500 focus:outline-none focus:ring-2 focus:ring-forest-500/30">
+                            class="rounded-lg border border-sand-300 bg-white px-3 py-2 text-[1.0625rem] font-medium text-ink focus:border-forest-500 focus:outline-none focus:ring-2 focus:ring-forest-500/30">
                         @foreach ($sortOptions as $value => $optLabel)
                             <option value="{{ $value }}" @selected($filters['sort'] === $value)>Sort by: {{ $optLabel }}</option>
                         @endforeach
@@ -177,11 +177,11 @@
             <div class="mt-8 rounded-2xl border border-sand-300/70 bg-white p-8 text-center">
                 <x-heroicon-o-magnifying-glass class="mx-auto h-10 w-10 text-sand-400" aria-hidden="true" />
                 <h2 class="mt-3 font-display text-xl font-semibold text-ink">No {{ strtolower($typeLabels[$type]) }} match “{{ $q }}”</h2>
-                <p class="mt-1.5 text-[0.9375rem] text-ink-soft">Try a different spelling, or browse the directories below.</p>
+                <p class="mt-1.5 text-[1.125rem] text-ink-soft">Try a different spelling, or browse the directories below.</p>
 
                 @foreach ($counts as $key => $count)
                     @if ($key !== $type && $count > 0)
-                        <a href="{{ $urlWith(['type' => $key, 'page' => null]) }}" class="mt-3 inline-block text-[0.9375rem] font-semibold text-forest-700 underline hover:text-forest-800">
+                        <a href="{{ $urlWith(['type' => $key, 'page' => null]) }}" class="mt-3 inline-block text-[1.125rem] font-semibold text-forest-700 underline hover:text-forest-800">
                             See {{ number_format($count) }} matching {{ strtolower($typeLabels[$key]) }} instead →
                         </a>
                     @endif
@@ -189,11 +189,11 @@
 
                 @if ($suggestions->isNotEmpty())
                     <div class="mt-6">
-                        <p class="text-[0.875rem] font-semibold text-ink">Did you mean:</p>
+                        <p class="text-[1.0625rem] font-semibold text-ink">Did you mean:</p>
                         <div class="mt-2 flex flex-wrap justify-center gap-2">
                             @foreach ($suggestions as $suggestion)
                                 <a href="{{ route('search', ['q' => $suggestion->common_name]) }}"
-                                   class="rounded-full border border-sand-300 bg-sand-50 px-3.5 py-1.5 text-[0.875rem] font-medium text-forest-700 transition hover:border-forest-300">
+                                   class="rounded-full border border-sand-300 bg-sand-50 px-3.5 py-1.5 text-[1.0625rem] font-medium text-forest-700 transition hover:border-forest-300">
                                     {{ $suggestion->common_name }}
                                 </a>
                             @endforeach
@@ -202,19 +202,19 @@
                 @endif
 
                 <div class="mt-7 flex flex-wrap justify-center gap-3">
-                    <a href="{{ route('marketplace') }}" class="rounded-lg bg-forest-800 px-5 py-2.5 text-[0.875rem] font-semibold text-white transition hover:bg-forest-700">Browse marketplace</a>
-                    <a href="{{ route('directory') }}" class="rounded-lg border border-sand-300 px-5 py-2.5 text-[0.875rem] font-semibold text-ink transition hover:border-forest-300">All suppliers</a>
-                    <a href="{{ route('species.index') }}" class="rounded-lg border border-sand-300 px-5 py-2.5 text-[0.875rem] font-semibold text-ink transition hover:border-forest-300">All species</a>
+                    <a href="{{ route('marketplace') }}" class="rounded-lg bg-forest-800 px-5 py-2.5 text-[1.0625rem] font-semibold text-white transition hover:bg-forest-700">Browse marketplace</a>
+                    <a href="{{ route('directory') }}" class="rounded-lg border border-sand-300 px-5 py-2.5 text-[1.0625rem] font-semibold text-ink transition hover:border-forest-300">All suppliers</a>
+                    <a href="{{ route('species.index') }}" class="rounded-lg border border-sand-300 px-5 py-2.5 text-[1.0625rem] font-semibold text-ink transition hover:border-forest-300">All species</a>
                 </div>
             </div>
         @else
             <div class="mt-8 rounded-2xl border border-sand-300/70 bg-white p-8 text-center">
                 <h2 class="font-display text-xl font-semibold text-ink">Start your search</h2>
-                <p class="mt-1.5 text-[0.9375rem] text-ink-soft">Search by product, species, grade or supplier name — or browse a directory.</p>
+                <p class="mt-1.5 text-[1.125rem] text-ink-soft">Search by product, species, grade or supplier name — or browse a directory.</p>
                 <div class="mt-6 flex flex-wrap justify-center gap-3">
-                    <a href="{{ route('marketplace') }}" class="rounded-lg bg-forest-800 px-5 py-2.5 text-[0.875rem] font-semibold text-white transition hover:bg-forest-700">Browse marketplace</a>
-                    <a href="{{ route('directory') }}" class="rounded-lg border border-sand-300 px-5 py-2.5 text-[0.875rem] font-semibold text-ink transition hover:border-forest-300">All suppliers</a>
-                    <a href="{{ route('species.index') }}" class="rounded-lg border border-sand-300 px-5 py-2.5 text-[0.875rem] font-semibold text-ink transition hover:border-forest-300">All species</a>
+                    <a href="{{ route('marketplace') }}" class="rounded-lg bg-forest-800 px-5 py-2.5 text-[1.0625rem] font-semibold text-white transition hover:bg-forest-700">Browse marketplace</a>
+                    <a href="{{ route('directory') }}" class="rounded-lg border border-sand-300 px-5 py-2.5 text-[1.0625rem] font-semibold text-ink transition hover:border-forest-300">All suppliers</a>
+                    <a href="{{ route('species.index') }}" class="rounded-lg border border-sand-300 px-5 py-2.5 text-[1.0625rem] font-semibold text-ink transition hover:border-forest-300">All species</a>
                 </div>
             </div>
         @endif

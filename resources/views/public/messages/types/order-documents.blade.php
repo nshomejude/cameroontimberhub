@@ -32,7 +32,7 @@
     <div class="py-1" id="m{{ $message->getKey() }}">
         <div class="mb-2 flex items-center gap-3">
             <span class="h-px flex-1 bg-sand-300"></span>
-            <span class="text-[0.6875rem] font-bold uppercase tracking-[0.14em] text-ink-soft">Order documents</span>
+            <span class="text-[0.875rem] font-bold uppercase tracking-[0.14em] text-ink-soft">Order documents</span>
             <span class="h-px flex-1 bg-sand-300"></span>
         </div>
 
@@ -41,10 +41,10 @@
                 <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-forest-700 text-white">
                     <x-heroicon-o-folder class="h-5 w-5" />
                 </span>
-                <p class="min-w-0 flex-1 font-display text-[0.9375rem] font-bold text-forest-950">
+                <p class="min-w-0 flex-1 font-display text-[1.125rem] font-bold text-forest-950">
                     Documents for {{ $message->payloadValue('reference_code') }}
                 </p>
-                <span class="shrink-0 text-[0.75rem] font-semibold text-ink-soft">
+                <span class="shrink-0 text-[0.9375rem] font-semibold text-ink-soft">
                     {{ trans_choice('{0}No documents|{1}1 document|[2,*]:count documents', $documents->count(), ['count' => $documents->count()]) }}
                 </span>
             </div>
@@ -59,8 +59,8 @@
                                     {{ $document->extension() }}
                                 </span>
                                 <span class="min-w-0 flex-1">
-                                    <span class="block truncate text-[0.875rem] font-medium text-ink">{{ $document->displayName() }}</span>
-                                    <span class="block text-[0.6875rem] text-ink-soft">
+                                    <span class="block truncate text-[1.0625rem] font-medium text-ink">{{ $document->displayName() }}</span>
+                                    <span class="block text-[0.875rem] text-ink-soft">
                                         {{ $document->kind->label() }} · {{ $document->humanSize() }} · {{ $document->created_at->isoFormat('D MMM YYYY') }}
                                     </span>
                                 </span>
@@ -70,17 +70,17 @@
                     @endforeach
                 </ul>
             @else
-                <p class="mt-3 border-t border-sand-200 pt-3 text-[0.8125rem] text-ink-soft">
+                <p class="mt-3 border-t border-sand-200 pt-3 text-[1.0625rem] text-ink-soft">
                     No documents have been attached to this order yet.
                 </p>
             @endif
 
-            <p class="mt-3 rounded-xl bg-sand-50 p-3 text-[0.75rem] leading-relaxed text-ink-soft">
+            <p class="mt-3 rounded-xl bg-sand-50 p-3 text-[0.9375rem] leading-relaxed text-ink-soft">
                 These files were uploaded by the supplier. Cameroon Timber Hub does not issue,
                 check or certify them. Only you and the supplier can open them.
             </p>
 
-            <p class="mt-2 text-right text-[0.6875rem] text-ink-soft">{{ $message->created_at->format('g:i A') }}</p>
+            <p class="mt-2 text-right text-[0.875rem] text-ink-soft">{{ $message->created_at->format('g:i A') }}</p>
         </div>
 
         {{-- ------------------------------------------------ supplier upload --}}
@@ -96,30 +96,30 @@
                   enctype="multipart/form-data"
                   class="mt-2 rounded-2xl border border-sand-200 bg-white p-4">
                 @csrf
-                <p class="font-display text-[0.875rem] font-bold text-forest-950">Attach a document</p>
+                <p class="font-display text-[1.0625rem] font-bold text-forest-950">Attach a document</p>
 
-                <label class="mt-2 block text-[0.75rem] font-semibold text-ink">
+                <label class="mt-2 block text-[0.9375rem] font-semibold text-ink">
                     Type
-                    <select name="kind" class="mt-1 w-full rounded-xl border border-sand-300 px-2.5 py-1.5 text-[0.8125rem]">
+                    <select name="kind" class="mt-1 w-full rounded-xl border border-sand-300 px-2.5 py-1.5 text-[1.0625rem]">
                         @foreach (\App\Enums\OrderDocumentKind::options() as $value => $label)
                             <option value="{{ $value }}">{{ $label }}</option>
                         @endforeach
                     </select>
                 </label>
 
-                <label class="mt-2 block text-[0.75rem] font-semibold text-ink">
+                <label class="mt-2 block text-[0.9375rem] font-semibold text-ink">
                     Label (optional)
                     <input type="text" name="label" maxlength="160"
-                           class="mt-1 w-full rounded-xl border border-sand-300 px-2.5 py-1.5 text-[0.8125rem]">
+                           class="mt-1 w-full rounded-xl border border-sand-300 px-2.5 py-1.5 text-[1.0625rem]">
                 </label>
 
                 <input type="file" name="documents[]" multiple required
                        accept=".pdf,.jpg,.jpeg,.png,.webp"
-                       class="mt-2 block w-full text-[0.8125rem] text-ink-soft">
+                       class="mt-2 block w-full text-[1.0625rem] text-ink-soft">
 
-                <p class="mt-1 text-[0.6875rem] text-ink-soft">PDF, JPG, PNG or WEBP. Up to 15 MB each.</p>
+                <p class="mt-1 text-[0.875rem] text-ink-soft">PDF, JPG, PNG or WEBP. Up to 15 MB each.</p>
 
-                <button type="submit" class="mt-3 w-full rounded-xl bg-forest-700 px-3.5 py-2.5 text-[0.875rem] font-semibold text-white">
+                <button type="submit" class="mt-3 w-full rounded-xl bg-forest-700 px-3.5 py-2.5 text-[1.0625rem] font-semibold text-white">
                     Attach
                 </button>
             </form>

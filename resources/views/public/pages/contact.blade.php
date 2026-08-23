@@ -42,7 +42,7 @@
 
         <div class="relative mx-auto max-w-[80rem] px-5 pb-10 pt-9 lg:flex lg:items-end lg:gap-10 lg:px-8 lg:pb-12 lg:pt-14">
             <div class="min-w-0 lg:max-w-[34rem] lg:flex-1">
-                <p class="text-[0.75rem] font-bold uppercase tracking-[0.12em] text-timber-300 lg:text-[0.8125rem]">
+                <p class="text-[0.9375rem] font-bold uppercase tracking-[0.12em] text-timber-300 lg:text-[1.0625rem]">
                     {{ $d['eyebrow'] ?? 'Contact us' }}
                 </p>
 
@@ -53,7 +53,7 @@
                 <span class="mt-5 block h-[3px] w-14 rounded-full bg-timber-400" aria-hidden="true"></span>
 
                 @if ($intro = ($d['intro'] ?? $page->meta_description))
-                    <p class="mt-5 max-w-[28rem] text-[0.95rem] leading-relaxed text-sand-200/90 lg:text-[1.0625rem] lg:leading-[1.7]">
+                    <p class="mt-5 max-w-[28rem] text-[1.125rem] leading-relaxed text-sand-200/90 lg:text-[1.0625rem] lg:leading-[1.7]">
                         {{ $intro }}
                     </p>
                 @endif
@@ -66,11 +66,11 @@
                         <x-heroicon-s-map-pin class="h-5 w-5" />
                     </span>
                     <div class="min-w-0">
-                        <p class="text-[0.8125rem] text-sand-200/85">Our head quarters</p>
+                        <p class="text-[1.0625rem] text-sand-200/85">Our head quarters</p>
                         <p class="mt-0.5 text-[1.25rem] font-bold leading-tight text-white">
                             {{ $details['address']['locality'] }}, Cameroon
                         </p>
-                        <p class="mt-2 text-[0.8125rem] leading-relaxed text-sand-200/85">
+                        <p class="mt-2 text-[1.0625rem] leading-relaxed text-sand-200/85">
                             {{ $d['hq_note'] ?? 'The economic capital of Cameroon, and our home.' }}
                         </p>
                     </div>
@@ -90,8 +90,8 @@
                         <x-dynamic-component :component="'heroicon-o-'.($pillar['icon'] ?? 'check-badge')" class="h-6 w-6" />
                     </span>
                     <div>
-                        <h2 class="text-[0.9375rem] font-bold leading-snug text-ink">{{ $pillar['title'] ?? '' }}</h2>
-                        <p class="mt-1.5 text-[0.8125rem] leading-relaxed text-ink-soft">{{ $pillar['text'] ?? '' }}</p>
+                        <h2 class="text-[1.125rem] font-bold leading-snug text-ink">{{ $pillar['title'] ?? '' }}</h2>
+                        <p class="mt-1.5 text-[1.0625rem] leading-relaxed text-ink-soft">{{ $pillar['text'] ?? '' }}</p>
                     </div>
                 </li>
             @endforeach
@@ -110,7 +110,7 @@
                 <span class="mt-3 block h-[3px] w-10 rounded-full bg-timber-500" aria-hidden="true"></span>
 
                 @if ($blurb = ($d['details_blurb'] ?? null))
-                    <p class="mt-5 text-[0.875rem] leading-relaxed text-ink-soft">{{ $blurb }}</p>
+                    <p class="mt-5 text-[1.0625rem] leading-relaxed text-ink-soft">{{ $blurb }}</p>
                 @endif
 
                 <dl class="mt-6 divide-y divide-sand-200 border-t border-sand-200">
@@ -119,8 +119,8 @@
                             <x-heroicon-o-building-office-2 class="h-5 w-5" />
                         </span>
                         <div class="min-w-0">
-                            <dt class="text-[0.875rem] font-bold text-ink">{{ $details['address']['label'] }}</dt>
-                            <dd class="mt-1 text-[0.875rem] leading-relaxed text-ink-soft">
+                            <dt class="text-[1.0625rem] font-bold text-ink">{{ $details['address']['label'] }}</dt>
+                            <dd class="mt-1 text-[1.0625rem] leading-relaxed text-ink-soft">
                                 @foreach ($details['address']['lines'] as $line)
                                     <span class="block">{{ $line }}</span>
                                 @endforeach
@@ -134,8 +134,8 @@
                                 <x-heroicon-o-phone class="h-5 w-5" />
                             </span>
                             <div class="min-w-0">
-                                <dt class="text-[0.875rem] font-bold text-ink">Phone</dt>
-                                <dd class="mt-1 text-[0.875rem] leading-relaxed text-ink-soft">
+                                <dt class="text-[1.0625rem] font-bold text-ink">Phone</dt>
+                                <dd class="mt-1 text-[1.0625rem] leading-relaxed text-ink-soft">
                                     @foreach ($details['phones'] as $phone)
                                         <a class="block transition hover:text-forest-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest-700"
                                            href="tel:{{ preg_replace('/[^\d+]/', '', $phone) }}">{{ $phone }}</a>
@@ -151,8 +151,8 @@
                                 <x-heroicon-o-envelope class="h-5 w-5" />
                             </span>
                             <div class="min-w-0">
-                                <dt class="text-[0.875rem] font-bold text-ink">Email</dt>
-                                <dd class="mt-1 break-words text-[0.875rem] leading-relaxed text-ink-soft">
+                                <dt class="text-[1.0625rem] font-bold text-ink">Email</dt>
+                                <dd class="mt-1 break-words text-[1.0625rem] leading-relaxed text-ink-soft">
                                     @foreach ($details['emails'] as $email)
                                         <a class="block transition hover:text-forest-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest-700"
                                            href="mailto:{{ $email }}">{{ $email }}</a>
@@ -168,8 +168,8 @@
                                 <x-heroicon-o-globe-alt class="h-5 w-5" />
                             </span>
                             <div class="min-w-0">
-                                <dt class="text-[0.875rem] font-bold text-ink">Website</dt>
-                                <dd class="mt-1 break-words text-[0.875rem] leading-relaxed text-ink-soft">{{ $details['website'] }}</dd>
+                                <dt class="text-[1.0625rem] font-bold text-ink">Website</dt>
+                                <dd class="mt-1 break-words text-[1.0625rem] leading-relaxed text-ink-soft">{{ $details['website'] }}</dd>
                             </div>
                         </div>
                     @endif
@@ -180,7 +180,7 @@
             <section aria-labelledby="form-heading">
                 <h2 id="form-heading" class="text-[1.4rem] font-bold tracking-tight text-ink">Send Us a Message</h2>
                 <span class="mt-3 block h-[3px] w-10 rounded-full bg-timber-500" aria-hidden="true"></span>
-                <p class="mt-5 text-[0.875rem] text-ink-soft">Fill out the form below and we'll get back to you.</p>
+                <p class="mt-5 text-[1.0625rem] text-ink-soft">Fill out the form below and we'll get back to you.</p>
 
                 {{-- Success (announced to assistive tech, and focused on load) --}}
                 <div role="status" aria-live="polite" class="empty:hidden">
@@ -188,7 +188,7 @@
                         <div tabindex="-1" autofocus
                              class="mt-6 flex items-start gap-3 rounded-xl border border-forest-200 bg-forest-50 p-4">
                             <x-heroicon-s-check-circle class="mt-0.5 h-5 w-5 shrink-0 text-forest-700" aria-hidden="true" />
-                            <p class="text-[0.875rem] font-medium text-forest-800">
+                            <p class="text-[1.0625rem] font-medium text-forest-800">
                                 Message sent — thank you. Our team will be in touch within 24 business hours.
                             </p>
                         </div>
@@ -197,7 +197,7 @@
 
                 @if ($errors->any())
                     <div class="mt-6 rounded-xl border border-red-200 bg-red-50 p-4" role="alert">
-                        <p class="text-[0.875rem] font-semibold text-red-800">
+                        <p class="text-[1.0625rem] font-semibold text-red-800">
                             Your message wasn't sent. Please correct {{ $errors->count() === 1 ? 'the field' : 'the fields' }} highlighted below.
                         </p>
                     </div>
@@ -214,7 +214,7 @@
                     <input type="hidden" name="form_rendered_at" value="{{ now()->timestamp }}">
 
                     @php
-                        $input = 'block w-full rounded-lg border border-sand-300 bg-white px-4 py-3 text-[0.9375rem] text-ink placeholder:text-ink-soft/60 transition focus:border-forest-600 focus:outline-none focus:ring-2 focus:ring-forest-600/25';
+                        $input = 'block w-full rounded-lg border border-sand-300 bg-white px-4 py-3 text-[1.125rem] text-ink placeholder:text-ink-soft/60 transition focus:border-forest-600 focus:outline-none focus:ring-2 focus:ring-forest-600/25';
                         $inputError = 'border-red-400 focus:border-red-500 focus:ring-red-500/25';
                     @endphp
 
@@ -226,7 +226,7 @@
                             ['phone', 'Phone Number', 'tel', 'Phone Number', false, 'tel'],
                         ] as [$field, $label, $type, $placeholder, $required, $autocomplete])
                             <div>
-                                <label for="contact-{{ $field }}" class="block text-[0.8125rem] font-medium text-ink">
+                                <label for="contact-{{ $field }}" class="block text-[1.0625rem] font-medium text-ink">
                                     {{ $label }}@if ($required)<span class="text-red-600" aria-hidden="true"> *</span>@endif
                                 </label>
                                 <input id="contact-{{ $field }}" name="{{ $field }}" type="{{ $type }}"
@@ -237,14 +237,14 @@
                                        @error($field) aria-invalid="true" aria-describedby="contact-{{ $field }}-error" @enderror
                                        class="mt-1.5 @error($field) {{ $input.' '.$inputError }} @else {{ $input }} @enderror">
                                 @error($field)
-                                    <p id="contact-{{ $field }}-error" class="mt-1.5 text-[0.75rem] font-medium text-red-700">{{ $message }}</p>
+                                    <p id="contact-{{ $field }}-error" class="mt-1.5 text-[0.9375rem] font-medium text-red-700">{{ $message }}</p>
                                 @enderror
                             </div>
                         @endforeach
                     </div>
 
                     <div>
-                        <label for="contact-subject" class="block text-[0.8125rem] font-medium text-ink">
+                        <label for="contact-subject" class="block text-[1.0625rem] font-medium text-ink">
                             Subject<span class="text-red-600" aria-hidden="true"> *</span>
                         </label>
                         <input id="contact-subject" name="subject" type="text" value="{{ old('subject') }}"
@@ -253,12 +253,12 @@
                                @error('subject') aria-invalid="true" aria-describedby="contact-subject-error" @enderror
                                class="mt-1.5 @error('subject') {{ $input.' '.$inputError }} @else {{ $input }} @enderror">
                         @error('subject')
-                            <p id="contact-subject-error" class="mt-1.5 text-[0.75rem] font-medium text-red-700">{{ $message }}</p>
+                            <p id="contact-subject-error" class="mt-1.5 text-[0.9375rem] font-medium text-red-700">{{ $message }}</p>
                         @enderror
                     </div>
 
                     <div>
-                        <label for="contact-message" class="block text-[0.8125rem] font-medium text-ink">
+                        <label for="contact-message" class="block text-[1.0625rem] font-medium text-ink">
                             Your Message<span class="text-red-600" aria-hidden="true"> *</span>
                         </label>
                         <textarea id="contact-message" name="message" rows="6" placeholder="Your Message" required
@@ -267,9 +267,9 @@
                                   @error('message') aria-invalid="true" @enderror
                                   class="mt-1.5 @error('message') {{ $input.' '.$inputError }} @else {{ $input }} @enderror">{{ old('message') }}</textarea>
                         @error('message')
-                            <p id="contact-message-error" class="mt-1.5 text-[0.75rem] font-medium text-red-700">{{ $message }}</p>
+                            <p id="contact-message-error" class="mt-1.5 text-[0.9375rem] font-medium text-red-700">{{ $message }}</p>
                         @else
-                            <p id="contact-message-hint" class="mt-1.5 text-[0.75rem] text-ink-soft">At least 20 characters, so we can route your request to the right team.</p>
+                            <p id="contact-message-hint" class="mt-1.5 text-[0.9375rem] text-ink-soft">At least 20 characters, so we can route your request to the right team.</p>
                         @enderror
                     </div>
 
@@ -280,17 +280,17 @@
                                    @if ($firstError === 'consent') autofocus @endif
                                    @error('consent') aria-invalid="true" aria-describedby="contact-consent-error" @enderror
                                    class="mt-0.5 h-4 w-4 shrink-0 rounded border-sand-300 text-forest-700 focus:ring-forest-600">
-                            <label for="contact-consent" class="text-[0.8125rem] leading-relaxed text-ink-soft">
+                            <label for="contact-consent" class="text-[1.0625rem] leading-relaxed text-ink-soft">
                                 I agree that {{ config('app.name') }} may use this information to respond to my message.
                             </label>
                         </div>
                         @error('consent')
-                            <p id="contact-consent-error" class="mt-1.5 text-[0.75rem] font-medium text-red-700">{{ $message }}</p>
+                            <p id="contact-consent-error" class="mt-1.5 text-[0.9375rem] font-medium text-red-700">{{ $message }}</p>
                         @enderror
                     </div>
 
                     <button type="submit"
-                            class="inline-flex w-full items-center justify-center gap-2.5 rounded-lg bg-forest-800 px-7 py-3.5 text-[0.9375rem] font-semibold text-white transition hover:bg-forest-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest-700">
+                            class="inline-flex w-full items-center justify-center gap-2.5 rounded-lg bg-forest-800 px-7 py-3.5 text-[1.125rem] font-semibold text-white transition hover:bg-forest-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest-700">
                         <x-heroicon-o-paper-airplane class="h-5 w-5" aria-hidden="true" /> Send Message
                     </button>
                 </form>
@@ -310,14 +310,14 @@
                             <x-heroicon-s-map-pin class="h-5 w-5" />
                         </span>
                         <div class="min-w-0">
-                            <p class="text-[0.9375rem] font-bold text-white">{{ $details['organisation'] }} HQ</p>
-                            <p class="mt-1 text-[0.8125rem] leading-relaxed text-sand-200/85">
+                            <p class="text-[1.125rem] font-bold text-white">{{ $details['organisation'] }} HQ</p>
+                            <p class="mt-1 text-[1.0625rem] leading-relaxed text-sand-200/85">
                                 {{ $details['address']['lines'][0] ?? $details['address']['locality'] }}
                             </p>
                         </div>
                     </div>
                     <a href="{{ $mapUrl }}" target="_blank" rel="noopener noreferrer"
-                       class="flex items-center justify-between gap-3 px-5 py-4 text-[0.875rem] font-semibold text-forest-700 transition hover:bg-sand-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest-700">
+                       class="flex items-center justify-between gap-3 px-5 py-4 text-[1.0625rem] font-semibold text-forest-700 transition hover:bg-sand-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest-700">
                         <span>Open in maps<span class="sr-only"> (opens in a new tab)</span></span>
                         <x-heroicon-m-arrow-top-right-on-square class="h-4 w-4" aria-hidden="true" />
                     </a>
@@ -333,7 +333,7 @@
                         </span>
                         <dl class="min-w-0 flex-1 space-y-2">
                             @foreach ($details['hours'] as $slot)
-                                <div class="flex flex-wrap justify-between gap-x-4 text-[0.8125rem]">
+                                <div class="flex flex-wrap justify-between gap-x-4 text-[1.0625rem]">
                                     <dt class="text-ink">{{ $slot['days'] }}</dt>
                                     <dd class="text-ink-soft">{{ $slot['time'] }}</dd>
                                 </div>
@@ -342,17 +342,17 @@
                     </div>
 
                     @if (! empty($details['hours_note']))
-                        <p class="mt-4 text-[0.8125rem] text-ink-soft">{{ $details['hours_note'] }}</p>
+                        <p class="mt-4 text-[1.0625rem] text-ink-soft">{{ $details['hours_note'] }}</p>
                     @endif
                 @endif
 
                 @if (! empty(array_filter($details['social'] ?? [])))
-                    <h3 class="mt-9 text-[0.8125rem] font-bold uppercase tracking-wider text-ink">Follow us</h3>
+                    <h3 class="mt-9 text-[1.0625rem] font-bold uppercase tracking-wider text-ink">Follow us</h3>
                     <ul class="mt-3 flex flex-wrap gap-2">
                         @foreach (array_filter($details['social']) as $network => $url)
                             <li>
                                 <a href="{{ $url }}" target="_blank" rel="noopener noreferrer"
-                                   class="inline-flex rounded-lg border border-sand-300 px-3 py-2 text-[0.8125rem] font-medium capitalize text-ink transition hover:border-forest-600 hover:text-forest-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest-700">
+                                   class="inline-flex rounded-lg border border-sand-300 px-3 py-2 text-[1.0625rem] font-medium capitalize text-ink transition hover:border-forest-600 hover:text-forest-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest-700">
                                     {{ $network }}
                                 </a>
                             </li>
@@ -376,18 +376,18 @@
                 <h2 id="contact-cta-heading" class="text-[1.35rem] font-bold leading-tight tracking-tight text-white lg:text-[1.75rem]">
                     {{ $d['cta_title'] ?? 'Let’s build a sustainable future together' }}
                 </h2>
-                <p class="mt-2.5 max-w-[34rem] text-[0.875rem] leading-relaxed text-sand-200/90">
+                <p class="mt-2.5 max-w-[34rem] text-[1.0625rem] leading-relaxed text-sand-200/90">
                     {{ $d['cta_text'] ?? 'Whether you are a supplier, buyer, investor or partner, we would like to hear from you.' }}
                 </p>
             </div>
 
             <div class="flex shrink-0 flex-col gap-3 sm:flex-row lg:gap-4">
                 <a href="{{ route('register') }}"
-                   class="inline-flex items-center justify-center gap-2.5 rounded-lg bg-forest-700 px-7 py-3.5 text-[0.9375rem] font-semibold text-white transition hover:bg-forest-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
+                   class="inline-flex items-center justify-center gap-2.5 rounded-lg bg-forest-700 px-7 py-3.5 text-[1.125rem] font-semibold text-white transition hover:bg-forest-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
                     <x-heroicon-o-user-plus class="h-5 w-5" aria-hidden="true" /> Join as Supplier
                 </a>
                 <a href="{{ route('marketplace') }}"
-                   class="inline-flex items-center justify-center gap-2.5 rounded-lg border border-white/60 px-7 py-3.5 text-[0.9375rem] font-semibold text-white transition hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
+                   class="inline-flex items-center justify-center gap-2.5 rounded-lg border border-white/60 px-7 py-3.5 text-[1.125rem] font-semibold text-white transition hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
                     <x-heroicon-o-shopping-cart class="h-5 w-5" aria-hidden="true" /> Explore Marketplace
                 </a>
             </div>

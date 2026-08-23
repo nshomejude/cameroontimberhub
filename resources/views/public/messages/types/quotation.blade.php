@@ -49,8 +49,8 @@
             </span>
 
             <div class="min-w-0">
-                <p class="font-display text-[0.9375rem] font-bold uppercase tracking-wide text-forest-950">Quotation</p>
-                <p class="text-[0.75rem] font-semibold text-ink-soft">
+                <p class="font-display text-[1.125rem] font-bold uppercase tracking-wide text-forest-950">Quotation</p>
+                <p class="text-[0.9375rem] font-semibold text-ink-soft">
                     {{ $message->payloadValue('reference_code') }}
                     @if (($rev = (int) $message->payloadValue('revision', 1)) > 1)
                         · Revision {{ $rev }}
@@ -66,7 +66,7 @@
         </div>
 
         {{-- --------------------------------------------------- provenance --}}
-        <dl class="grid grid-cols-2 gap-x-4 gap-y-3 border-b border-sand-200 px-4 py-3 text-[0.8125rem]">
+        <dl class="grid grid-cols-2 gap-x-4 gap-y-3 border-b border-sand-200 px-4 py-3 text-[1.0625rem]">
             <div>
                 <dt class="text-ink-soft">From</dt>
                 <dd class="font-semibold text-ink">{{ $message->payloadValue('supplier_name') ?? $conversation->company?->name }}</dd>
@@ -91,7 +91,7 @@
                         {{-- Real countdown: derived from valid_until, live. --}}
                         @if ($daysLeft !== null)
                             <span @class([
-                                'block text-[0.75rem]',
+                                'block text-[0.9375rem]',
                                 'text-red-700' => $daysLeft === 0,
                                 'text-ink-soft' => $daysLeft > 0,
                             ])>
@@ -108,7 +108,7 @@
 
         {{-- -------------------------------------------------------- lines --}}
         <div class="overflow-x-auto">
-            <table class="w-full min-w-[30rem] text-left text-[0.8125rem]">
+            <table class="w-full min-w-[30rem] text-left text-[1.0625rem]">
                 <thead class="bg-forest-800 text-white">
                     <tr>
                         <th scope="col" class="px-3 py-2 font-semibold">Description</th>
@@ -123,7 +123,7 @@
                             <td class="px-3 py-2.5 align-top">
                                 <span class="font-semibold text-ink">{{ $item['description'] ?? '—' }}</span>
                                 @if (! empty($item['specification']))
-                                    <span class="block text-[0.75rem] text-ink-soft">{{ $item['specification'] }}</span>
+                                    <span class="block text-[0.9375rem] text-ink-soft">{{ $item['specification'] }}</span>
                                 @endif
                             </td>
                             <td class="whitespace-nowrap px-3 py-2.5 text-right align-top text-ink">
@@ -142,7 +142,7 @@
         </div>
 
         {{-- -------------------------------------------------------- terms --}}
-        <dl class="space-y-2 border-t border-sand-200 px-4 py-3 text-[0.8125rem]">
+        <dl class="space-y-2 border-t border-sand-200 px-4 py-3 text-[1.0625rem]">
             <div class="flex items-start justify-between gap-4">
                 <dt class="text-ink-soft">Subtotal</dt>
                 <dd class="text-right font-medium text-ink">{{ $money($message->payloadValue('subtotal_amount')) }}</dd>
@@ -186,7 +186,7 @@
         </dl>
 
         <div class="flex items-center justify-between gap-4 border-t border-sand-200 px-4 py-3">
-            <p class="font-display text-[0.9375rem] font-bold text-forest-800">Grand total</p>
+            <p class="font-display text-[1.125rem] font-bold text-forest-800">Grand total</p>
             <p class="font-display text-[1.125rem] font-bold text-forest-900">{{ $money($message->payloadValue('total_amount')) }}</p>
         </div>
 
@@ -201,7 +201,7 @@
                  turns it into a PDF. --}}
             @if ($printUrl)
                 <a href="{{ $printUrl }}"
-                   class="flex w-full items-center justify-center gap-2 rounded-xl border border-sand-300 bg-white px-3.5 py-2.5 text-[0.875rem] font-bold text-forest-700 transition hover:bg-sand-100">
+                   class="flex w-full items-center justify-center gap-2 rounded-xl border border-sand-300 bg-white px-3.5 py-2.5 text-[1.0625rem] font-bold text-forest-700 transition hover:bg-sand-100">
                     <x-heroicon-o-document-text class="h-4 w-4" />
                     View / print quotation
                 </a>
@@ -211,7 +211,7 @@
                 <div class="flex flex-wrap gap-2">
                     <button type="button"
                             wire:click="openCounter({{ $quote->getKey() }})"
-                            class="flex flex-1 items-center justify-center gap-2 rounded-xl border border-forest-700 bg-white px-3.5 py-2.5 text-[0.875rem] font-bold text-forest-700 transition hover:bg-forest-50">
+                            class="flex flex-1 items-center justify-center gap-2 rounded-xl border border-forest-700 bg-white px-3.5 py-2.5 text-[1.0625rem] font-bold text-forest-700 transition hover:bg-forest-50">
                         <x-heroicon-o-arrows-right-left class="h-4 w-4" />
                         Counter offer
                     </button>
@@ -220,7 +220,7 @@
                             wire:click="acceptQuote({{ $quote->getKey() }})"
                             wire:confirm="Accept quotation {{ $message->payloadValue('reference_code') }} for {{ $money($message->payloadValue('total_amount')) }}? Every other quotation on this request will be declined and an order will be created. This cannot be undone here."
                             wire:loading.attr="disabled"
-                            class="flex flex-1 items-center justify-center gap-2 rounded-xl bg-forest-800 px-3.5 py-2.5 text-[0.875rem] font-bold text-white transition hover:bg-forest-900 disabled:opacity-60">
+                            class="flex flex-1 items-center justify-center gap-2 rounded-xl bg-forest-800 px-3.5 py-2.5 text-[1.0625rem] font-bold text-white transition hover:bg-forest-900 disabled:opacity-60">
                         <x-heroicon-o-check-circle class="h-4 w-4" />
                         Accept quotation
                     </button>
@@ -229,20 +229,20 @@
                 <button type="button"
                         wire:click="declineQuote({{ $quote->getKey() }}, 'Declined from the conversation.')"
                         wire:confirm="Decline this quotation?"
-                        class="w-full rounded-xl px-3.5 py-2 text-[0.8125rem] font-semibold text-ink-soft transition hover:text-red-700">
+                        class="w-full rounded-xl px-3.5 py-2 text-[1.0625rem] font-semibold text-ink-soft transition hover:text-red-700">
                     Decline
                 </button>
             @elseif ($quote && $actionable && ! $isBuyer)
                 <button type="button"
                         wire:click="withdrawQuote({{ $quote->getKey() }})"
                         wire:confirm="Withdraw this quotation? The buyer will no longer be able to accept it."
-                        class="w-full rounded-xl border border-sand-300 bg-white px-3.5 py-2.5 text-[0.875rem] font-bold text-ink-soft transition hover:text-red-700">
+                        class="w-full rounded-xl border border-sand-300 bg-white px-3.5 py-2.5 text-[1.0625rem] font-bold text-ink-soft transition hover:text-red-700">
                     Withdraw quotation
                 </button>
-                <p class="text-center text-[0.75rem] text-ink-soft">Only the buyer can accept or decline a quotation.</p>
+                <p class="text-center text-[0.9375rem] text-ink-soft">Only the buyer can accept or decline a quotation.</p>
             @elseif ($quote)
                 {{-- Settled. State the fact, offer nothing to press. --}}
-                <p class="text-center text-[0.8125rem] text-ink-soft">
+                <p class="text-center text-[1.0625rem] text-ink-soft">
                     @if ($quote->status === \App\Enums\QuoteStatus::Accepted)
                         Accepted{{ $quote->decided_at ? ' on '.$quote->decided_at->isoFormat('D MMM YYYY') : '' }}.
                     @elseif ($quote->isSuperseded())
@@ -259,61 +259,61 @@
         {{-- ------------------------------------------- counter-offer form --}}
         @if ($countering)
             <form wire:submit.prevent="submitCounter" class="space-y-3 border-t border-sand-200 bg-white px-4 py-3">
-                <p class="font-display text-[0.875rem] font-bold text-forest-950">Propose different terms</p>
+                <p class="font-display text-[1.0625rem] font-bold text-forest-950">Propose different terms</p>
 
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label for="counter-price-{{ $message->getKey() }}" class="block text-[0.75rem] font-semibold text-ink-soft">
+                        <label for="counter-price-{{ $message->getKey() }}" class="block text-[0.9375rem] font-semibold text-ink-soft">
                             Target unit price ({{ $currency }})<span class="text-red-600">*</span>
                         </label>
                         <input id="counter-price-{{ $message->getKey() }}" type="number" step="0.01" min="0.01"
                                wire:model="counterForm.unit_price"
-                               class="mt-1 w-full rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 text-[0.875rem] outline-none focus:border-forest-500">
+                               class="mt-1 w-full rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 text-[1.0625rem] outline-none focus:border-forest-500">
                     </div>
                     <div>
-                        <label for="counter-qty-{{ $message->getKey() }}" class="block text-[0.75rem] font-semibold text-ink-soft">Quantity</label>
+                        <label for="counter-qty-{{ $message->getKey() }}" class="block text-[0.9375rem] font-semibold text-ink-soft">Quantity</label>
                         <input id="counter-qty-{{ $message->getKey() }}" type="number" step="0.01" min="0.01"
                                wire:model="counterForm.quantity"
                                placeholder="{{ $items[0]['quantity'] ?? '' }}"
-                               class="mt-1 w-full rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 text-[0.875rem] outline-none focus:border-forest-500">
+                               class="mt-1 w-full rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 text-[1.0625rem] outline-none focus:border-forest-500">
                     </div>
                 </div>
 
                 <div>
-                    <label for="counter-terms-{{ $message->getKey() }}" class="block text-[0.75rem] font-semibold text-ink-soft">Payment terms</label>
+                    <label for="counter-terms-{{ $message->getKey() }}" class="block text-[0.9375rem] font-semibold text-ink-soft">Payment terms</label>
                     <input id="counter-terms-{{ $message->getKey() }}" type="text" maxlength="255"
                            wire:model="counterForm.payment_terms"
                            placeholder="{{ $message->payloadValue('payment_terms') }}"
-                           class="mt-1 w-full rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 text-[0.875rem] outline-none focus:border-forest-500">
+                           class="mt-1 w-full rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 text-[1.0625rem] outline-none focus:border-forest-500">
                 </div>
 
                 <div>
-                    <label for="counter-note-{{ $message->getKey() }}" class="block text-[0.75rem] font-semibold text-ink-soft">Message</label>
+                    <label for="counter-note-{{ $message->getKey() }}" class="block text-[0.9375rem] font-semibold text-ink-soft">Message</label>
                     <textarea id="counter-note-{{ $message->getKey() }}" rows="2" maxlength="1000"
                               wire:model="counterForm.note"
-                              class="mt-1 w-full resize-y rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 text-[0.875rem] outline-none focus:border-forest-500"></textarea>
+                              class="mt-1 w-full resize-y rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 text-[1.0625rem] outline-none focus:border-forest-500"></textarea>
                 </div>
 
                 {{-- $errors->first(), not @error: @error would bind its own
                      $message and shadow the Message model this partial is
                      rendering. --}}
                 @if ($counterError = $errors->first('counterForm.unit_price'))
-                    <p class="text-[0.8125rem] font-medium text-red-700">{{ $counterError }}</p>
+                    <p class="text-[1.0625rem] font-medium text-red-700">{{ $counterError }}</p>
                 @endif
 
                 <div class="flex gap-2">
                     <button type="button" wire:click="cancelCounter"
-                            class="flex-1 rounded-xl border border-sand-300 px-3.5 py-2.5 text-[0.875rem] font-bold text-ink-soft transition hover:bg-sand-100">
+                            class="flex-1 rounded-xl border border-sand-300 px-3.5 py-2.5 text-[1.0625rem] font-bold text-ink-soft transition hover:bg-sand-100">
                         Cancel
                     </button>
                     <button type="submit"
-                            class="flex-1 rounded-xl bg-forest-800 px-3.5 py-2.5 text-[0.875rem] font-bold text-white transition hover:bg-forest-900">
+                            class="flex-1 rounded-xl bg-forest-800 px-3.5 py-2.5 text-[1.0625rem] font-bold text-white transition hover:bg-forest-900">
                         Send counter-offer
                     </button>
                 </div>
             </form>
         @endif
 
-        <p class="px-4 pb-3 text-right text-[0.6875rem] text-ink-soft">{{ $message->created_at->format('g:i A') }}</p>
+        <p class="px-4 pb-3 text-right text-[0.875rem] text-ink-soft">{{ $message->created_at->format('g:i A') }}</p>
     </div>
 </div>

@@ -40,7 +40,7 @@
                 <span class="flex min-w-0 items-center gap-2.5">
                     <span aria-hidden="true"
                           @class([
-                              'flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[0.8125rem] font-bold ring-1',
+                              'flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[1.0625rem] font-bold ring-1',
                               'bg-forest-700 text-white ring-forest-700' => $isCurrent,
                               'bg-white text-forest-700 ring-forest-300 dark:bg-transparent' => $isDone,
                               'bg-sand-100 text-ink-soft ring-sand-300 dark:bg-[#26241e] dark:text-[#8f887b] dark:ring-[#3a352e]' => ! $isCurrent && ! $isDone,
@@ -54,12 +54,12 @@
                     <span class="min-w-0">
                         @if ($reachable)
                             <a href="{{ route('rfq.step', ['step' => $s['slug']]) }}"
-                               class="block truncate text-[0.8125rem] font-semibold text-ink hover:text-forest-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500 dark:text-[#e4ddcf] dark:hover:text-forest-300">
+                               class="block truncate text-[1.0625rem] font-semibold text-ink hover:text-forest-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500 dark:text-[#e4ddcf] dark:hover:text-forest-300">
                                 {{ $s['label'] }}<span class="sr-only"> — {{ $state }}. Go back to this step.</span>
                             </a>
                         @else
                             <span @class([
-                                'block truncate text-[0.8125rem] font-semibold',
+                                'block truncate text-[1.0625rem] font-semibold',
                                 'text-forest-800 dark:text-forest-300' => $isCurrent,
                                 'text-ink dark:text-[#e4ddcf]' => $isDone,
                                 'text-ink-soft dark:text-[#8f887b]' => ! $isCurrent && ! $isDone,
@@ -67,7 +67,7 @@
                                 {{ $s['label'] }}<span class="sr-only"> — {{ $state }}</span>
                             </span>
                         @endif
-                        <span class="block truncate text-[0.6875rem] text-ink-soft dark:text-[#8f887b]">
+                        <span class="block truncate text-[0.875rem] text-ink-soft dark:text-[#8f887b]">
                             {{ $isDone ? 'Completed' : $s['caption'] }}
                         </span>
                     </span>

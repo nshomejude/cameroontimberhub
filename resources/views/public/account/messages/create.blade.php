@@ -4,7 +4,7 @@
     subheading="Start a conversation with a verified supplier.">
 
     <div class="mb-4">
-        <a href="{{ route('account.messages') }}" class="inline-flex items-center gap-1.5 text-[0.875rem] font-semibold text-forest-700">
+        <a href="{{ route('account.messages') }}" class="inline-flex items-center gap-1.5 text-[1.0625rem] font-semibold text-forest-700">
             <x-heroicon-m-arrow-left class="h-4 w-4" /> Back to messages
         </a>
     </div>

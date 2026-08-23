@@ -11,7 +11,7 @@
     <div class="py-1">
         <div class="mb-2 flex items-center gap-3">
             <span class="h-px flex-1 bg-sand-300"></span>
-            <span class="text-[0.6875rem] font-bold uppercase tracking-[0.14em] text-ink-soft">Order status</span>
+            <span class="text-[0.875rem] font-bold uppercase tracking-[0.14em] text-ink-soft">Order status</span>
             <span class="h-px flex-1 bg-sand-300"></span>
         </div>
 
@@ -32,13 +32,13 @@
                             @endif
                         </span>
                         <div class="min-w-0">
-                            <p class="text-[0.875rem] font-semibold text-ink">
+                            <p class="text-[1.0625rem] font-semibold text-ink">
                                 {{ $milestone['status']->label() }}
                                 @if ($current)
-                                    <span class="ml-1 rounded-full bg-forest-100 px-2 py-0.5 text-[0.625rem] font-bold uppercase tracking-wide text-forest-800">Current</span>
+                                    <span class="ml-1 rounded-full bg-forest-100 px-2 py-0.5 text-[0.8125rem] font-bold uppercase tracking-wide text-forest-800">Current</span>
                                 @endif
                             </p>
-                            <p class="text-[0.75rem] text-ink-soft">
+                            <p class="text-[0.9375rem] text-ink-soft">
                                 {{ $milestone['at']?->isoFormat('D MMM YYYY, h:mm A') ?? 'Pending' }}
                             </p>
                         </div>
@@ -46,7 +46,7 @@
                 @endforeach
             </ol>
 
-            <p class="mt-2 text-right text-[0.6875rem] text-ink-soft">{{ $message->created_at->format('g:i A') }}</p>
+            <p class="mt-2 text-right text-[0.875rem] text-ink-soft">{{ $message->created_at->format('g:i A') }}</p>
         </div>
     </div>
 @endif

@@ -18,13 +18,13 @@
                     <x-heroicon-o-clipboard-document-list class="h-5 w-5" />
                     Your RFQ list ({{ $shortlist->count() }})
                 </h2>
-                <p class="mt-1 text-[0.8125rem] text-forest-800">These listings are included in the request below.</p>
+                <p class="mt-1 text-[1.0625rem] text-forest-800">These listings are included in the request below.</p>
                 <ul class="mt-3 space-y-2">
                     @foreach ($shortlist as $item)
                         <li class="flex items-center gap-3 rounded-lg bg-white px-3 py-2">
                             <div class="min-w-0 flex-1">
-                                <a href="{{ route('products.show', $item->slug) }}" class="block truncate text-[0.875rem] font-semibold text-ink hover:text-forest-800">{{ $item->name }}</a>
-                                <p class="truncate text-[0.75rem] text-ink-soft">{{ $item->company?->name }}</p>
+                                <a href="{{ route('products.show', $item->slug) }}" class="block truncate text-[1.0625rem] font-semibold text-ink hover:text-forest-800">{{ $item->name }}</a>
+                                <p class="truncate text-[0.9375rem] text-ink-soft">{{ $item->company?->name }}</p>
                             </div>
                             <form method="POST" action="{{ route('rfq-list.destroy', $item->slug) }}">
                                 @csrf

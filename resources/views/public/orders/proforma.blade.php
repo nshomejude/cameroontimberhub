@@ -24,11 +24,11 @@
 
         <div class="flex flex-wrap items-center justify-between gap-3 print:hidden">
             <a href="{{ route('account.messages.show', $conversation) }}"
-               class="inline-flex items-center gap-2 text-[0.875rem] font-medium text-forest-700 hover:underline dark:text-forest-300">
+               class="inline-flex items-center gap-2 text-[1.0625rem] font-medium text-forest-700 hover:underline dark:text-forest-300">
                 <x-heroicon-m-arrow-left class="h-4 w-4" /> Back to the conversation
             </a>
             <button type="button" onclick="window.print()"
-                    class="inline-flex items-center gap-2 rounded-full bg-forest-700 px-5 py-2.5 text-[0.875rem] font-semibold text-white transition hover:bg-forest-800">
+                    class="inline-flex items-center gap-2 rounded-full bg-forest-700 px-5 py-2.5 text-[1.0625rem] font-semibold text-white transition hover:bg-forest-800">
                 <x-heroicon-m-printer class="h-4 w-4" /> Print proforma
             </button>
         </div>
@@ -39,7 +39,7 @@
             <header class="grid gap-6 border-b border-sand-200 pb-6 dark:border-[#2c2a24] md:grid-cols-[1.4fr_1fr]">
                 <div class="flex items-start gap-4">
                     <img src="/brand/logo-600.png" alt="Cameroon Timber Hub" class="h-12 w-auto" width="600" height="200">
-                    <div class="text-[0.8125rem] leading-relaxed text-ink-soft dark:text-[#8f887b]">
+                    <div class="text-[1.0625rem] leading-relaxed text-ink-soft dark:text-[#8f887b]">
                         <p class="font-semibold text-ink dark:text-[#e4ddcf]">{{ config('app.name') }}</p>
                         <p>Marketplace for verified timber trade</p>
                         <p>Douala, Littoral Region, Cameroon</p>
@@ -48,30 +48,30 @@
 
                 <div class="md:text-right">
                     <p class="font-display text-[1.5rem] font-bold text-forest-900 dark:text-forest-300">Proforma invoice</p>
-                    <p class="mt-1 text-[0.8125rem] text-ink-soft dark:text-[#8f887b]">
+                    <p class="mt-1 text-[1.0625rem] text-ink-soft dark:text-[#8f887b]">
                         Order reference<br>
-                        <span class="font-mono text-[0.9375rem] font-semibold text-ink dark:text-[#e4ddcf]">{{ $order->reference_code }}</span>
+                        <span class="font-mono text-[1.125rem] font-semibold text-ink dark:text-[#e4ddcf]">{{ $order->reference_code }}</span>
                     </p>
-                    <p class="mt-1 text-[0.8125rem] text-ink-soft dark:text-[#8f887b]">
+                    <p class="mt-1 text-[1.0625rem] text-ink-soft dark:text-[#8f887b]">
                         Order date {{ $order->awarded_at?->isoFormat('D MMMM YYYY') ?? '—' }}
                     </p>
-                    <p class="mt-1 text-[0.8125rem] text-ink-soft dark:text-[#8f887b]">
+                    <p class="mt-1 text-[1.0625rem] text-ink-soft dark:text-[#8f887b]">
                         Status: {{ $order->status->label() }}
                     </p>
                 </div>
             </header>
 
             {{-- ---------------- Parties ---------------- --}}
-            <section class="grid gap-6 border-b border-sand-200 py-6 text-[0.8125rem] dark:border-[#2c2a24] md:grid-cols-2">
+            <section class="grid gap-6 border-b border-sand-200 py-6 text-[1.0625rem] dark:border-[#2c2a24] md:grid-cols-2">
                 <div>
-                    <p class="text-[0.6875rem] font-bold uppercase tracking-wide text-ink-soft dark:text-[#8f887b]">Supplier</p>
+                    <p class="text-[0.875rem] font-bold uppercase tracking-wide text-ink-soft dark:text-[#8f887b]">Supplier</p>
                     <p class="mt-1 font-semibold text-ink dark:text-[#e4ddcf]">{{ $order->supplier_name }}</p>
                     @if ($company?->city){{-- real profile values only --}}
                         <p class="text-ink-soft dark:text-[#8f887b]">{{ $company->city }}{{ $company->region ? ', '.$company->region : '' }}</p>
                     @endif
                 </div>
                 <div>
-                    <p class="text-[0.6875rem] font-bold uppercase tracking-wide text-ink-soft dark:text-[#8f887b]">Buyer</p>
+                    <p class="text-[0.875rem] font-bold uppercase tracking-wide text-ink-soft dark:text-[#8f887b]">Buyer</p>
                     <p class="mt-1 font-semibold text-ink dark:text-[#e4ddcf]">{{ $order->buyer_company ?: $order->buyer_name }}</p>
                     @if ($order->buyer_company && $order->buyer_name)
                         <p class="text-ink-soft dark:text-[#8f887b]">{{ $order->buyer_name }}</p>
@@ -85,7 +85,7 @@
             {{-- ---------------- Lines ---------------- --}}
             <section class="py-6">
                 <div class="overflow-x-auto">
-                    <table class="w-full min-w-[36rem] border-collapse text-left text-[0.8125rem]">
+                    <table class="w-full min-w-[36rem] border-collapse text-left text-[1.0625rem]">
                         <thead>
                             <tr class="bg-forest-800 text-white">
                                 <th class="px-3 py-2 font-semibold">#</th>
@@ -109,7 +109,7 @@
                                             ]);
                                         @endphp
                                         @foreach ($spec as $line)
-                                            <span class="block text-[0.75rem] text-ink-soft dark:text-[#8f887b]">{{ $line }}</span>
+                                            <span class="block text-[0.9375rem] text-ink-soft dark:text-[#8f887b]">{{ $line }}</span>
                                         @endforeach
                                     </td>
                                     <td class="px-3 py-2.5 text-right whitespace-nowrap">
@@ -123,7 +123,7 @@
                     </table>
                 </div>
 
-                <dl class="ml-auto mt-4 max-w-xs space-y-1.5 text-[0.875rem]">
+                <dl class="ml-auto mt-4 max-w-xs space-y-1.5 text-[1.0625rem]">
                     <div class="flex justify-between gap-6">
                         <dt class="text-ink-soft dark:text-[#8f887b]">Subtotal</dt>
                         <dd>{{ number_format((float) $order->subtotal_amount, 2) }}</dd>
@@ -159,11 +159,11 @@
                 ]);
             @endphp
             @if ($terms !== [])
-                <section class="border-t border-sand-200 py-6 text-[0.8125rem] dark:border-[#2c2a24]">
+                <section class="border-t border-sand-200 py-6 text-[1.0625rem] dark:border-[#2c2a24]">
                     <dl class="grid gap-3 sm:grid-cols-2">
                         @foreach ($terms as $label => $value)
                             <div>
-                                <dt class="text-[0.6875rem] font-bold uppercase tracking-wide text-ink-soft dark:text-[#8f887b]">{{ $label }}</dt>
+                                <dt class="text-[0.875rem] font-bold uppercase tracking-wide text-ink-soft dark:text-[#8f887b]">{{ $label }}</dt>
                                 <dd class="mt-0.5 font-medium">{{ $value }}</dd>
                             </div>
                         @endforeach
@@ -172,7 +172,7 @@
             @endif
 
             {{-- The disclaimer is load-bearing; it is what keeps the sheet true. --}}
-            <footer class="border-t border-sand-200 pt-6 text-[0.75rem] leading-relaxed text-ink-soft dark:border-[#2c2a24] dark:text-[#8f887b]">
+            <footer class="border-t border-sand-200 pt-6 text-[0.9375rem] leading-relaxed text-ink-soft dark:border-[#2c2a24] dark:text-[#8f887b]">
                 <p>
                     This proforma invoice restates the order exactly as it was recorded when the buyer
                     accepted the supplier's quotation. It is <strong>not a tax invoice</strong>, carries no tax

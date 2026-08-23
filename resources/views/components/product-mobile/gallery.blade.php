@@ -13,7 +13,7 @@
 {{-- Dark forest band: breadcrumb + gallery (mobile design) --}}
 <section class="rounded-b-[1.75rem] bg-forest-950 px-4 pb-5 pt-3">
     <nav aria-label="Breadcrumb">
-        <ol class="flex flex-wrap items-center gap-x-2 gap-y-1 text-[0.8125rem] text-forest-100">
+        <ol class="flex flex-wrap items-center gap-x-2 gap-y-1 text-[1.0625rem] text-forest-100">
             @foreach ($breadcrumbs as $i => $crumb)
                 <li class="flex items-center gap-2">
                     @if ($i > 0)
@@ -70,7 +70,7 @@
             @endforelse
 
             @if ($product->is_best_seller)
-                <span class="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-lg bg-forest-800/95 px-3 py-1.5 text-[0.8125rem] font-semibold text-white ring-1 ring-white/20">
+                <span class="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-lg bg-forest-800/95 px-3 py-1.5 text-[1.0625rem] font-semibold text-white ring-1 ring-white/20">
                     <x-heroicon-o-star class="h-4 w-4" />
                     Best Seller
                 </span>
@@ -95,7 +95,7 @@
             </div>
 
             <p x-show="copied" x-cloak role="status"
-               class="absolute inset-x-3 bottom-3 rounded-lg bg-forest-800/95 px-3 py-2 text-center text-[0.8125rem] font-semibold text-white">
+               class="absolute inset-x-3 bottom-3 rounded-lg bg-forest-800/95 px-3 py-2 text-center text-[1.0625rem] font-semibold text-white">
                 Link copied
             </p>
         </div>
@@ -126,7 +126,7 @@
                         <a href="{{ $product->video_url }}" target="_blank" rel="noopener noreferrer"
                            class="flex h-[4.5rem] w-[5.5rem] flex-col items-center justify-center gap-1 rounded-xl border-2 border-white/25 bg-forest-900 text-white transition hover:border-white/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">
                             <x-heroicon-s-play-circle class="h-6 w-6" />
-                            <span class="text-[0.75rem] font-semibold">Video</span>
+                            <span class="text-[0.9375rem] font-semibold">Video</span>
                         </a>
                     </li>
                 @endif

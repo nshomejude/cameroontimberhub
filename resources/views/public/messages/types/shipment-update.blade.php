@@ -42,7 +42,7 @@
     <div class="py-1" id="m{{ $message->getKey() }}">
         <div class="mb-2 flex items-center gap-3">
             <span class="h-px flex-1 bg-sand-300"></span>
-            <span class="text-[0.6875rem] font-bold uppercase tracking-[0.14em] text-ink-soft">Order update</span>
+            <span class="text-[0.875rem] font-bold uppercase tracking-[0.14em] text-ink-soft">Order update</span>
             <span class="h-px flex-1 bg-sand-300"></span>
         </div>
 
@@ -52,22 +52,22 @@
                     <x-heroicon-o-truck class="h-5 w-5" />
                 </span>
                 <div class="min-w-0 flex-1">
-                    <p class="font-display text-[0.9375rem] font-bold text-forest-950">
+                    <p class="font-display text-[1.125rem] font-bold text-forest-950">
                         Order {{ $message->payloadValue('reference_code') }}
                     </p>
                     {{-- LIVE: the enum's own literal description of what has
                          actually happened. Never a projected next step. --}}
-                    <p class="text-[0.8125rem] text-ink-soft">{{ $order->status->description() }}</p>
+                    <p class="text-[1.0625rem] text-ink-soft">{{ $order->status->description() }}</p>
                 </div>
                 <x-account.status-pill :label="$order->status->label()" :color="$order->status->color()" />
             </div>
 
             {{-- --------------------------------------- shipment facts, if any --}}
             @if ($facts !== [])
-                <dl class="mt-3 grid grid-cols-2 gap-x-4 gap-y-2.5 border-t border-sand-200 pt-3 text-[0.8125rem]">
+                <dl class="mt-3 grid grid-cols-2 gap-x-4 gap-y-2.5 border-t border-sand-200 pt-3 text-[1.0625rem]">
                     @foreach ($facts as $label => $value)
                         <div>
-                            <dt class="text-[0.75rem] text-ink-soft">{{ $label }}</dt>
+                            <dt class="text-[0.9375rem] text-ink-soft">{{ $label }}</dt>
                             <dd class="font-medium text-ink">{{ $value }}</dd>
                         </div>
                     @endforeach
@@ -80,11 +80,11 @@
                  outbound link to a third party, hence noopener + nofollow. --}}
             @if ($trackingLink)
                 <a href="{{ $trackingLink }}" target="_blank" rel="noopener noreferrer nofollow"
-                   class="mt-3 flex items-center justify-center gap-2 rounded-xl border border-sand-200 px-3.5 py-2.5 text-[0.875rem] font-semibold text-forest-700 transition hover:bg-sand-50">
+                   class="mt-3 flex items-center justify-center gap-2 rounded-xl border border-sand-200 px-3.5 py-2.5 text-[1.0625rem] font-semibold text-forest-700 transition hover:bg-sand-50">
                     <x-heroicon-m-arrow-top-right-on-square class="h-4 w-4" />
                     Track on the carrier's site
                 </a>
-                <p class="mt-1.5 text-center text-[0.6875rem] text-ink-soft">
+                <p class="mt-1.5 text-center text-[0.875rem] text-ink-soft">
                     Opens the carrier's own website. Cameroon Timber Hub does not track shipments.
                 </p>
             @endif
@@ -92,7 +92,7 @@
             {{-- ------------------------------------------- live milestone trail --}}
             @include('public.messages.partials.order-trail', ['order' => $order])
 
-            <p class="mt-2 text-right text-[0.6875rem] text-ink-soft">{{ $message->created_at->format('g:i A') }}</p>
+            <p class="mt-2 text-right text-[0.875rem] text-ink-soft">{{ $message->created_at->format('g:i A') }}</p>
         </div>
 
         {{-- ---------------------------------------------- supplier actions --}}
@@ -105,8 +105,8 @@
             <div class="mt-2 space-y-2">
                 @if ($trackingForOrderId === $order->getKey())
                     <form wire:submit.prevent="saveTracking" class="rounded-2xl border border-sand-200 bg-white p-4">
-                        <p class="font-display text-[0.875rem] font-bold text-forest-950">Shipment details</p>
-                        <p class="mt-1 text-[0.75rem] text-ink-soft">
+                        <p class="font-display text-[1.0625rem] font-bold text-forest-950">Shipment details</p>
+                        <p class="mt-1 text-[0.9375rem] text-ink-soft">
                             Only what you fill in is shown to the buyer. Leave anything you do not
                             know empty — blank fields are not displayed at all.
                         </p>
@@ -124,31 +124,31 @@
                                 'etd' => ['Departed', 'date'],
                                 'eta' => ['Estimated arrival', 'date'],
                             ] as $field => [$label, $type])
-                                <label class="block text-[0.75rem] font-semibold text-ink">
+                                <label class="block text-[0.9375rem] font-semibold text-ink">
                                     {{ $label }}
                                     <input type="{{ $type }}" wire:model="trackingForm.{{ $field }}"
-                                           class="mt-1 w-full rounded-xl border border-sand-300 px-2.5 py-1.5 text-[0.8125rem]">
+                                           class="mt-1 w-full rounded-xl border border-sand-300 px-2.5 py-1.5 text-[1.0625rem]">
                                 </label>
                             @endforeach
                         </div>
 
-                        <label class="mt-2 block text-[0.75rem] font-semibold text-ink">
+                        <label class="mt-2 block text-[0.9375rem] font-semibold text-ink">
                             Carrier tracking link (optional)
                             <input type="url" wire:model="trackingForm.tracking_url" placeholder="https://…"
-                                   class="mt-1 w-full rounded-xl border border-sand-300 px-2.5 py-1.5 text-[0.8125rem]">
+                                   class="mt-1 w-full rounded-xl border border-sand-300 px-2.5 py-1.5 text-[1.0625rem]">
                         </label>
 
                         @foreach (['trackingForm.tracking_url', 'trackingForm.carrier', 'trackingForm.etd', 'trackingForm.eta'] as $field)
                             @if ($errors->has($field))
-                                <p class="mt-2 text-[0.75rem] font-medium text-red-700">{{ $errors->first($field) }}</p>
+                                <p class="mt-2 text-[0.9375rem] font-medium text-red-700">{{ $errors->first($field) }}</p>
                             @endif
                         @endforeach
 
                         <div class="mt-3 flex gap-2">
-                            <button type="submit" class="flex-1 rounded-xl bg-forest-700 px-3.5 py-2.5 text-[0.875rem] font-semibold text-white">
+                            <button type="submit" class="flex-1 rounded-xl bg-forest-700 px-3.5 py-2.5 text-[1.0625rem] font-semibold text-white">
                                 Save shipment details
                             </button>
-                            <button type="button" wire:click="cancelTracking" class="rounded-xl border border-sand-300 px-3.5 py-2.5 text-[0.875rem] font-semibold text-ink-soft">
+                            <button type="button" wire:click="cancelTracking" class="rounded-xl border border-sand-300 px-3.5 py-2.5 text-[1.0625rem] font-semibold text-ink-soft">
                                 Cancel
                             </button>
                         </div>
@@ -157,34 +157,34 @@
                     <div class="flex flex-wrap gap-2">
                         @if ($order->status === \App\Enums\OrderStatus::Awarded)
                             <button type="button" wire:click="confirmOrder({{ $order->getKey() }})"
-                                    class="flex-1 rounded-xl bg-forest-700 px-3.5 py-2.5 text-[0.875rem] font-semibold text-white">
+                                    class="flex-1 rounded-xl bg-forest-700 px-3.5 py-2.5 text-[1.0625rem] font-semibold text-white">
                                 Confirm order
                             </button>
                         @endif
 
                         @if ($order->status === \App\Enums\OrderStatus::Confirmed)
                             <button type="button" wire:click="startProduction({{ $order->getKey() }})"
-                                    class="flex-1 rounded-xl bg-forest-700 px-3.5 py-2.5 text-[0.875rem] font-semibold text-white">
+                                    class="flex-1 rounded-xl bg-forest-700 px-3.5 py-2.5 text-[1.0625rem] font-semibold text-white">
                                 Start production
                             </button>
                         @endif
 
                         @if (in_array($order->status, [\App\Enums\OrderStatus::Confirmed, \App\Enums\OrderStatus::InProduction], true))
                             <button type="button" wire:click="shipOrder({{ $order->getKey() }})"
-                                    class="flex-1 rounded-xl bg-forest-700 px-3.5 py-2.5 text-[0.875rem] font-semibold text-white">
+                                    class="flex-1 rounded-xl bg-forest-700 px-3.5 py-2.5 text-[1.0625rem] font-semibold text-white">
                                 Mark as shipped
                             </button>
                         @endif
 
                         @if ($order->status === \App\Enums\OrderStatus::Shipped)
                             <button type="button" wire:click="deliverOrder({{ $order->getKey() }})"
-                                    class="flex-1 rounded-xl bg-forest-700 px-3.5 py-2.5 text-[0.875rem] font-semibold text-white">
+                                    class="flex-1 rounded-xl bg-forest-700 px-3.5 py-2.5 text-[1.0625rem] font-semibold text-white">
                                 Mark as delivered
                             </button>
                         @endif
 
                         <button type="button" wire:click="openTracking({{ $order->getKey() }})"
-                                class="rounded-xl border border-sand-300 bg-white px-3.5 py-2.5 text-[0.875rem] font-semibold text-forest-700">
+                                class="rounded-xl border border-sand-300 bg-white px-3.5 py-2.5 text-[1.0625rem] font-semibold text-forest-700">
                             Shipment details
                         </button>
                     </div>

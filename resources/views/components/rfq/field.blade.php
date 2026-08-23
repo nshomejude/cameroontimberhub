@@ -25,7 +25,7 @@
     $described = collect([$help ? $id.'-help' : null, $error ? $id.'-error' : null])->filter()->implode(' ');
     $current = old($dotted, $value);
 
-    $base = 'w-full rounded-xl border bg-white dark:bg-[#1f1d18] px-3.5 py-2.5 text-[0.9375rem] text-ink dark:text-[#f1ece1] placeholder:text-ink-soft/60 transition focus:outline-none focus-visible:outline-none focus:ring-2 focus:ring-forest-100 dark:focus:ring-forest-900';
+    $base = 'w-full rounded-xl border bg-white dark:bg-[#1f1d18] px-3.5 py-2.5 text-[1.125rem] text-ink dark:text-[#f1ece1] placeholder:text-ink-soft/60 transition focus:outline-none focus-visible:outline-none focus:ring-2 focus:ring-forest-100 dark:focus:ring-forest-900';
     $ring = $error
         ? ' border-red-400 focus:border-red-500 focus:ring-red-100'
         : ' border-sand-300 dark:border-[#3a352e] focus:border-forest-500';
@@ -34,7 +34,7 @@
 
 <div {{ $attributes->class(['space-y-1.5', 'sm:col-span-2' => $inline]) }}>
     @if ($type !== 'checkbox')
-        <label for="{{ $id }}" class="block text-[0.8125rem] font-semibold text-ink dark:text-[#e4ddcf]">
+        <label for="{{ $id }}" class="block text-[1.0625rem] font-semibold text-ink dark:text-[#e4ddcf]">
             {{ $label }}
             @if ($required)
                 <span aria-hidden="true" class="text-red-600">*</span><span class="sr-only">(required)</span>
@@ -45,7 +45,7 @@
     @endif
 
     @if ($help)
-        <p id="{{ $id }}-help" class="text-[0.75rem] leading-snug text-ink-soft dark:text-[#8f887b]">{{ $help }}</p>
+        <p id="{{ $id }}-help" class="text-[0.9375rem] leading-snug text-ink-soft dark:text-[#8f887b]">{{ $help }}</p>
     @endif
 
     @if ($type === 'select')
@@ -70,7 +70,7 @@
                   @if ($error) aria-invalid="true" @endif
                   @if ($autofocus) autofocus @endif>{{ $current }}</textarea>
     @elseif ($type === 'checkbox')
-        <label for="{{ $id }}" class="flex items-start gap-3 text-[0.875rem] leading-relaxed text-ink-soft dark:text-[#b3ab9b]">
+        <label for="{{ $id }}" class="flex items-start gap-3 text-[1.0625rem] leading-relaxed text-ink-soft dark:text-[#b3ab9b]">
             <input type="checkbox" id="{{ $id }}" name="{{ $name }}" value="1"
                    @checked($current)
                    @if ($required) required @endif
@@ -94,7 +94,7 @@
     @endif
 
     @if ($error)
-        <p id="{{ $id }}-error" role="alert" class="flex items-start gap-1.5 text-[0.75rem] font-medium text-red-700 dark:text-red-400">
+        <p id="{{ $id }}-error" role="alert" class="flex items-start gap-1.5 text-[0.9375rem] font-medium text-red-700 dark:text-red-400">
             <x-heroicon-m-exclamation-circle class="mt-px h-3.5 w-3.5 shrink-0" />
             <span>{{ $error }}</span>
         </p>

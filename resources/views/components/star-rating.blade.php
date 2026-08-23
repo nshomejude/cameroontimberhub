@@ -27,8 +27,8 @@
             @endif
         @endfor
     </span>
-    <span class="text-[0.875rem] font-bold text-ink">{{ rtrim(rtrim(number_format((float) $rating, 1), '0'), '.') }}</span>
+    <span class="text-[1.0625rem] font-bold text-ink">{{ rtrim(rtrim(number_format((float) $rating, 1), '0'), '.') }}</span>
     @if ($count)
-        <span class="text-[0.8125rem] text-ink-soft">({{ number_format($count) }} {{ Str::plural('review', $count) }})</span>
+        <span class="text-[1.0625rem] text-ink-soft">({{ number_format($count) }} {{ Str::plural('review', $count) }})</span>
     @endif
 </span>

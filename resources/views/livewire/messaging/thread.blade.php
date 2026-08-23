@@ -23,7 +23,7 @@
             @if ($logo = $conversation->counterpartyLogoUrl($user))
                 <img src="{{ $logo }}" alt="" class="h-full w-full object-cover">
             @else
-                <span class="flex h-full w-full items-center justify-center text-[0.8125rem] font-bold text-forest-800">
+                <span class="flex h-full w-full items-center justify-center text-[1.0625rem] font-bold text-forest-800">
                     {{ $conversation->counterpartyInitials($user) }}
                 </span>
             @endif
@@ -36,7 +36,7 @@
                     <x-heroicon-s-check-badge class="h-4 w-4 shrink-0 text-forest-600" />
                 @endif
             </p>
-            <p class="truncate text-[0.8125rem] text-ink-soft">
+            <p class="truncate text-[1.0625rem] text-ink-soft">
                 {{ $conversation->subjectLine() }}
                 @if ($conversation->counterpartyIsVerified($user)) · Verified supplier @endif
             </p>
@@ -63,13 +63,13 @@
                         <img src="{{ $img }}" alt="" class="h-14 w-20 shrink-0 rounded-xl object-cover">
                     @endif
                     <div class="min-w-0 flex-1">
-                        <p class="truncate font-display text-[0.9375rem] font-bold text-forest-950">{{ $conversation->product->name }}</p>
-                        <p class="truncate text-[0.8125rem] text-ink-soft">
+                        <p class="truncate font-display text-[1.125rem] font-bold text-forest-950">{{ $conversation->product->name }}</p>
+                        <p class="truncate text-[1.0625rem] text-ink-soft">
                             {{ $conversation->company?->name }}@if ($conversation->company?->region) · {{ $conversation->company->region }}@endif
                         </p>
                     </div>
                     <a href="{{ route('products.show', $conversation->product->slug) }}"
-                       class="shrink-0 rounded-xl border border-forest-700 px-3 py-2 text-[0.8125rem] font-bold text-forest-700 transition hover:bg-forest-50">
+                       class="shrink-0 rounded-xl border border-forest-700 px-3 py-2 text-[1.0625rem] font-bold text-forest-700 transition hover:bg-forest-50">
                         View product
                     </a>
                 </div>
@@ -87,7 +87,7 @@
             @if ($day !== $lastDay)
                 @php $lastDay = $day; @endphp
                 <div class="flex justify-center">
-                    <span class="rounded-full bg-white px-3 py-1 text-[0.75rem] font-semibold text-ink-soft shadow-sm">
+                    <span class="rounded-full bg-white px-3 py-1 text-[0.9375rem] font-semibold text-ink-soft shadow-sm">
                         @if ($message->created_at->isToday()) Today
                         @elseif ($message->created_at->isYesterday()) Yesterday
                         @else {{ $message->created_at->isoFormat('D MMMM YYYY') }}
@@ -117,7 +117,7 @@
                 'quotingReorderRfqId' => $quotingReorderRfqId,
             ])
         @empty
-            <p class="py-8 text-center text-[0.875rem] text-ink-soft">No messages yet. Say hello.</p>
+            <p class="py-8 text-center text-[1.0625rem] text-ink-soft">No messages yet. Say hello.</p>
         @endforelse
     </div>
 
@@ -142,28 +142,28 @@
                             <x-heroicon-o-document-text class="h-5 w-5" />
                         </span>
                         <div class="min-w-0 flex-1">
-                            <p class="font-display text-[0.9375rem] font-bold text-forest-950">Request for quote</p>
-                            <p class="text-[0.75rem] text-ink-soft">Fill in the details below to request a quotation.</p>
+                            <p class="font-display text-[1.125rem] font-bold text-forest-950">Request for quote</p>
+                            <p class="text-[0.9375rem] text-ink-soft">Fill in the details below to request a quotation.</p>
                         </div>
                         <button type="button" wire:click="toggleRfqForm" class="shrink-0 text-ink-soft hover:text-ink" aria-label="Close request form">
                             <x-heroicon-m-x-mark class="h-5 w-5" />
                         </button>
                     </div>
 
-                    <div class="mt-3 grid grid-cols-2 gap-3 text-[0.8125rem]">
+                    <div class="mt-3 grid grid-cols-2 gap-3 text-[1.0625rem]">
                         <div class="col-span-2">
-                            <label for="rfq-species" class="block text-[0.75rem] font-semibold text-ink-soft">Species / product <span class="text-red-600">*</span></label>
+                            <label for="rfq-species" class="block text-[0.9375rem] font-semibold text-ink-soft">Species / product <span class="text-red-600">*</span></label>
                             <input id="rfq-species" type="text" maxlength="180" wire:model="rfqForm.species_text"
                                    class="mt-1 w-full rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 outline-none focus:border-forest-500">
                         </div>
 
                         <div>
-                            <label for="rfq-quantity" class="block text-[0.75rem] font-semibold text-ink-soft">Quantity <span class="text-red-600">*</span></label>
+                            <label for="rfq-quantity" class="block text-[0.9375rem] font-semibold text-ink-soft">Quantity <span class="text-red-600">*</span></label>
                             <input id="rfq-quantity" type="number" step="0.01" min="0.01" wire:model="rfqForm.quantity"
                                    class="mt-1 w-full rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 outline-none focus:border-forest-500">
                         </div>
                         <div>
-                            <label for="rfq-unit" class="block text-[0.75rem] font-semibold text-ink-soft">Unit <span class="text-red-600">*</span></label>
+                            <label for="rfq-unit" class="block text-[0.9375rem] font-semibold text-ink-soft">Unit <span class="text-red-600">*</span></label>
                             <select id="rfq-unit" wire:model="rfqForm.unit"
                                     class="mt-1 w-full rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 outline-none focus:border-forest-500">
                                 @foreach ($unitOptions as $value => $label)
@@ -173,7 +173,7 @@
                         </div>
 
                         <div>
-                            <label for="rfq-form" class="block text-[0.75rem] font-semibold text-ink-soft">Form</label>
+                            <label for="rfq-form" class="block text-[0.9375rem] font-semibold text-ink-soft">Form</label>
                             <select id="rfq-form" wire:model="rfqForm.form"
                                     class="mt-1 w-full rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 outline-none focus:border-forest-500">
                                 <option value="">—</option>
@@ -183,24 +183,24 @@
                             </select>
                         </div>
                         <div>
-                            <label for="rfq-grade" class="block text-[0.75rem] font-semibold text-ink-soft">Grade</label>
+                            <label for="rfq-grade" class="block text-[0.9375rem] font-semibold text-ink-soft">Grade</label>
                             <input id="rfq-grade" type="text" maxlength="60" wire:model="rfqForm.grade"
                                    class="mt-1 w-full rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 outline-none focus:border-forest-500">
                         </div>
 
                         <div class="col-span-2">
-                            <label for="rfq-dimensions" class="block text-[0.75rem] font-semibold text-ink-soft">Dimensions</label>
+                            <label for="rfq-dimensions" class="block text-[0.9375rem] font-semibold text-ink-soft">Dimensions</label>
                             <input id="rfq-dimensions" type="text" maxlength="255" wire:model="rfqForm.dimensions"
                                    class="mt-1 w-full rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 outline-none focus:border-forest-500">
                         </div>
 
                         <div>
-                            <label for="rfq-moisture" class="block text-[0.75rem] font-semibold text-ink-soft">Moisture</label>
+                            <label for="rfq-moisture" class="block text-[0.9375rem] font-semibold text-ink-soft">Moisture</label>
                             <input id="rfq-moisture" type="text" maxlength="60" wire:model="rfqForm.moisture_content"
                                    class="mt-1 w-full rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 outline-none focus:border-forest-500">
                         </div>
                         <div>
-                            <label for="rfq-incoterm" class="block text-[0.75rem] font-semibold text-ink-soft">Delivery terms</label>
+                            <label for="rfq-incoterm" class="block text-[0.9375rem] font-semibold text-ink-soft">Delivery terms</label>
                             <select id="rfq-incoterm" wire:model="rfqForm.incoterm"
                                     class="mt-1 w-full rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 outline-none focus:border-forest-500">
                                 <option value="">—</option>
@@ -211,18 +211,18 @@
                         </div>
 
                         <div>
-                            <label for="rfq-port" class="block text-[0.75rem] font-semibold text-ink-soft">Destination port</label>
+                            <label for="rfq-port" class="block text-[0.9375rem] font-semibold text-ink-soft">Destination port</label>
                             <input id="rfq-port" type="text" maxlength="120" wire:model="rfqForm.shipping_port"
                                    class="mt-1 w-full rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 outline-none focus:border-forest-500">
                         </div>
                         <div>
-                            <label for="rfq-deadline" class="block text-[0.75rem] font-semibold text-ink-soft">Required by</label>
+                            <label for="rfq-deadline" class="block text-[0.9375rem] font-semibold text-ink-soft">Required by</label>
                             <input id="rfq-deadline" type="date" wire:model="rfqForm.deadline"
                                    class="mt-1 w-full rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 outline-none focus:border-forest-500">
                         </div>
 
                         <div class="col-span-2">
-                            <label for="rfq-notes" class="block text-[0.75rem] font-semibold text-ink-soft">Additional requirements</label>
+                            <label for="rfq-notes" class="block text-[0.9375rem] font-semibold text-ink-soft">Additional requirements</label>
                             <textarea id="rfq-notes" rows="2" maxlength="500" wire:model="rfqForm.notes"
                                       placeholder="Eg. surface finish, certification, packaging."
                                       class="mt-1 w-full resize-y rounded-xl border border-sand-300 bg-sand-50 px-3 py-2 outline-none focus:border-forest-500"></textarea>
@@ -231,18 +231,18 @@
 
                     @foreach (['rfqForm.species_text', 'rfqForm.quantity', 'rfqForm.unit', 'rfqForm.deadline'] as $field)
                         @if ($fieldError = $errors->first($field))
-                            <p class="mt-2 text-[0.8125rem] font-medium text-red-700">{{ $fieldError }}</p>
+                            <p class="mt-2 text-[1.0625rem] font-medium text-red-700">{{ $fieldError }}</p>
                         @endif
                     @endforeach
 
                     <button type="submit"
-                            class="mt-3 w-full rounded-xl bg-forest-800 px-4 py-2.5 text-[0.875rem] font-bold text-white transition hover:bg-forest-900">
+                            class="mt-3 w-full rounded-xl bg-forest-800 px-4 py-2.5 text-[1.0625rem] font-bold text-white transition hover:bg-forest-900">
                         Send request for quote
                     </button>
                 </form>
             @else
                 <button type="button" wire:click="toggleRfqForm"
-                        class="flex w-full items-center justify-center gap-2 rounded-xl border border-forest-700 bg-white px-4 py-2.5 text-[0.875rem] font-bold text-forest-700 transition hover:bg-forest-50">
+                        class="flex w-full items-center justify-center gap-2 rounded-xl border border-forest-700 bg-white px-4 py-2.5 text-[1.0625rem] font-bold text-forest-700 transition hover:bg-forest-50">
                     <x-heroicon-m-plus class="h-4 w-4" />
                     Post a requirement (RFQ)
                 </button>
@@ -253,15 +253,15 @@
     {{-- -------------------------------------------------------- composer --}}
     <div class="border-t border-sand-200 bg-white px-4 py-3">
         @if (session('chat_status'))
-            <p class="mb-2 rounded-xl bg-forest-50 px-3 py-2 text-[0.8125rem] font-medium text-forest-800">{{ session('chat_status') }}</p>
+            <p class="mb-2 rounded-xl bg-forest-50 px-3 py-2 text-[1.0625rem] font-medium text-forest-800">{{ session('chat_status') }}</p>
         @endif
         @if (session('chat_error'))
-            <p class="mb-2 rounded-xl bg-red-50 px-3 py-2 text-[0.8125rem] font-medium text-red-700">{{ session('chat_error') }}</p>
+            <p class="mb-2 rounded-xl bg-red-50 px-3 py-2 text-[1.0625rem] font-medium text-red-700">{{ session('chat_error') }}</p>
         @endif
 
         @if ($replyTo)
             <div class="mb-2 flex items-center gap-2 rounded-xl border-l-2 border-forest-500 bg-sand-100 px-3 py-2">
-                <span class="min-w-0 flex-1 truncate text-[0.8125rem] text-ink-soft">Replying to: {{ $replyTo->preview(60) }}</span>
+                <span class="min-w-0 flex-1 truncate text-[1.0625rem] text-ink-soft">Replying to: {{ $replyTo->preview(60) }}</span>
                 <button type="button" wire:click="cancelReply" class="shrink-0 text-ink-soft hover:text-ink" aria-label="Cancel reply">
                     <x-heroicon-m-x-mark class="h-4 w-4" />
                 </button>
@@ -279,7 +279,7 @@
             <textarea id="composer-{{ $conversation->getKey() }}" name="body" rows="1"
                       wire:model="body"
                       placeholder="Type a message…"
-                      class="min-h-11 max-h-40 min-w-0 flex-1 resize-y rounded-2xl border border-sand-300 bg-sand-50 px-4 py-2.5 text-[0.9375rem] text-ink outline-none focus:border-forest-500"></textarea>
+                      class="min-h-11 max-h-40 min-w-0 flex-1 resize-y rounded-2xl border border-sand-300 bg-sand-50 px-4 py-2.5 text-[1.125rem] text-ink outline-none focus:border-forest-500"></textarea>
             <button type="submit"
                     class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-forest-800 text-white transition hover:bg-forest-900"
                     aria-label="Send message">
@@ -288,7 +288,7 @@
         </form>
 
         @error('body')
-            <p class="mt-2 text-[0.8125rem] font-medium text-red-700">{{ $message }}</p>
+            <p class="mt-2 text-[1.0625rem] font-medium text-red-700">{{ $message }}</p>
         @enderror
     </div>
 </div>

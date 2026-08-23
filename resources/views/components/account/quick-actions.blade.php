@@ -15,7 +15,7 @@
         <a href="{{ $action['url'] }}"
            class="flex flex-col items-center gap-2 rounded-xl border border-sand-200 px-1 py-3.5 text-center transition hover:border-forest-400 hover:bg-forest-50">
             <x-dynamic-component :component="'heroicon-o-'.$action['icon']" class="h-6 w-6 text-forest-700" />
-            <span class="text-[0.6875rem] font-semibold leading-tight text-ink">{{ $action['label'] }}</span>
+            <span class="text-[0.875rem] font-semibold leading-tight text-ink">{{ $action['label'] }}</span>
         </a>
     @endforeach
 </div>

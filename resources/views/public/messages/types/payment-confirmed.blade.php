@@ -25,7 +25,7 @@
 <div class="py-1" id="m{{ $message->getKey() }}">
     <div class="mb-2 flex items-center gap-3">
         <span class="h-px flex-1 bg-sand-300"></span>
-        <span class="text-[0.6875rem] font-bold uppercase tracking-[0.14em] text-ink-soft">Payment recorded</span>
+        <span class="text-[0.875rem] font-bold uppercase tracking-[0.14em] text-ink-soft">Payment recorded</span>
         <span class="h-px flex-1 bg-sand-300"></span>
     </div>
 
@@ -35,10 +35,10 @@
                 <x-heroicon-o-check-circle class="h-5 w-5" />
             </span>
             <div class="min-w-0 flex-1">
-                <p class="font-display text-[0.9375rem] font-bold text-forest-950">
+                <p class="font-display text-[1.125rem] font-bold text-forest-950">
                     Payment recorded for {{ $message->payloadValue('reference_code') }}
                 </p>
-                <p class="text-[0.8125rem] text-ink-soft">
+                <p class="text-[1.0625rem] text-ink-soft">
                     Recorded by {{ $message->payloadValue('recorded_by_name') }}
                     @if ($iso = $message->payloadValue('recorded_at'))
                         on {{ \Illuminate\Support\Carbon::parse($iso)->isoFormat('D MMM YYYY, h:mm A') }}
@@ -51,7 +51,7 @@
             @endif
         </div>
 
-        <dl class="mt-3 space-y-2 border-t border-forest-200 pt-3 text-[0.8125rem]">
+        <dl class="mt-3 space-y-2 border-t border-forest-200 pt-3 text-[1.0625rem]">
             <div class="flex items-center justify-between gap-4">
                 <dt class="text-ink-soft">Amount recorded</dt>
                 <dd class="font-display text-[1rem] font-bold text-forest-900">
@@ -69,7 +69,7 @@
             @if ($reference = $order?->payment_reference)
                 <div class="flex items-start justify-between gap-4">
                     <dt class="text-ink-soft">Supplier's reference</dt>
-                    <dd class="text-right font-mono text-[0.8125rem] font-medium text-ink">{{ $reference }}</dd>
+                    <dd class="text-right font-mono text-[1.0625rem] font-medium text-ink">{{ $reference }}</dd>
                 </div>
             @endif
 
@@ -91,18 +91,18 @@
              only to the buyer, whose access route it is. --}}
         @if ($order && $isBuyer && $order->rfq)
             <a href="{{ app(\App\Services\BuyerRfqAccess::class)->link(request(), 'receipt', $order->rfq) }}"
-               class="mt-3 flex items-center justify-center gap-2 rounded-xl border border-forest-200 bg-white px-3.5 py-2.5 text-[0.875rem] font-semibold text-forest-700 transition hover:bg-sand-50">
+               class="mt-3 flex items-center justify-center gap-2 rounded-xl border border-forest-200 bg-white px-3.5 py-2.5 text-[1.0625rem] font-semibold text-forest-700 transition hover:bg-sand-50">
                 <x-heroicon-m-document-text class="h-4 w-4" />
                 View / print receipt
             </a>
         @endif
 
-        <p class="mt-3 rounded-xl bg-white/70 p-3 text-[0.75rem] leading-relaxed text-ink-soft">
+        <p class="mt-3 rounded-xl bg-white/70 p-3 text-[0.9375rem] leading-relaxed text-ink-soft">
             This is the supplier's record that payment reached them outside this platform.
             Cameroon Timber Hub did not process, hold or verify the transfer, and this entry is
             not confirmation from a bank or a payment provider.
         </p>
 
-        <p class="mt-2 text-right text-[0.6875rem] text-ink-soft">{{ $message->created_at->format('g:i A') }}</p>
+        <p class="mt-2 text-right text-[0.875rem] text-ink-soft">{{ $message->created_at->format('g:i A') }}</p>
     </div>
 </div>

@@ -40,7 +40,7 @@
         <div class="absolute inset-0 bg-gradient-to-r from-forest-950 via-forest-950/90 to-forest-950/20 lg:to-transparent" aria-hidden="true"></div>
 
         <div class="relative mx-auto max-w-[80rem] px-5 pb-10 pt-9 lg:px-8 lg:pb-16 lg:pt-14">
-            <p class="text-[0.75rem] font-bold uppercase tracking-[0.12em] text-timber-300 lg:text-[0.8125rem]">
+            <p class="text-[0.9375rem] font-bold uppercase tracking-[0.12em] text-timber-300 lg:text-[1.0625rem]">
                 {{ $d['eyebrow'] ?? 'About '.config('app.name') }}
             </p>
 
@@ -49,18 +49,18 @@
             </h1>
 
             @if ($intro = ($d['intro'] ?? $page->meta_description))
-                <p class="mt-5 max-w-[26rem] text-[0.95rem] leading-relaxed text-sand-200/90 lg:max-w-[34rem] lg:text-[1.0625rem] lg:leading-[1.7]">
+                <p class="mt-5 max-w-[26rem] text-[1.125rem] leading-relaxed text-sand-200/90 lg:max-w-[34rem] lg:text-[1.0625rem] lg:leading-[1.7]">
                     {{ $intro }}
                 </p>
             @endif
 
             <div class="mt-7 flex flex-wrap items-center gap-3">
                 <a href="{{ route('register') }}"
-                   class="inline-flex items-center gap-2.5 rounded-lg bg-forest-700 px-7 py-3.5 text-[0.9375rem] font-semibold text-white transition hover:bg-forest-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
+                   class="inline-flex items-center gap-2.5 rounded-lg bg-forest-700 px-7 py-3.5 text-[1.125rem] font-semibold text-white transition hover:bg-forest-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
                     <x-heroicon-o-user-plus class="h-5 w-5" /> Join as Supplier
                 </a>
                 <a href="{{ route('marketplace') }}"
-                   class="inline-flex items-center gap-2.5 rounded-lg border border-white/50 px-7 py-3.5 text-[0.9375rem] font-semibold text-white transition hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
+                   class="inline-flex items-center gap-2.5 rounded-lg border border-white/50 px-7 py-3.5 text-[1.125rem] font-semibold text-white transition hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
                     <x-heroicon-o-shopping-cart class="h-5 w-5" /> Explore Marketplace
                 </a>
             </div>
@@ -78,8 +78,8 @@
                         <x-dynamic-component :component="'heroicon-o-'.($pillar['icon'] ?? 'check-badge')" class="h-6 w-6" />
                     </span>
                     <div class="min-w-0">
-                        <h2 class="text-[0.9375rem] font-bold leading-snug text-ink">{{ $pillar['title'] ?? '' }}</h2>
-                        <p class="mt-1.5 text-[0.8125rem] leading-relaxed text-ink-soft">{{ $pillar['text'] ?? '' }}</p>
+                        <h2 class="text-[1.125rem] font-bold leading-snug text-ink">{{ $pillar['title'] ?? '' }}</h2>
+                        <p class="mt-1.5 text-[1.0625rem] leading-relaxed text-ink-soft">{{ $pillar['text'] ?? '' }}</p>
                     </div>
                 </li>
             @endforeach
@@ -99,7 +99,7 @@
                             <p class="eyebrow">{{ $heading }}</p>
                             <h2 class="mt-2 text-[1.6rem] font-bold tracking-tight text-ink lg:text-[1.75rem]">{{ $heading }}</h2>
                             <span class="mt-3 block h-[3px] w-10 rounded-full bg-forest-700" aria-hidden="true"></span>
-                            <p class="mt-5 text-[0.9375rem] leading-[1.75] text-ink-soft">{{ $body }}</p>
+                            <p class="mt-5 text-[1.125rem] leading-[1.75] text-ink-soft">{{ $body }}</p>
                         </div>
                     @endif
                 @endforeach
@@ -113,13 +113,13 @@
                     @endif
 
                     @if ($whyIntro = ($d['why_intro'] ?? null))
-                        <p class="mt-5 text-[0.9375rem] leading-[1.75] text-ink-soft">{{ $whyIntro }}</p>
+                        <p class="mt-5 text-[1.125rem] leading-[1.75] text-ink-soft">{{ $whyIntro }}</p>
                     @endif
 
                     @if ($whyPoints)
                         <ul class="mt-6 space-y-3">
                             @foreach ($whyPoints as $point)
-                                <li class="flex items-start gap-2.5 text-[0.9375rem] leading-snug text-ink">
+                                <li class="flex items-start gap-2.5 text-[1.125rem] leading-snug text-ink">
                                     <x-heroicon-s-check-circle class="mt-0.5 h-5 w-5 shrink-0 text-timber-600" aria-hidden="true" />
                                     <span>{{ is_array($point) ? ($point['text'] ?? '') : $point }}</span>
                                 </li>
@@ -139,12 +139,12 @@
                                     <x-dynamic-component :component="'heroicon-o-'.$stat['icon']" class="mt-0.5 h-7 w-7 shrink-0 text-timber-600" aria-hidden="true" />
                                     <div class="min-w-0">
                                         <dt class="text-[1.4rem] font-bold leading-none text-forest-700">{{ $stat['value'] }}</dt>
-                                        <dd class="mt-1.5 text-[0.8125rem] leading-tight text-ink-soft">{{ $stat['label'] }}</dd>
+                                        <dd class="mt-1.5 text-[1.0625rem] leading-tight text-ink-soft">{{ $stat['label'] }}</dd>
                                     </div>
                                 </div>
                             @endforeach
                         </dl>
-                        <p class="mt-6 text-[0.6875rem] leading-relaxed text-ink-soft/80">
+                        <p class="mt-6 text-[0.875rem] leading-relaxed text-ink-soft/80">
                             Counted live from published records on this platform.
                         </p>
                     </aside>
@@ -175,14 +175,14 @@
                     @elseif ($type === 'list')
                         <ul class="mt-4 space-y-2.5">
                             @foreach ($block['items'] ?? [] as $item)
-                                <li class="flex items-start gap-2.5 text-[0.9375rem] leading-relaxed text-ink-soft">
+                                <li class="flex items-start gap-2.5 text-[1.125rem] leading-relaxed text-ink-soft">
                                     <x-heroicon-s-check-circle class="mt-1 h-[1.05rem] w-[1.05rem] shrink-0 text-forest-600" aria-hidden="true" />
                                     <span>{{ is_array($item) ? ($item['text'] ?? '') : $item }}</span>
                                 </li>
                             @endforeach
                         </ul>
                     @else
-                        <p class="mt-4 text-[0.9375rem] leading-[1.75] text-ink-soft">{{ $block['content'] ?? '' }}</p>
+                        <p class="mt-4 text-[1.125rem] leading-[1.75] text-ink-soft">{{ $block['content'] ?? '' }}</p>
                     @endif
                 @endforeach
             </div>
@@ -202,18 +202,18 @@
                 <h2 id="about-cta-heading" class="text-[1.35rem] font-bold leading-tight tracking-tight text-white lg:text-[1.75rem]">
                     {{ $d['cta_title'] ?? 'Be part of Africa’s timber success story' }}
                 </h2>
-                <p class="mx-auto mt-2.5 max-w-[34rem] text-[0.875rem] leading-relaxed text-sand-200/90 lg:mx-0">
+                <p class="mx-auto mt-2.5 max-w-[34rem] text-[1.0625rem] leading-relaxed text-sand-200/90 lg:mx-0">
                     {{ $d['cta_text'] ?? 'Join the verified buyers and suppliers building a transparent, sustainable timber trade ecosystem.' }}
                 </p>
             </div>
 
             <div class="flex shrink-0 flex-col gap-3 sm:flex-row sm:justify-center lg:gap-4">
                 <a href="{{ route('rfq.create') }}"
-                   class="inline-flex items-center justify-center gap-2.5 rounded-lg border border-white/60 px-7 py-3.5 text-[0.9375rem] font-semibold text-white transition hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
+                   class="inline-flex items-center justify-center gap-2.5 rounded-lg border border-white/60 px-7 py-3.5 text-[1.125rem] font-semibold text-white transition hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
                     <x-heroicon-o-document-text class="h-5 w-5" /> I’m a Buyer
                 </a>
                 <a href="{{ route('register') }}"
-                   class="inline-flex items-center justify-center gap-2.5 rounded-lg bg-timber-500 px-7 py-3.5 text-[0.9375rem] font-semibold text-white transition hover:bg-timber-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
+                   class="inline-flex items-center justify-center gap-2.5 rounded-lg bg-timber-500 px-7 py-3.5 text-[1.125rem] font-semibold text-white transition hover:bg-timber-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
                     <x-heroicon-o-user-plus class="h-5 w-5" /> I’m a Supplier
                 </a>
             </div>

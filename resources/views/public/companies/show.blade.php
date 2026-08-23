@@ -118,8 +118,8 @@
     $heroCols = [1 => 'lg:grid-cols-1', 2 => 'lg:grid-cols-2', 3 => 'lg:grid-cols-3', 4 => 'lg:grid-cols-4', 5 => 'lg:grid-cols-5'][min(5, max(1, $heroStats->count()))];
 
     $card = 'rounded-xl border border-sand-300/70 bg-white';
-    $btnPrimary = 'inline-flex items-center justify-center gap-2 rounded-lg bg-forest-700 px-5 py-3 text-[0.9375rem] font-semibold text-white transition hover:bg-forest-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500 focus-visible:ring-offset-2';
-    $btnGhost = 'inline-flex items-center justify-center gap-2 rounded-lg border border-sand-300 bg-white px-5 py-3 text-[0.9375rem] font-semibold text-ink transition hover:border-forest-600 hover:text-forest-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500 focus-visible:ring-offset-2';
+    $btnPrimary = 'inline-flex items-center justify-center gap-2 rounded-lg bg-forest-700 px-5 py-3 text-[1.125rem] font-semibold text-white transition hover:bg-forest-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500 focus-visible:ring-offset-2';
+    $btnGhost = 'inline-flex items-center justify-center gap-2 rounded-lg border border-sand-300 bg-white px-5 py-3 text-[1.125rem] font-semibold text-ink transition hover:border-forest-600 hover:text-forest-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500 focus-visible:ring-offset-2';
 @endphp
 
 <x-layouts.app
@@ -141,7 +141,7 @@
 
             <div class="relative mx-auto max-w-[1400px] px-4 py-8 lg:px-6 lg:py-10">
                 <nav aria-label="Breadcrumb" class="hidden lg:block">
-                    <ol class="flex flex-wrap items-center gap-2 text-[0.8125rem] text-forest-200">
+                    <ol class="flex flex-wrap items-center gap-2 text-[1.0625rem] text-forest-200">
                         @foreach ($breadcrumbs as $i => $crumb)
                             <li>
                                 @if ($i === count($breadcrumbs) - 1)
@@ -164,7 +164,7 @@
                          class="h-24 w-24 shrink-0 rounded-full border-2 border-white/70 bg-white object-contain p-2 lg:h-32 lg:w-32">
 
                     <div class="min-w-0">
-                        <span class="inline-flex items-center gap-1.5 rounded-full bg-forest-600 px-3 py-1 text-[0.75rem] font-semibold text-white">
+                        <span class="inline-flex items-center gap-1.5 rounded-full bg-forest-600 px-3 py-1 text-[0.9375rem] font-semibold text-white">
                             <x-heroicon-s-check-badge class="h-4 w-4" aria-hidden="true" />
                             Verified Supplier
                         </span>
@@ -178,7 +178,7 @@
                         @endif
 
                         @if ($location)
-                            <p class="mt-2 flex items-center gap-1.5 text-[0.9375rem] text-forest-100">
+                            <p class="mt-2 flex items-center gap-1.5 text-[1.125rem] text-forest-100">
                                 <x-heroicon-s-map-pin class="h-4 w-4 text-timber-300" aria-hidden="true" />
                                 {{ $location }}
                             </p>
@@ -193,7 +193,7 @@
                                 <x-dynamic-component :component="'heroicon-o-'.$stat['icon']" class="h-6 w-6 shrink-0 text-timber-300" aria-hidden="true" />
                                 <span class="min-w-0">
                                     <span class="block text-[1.0625rem] font-bold text-white">{{ $stat['value'] }}</span>
-                                    <span class="block text-[0.75rem] text-forest-200">{{ $stat['label'] }}</span>
+                                    <span class="block text-[0.9375rem] text-forest-200">{{ $stat['label'] }}</span>
                                 </span>
                             </li>
                         @endforeach
@@ -205,13 +205,13 @@
                         @foreach ($company->species->take(8) as $sp)
                             <li>
                                 <a href="{{ route('species.show', $sp->slug) }}"
-                                   class="inline-block rounded-md bg-white/15 px-3 py-1.5 text-[0.8125rem] font-medium text-white transition hover:bg-white/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">
+                                   class="inline-block rounded-md bg-white/15 px-3 py-1.5 text-[1.0625rem] font-medium text-white transition hover:bg-white/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">
                                     {{ $sp->common_name }}
                                 </a>
                             </li>
                         @endforeach
                         @if ($company->species->count() > 8)
-                            <li class="rounded-md bg-white/10 px-3 py-1.5 text-[0.8125rem] text-forest-100">+{{ $company->species->count() - 8 }} more</li>
+                            <li class="rounded-md bg-white/10 px-3 py-1.5 text-[1.0625rem] text-forest-100">+{{ $company->species->count() - 8 }} more</li>
                         @endif
                     </ul>
                 @endif
@@ -253,10 +253,10 @@
 
             @if ($company->hasRating())
                 <section class="{{ $card }} p-4">
-                    <h2 class="text-[0.9375rem] font-bold text-ink">Overall rating</h2>
+                    <h2 class="text-[1.125rem] font-bold text-ink">Overall rating</h2>
                     <div class="mt-2 flex items-center gap-3">
                         <span class="font-display text-[2rem] font-semibold leading-none text-forest-800">{{ rtrim(rtrim(number_format((float) $company->rating_avg, 1), '0'), '.') }}</span>
-                        <span class="text-[0.875rem] text-ink-soft">/ 5</span>
+                        <span class="text-[1.0625rem] text-ink-soft">/ 5</span>
                         <x-star-rating :rating="$company->rating_avg" :count="$company->rating_count" />
                     </div>
                 </section>
@@ -269,8 +269,8 @@
                         @foreach ($mobileFacts as $fact)
                             <li class="text-center">
                                 <x-dynamic-component :component="'heroicon-o-'.$fact['icon']" class="mx-auto h-6 w-6 text-forest-600" aria-hidden="true" />
-                                <p class="mt-1.5 text-[0.75rem] text-ink-soft">{{ $fact['label'] }}</p>
-                                <p class="text-[0.875rem] font-semibold text-ink">{{ $fact['value'] }}</p>
+                                <p class="mt-1.5 text-[0.9375rem] text-ink-soft">{{ $fact['label'] }}</p>
+                                <p class="text-[1.0625rem] font-semibold text-ink">{{ $fact['value'] }}</p>
                             </li>
                         @endforeach
                     </ul>
@@ -311,7 +311,7 @@
                                 @keydown.home.prevent="tab = tabs[0]; $refs['tab-' + tabs[0]].focus()"
                                 @keydown.end.prevent="tab = tabs[tabs.length - 1]; $refs['tab-' + tabs[tabs.length - 1]].focus()"
                                 :class="tab === '{{ $t['id'] }}' ? 'border-forest-700 text-forest-800' : 'border-transparent text-ink-soft hover:text-ink'"
-                                class="flex items-center gap-2 border-b-2 px-4 py-3.5 text-[0.875rem] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500">
+                                class="flex items-center gap-2 border-b-2 px-4 py-3.5 text-[1.0625rem] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500">
                             <x-dynamic-component :component="'heroicon-o-'.$t['icon']" class="h-4 w-4" aria-hidden="true" />
                             {{ $t['label'] }}
                         </button>
@@ -336,7 +336,7 @@
                                 <div class="grid gap-4 lg:grid-cols-3">
                                     <section class="{{ $card }} p-5 lg:col-span-2">
                                         <h2 class="text-[1.0625rem] font-bold text-ink">About {{ $company->name }}</h2>
-                                        <div class="mt-3 space-y-3 text-[0.9375rem] leading-relaxed text-ink-soft">
+                                        <div class="mt-3 space-y-3 text-[1.125rem] leading-relaxed text-ink-soft">
                                             @foreach (preg_split('/\n{2,}/', (string) $company->description) as $para)
                                                 @if (trim($para) !== '')
                                                     <p>{{ trim($para) }}</p>
@@ -345,10 +345,10 @@
                                         </div>
 
                                         @if ($summaryRows->isNotEmpty())
-                                            <h3 class="mt-6 text-[0.9375rem] font-bold text-ink">Business summary</h3>
+                                            <h3 class="mt-6 text-[1.125rem] font-bold text-ink">Business summary</h3>
                                             <dl class="mt-3 divide-y divide-sand-200 border-t border-sand-200">
                                                 @foreach ($summaryRows as $row)
-                                                    <div class="flex flex-wrap justify-between gap-2 py-2.5 text-[0.875rem]">
+                                                    <div class="flex flex-wrap justify-between gap-2 py-2.5 text-[1.0625rem]">
                                                         <dt class="text-ink-soft">{{ $row['label'] }}</dt>
                                                         <dd class="font-medium text-ink">{{ $row['value'] }}</dd>
                                                     </div>
@@ -369,7 +369,7 @@
                                                 @endif
                                                 <dl class="mt-3 divide-y divide-sand-200 border-t border-sand-200">
                                                     @foreach ($statRows as $row)
-                                                        <div class="flex items-center justify-between gap-3 py-2.5 text-[0.875rem]">
+                                                        <div class="flex items-center justify-between gap-3 py-2.5 text-[1.0625rem]">
                                                             <dt class="flex items-center gap-2 text-ink-soft">
                                                                 <x-dynamic-component :component="'heroicon-o-'.$row['icon']" class="h-4 w-4 text-forest-600" aria-hidden="true" />
                                                                 {{ $row['label'] }}
@@ -387,7 +387,7 @@
                                                 <ul class="mt-3 divide-y divide-sand-200 border-t border-sand-200">
                                                     @foreach ($categories as $cat)
                                                         <li>
-                                                            <a href="{{ $cat['url'] }}" class="flex items-center justify-between gap-3 py-2.5 text-[0.875rem] text-ink transition hover:text-forest-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-300">
+                                                            <a href="{{ $cat['url'] }}" class="flex items-center justify-between gap-3 py-2.5 text-[1.0625rem] text-ink transition hover:text-forest-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-300">
                                                                 <span>{{ $cat['label'] }}</span>
                                                                 <span class="font-semibold text-ink-soft">{{ $cat['count'] }}</span>
                                                             </a>
@@ -402,7 +402,7 @@
                                                 <x-heroicon-s-shield-check class="h-5 w-5 text-forest-600" aria-hidden="true" />
                                                 Verification
                                             </h2>
-                                            <dl class="mt-3 space-y-2 text-[0.875rem]">
+                                            <dl class="mt-3 space-y-2 text-[1.0625rem]">
                                                 <div class="flex justify-between gap-3"><dt class="text-ink-soft">Status</dt><dd class="font-semibold text-forest-700">Verified profile</dd></div>
                                                 @if ($badge?->issued_at)
                                                     <div class="flex justify-between gap-3"><dt class="text-ink-soft">Verification date</dt><dd class="text-ink">{{ $badge->issued_at->format('d M Y') }}</dd></div>
@@ -414,7 +414,7 @@
                                                     <div class="flex justify-between gap-3"><dt class="text-ink-soft">Reference</dt><dd class="text-ink">{{ $badge->reference_code }}</dd></div>
                                                 @endif
                                             </dl>
-                                            <p class="mt-4 border-t border-sand-200 pt-3 text-[0.75rem] leading-relaxed text-ink-soft">
+                                            <p class="mt-4 border-t border-sand-200 pt-3 text-[0.9375rem] leading-relaxed text-ink-soft">
                                                 Documents reviewed by Cameroon Timber Hub based on information submitted by the company.
                                                 Buyers should conduct final due diligence before any transaction.
                                             </p>
@@ -450,7 +450,7 @@
                                             <section class="{{ $card }} p-5">
                                                 <div class="flex flex-wrap items-baseline justify-between gap-2">
                                                     <h2 class="text-[1.0625rem] font-bold text-ink">Buyer reviews</h2>
-                                                    <span class="text-[0.8125rem] text-ink-soft">{{ number_format($reviewCount) }} total</span>
+                                                    <span class="text-[1.0625rem] text-ink-soft">{{ number_format($reviewCount) }} total</span>
                                                 </div>
 
                                                 @if ($company->hasRating())
@@ -464,23 +464,23 @@
                                                     @foreach ($reviews as $review)
                                                         <li class="py-3">
                                                             <div class="flex flex-wrap items-baseline justify-between gap-2">
-                                                                <span class="text-[0.875rem] font-semibold text-ink">{{ $review->rating }}/5</span>
-                                                                <span class="text-[0.75rem] text-ink-soft">{{ $review->created_at->format('d M Y') }}</span>
+                                                                <span class="text-[1.0625rem] font-semibold text-ink">{{ $review->rating }}/5</span>
+                                                                <span class="text-[0.9375rem] text-ink-soft">{{ $review->created_at->format('d M Y') }}</span>
                                                             </div>
                                                             @if ($review->title)
-                                                                <p class="mt-1 text-[0.875rem] font-semibold text-ink">{{ $review->title }}</p>
+                                                                <p class="mt-1 text-[1.0625rem] font-semibold text-ink">{{ $review->title }}</p>
                                                             @endif
                                                             @if ($review->body)
-                                                                <p class="mt-1 whitespace-pre-line text-[0.8125rem] leading-relaxed text-ink-soft">{{ $review->body }}</p>
+                                                                <p class="mt-1 whitespace-pre-line text-[1.0625rem] leading-relaxed text-ink-soft">{{ $review->body }}</p>
                                                             @endif
-                                                            <p class="mt-1.5 text-[0.75rem] text-ink-soft">
+                                                            <p class="mt-1.5 text-[0.9375rem] text-ink-soft">
                                                                 {{ $review->authorDisplayName() }} · verified order
                                                             </p>
                                                         </li>
                                                     @endforeach
                                                 </ul>
 
-                                                <p class="mt-3 border-t border-sand-200 pt-3 text-[0.75rem] leading-relaxed text-ink-soft">
+                                                <p class="mt-3 border-t border-sand-200 pt-3 text-[0.9375rem] leading-relaxed text-ink-soft">
                                                     Reviews can only be left by a buyer who completed an order with this supplier
                                                     on Cameroon Timber Hub, and each order can be reviewed once.
                                                 </p>
@@ -495,7 +495,7 @@
                                 <section>
                                     <div class="flex flex-wrap items-center justify-between gap-3">
                                         <h2 class="text-[1.0625rem] font-bold text-ink">Products from {{ $company->name }}</h2>
-                                        <a href="{{ $marketplaceUrl }}" class="inline-flex items-center gap-1 rounded text-[0.875rem] font-semibold text-forest-700 transition hover:text-forest-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-300">
+                                        <a href="{{ $marketplaceUrl }}" class="inline-flex items-center gap-1 rounded text-[1.0625rem] font-semibold text-forest-700 transition hover:text-forest-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-300">
                                             View all {{ $productCount }} products
                                             <x-heroicon-m-arrow-right class="h-4 w-4" aria-hidden="true" />
                                         </a>
@@ -512,17 +512,17 @@
                             @case('certificates')
                                 <section class="{{ $card }} p-5">
                                     <h2 class="text-[1.0625rem] font-bold text-ink">{{ $badges->count() }} active {{ Str::plural('certification', $badges->count()) }}</h2>
-                                    <p class="mt-1 text-[0.8125rem] text-ink-soft">Issued and reviewed by Cameroon Timber Hub. Only active, unexpired credentials are listed.</p>
+                                    <p class="mt-1 text-[1.0625rem] text-ink-soft">Issued and reviewed by Cameroon Timber Hub. Only active, unexpired credentials are listed.</p>
                                     <ul class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                                         @foreach ($badges as $activeBadge)
                                             <li class="rounded-lg border border-sand-300/70 p-4 text-center">
                                                 <x-heroicon-s-check-badge class="mx-auto h-8 w-8 text-forest-600" aria-hidden="true" />
-                                                <p class="mt-2 text-[0.875rem] font-semibold text-ink">{{ $activeBadge->badge_type?->label() }}</p>
+                                                <p class="mt-2 text-[1.0625rem] font-semibold text-ink">{{ $activeBadge->badge_type?->label() }}</p>
                                                 @if ($activeBadge->reference_code)
-                                                    <p class="mt-1 text-[0.75rem] text-ink-soft">{{ $activeBadge->reference_code }}</p>
+                                                    <p class="mt-1 text-[0.9375rem] text-ink-soft">{{ $activeBadge->reference_code }}</p>
                                                 @endif
                                                 @if ($activeBadge->valid_until)
-                                                    <p class="mt-1 text-[0.75rem] text-ink-soft">Valid until {{ $activeBadge->valid_until->format('d M Y') }}</p>
+                                                    <p class="mt-1 text-[0.9375rem] text-ink-soft">Valid until {{ $activeBadge->valid_until->format('d M Y') }}</p>
                                                 @endif
                                             </li>
                                         @endforeach
@@ -538,7 +538,7 @@
                                             <h2 class="text-[1.0625rem] font-bold text-ink">Forest &amp; sourcing</h2>
                                             <dl class="mt-3 divide-y divide-sand-200 border-t border-sand-200">
                                                 @foreach ($forestRows as $row)
-                                                    <div class="flex flex-wrap justify-between gap-2 py-2.5 text-[0.875rem]">
+                                                    <div class="flex flex-wrap justify-between gap-2 py-2.5 text-[1.0625rem]">
                                                         <dt class="text-ink-soft">{{ $row['label'] }}</dt>
                                                         <dd class="font-medium text-ink">{{ $row['value'] }}</dd>
                                                     </div>
@@ -554,7 +554,7 @@
                                                 @foreach ($company->species as $sp)
                                                     <li>
                                                         <a href="{{ route('species.show', $sp->slug) }}"
-                                                           class="inline-flex items-center gap-1.5 rounded-full border border-sand-300 px-3 py-1.5 text-[0.8125rem] font-medium text-forest-800 transition hover:border-forest-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-300">
+                                                           class="inline-flex items-center gap-1.5 rounded-full border border-sand-300 px-3 py-1.5 text-[1.0625rem] font-medium text-forest-800 transition hover:border-forest-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-300">
                                                             {{ $sp->common_name }}
                                                             <x-heroicon-m-arrow-up-right class="h-3.5 w-3.5 text-timber-500" aria-hidden="true" />
                                                         </a>
@@ -573,7 +573,7 @@
                                         <h2 class="text-[1.0625rem] font-bold text-ink">Logistics &amp; shipping</h2>
                                         <dl class="mt-3 divide-y divide-sand-200 border-t border-sand-200">
                                             @foreach ($logisticsRows as $row)
-                                                <div class="flex flex-wrap justify-between gap-2 py-2.5 text-[0.875rem]">
+                                                <div class="flex flex-wrap justify-between gap-2 py-2.5 text-[1.0625rem]">
                                                     <dt class="text-ink-soft">{{ $row['label'] }}</dt>
                                                     <dd class="font-medium text-ink">{{ $row['value'] }}</dd>
                                                 </div>
@@ -586,7 +586,7 @@
                                             <h2 class="text-[1.0625rem] font-bold text-ink">Export markets</h2>
                                             <ul class="mt-3 flex flex-wrap gap-2">
                                                 @foreach ($markets as $code)
-                                                    <li class="rounded-md bg-sand-100 px-3 py-1.5 text-[0.8125rem] font-medium text-ink-soft">{{ $code }}</li>
+                                                    <li class="rounded-md bg-sand-100 px-3 py-1.5 text-[1.0625rem] font-medium text-ink-soft">{{ $code }}</li>
                                                 @endforeach
                                             </ul>
                                         </section>
@@ -598,10 +598,10 @@
                             @case('documents')
                                 <section class="{{ $card }} p-5">
                                     <h2 class="text-[1.0625rem] font-bold text-ink">Public documents</h2>
-                                    <p class="mt-1 text-[0.8125rem] text-ink-soft">Downloads are issued through a signed, authenticated link. Private and buyer-only files are never listed here.</p>
+                                    <p class="mt-1 text-[1.0625rem] text-ink-soft">Downloads are issued through a signed, authenticated link. Private and buyer-only files are never listed here.</p>
                                     <ul class="mt-4 divide-y divide-sand-200 border-t border-sand-200">
                                         @foreach ($documents as $document)
-                                            <li class="flex flex-wrap items-center justify-between gap-3 py-3 text-[0.875rem]">
+                                            <li class="flex flex-wrap items-center justify-between gap-3 py-3 text-[1.0625rem]">
                                                 <span class="flex items-center gap-2 font-medium text-ink">
                                                     <x-heroicon-o-document-text class="h-5 w-5 text-forest-600" aria-hidden="true" />
                                                     {{ $document->documentType?->name ?? $document->original_filename }}
@@ -620,7 +620,7 @@
                                 <div class="grid gap-4 lg:grid-cols-2">
                                     <section class="{{ $card }} p-5">
                                         <h2 class="text-[1.0625rem] font-bold text-ink">Contact information</h2>
-                                        <dl class="mt-3 space-y-3 text-[0.875rem]">
+                                        <dl class="mt-3 space-y-3 text-[1.0625rem]">
                                             @foreach ($contactRows as $row)
                                                 <div class="flex items-start gap-3">
                                                     <x-dynamic-component :component="'heroicon-o-'.$row['icon']" class="mt-0.5 h-5 w-5 shrink-0 text-forest-600" aria-hidden="true" />
@@ -639,8 +639,8 @@
                                         </dl>
 
                                         @if ($company->contacts->isNotEmpty())
-                                            <h3 class="mt-5 text-[0.9375rem] font-bold text-ink">Trade desk</h3>
-                                            <ul class="mt-2 space-y-3 text-[0.875rem]">
+                                            <h3 class="mt-5 text-[1.125rem] font-bold text-ink">Trade desk</h3>
+                                            <ul class="mt-2 space-y-3 text-[1.0625rem]">
                                                 @foreach ($company->contacts as $contact)
                                                     <li>
                                                         <p class="font-medium text-ink">{{ $contact->name }}@if ($contact->title)<span class="font-normal text-ink-soft"> · {{ $contact->title }}</span>@endif</p>
@@ -670,32 +670,32 @@
                                     <section id="contact-supplier" class="{{ $card }} p-5">
                                         <h2 class="text-[1.0625rem] font-bold text-ink">Work with {{ $company->name }}</h2>
                                         @if (session('inquiry_sent'))
-                                            <p role="status" class="mt-3 rounded-lg bg-forest-50 p-3 text-[0.875rem] text-forest-800">Thanks — check your email to confirm and deliver your message.</p>
+                                            <p role="status" class="mt-3 rounded-lg bg-forest-50 p-3 text-[1.0625rem] text-forest-800">Thanks — check your email to confirm and deliver your message.</p>
                                         @else
-                                            @php($f = 'w-full rounded-lg border border-sand-300 bg-white px-3 py-2.5 text-[0.875rem] text-ink focus:border-forest-500 focus:outline-none focus:ring-2 focus:ring-forest-100')
+                                            @php($f = 'w-full rounded-lg border border-sand-300 bg-white px-3 py-2.5 text-[1.0625rem] text-ink focus:border-forest-500 focus:outline-none focus:ring-2 focus:ring-forest-100')
                                             <form method="POST" action="{{ route('inquiry.store', $company->slug) }}" class="mt-4 space-y-3">
                                                 @csrf
                                                 <input type="hidden" name="form_rendered_at" value="{{ now()->timestamp }}">
                                                 <div class="hidden" aria-hidden="true"><input type="text" name="website" tabindex="-1" autocomplete="off"></div>
 
                                                 <div>
-                                                    <label for="inq-name" class="block text-[0.8125rem] font-medium text-ink">Your name</label>
+                                                    <label for="inq-name" class="block text-[1.0625rem] font-medium text-ink">Your name</label>
                                                     <input id="inq-name" type="text" name="name" value="{{ old('name') }}" class="{{ $f }} mt-1" required>
                                                 </div>
                                                 <div>
-                                                    <label for="inq-email" class="block text-[0.8125rem] font-medium text-ink">Email</label>
+                                                    <label for="inq-email" class="block text-[1.0625rem] font-medium text-ink">Email</label>
                                                     <input id="inq-email" type="email" name="email" value="{{ old('email') }}" class="{{ $f }} mt-1" required>
                                                 </div>
                                                 <div>
-                                                    <label for="inq-phone" class="block text-[0.8125rem] font-medium text-ink">Phone <span class="font-normal text-ink-soft">(optional)</span></label>
+                                                    <label for="inq-phone" class="block text-[1.0625rem] font-medium text-ink">Phone <span class="font-normal text-ink-soft">(optional)</span></label>
                                                     <input id="inq-phone" type="text" name="phone" value="{{ old('phone') }}" class="{{ $f }} mt-1">
                                                 </div>
                                                 <div>
-                                                    <label for="inq-message" class="block text-[0.8125rem] font-medium text-ink">Your message</label>
+                                                    <label for="inq-message" class="block text-[1.0625rem] font-medium text-ink">Your message</label>
                                                     <textarea id="inq-message" name="message" rows="4" class="{{ $f }} mt-1" required>{{ old('message') }}</textarea>
-                                                    <p class="mt-1 text-[0.75rem] text-ink-soft">Minimum 20 characters.</p>
+                                                    <p class="mt-1 text-[0.9375rem] text-ink-soft">Minimum 20 characters.</p>
                                                 </div>
-                                                <label class="flex items-start gap-2 text-[0.75rem] text-ink-soft">
+                                                <label class="flex items-start gap-2 text-[0.9375rem] text-ink-soft">
                                                     <input type="checkbox" name="consent" value="1" class="mt-0.5 rounded border-sand-300" required>
                                                     <span>I consent to be contacted by email about this inquiry.</span>
                                                 </label>
@@ -705,7 +705,7 @@
                                                 </button>
                                             </form>
                                         @endif
-                                        <a href="{{ $quoteUrl }}" class="mt-3 inline-block rounded text-[0.875rem] font-medium text-forest-700 transition hover:text-forest-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-300">
+                                        <a href="{{ $quoteUrl }}" class="mt-3 inline-block rounded text-[1.0625rem] font-medium text-forest-700 transition hover:text-forest-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-300">
                                             Or request a multi-supplier quote &rarr;
                                         </a>
                                     </section>
@@ -728,7 +728,7 @@
             <div class="flex gap-3">
                 <a href="{{ $quoteUrl }}"
                    @class([
-                       'flex items-center justify-center gap-2 rounded-lg border border-forest-700 px-4 py-3 text-[0.9375rem] font-semibold text-forest-800 transition hover:bg-forest-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500 focus-visible:ring-offset-2',
+                       'flex items-center justify-center gap-2 rounded-lg border border-forest-700 px-4 py-3 text-[1.125rem] font-semibold text-forest-800 transition hover:bg-forest-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500 focus-visible:ring-offset-2',
                        'flex-1' => $chat !== null,
                        'w-full' => $chat === null,
                    ])>
@@ -739,7 +739,7 @@
                 @if ($chat)
                     <a href="{{ $chat['url'] }}"
                        @if ($chat['channel'] === 'whatsapp') target="_blank" rel="noopener noreferrer" @endif
-                       class="flex flex-1 items-center justify-center gap-2 rounded-lg bg-forest-700 px-4 py-3 text-[0.9375rem] font-semibold text-white transition hover:bg-forest-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500 focus-visible:ring-offset-2">
+                       class="flex flex-1 items-center justify-center gap-2 rounded-lg bg-forest-700 px-4 py-3 text-[1.125rem] font-semibold text-white transition hover:bg-forest-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500 focus-visible:ring-offset-2">
                         <x-dynamic-component :component="$chat['channel'] === 'whatsapp' ? 'heroicon-o-chat-bubble-oval-left' : 'heroicon-o-phone'" class="h-5 w-5" aria-hidden="true" />
                         {{ $chat['label'] }}
                     </a>

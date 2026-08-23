@@ -40,7 +40,7 @@
                     <p class="font-display text-2xl font-bold text-forest-950 lg:text-[1.75rem]">
                         {{ BuyerDashboard::money($trend['currency'], $trend['total']) }}
                     </p>
-                    <p class="text-[0.8125rem] text-ink-soft">Last 12 months ({{ $trend['currency'] }})</p>
+                    <p class="text-[1.0625rem] text-ink-soft">Last 12 months ({{ $trend['currency'] }})</p>
 
                     @php
                         $max = max($trend['max'], 1);
@@ -56,7 +56,7 @@
                     <figure class="mt-4">
                         <figcaption class="sr-only">Awarded order value per month, in {{ $trend['currency'] }}.</figcaption>
                         <div class="flex gap-3">
-                            <div class="flex flex-col justify-between py-0.5 text-[0.625rem] text-ink-soft">
+                            <div class="flex flex-col justify-between py-0.5 text-[0.8125rem] text-ink-soft">
                                 <span>{{ BuyerDashboard::compact($trend['currency'], $trend['max']) }}</span>
                                 <span>{{ BuyerDashboard::compact($trend['currency'], $trend['max'] / 2) }}</span>
                                 <span>0</span>
@@ -82,7 +82,7 @@
                                         </circle>
                                     @endforeach
                                 </svg>
-                                <div class="mt-1 flex justify-between text-[0.625rem] text-ink-soft">
+                                <div class="mt-1 flex justify-between text-[0.8125rem] text-ink-soft">
                                     @foreach ($trend['points'] as $i => $point)
                                         <span @class(['hidden sm:inline' => $i % 2 === 1])>{{ $point['label'] }}</span>
                                     @endforeach
@@ -96,7 +96,7 @@
                     <dl class="flex flex-wrap gap-x-10 gap-y-4">
                         @foreach ($awardedValue as $row)
                             <div>
-                                <dt class="text-[0.6875rem] uppercase tracking-wide text-ink-soft">{{ $row['currency'] }} this year</dt>
+                                <dt class="text-[0.875rem] uppercase tracking-wide text-ink-soft">{{ $row['currency'] }} this year</dt>
                                 <dd class="mt-1 font-display text-2xl font-bold text-forest-950">{{ BuyerDashboard::money($row['currency'], $row['total']) }}</dd>
                             </div>
                         @endforeach
@@ -116,9 +116,9 @@
                 @else
                     {{-- Desktop table --}}
                     <div class="hidden overflow-x-auto lg:block">
-                        <table class="w-full min-w-[46rem] text-left text-[0.875rem]">
+                        <table class="w-full min-w-[46rem] text-left text-[1.0625rem]">
                             <thead>
-                                <tr class="border-y border-sand-200 text-[0.6875rem] uppercase tracking-wide text-ink-soft">
+                                <tr class="border-y border-sand-200 text-[0.875rem] uppercase tracking-wide text-ink-soft">
                                     <th scope="col" class="py-2.5 pl-5 pr-3 font-semibold">Order</th>
                                     <th scope="col" class="py-2.5 pr-3 font-semibold">Supplier</th>
                                     <th scope="col" class="py-2.5 pr-3 font-semibold">Items</th>
@@ -153,11 +153,11 @@
                             <li>
                                 <a href="{{ $access->link(request(), 'order', $order->rfq) }}" class="flex items-center gap-3 px-5 py-3.5">
                                     <span class="min-w-0 flex-1">
-                                        <span class="block truncate text-[0.875rem] font-semibold text-forest-700">{{ $order->reference_code }}</span>
-                                        <span class="block truncate text-[0.8125rem] text-ink-soft">{{ $order->supplier_name }}</span>
+                                        <span class="block truncate text-[1.0625rem] font-semibold text-forest-700">{{ $order->reference_code }}</span>
+                                        <span class="block truncate text-[1.0625rem] text-ink-soft">{{ $order->supplier_name }}</span>
                                     </span>
                                     <x-account.status-pill :label="$order->status->label()" :color="$order->status->color()" />
-                                    <span class="shrink-0 text-[0.8125rem] font-semibold text-ink">{{ $order->money($order->total_amount) }}</span>
+                                    <span class="shrink-0 text-[1.0625rem] font-semibold text-ink">{{ $order->money($order->total_amount) }}</span>
                                     <x-heroicon-m-chevron-right class="h-4 w-4 shrink-0 text-ink-soft" />
                                 </a>
                             </li>
@@ -166,7 +166,7 @@
 
                     <div class="border-t border-sand-200 p-4 text-center">
                         <a href="{{ route('account.orders') }}"
-                           class="inline-flex items-center gap-2 rounded-full border border-sand-300 px-5 py-2 text-[0.8125rem] font-semibold text-ink transition hover:border-forest-400">
+                           class="inline-flex items-center gap-2 rounded-full border border-sand-300 px-5 py-2 text-[1.0625rem] font-semibold text-ink transition hover:border-forest-400">
                             View all orders
                         </a>
                     </div>
@@ -189,15 +189,15 @@
                                 <a href="{{ $access->link(request(), 'quote', $quote->rfq, $quote) }}"
                                    class="flex items-center gap-3 px-5 py-3.5 transition hover:bg-sand-50">
                                     <span class="min-w-0 flex-1">
-                                        <span class="block truncate text-[0.875rem] font-semibold text-ink">{{ $quote->company?->name ?? 'Supplier' }}</span>
-                                        <span class="block truncate text-[0.8125rem] text-ink-soft">
+                                        <span class="block truncate text-[1.0625rem] font-semibold text-ink">{{ $quote->company?->name ?? 'Supplier' }}</span>
+                                        <span class="block truncate text-[1.0625rem] text-ink-soft">
                                             {{ $quote->reference_code }} · {{ $quote->rfq?->reference_code }}
                                         </span>
                                     </span>
                                     <x-account.status-pill :label="$quote->status->label()" :color="$quote->status->color()" class="hidden sm:inline-flex" />
                                     <span class="shrink-0 text-right">
-                                        <span class="block text-[0.875rem] font-semibold text-ink">{{ $quote->money($quote->total_amount) }}</span>
-                                        <span class="block text-[0.75rem] text-ink-soft">{{ $quote->submitted_at?->diffForHumans() }}</span>
+                                        <span class="block text-[1.0625rem] font-semibold text-ink">{{ $quote->money($quote->total_amount) }}</span>
+                                        <span class="block text-[0.9375rem] text-ink-soft">{{ $quote->submitted_at?->diffForHumans() }}</span>
                                     </span>
                                     <x-heroicon-m-chevron-right class="h-4 w-4 shrink-0 text-ink-soft" />
                                 </a>
@@ -234,10 +234,10 @@
                         </svg>
                         <div class="min-w-0 flex-1">
                             <p class="font-display text-2xl font-bold text-forest-950">{{ $byStatus['total'] }}</p>
-                            <p class="text-[0.8125rem] text-ink-soft">Total orders</p>
+                            <p class="text-[1.0625rem] text-ink-soft">Total orders</p>
                             <ul class="mt-3 space-y-1.5">
                                 @foreach ($byStatus['slices'] as $slice)
-                                    <li class="flex items-center gap-2 text-[0.8125rem]">
+                                    <li class="flex items-center gap-2 text-[1.0625rem]">
                                         <span class="h-2.5 w-2.5 shrink-0 rounded-full" style="background: {{ $segmentColor[$slice['status']->color()] ?? '#c2c2b8' }}"></span>
                                         <span class="min-w-0 flex-1 truncate text-ink">{{ $slice['status']->label() }}</span>
                                         <span class="shrink-0 font-semibold text-ink-soft">{{ $slice['count'] }} ({{ rtrim(rtrim(number_format($slice['percent'], 1), '0'), '.') }}%)</span>
@@ -252,7 +252,7 @@
             {{-- ---------- Recent activity ---------- --}}
             <x-account.panel title="Recent activity" subtitle="Derived from real timestamps on your quotes and orders.">
                 @if (empty($activity))
-                    <p class="text-[0.875rem] text-ink-soft">Nothing has happened on your requests yet.</p>
+                    <p class="text-[1.0625rem] text-ink-soft">Nothing has happened on your requests yet.</p>
                 @else
                     <ul class="space-y-4">
                         @foreach ($activity as $entry)
@@ -266,13 +266,13 @@
                                 </span>
                                 <span class="min-w-0 flex-1">
                                     @if ($entry['url'])
-                                        <a href="{{ $entry['url'] }}" class="block text-[0.875rem] font-semibold text-ink transition hover:text-forest-700">{{ $entry['title'] }}</a>
+                                        <a href="{{ $entry['url'] }}" class="block text-[1.0625rem] font-semibold text-ink transition hover:text-forest-700">{{ $entry['title'] }}</a>
                                     @else
-                                        <span class="block text-[0.875rem] font-semibold text-ink">{{ $entry['title'] }}</span>
+                                        <span class="block text-[1.0625rem] font-semibold text-ink">{{ $entry['title'] }}</span>
                                     @endif
-                                    <span class="block truncate text-[0.8125rem] text-ink-soft">{{ $entry['detail'] }}</span>
+                                    <span class="block truncate text-[1.0625rem] text-ink-soft">{{ $entry['detail'] }}</span>
                                 </span>
-                                <span class="shrink-0 text-[0.75rem] text-ink-soft">{{ $entry['at']->diffForHumans(short: true) }}</span>
+                                <span class="shrink-0 text-[0.9375rem] text-ink-soft">{{ $entry['at']->diffForHumans(short: true) }}</span>
                             </li>
                         @endforeach
                     </ul>
@@ -289,12 +289,12 @@
                                 <img src="{{ $row['company']->logoUrl() }}" alt="" class="h-9 w-9 shrink-0 rounded-full object-cover">
                                 <span class="min-w-0 flex-1">
                                     <a href="{{ route('companies.show', $row['company']->slug) }}"
-                                       class="block truncate text-[0.875rem] font-semibold text-ink transition hover:text-forest-700">{{ $row['company']->name }}</a>
-                                    <span class="block text-[0.75rem] text-ink-soft">{{ $row['orders'] }} {{ Str::plural('order', $row['orders']) }} awarded</span>
+                                       class="block truncate text-[1.0625rem] font-semibold text-ink transition hover:text-forest-700">{{ $row['company']->name }}</a>
+                                    <span class="block text-[0.9375rem] text-ink-soft">{{ $row['orders'] }} {{ Str::plural('order', $row['orders']) }} awarded</span>
                                 </span>
                                 {{-- Rating is a real company column, shown only when it is backed by ratings. --}}
                                 @if ($row['company']->rating_avg && $row['company']->rating_count)
-                                    <span class="flex shrink-0 items-center gap-1 text-[0.8125rem] font-semibold text-ink">
+                                    <span class="flex shrink-0 items-center gap-1 text-[1.0625rem] font-semibold text-ink">
                                         {{ number_format((float) $row['company']->rating_avg, 1) }}
                                         <x-heroicon-s-star class="h-4 w-4 text-timber-400" />
                                     </span>

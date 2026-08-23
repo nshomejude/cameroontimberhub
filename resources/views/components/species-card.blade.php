@@ -43,33 +43,33 @@
         </button>
 
         @if ($species->isPremium())
-            <span class="absolute bottom-2.5 left-2.5 rounded-md bg-forest-800 px-2 py-1 text-[0.6875rem] font-semibold text-white">Premium</span>
+            <span class="absolute bottom-2.5 left-2.5 rounded-md bg-forest-800 px-2 py-1 text-[0.875rem] font-semibold text-white">Premium</span>
         @elseif ($species->is_promoted)
-            <span class="absolute bottom-2.5 left-2.5 rounded-md bg-white/95 px-2 py-1 text-[0.6875rem] font-semibold text-forest-800">Promoted</span>
+            <span class="absolute bottom-2.5 left-2.5 rounded-md bg-white/95 px-2 py-1 text-[0.875rem] font-semibold text-forest-800">Promoted</span>
         @endif
 
         @if ($species->is_cites_listed)
-            <span class="absolute bottom-2.5 right-2.5 rounded-md bg-timber-700 px-2 py-1 text-[0.6875rem] font-semibold text-white">CITES{{ $species->cites_appendix ? ' '.$species->cites_appendix : '' }}</span>
+            <span class="absolute bottom-2.5 right-2.5 rounded-md bg-timber-700 px-2 py-1 text-[0.875rem] font-semibold text-white">CITES{{ $species->cites_appendix ? ' '.$species->cites_appendix : '' }}</span>
         @endif
     </div>
 
     {{-- Body --}}
     <div class="flex flex-1 flex-col {{ $compact ? 'px-3 pb-3 pt-3' : 'px-4 pb-4 pt-4' }}">
-        <h3 class="{{ $compact ? 'text-[0.9375rem]' : 'text-[1.0625rem]' }} font-bold leading-tight text-ink">
+        <h3 class="{{ $compact ? 'text-[1.125rem]' : 'text-[1.0625rem]' }} font-bold leading-tight text-ink">
             <a href="{{ $url }}" class="rounded transition after:absolute after:inset-0 hover:text-forest-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500">
                 {{ $species->common_name }}
             </a>
         </h3>
 
         @if ($species->scientific_name)
-            <p class="mt-1 truncate text-[0.8125rem] italic text-ink-soft">{{ $species->scientific_name }}</p>
+            <p class="mt-1 truncate text-[1.0625rem] italic text-ink-soft">{{ $species->scientific_name }}</p>
         @endif
 
         @if ($tags->isNotEmpty())
             <ul class="mt-2.5 flex flex-wrap gap-1.5">
                 @foreach ($tags as $i => $tag)
                     <li @class([
-                        'rounded-md px-2 py-1 text-[0.6875rem] font-medium',
+                        'rounded-md px-2 py-1 text-[0.875rem] font-medium',
                         'bg-forest-50 text-forest-800' => $i === 0,
                         'bg-sand-100 text-ink-soft' => $i > 0,
                     ])>{{ $tag }}</li>
@@ -78,13 +78,13 @@
         @endif
 
         @if ($species->description && ! $compact)
-            <p class="mt-3 line-clamp-3 text-[0.8125rem] leading-relaxed text-ink-soft">
+            <p class="mt-3 line-clamp-3 text-[1.0625rem] leading-relaxed text-ink-soft">
                 {{ Str::limit(strip_tags($species->description), 130) }}
             </p>
         @endif
 
         <div class="mt-auto flex items-center gap-2 border-t border-sand-200 pt-3 {{ $compact ? 'mt-3' : 'mt-4' }}">
-            <p class="text-[0.75rem] text-ink-soft">
+            <p class="text-[0.9375rem] text-ink-soft">
                 @if ($productCount > 0)
                     <span class="font-bold text-ink">{{ $productCount }}</span> {{ Str::plural('Product', $productCount) }}
                 @elseif ($species->densityRange())
@@ -93,7 +93,7 @@
                     Catalogue entry
                 @endif
             </p>
-            <span class="ml-auto inline-flex items-center gap-1 text-[0.75rem] font-semibold text-forest-700">
+            <span class="ml-auto inline-flex items-center gap-1 text-[0.9375rem] font-semibold text-forest-700">
                 View Details <x-heroicon-m-arrow-right class="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
             </span>
         </div>
