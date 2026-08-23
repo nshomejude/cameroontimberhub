@@ -6,7 +6,13 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
     plugins: [
         laravel({
-            input: ['resources/css/app.css', 'resources/js/app.js'],
+            input: [
+                'resources/css/app.css',
+                'resources/js/app.js',
+                // Shared Filament panel theme — registered on both the admin
+                // and exporter panels via `->viteTheme()`.
+                'resources/css/filament/theme.css',
+            ],
             refresh: true,
             fonts: [
                 bunny('Instrument Sans', {
