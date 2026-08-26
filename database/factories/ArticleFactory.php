@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Enums\ArticleCategory;
 use App\Enums\ArticleStatus;
+use App\Enums\KnowledgeHub;
 use App\Models\Article;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
@@ -25,6 +26,8 @@ class ArticleFactory extends Factory
             'excerpt' => $this->faker->paragraph(),
             'body' => "## Overview\n\n".$this->faker->paragraph(6)."\n\n## Practical notes\n\n".$this->faker->paragraph(6),
             'category' => $this->faker->randomElement(ArticleCategory::cases()),
+            // Explicit: no hub means short-form news at /insights/{slug}.
+            'hub' => null,
             'meta_title' => $title,
             'meta_description' => $this->faker->sentence(14),
             'keywords' => ['cameroon timber', 'export'],
@@ -57,6 +60,11 @@ class ArticleFactory extends Factory
     public function category(ArticleCategory $category): static
     {
         return $this->state(fn (): array => ['category' => $category]);
+    }
+
+    public function inHub(KnowledgeHub $hub): static
+    {
+        return $this->state(fn (): array => ['hub' => $hub]);
     }
 
     public function withFaqs(): static

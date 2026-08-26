@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\ArticleCategory;
 use App\Enums\ArticleStatus;
+use App\Enums\KnowledgeHub;
 use App\Models\Concerns\HasSlug;
 use App\Support\ArticleBody;
 use Illuminate\Database\Eloquent\Builder;
@@ -32,6 +33,7 @@ class Article extends Model
         return [
             'category' => ArticleCategory::class,
             'status' => ArticleStatus::class,
+            'hub' => KnowledgeHub::class,
             'keywords' => 'array',
             'faqs' => 'array',
             'sources' => 'array',
@@ -64,6 +66,15 @@ class Article extends Model
         return $query->where('status', ArticleStatus::Published->value)
             ->whereNotNull('published_at')
             ->where('published_at', '<=', now());
+    }
+
+    /**
+     * Evergreen Knowledge Centre content in one hub. An article with no hub is
+     * short-form news and is never in any hub.
+     */
+    public function scopeInHub(Builder $query, KnowledgeHub $hub): Builder
+    {
+        return $query->where('hub', $hub->value);
     }
 
     public function isPublished(): bool
@@ -206,8 +217,17 @@ class Article extends Model
         return max(1, (int) ceil($words / 220));
     }
 
+    /**
+     * The article's canonical public URL. A hubbed article lives in the
+     * Knowledge Centre; an unhubbed one stays short-form news on /insights.
+     *
+     * Note for callers that column-scope their query: this reads `hub`, so a
+     * partially-hydrated Article must include `hub` in its select list.
+     */
     public function url(): string
     {
-        return route('insights.show', $this->slug);
+        return $this->hub
+            ? route('knowledge.article', ['hub' => $this->hub->value, 'slug' => $this->slug])
+            : route('insights.show', $this->slug);
     }
 }

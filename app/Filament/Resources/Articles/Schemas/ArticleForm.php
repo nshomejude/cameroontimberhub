@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Articles\Schemas;
 
 use App\Enums\ArticleCategory;
 use App\Enums\ArticleStatus;
+use App\Enums\KnowledgeHub;
 use App\Enums\ProductType;
 use App\Models\Species;
 use Closure;
@@ -45,6 +46,13 @@ class ArticleForm
                             ->options(ArticleCategory::options())
                             ->required()
                             ->native(false),
+                        Select::make('hub')
+                            ->label('Knowledge Centre hub')
+                            ->options(KnowledgeHub::options())
+                            ->searchable()
+                            ->native(false)
+                            ->helperText('Leave blank for short-form news, which stays at /insights. Choosing a hub publishes this as evergreen Knowledge Centre content at /knowledge/{hub}/{slug}.')
+                            ->columnSpanFull(),
                         TextInput::make('h1')
                             ->label('On-page headline (H1)')
                             ->maxLength(255)

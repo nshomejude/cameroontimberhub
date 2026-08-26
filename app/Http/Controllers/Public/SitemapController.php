@@ -208,7 +208,9 @@ class SitemapController extends Controller
         $out[] = '';
 
         $articles = Article::published()->orderByDesc('published_at')
-            ->get(['slug', 'title', 'category', 'meta_description', 'excerpt', 'published_at']);
+            // `hub` is required: Article::url() reads it, and a partially
+            // hydrated model throws on an unselected attribute.
+            ->get(['slug', 'title', 'category', 'hub', 'meta_description', 'excerpt', 'published_at']);
 
         foreach (ArticleCategory::cases() as $category) {
             $inCategory = $articles->where('category', $category);

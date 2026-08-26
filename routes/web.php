@@ -66,6 +66,17 @@ Route::get('/knowledge/glossary', [GlossaryController::class, 'index'])->name('g
 Route::get('/knowledge/glossary/{slug}', [GlossaryController::class, 'show'])
     ->where('slug', '[a-z0-9][a-z0-9-]*')->name('glossary.show');
 
+// Knowledge Centre placeholders — the URL shapes exist now so Article::url()
+// and KnowledgeHub::url() resolve; the pages themselves are not built yet, so
+// they 404 honestly rather than render invented content. Declared after the
+// glossary routes so the static `glossary` segment always wins.
+Route::get('/knowledge', fn () => abort(404))->name('knowledge.index');
+Route::get('/knowledge/{hub}', fn () => abort(404))
+    ->where('hub', '[a-z0-9][a-z0-9-]*')->name('knowledge.hub');
+Route::get('/knowledge/{hub}/{slug}', fn () => abort(404))
+    ->where(['hub' => '[a-z0-9][a-z0-9-]*', 'slug' => '[a-z0-9][a-z0-9-]*'])
+    ->name('knowledge.article');
+
 // Editorial content platform. `/insights/category/{category}` is declared
 // before `/insights/{slug}` so the static segment always wins.
 Route::get('/insights', [InsightController::class, 'index'])->name('insights.index');
