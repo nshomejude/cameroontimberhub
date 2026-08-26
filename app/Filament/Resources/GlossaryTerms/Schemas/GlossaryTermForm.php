@@ -64,15 +64,30 @@ class GlossaryTermForm
                         Select::make('related_term_ids')
                             ->label('Related terms')
                             ->multiple()
+                            // Unpublished records stay selectable — pre-publish wiring
+                            // is legitimate — but they are labelled, because
+                            // GlossaryTerm::relatedTerms()/relatedSpecies() filter to
+                            // published() at render time and would silently drop them.
                             ->options(fn (?GlossaryTerm $record): array => GlossaryTerm::query()
                                 ->when($record, fn ($q) => $q->whereKeyNot($record->getKey()))
-                                ->orderBy('term')->pluck('term', 'id')->all())
-                            ->searchable(),
+                                ->orderBy('term')
+                                ->get(['id', 'term', 'is_published'])
+                                ->mapWithKeys(fn (GlossaryTerm $t): array => [
+                                    $t->getKey() => $t->term.($t->is_published ? '' : ' (draft)'),
+                                ])->all())
+                            ->searchable()
+                            ->helperText('Items marked (draft) are unpublished and will not render on the public page.'),
                         Select::make('related_species_ids')
                             ->label('Related species')
                             ->multiple()
-                            ->options(fn (): array => Species::query()->orderBy('common_name')->pluck('common_name', 'id')->all())
-                            ->searchable(),
+                            ->options(fn (): array => Species::query()
+                                ->orderBy('common_name')
+                                ->get(['id', 'common_name', 'is_published'])
+                                ->mapWithKeys(fn (Species $s): array => [
+                                    $s->getKey() => $s->common_name.($s->is_published ? '' : ' (draft)'),
+                                ])->all())
+                            ->searchable()
+                            ->helperText('Items marked (draft) are unpublished and will not render on the public page.'),
                     ]),
 
                 // The sort_order column exists but nothing reads it — the public

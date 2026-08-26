@@ -6,6 +6,7 @@ use App\Enums\ArticleCategory;
 use App\Enums\ArticleStatus;
 use App\Enums\ProductType;
 use App\Models\Species;
+use Closure;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\MarkdownEditor;
@@ -83,6 +84,24 @@ class ArticleForm
                     ->schema([
                         MarkdownEditor::make('body')
                             ->hiddenLabel()
+                            // The house standard for regulatory content, enforced at
+                            // the point of authoring rather than only for the
+                            // markdown files in content/articles/.
+                            ->rule(static fn (callable $get): Closure => static function (string $attribute, $value, Closure $fail) use ($get): void {
+                                if (! self::isShippingRegulation($get)) {
+                                    return;
+                                }
+
+                                if (! Str::contains((string) $value, 'not legal advice', ignoreCase: true)) {
+                                    $fail('A published regulation article must carry a "not legal advice" disclaimer in its body.');
+
+                                    return;
+                                }
+
+                                if (! Str::startsWith(trim((string) $value), '>')) {
+                                    $fail('The "not legal advice" disclaimer must be the first element of the body (a blockquote).');
+                                }
+                            })
                             ->columnSpanFull(),
                     ]),
 
@@ -126,6 +145,31 @@ class ArticleForm
                             ->defaultItems(0)
                             ->reorderable()
                             ->columns(2)
+                            // Same standard: a published regulation article must cite,
+                            // and every citation must record when it was accessed.
+                            ->rule(static fn (callable $get): Closure => static function (string $attribute, $value, Closure $fail) use ($get): void {
+                                if (! self::isShippingRegulation($get)) {
+                                    return;
+                                }
+
+                                $rows = array_values((array) $value);
+
+                                if ($rows === []) {
+                                    $fail('A published regulation article must cite at least one source.');
+
+                                    return;
+                                }
+
+                                foreach ($rows as $row) {
+                                    $label = is_array($row) ? (string) ($row['label'] ?? '') : '';
+
+                                    if (! Str::contains($label, 'accessed', ignoreCase: true)) {
+                                        $fail('Every source on a regulation article must record an access date — include "accessed <date>" in the label.');
+
+                                        return;
+                                    }
+                                }
+                            })
                             ->itemLabel(fn (array $state): ?string => $state['label'] ?? ($state['url'] ?? null))
                             ->schema([
                                 TextInput::make('url')->url()->required()->maxLength(512),
@@ -139,9 +183,18 @@ class ArticleForm
                         Select::make('related_species_ids')
                             ->label('Related species')
                             ->multiple()
-                            ->options(fn (): array => Species::query()->orderBy('common_name')->pluck('common_name', 'id')->all())
+                            // Unpublished species stay selectable — pre-publish
+                            // wiring is legitimate — but they are labelled, because
+                            // Article::relatedSpecies() filters to published() at
+                            // render time and would otherwise silently drop them.
+                            ->options(fn (): array => Species::query()
+                                ->orderBy('common_name')
+                                ->get(['id', 'common_name', 'is_published'])
+                                ->mapWithKeys(fn (Species $s): array => [
+                                    $s->getKey() => $s->common_name.($s->is_published ? '' : ' (draft)'),
+                                ])->all())
                             ->searchable()
-                            ->helperText('Rendered as the "Species covered here" rail.'),
+                            ->helperText('Rendered as the "Species covered here" rail. Items marked (draft) are not published, so they will not appear on the public page until they are.'),
                         Select::make('related_product_types')
                             ->label('Related product types')
                             ->multiple()
@@ -157,5 +210,16 @@ class ArticleForm
                         TextInput::make('author_role')->label('Author role / credentials')->maxLength(150),
                     ]),
             ]);
+    }
+
+    /**
+     * True when the record being saved is a regulation article that is (or is
+     * about to be) publicly visible. Drafts are left alone so a piece can be
+     * written up over several saves.
+     */
+    private static function isShippingRegulation(callable $get): bool
+    {
+        return $get('category') === ArticleCategory::Regulation->value
+            && $get('status') === ArticleStatus::Published->value;
     }
 }

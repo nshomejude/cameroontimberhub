@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Public;
 use App\Http\Controllers\Controller;
 use App\Models\GlossaryTerm;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
 /**
@@ -20,6 +21,8 @@ class GlossaryController extends Controller
     {
         $q = trim((string) $request->query('q', ''));
 
+        $total = GlossaryTerm::published()->count();
+
         $terms = GlossaryTerm::published()
             ->search($q)
             ->orderBy('term')
@@ -32,11 +35,12 @@ class GlossaryController extends Controller
         return view('public.glossary.index', [
             'terms' => $terms,
             'q' => $q,
-            'total' => GlossaryTerm::published()->count(),
+            'total' => $total,
             'breadcrumbs' => [
                 ['label' => 'Home', 'url' => route('home')],
                 ['label' => 'Glossary', 'url' => route('glossary.index')],
             ],
+            'schema' => $this->indexSchema($terms),
         ]);
     }
 
@@ -57,6 +61,49 @@ class GlossaryController extends Controller
         ]);
     }
 
+    /**
+     * The DefinedTermSet node that every term page's `inDefinedTermSet`
+     * points at. The `@id` here MUST stay identical to the one built in
+     * termSchema(), otherwise each term references a node that is never
+     * defined and answer engines discount the whole set.
+     */
+    public static function definedTermSetId(): string
+    {
+        return route('glossary.index').'#glossary';
+    }
+
+    /**
+     * @param  Collection<string, Collection<int, GlossaryTerm>>  $terms
+     * @return array<string, mixed>
+     */
+    private function indexSchema(Collection $terms): array
+    {
+        $flat = $terms->flatten();
+
+        return [
+            '@context' => 'https://schema.org',
+            // Both types: it is the collection page for the glossary AND the
+            // term set itself, so one node carries the @id the terms cite.
+            '@type' => ['CollectionPage', 'DefinedTermSet'],
+            '@id' => self::definedTermSetId(),
+            'name' => config('app.name').' Glossary',
+            'description' => 'Definitions for Cameroon timber trade terms — grading, shipping, compliance and species terminology explained.',
+            'url' => route('glossary.index'),
+            'isPartOf' => ['@id' => url('/#website')],
+            'publisher' => ['@id' => url('/#organization')],
+            'mainEntity' => [
+                '@type' => 'ItemList',
+                'numberOfItems' => $flat->count(),
+                'itemListElement' => $flat->values()->map(fn (GlossaryTerm $t, int $i): array => [
+                    '@type' => 'ListItem',
+                    'position' => $i + 1,
+                    'name' => $t->term,
+                    'url' => $t->url(),
+                ])->all(),
+            ],
+        ];
+    }
+
     /** @return array<string, mixed> */
     private function termSchema(GlossaryTerm $term): array
     {
@@ -68,7 +115,7 @@ class GlossaryController extends Controller
             'description' => $term->definition,
             'inDefinedTermSet' => [
                 '@type' => 'DefinedTermSet',
-                '@id' => route('glossary.index').'#glossary',
+                '@id' => self::definedTermSetId(),
                 'name' => config('app.name').' Glossary',
                 'url' => route('glossary.index'),
             ],

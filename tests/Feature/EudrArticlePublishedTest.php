@@ -55,7 +55,9 @@ it('resolves the article internal links to real routes rather than raw schemes',
  * The house standard for regulatory content: a "not legal advice" disclaimer as
  * the first rendered element of the body, and every citation carrying an access
  * date. This runs over every shipped `regulation` article rather than just the
- * explainer, so the standard is enforced for whatever ships next.
+ * explainer, so the standard is enforced for every file-authored article. The
+ * other authoring path — writing directly in Filament — is held to the same
+ * standard by ArticleForm's validation, covered in ArticleAdminTest.
  */
 it('holds every shipped regulation article to the legal-content standard', function () {
     $articles = Article::query()

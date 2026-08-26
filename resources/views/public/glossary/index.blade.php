@@ -1,7 +1,8 @@
 <x-layouts.app
     title="Cameroon Timber Glossary"
     description="Definitions for Cameroon timber trade terms — grading, shipping, compliance and species terminology explained."
-    :breadcrumbs="$breadcrumbs">
+    :breadcrumbs="$breadcrumbs"
+    :schema="$schema">
 
     <div class="bg-white">
         <div class="mx-auto max-w-4xl px-4 py-8 lg:px-6">

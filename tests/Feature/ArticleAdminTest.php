@@ -6,6 +6,7 @@ use App\Filament\Resources\Articles\Pages\CreateArticle;
 use App\Filament\Resources\Articles\Pages\EditArticle;
 use App\Filament\Resources\Articles\Pages\ListArticles;
 use App\Models\Article;
+use App\Models\Species;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Livewire\Livewire;
@@ -83,6 +84,107 @@ it('requires a publish date when the status is published', function () {
         ])
         ->call('create')
         ->assertHasFormErrors(['published_at']);
+});
+
+/**
+ * Article::relatedSpecies() filters to published() at render time, so a linked
+ * draft species renders as nothing. The option stays selectable — pre-publish
+ * wiring is legitimate — but it must be labelled.
+ */
+it('marks unpublished species as drafts in the article cross-link select', function () {
+    Species::factory()->create(['common_name' => 'Livepublishedspecies', 'is_published' => true]);
+    Species::factory()->create(['common_name' => 'Draftonlyspecies', 'is_published' => false]);
+
+    $this->actingAs(articleStaff('admin'));
+
+    Livewire::test(CreateArticle::class)
+        ->assertSee('Draftonlyspecies (draft)')
+        ->assertDontSee('Livepublishedspecies (draft)');
+});
+
+/**
+ * The regulation standard, enforced at the point of authoring — not just for
+ * the markdown files in content/articles/ that EudrArticlePublishedTest covers.
+ */
+it('rejects a published regulation article with no disclaimer or dateless sources', function () {
+    $this->actingAs(articleStaff('admin'));
+
+    Livewire::test(CreateArticle::class)
+        ->fillForm([
+            'title' => 'Some new regulation explained',
+            'slug' => 'some-new-regulation-explained',
+            'category' => ArticleCategory::Regulation->value,
+            'status' => ArticleStatus::Published->value,
+            'published_at' => now()->toDateTimeString(),
+            'body' => "## What it says\n\nBody copy with no disclaimer.",
+            'sources' => [],
+        ])
+        ->call('create')
+        ->assertHasFormErrors(['body', 'sources']);
+
+    // Disclaimer present but not first, and a source with no access date.
+    Livewire::test(CreateArticle::class)
+        ->fillForm([
+            'title' => 'Some new regulation explained',
+            'slug' => 'some-new-regulation-explained',
+            'category' => ArticleCategory::Regulation->value,
+            'status' => ArticleStatus::Published->value,
+            'published_at' => now()->toDateTimeString(),
+            'body' => "## What it says\n\n> This is not legal advice.",
+            'sources' => [['url' => 'https://eur-lex.europa.eu/x', 'label' => 'EUR-Lex']],
+        ])
+        ->call('create')
+        ->assertHasFormErrors(['body', 'sources']);
+
+    expect(Article::where('slug', 'some-new-regulation-explained')->exists())->toBeFalse();
+});
+
+it('accepts a published regulation article that meets the standard', function () {
+    $this->actingAs(articleStaff('admin'));
+
+    Livewire::test(CreateArticle::class)
+        ->fillForm([
+            'title' => 'Some new regulation explained',
+            'slug' => 'compliant-regulation-piece',
+            'category' => ArticleCategory::Regulation->value,
+            'status' => ArticleStatus::Published->value,
+            'published_at' => now()->toDateTimeString(),
+            'body' => "> This explainer is not legal advice.\n\n## What it says\n\nBody copy.",
+            'sources' => [['url' => 'https://eur-lex.europa.eu/x', 'label' => 'EUR-Lex (accessed 2026-08-26)']],
+        ])
+        ->call('create')
+        ->assertHasNoFormErrors();
+
+    expect(Article::where('slug', 'compliant-regulation-piece')->exists())->toBeTrue();
+});
+
+it('leaves drafts and non-regulation articles free of the regulation standard', function () {
+    $this->actingAs(articleStaff('admin'));
+
+    // A regulation piece still being written.
+    Livewire::test(CreateArticle::class)
+        ->fillForm([
+            'title' => 'Regulation work in progress',
+            'slug' => 'regulation-wip',
+            'category' => ArticleCategory::Regulation->value,
+            'status' => ArticleStatus::Draft->value,
+            'body' => 'Half-written.',
+        ])
+        ->call('create')
+        ->assertHasNoFormErrors();
+
+    // And a published market piece is never subject to it.
+    Livewire::test(CreateArticle::class)
+        ->fillForm([
+            'title' => 'Market note',
+            'slug' => 'market-note-no-disclaimer',
+            'category' => ArticleCategory::Market->value,
+            'status' => ArticleStatus::Published->value,
+            'published_at' => now()->toDateTimeString(),
+            'body' => 'No disclaimer, no sources.',
+        ])
+        ->call('create')
+        ->assertHasNoFormErrors();
 });
 
 it('deletes an article from the edit screen', function () {

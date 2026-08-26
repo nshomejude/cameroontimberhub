@@ -107,3 +107,49 @@ it('never surfaces an unpublished term through search', function () {
 
     $this->get(route('glossary.index', ['q' => 'kiln']))->assertOk()->assertDontSee('Hidden Kiln Term');
 });
+
+/**
+ * @return list<array<string, mixed>>
+ */
+function glossaryLdJson(string $html): array
+{
+    preg_match_all('#<script type="application/ld\+json">(.*?)</script>#s', $html, $m);
+
+    return collect($m[1])
+        ->map(fn (string $json) => json_decode($json, true))
+        ->filter(fn ($decoded): bool => is_array($decoded))
+        ->values()
+        ->all();
+}
+
+it('emits a DefinedTermSet on the glossary index whose @id is the one term pages reference', function () {
+    GlossaryTerm::factory()->create([
+        'term' => 'Bill Of Lading',
+        'slug' => 'bill-of-lading',
+        'is_published' => true,
+    ]);
+
+    // The @id a term page points at...
+    $termSchema = collect(glossaryLdJson($this->get(route('glossary.show', 'bill-of-lading'))->assertOk()->getContent()))
+        ->first(fn (array $node): bool => ($node['@type'] ?? null) === 'DefinedTerm');
+
+    expect($termSchema)->not->toBeNull();
+
+    $referencedId = $termSchema['inDefinedTermSet']['@id'] ?? null;
+    expect($referencedId)->toBeString();
+    expect($referencedId)->not->toBeEmpty();
+
+    // ...must be defined by a node the index actually emits. Compared, never
+    // hardcoded twice, so the two sides cannot drift apart.
+    $indexNodes = glossaryLdJson($this->get(route('glossary.index'))->assertOk()->getContent());
+
+    $set = collect($indexNodes)->first(fn (array $node): bool => ($node['@id'] ?? null) === $referencedId);
+
+    expect($set)->not->toBeNull()
+        ->and((array) $set['@type'])->toContain('DefinedTermSet')
+        ->and($set['url'])->toBe(route('glossary.index'));
+
+    // And the set lists the term, so the relationship resolves both ways.
+    expect(collect($set['mainEntity']['itemListElement'])->pluck('url')->all())
+        ->toContain(route('glossary.show', 'bill-of-lading'));
+});
