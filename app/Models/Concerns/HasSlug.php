@@ -57,6 +57,7 @@ trait HasSlug
             'admin', 'dashboard', 'api', 'companies', 'company', 'species',
             'login', 'register', 'logout', 'pricing', 'verification', 'directory',
             'about', 'contact', 'request-quote', 'list-your-company', 'sitemap', 'robots',
+            'marketplace', 'search', 'products', 'product',
         ];
     }
 }

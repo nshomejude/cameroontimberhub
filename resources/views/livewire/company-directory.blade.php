@@ -1,56 +1,236 @@
-<div>
-    @php($field = 'w-full rounded-lg border border-sand-300 dark:border-[#3a352e] bg-sand-50/60 dark:bg-[#26241e] px-3 py-2.5 text-sm text-ink dark:text-[#f1ece1] focus:border-forest-500 focus:bg-white dark:focus:bg-[#1f1d18] focus:ring-2 focus:ring-forest-100 focus:outline-none')
-    {{-- Hero / filter header --}}
-    <section class="border-b border-sand-200 dark:border-[#2c2a24] bg-gradient-to-b from-forest-50 dark:from-forest-950 to-sand-50 dark:to-[#14130f]">
-        <div class="mx-auto max-w-6xl px-4 py-14">
-            <p class="eyebrow">Verified directory</p>
-            <h1 class="mt-3 font-display text-4xl font-semibold text-forest-950 dark:text-sand-100 sm:text-5xl">Timber exporters in Cameroon</h1>
-            <p class="mt-3 text-ink-soft dark:text-[#b3ab9b]">
-                {{ $companies->total() }} verified {{ Str::plural('exporter', $companies->total()) }} — filter by species, region and export market.
-            </p>
+@php
+    $select = 'appearance-none rounded-lg border border-sand-300 bg-white py-2 pl-3 pr-8 text-[1.0625rem] text-ink transition focus:border-forest-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-forest-200';
+    $total = $companies->total();
+@endphp
 
-            {{-- Desktop: inline filter card --}}
-            <div class="mt-8 hidden rounded-2xl border border-sand-200 dark:border-[#2c2a24] bg-white dark:bg-[#1f1d18] p-4 shadow-sm md:block">
-                @include('livewire.partials.directory-filters', ['field' => $field])
+<div class="bg-white">
+
+    {{-- ==============================================================
+         DESKTOP — filter rail + results
+    =============================================================== --}}
+    <div class="hidden lg:flex lg:items-start">
+
+        {{-- Filter rail --}}
+        <aside class="sticky top-[72px] h-[calc(100vh-72px)] w-[17rem] shrink-0 border-r border-sand-200 bg-white"
+               aria-label="Supplier filters">
+            <x-directory-filters
+                :type-facets="$typeFacets" :spec-facets="$specFacets" :species-facets="$speciesFacets"
+                :cert-facets="$certFacets" :experience-facets="$experienceFacets" :regions="$regions"
+                :facet-limit="$facetLimit" :types="$types" :spec-query="$specQuery" :species-query="$speciesQuery"
+                id-prefix="d" />
+        </aside>
+
+        <div class="min-w-0 flex-1 px-6 py-6">
+
+            {{-- Breadcrumb --}}
+            <nav aria-label="Breadcrumb">
+                <ol class="flex items-center gap-2 text-[0.9375rem] text-ink-soft">
+                    <li><a href="{{ route('home') }}" class="rounded transition hover:text-forest-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-300">Home</a></li>
+                    <li aria-hidden="true">/</li>
+                    <li><span aria-current="page" class="font-medium text-ink">Suppliers</span></li>
+                </ol>
+            </nav>
+
+            {{-- Title + stat tiles --}}
+            <div class="mt-3 flex items-start gap-8">
+                <div class="min-w-0 flex-1">
+                    <h1 class="text-[1.875rem] font-bold tracking-tight text-ink">Supplier Directory</h1>
+                    <p class="mt-1.5 text-[1.0625rem] text-ink-soft">
+                        Find and connect with verified timber suppliers, exporters and manufacturers across Cameroon.
+                    </p>
+                </div>
+
+                <dl class="grid shrink-0 gap-4" style="grid-template-columns: repeat({{ count($stats) }}, minmax(0, 1fr));">
+                    @foreach ($stats as $stat)
+                        <div class="flex min-w-[11rem] items-center gap-3 rounded-xl border border-sand-300/70 bg-white px-4 py-3">
+                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-forest-50 text-forest-700">
+                                <x-dynamic-component :component="'heroicon-o-'.$stat['icon']" class="h-5 w-5" />
+                            </span>
+                            <div class="min-w-0">
+                                <dd class="text-[1.125rem] font-bold leading-tight text-forest-800">{{ $stat['value'] }}</dd>
+                                <dt class="truncate text-[0.9375rem] text-ink-soft">{{ $stat['label'] }}</dt>
+                            </div>
+                        </div>
+                    @endforeach
+                </dl>
             </div>
 
-            {{-- Mobile: bottom-sheet trigger --}}
-            <div class="mt-6 md:hidden">
-                <x-bottom-sheet title="Filter exporters">
-                    <x-slot:trigger>
-                        <button type="button" class="flex w-full items-center justify-between rounded-xl border border-sand-200 dark:border-[#2c2a24] bg-white dark:bg-[#1f1d18] px-4 py-3 text-sm font-medium text-forest-800 dark:text-forest-200 shadow-sm active:scale-[0.99]">
-                            <span class="inline-flex items-center gap-2"><x-heroicon-m-funnel class="h-5 w-5 text-timber-500" /> Filter exporters</span>
-                            <x-heroicon-m-chevron-up class="h-5 w-5 text-ink-soft dark:text-[#b3ab9b]" />
+            {{-- Toolbar --}}
+            <div class="mt-6 flex items-center gap-3">
+                <div class="inline-flex rounded-lg border border-sand-300 p-0.5" role="group" aria-label="Result layout">
+                    @foreach ([['grid', 'Grid View', 'squares-2x2'], ['list', 'List View', 'bars-3']] as [$mode, $label, $icon])
+                        <button type="button" wire:click="setView('{{ $mode }}')"
+                                aria-pressed="{{ $view === $mode ? 'true' : 'false' }}"
+                                @class([
+                                    'inline-flex items-center gap-2 rounded-md px-4 py-2 text-[1.0625rem] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500',
+                                    'bg-forest-700 text-white' => $view === $mode,
+                                    'text-ink-soft hover:text-forest-700' => $view !== $mode,
+                                ])>
+                            <x-dynamic-component :component="'heroicon-m-'.$icon" class="h-4 w-4" />
+                            {{ $label }}
                         </button>
-                    </x-slot:trigger>
-                    @include('livewire.partials.directory-filters', ['field' => $field])
-                </x-bottom-sheet>
-            </div>
-        </div>
-    </section>
+                    @endforeach
+                </div>
 
-    {{-- Results --}}
-    <section class="mx-auto max-w-6xl px-4 py-12">
-        @if($companies->isNotEmpty())
-            <div wire:loading.class="opacity-50 transition-opacity duration-150"
-                 class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                @foreach($companies as $company)
-                    @include('public.partials.company-card', ['company' => $company])
-                @endforeach
-            </div>
-            <div class="mt-10">{{ $companies->links() }}</div>
-        @else
-            <div class="rounded-2xl border border-dashed border-sand-300 dark:border-[#3a352e] bg-white dark:bg-[#1f1d18] p-14 text-center">
-                <span class="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-forest-50 dark:bg-[#1b2c22] text-forest-600 dark:text-forest-400">
-                    <x-heroicon-o-magnifying-glass class="h-6 w-6" />
-                </span>
-                <h2 class="mt-4 font-display text-xl font-semibold text-forest-900 dark:text-sand-100">No verified exporters match these filters yet</h2>
-                <p class="mt-2 text-ink-soft dark:text-[#b3ab9b]">Try broadening your search, or tell us what you need and we'll connect you.</p>
-                <div class="mt-6 flex justify-center gap-3">
-                    <button wire:click="resetFilters" class="rounded-full border border-sand-300 dark:border-[#3a352e] px-5 py-2.5 text-sm font-medium text-ink-soft dark:text-[#b3ab9b] transition hover:border-forest-400 hover:text-forest-700">Reset filters</button>
-                    <a href="{{ route('rfq.create') }}" class="rounded-full bg-forest-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-forest-800">Request a quote</a>
+                <div class="ml-auto flex items-center gap-3">
+                    <div class="relative">
+                        <label for="d-sort" class="sr-only">Sort suppliers by</label>
+                        <select id="d-sort" wire:model.live="sort" class="{{ $select }}">
+                            @foreach ($sortOptions as $value => $label)
+                                <option value="{{ $value }}">Sort by: {{ $label }}</option>
+                            @endforeach
+                        </select>
+                        <x-heroicon-m-chevron-down class="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-soft" />
+                    </div>
+                    <div class="relative">
+                        <label for="d-per-page" class="sr-only">Results per page</label>
+                        <select id="d-per-page" wire:model.live="perPage" class="{{ $select }}">
+                            @foreach ([12, 24, 48] as $n)
+                                <option value="{{ $n }}">Show: {{ $n }}</option>
+                            @endforeach
+                        </select>
+                        <x-heroicon-m-chevron-down class="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-soft" />
+                    </div>
                 </div>
             </div>
-        @endif
-    </section>
+
+            {{-- Results --}}
+            <div wire:loading.class="opacity-60" class="mt-5 transition-opacity">
+                @if ($companies->isNotEmpty())
+                    @if ($view === 'list')
+                        <div class="space-y-3">
+                            @foreach ($companies as $company)
+                                <x-supplier-row :company="$company" />
+                            @endforeach
+                        </div>
+                    @else
+                        <div class="grid grid-cols-2 gap-5 xl:grid-cols-3 2xl:grid-cols-4">
+                            @foreach ($companies as $company)
+                                <x-supplier-card :company="$company" />
+                            @endforeach
+                        </div>
+                    @endif
+
+                    <div class="mt-8">
+                        <x-directory-pagination :paginator="$companies" noun="suppliers" />
+                    </div>
+                @else
+                    <x-directory-empty />
+                @endif
+            </div>
+        </div>
+    </div>
+
+    {{-- ==============================================================
+         MOBILE
+    =============================================================== --}}
+    <div x-data="{ drawer: false }" @close-filter-drawer.window="drawer = false" class="lg:hidden">
+        <div class="px-4 pt-5">
+            <h1 class="text-[1.75rem] font-bold leading-tight tracking-tight text-ink">Supplier Directory</h1>
+            <p class="mt-2 text-[1.125rem] leading-relaxed text-ink-soft">
+                Connect with verified timber suppliers, exporters and manufacturers in Cameroon.
+            </p>
+
+            {{-- Search + filter trigger --}}
+            <div class="mt-4 flex gap-3">
+                <div class="relative flex-1">
+                    <label for="m-search" class="sr-only">Search suppliers</label>
+                    <x-heroicon-o-magnifying-glass class="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-ink-soft" />
+                    <input id="m-search" type="search" wire:model.live.debounce.400ms="search"
+                           placeholder="Search suppliers, company name..."
+                           class="w-full rounded-xl border border-sand-300 bg-white py-3 pl-11 pr-3 text-[1.125rem] text-ink placeholder:text-ink-soft/70 focus:border-forest-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-forest-200">
+                </div>
+                <button type="button" @click="drawer = true"
+                        class="flex shrink-0 items-center gap-2 rounded-xl bg-forest-800 px-5 text-[1.125rem] font-semibold text-white transition hover:bg-forest-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500 focus-visible:ring-offset-2">
+                    <x-heroicon-o-adjustments-horizontal class="h-5 w-5" />
+                    Filters
+                </button>
+            </div>
+        </div>
+
+        {{-- Type chip row --}}
+        <div class="mt-4 flex gap-2.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <button type="button" wire:click="selectType('')"
+                    aria-pressed="{{ $types === [] ? 'true' : 'false' }}"
+                    @class([
+                        'inline-flex shrink-0 items-center gap-2 rounded-full border px-4 py-2.5 text-[1.0625rem] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500',
+                        'border-forest-700 text-forest-700' => $types === [],
+                        'border-sand-300 text-ink' => $types !== [],
+                    ])>
+                <x-heroicon-o-adjustments-horizontal class="h-5 w-5" />
+                All Suppliers
+            </button>
+            @foreach ($typeFacets as $facet)
+                <button type="button" wire:click="selectType('{{ $facet['value'] }}')"
+                        aria-pressed="{{ $types === [$facet['value']] ? 'true' : 'false' }}"
+                        @class([
+                            'inline-flex shrink-0 items-center gap-2 rounded-full border px-4 py-2.5 text-[1.0625rem] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500',
+                            'border-forest-700 text-forest-700' => $types === [$facet['value']],
+                            'border-sand-300 text-ink' => $types !== [$facet['value']],
+                        ])>
+                    <x-dynamic-component :component="'heroicon-o-'.$facet['icon']" class="h-5 w-5" />
+                    {{ $facet['plural'] }}
+                </button>
+            @endforeach
+        </div>
+
+        {{-- Count + sort --}}
+        <div class="mt-4 flex items-center gap-3 px-4">
+            <p class="text-[1.125rem] text-ink">{{ $total }} {{ Str::plural('Supplier', $total) }} Found</p>
+            <div class="relative ml-auto">
+                <label for="m-sort" class="sr-only">Sort suppliers by</label>
+                <select id="m-sort" wire:model.live="sort"
+                        class="appearance-none rounded-xl border border-sand-300 bg-white py-3 pl-4 pr-10 text-[1.125rem] text-ink focus:border-forest-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-forest-200">
+                    @foreach ($sortOptions as $value => $label)
+                        <option value="{{ $value }}">Sort: {{ $label }}</option>
+                    @endforeach
+                </select>
+                <x-heroicon-m-chevron-down class="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-ink-soft" />
+            </div>
+        </div>
+
+        {{-- 2-column grid --}}
+        <div wire:loading.class="opacity-60" class="mt-4 px-4 pb-8 transition-opacity">
+            @if ($companies->isNotEmpty())
+                <div class="grid grid-cols-2 gap-4">
+                    @foreach ($companies as $company)
+                        <x-supplier-card :company="$company" compact />
+                    @endforeach
+                </div>
+                <div class="mt-6">
+                    <x-directory-pagination :paginator="$companies" noun="suppliers" />
+                </div>
+            @else
+                <x-directory-empty />
+            @endif
+        </div>
+
+        {{-- Filter drawer --}}
+        <div x-show="drawer" x-cloak class="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label="Supplier filters"
+             @keydown.escape.window="drawer = false">
+            <div class="absolute inset-0 bg-black/40" @click="drawer = false"></div>
+            <div x-show="drawer"
+                 x-transition:enter="transition ease-out duration-200"
+                 x-transition:enter-start="translate-y-full" x-transition:enter-end="translate-y-0"
+                 x-transition:leave="transition ease-in duration-150"
+                 x-transition:leave-start="translate-y-0" x-transition:leave-end="translate-y-full"
+                 class="absolute inset-x-0 bottom-0 flex max-h-[88vh] flex-col rounded-t-2xl bg-white shadow-2xl">
+                <div class="flex items-center justify-between border-b border-sand-200 px-5 py-3">
+                    <span class="text-[1.125rem] font-bold text-ink">Filter suppliers</span>
+                    <button type="button" @click="drawer = false"
+                            class="flex h-9 w-9 items-center justify-center rounded-lg text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500"
+                            aria-label="Close filters">
+                        <x-heroicon-o-x-mark class="h-6 w-6" />
+                    </button>
+                </div>
+                <div class="min-h-0 flex-1">
+                    <x-directory-filters
+                        :type-facets="$typeFacets" :spec-facets="$specFacets" :species-facets="$speciesFacets"
+                        :cert-facets="$certFacets" :experience-facets="$experienceFacets" :regions="$regions"
+                        :facet-limit="$facetLimit" :types="$types" :spec-query="$specQuery" :species-query="$speciesQuery"
+                        id-prefix="m" />
+                </div>
+            </div>
+        </div>
+    </div>
 </div>

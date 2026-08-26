@@ -2,8 +2,12 @@
 
 namespace App\Filament\Resources\Species\Schemas;
 
+use App\Enums\LogExportStatus;
+use App\Enums\TimberCategory;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\KeyValue;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
@@ -41,7 +45,71 @@ class SpeciesForm
                             ->columnSpanFull(),
                     ]),
 
-                Section::make('Classification')
+                Section::make('Cameroon classification')
+                    ->description('Commercial/market grouping — not a MINFOF tax category or any other legal classification.')
+                    ->columns(2)
+                    ->schema([
+                        Select::make('commercial_category')
+                            ->label('Commercial category')
+                            ->options(TimberCategory::options())
+                            ->native(false),
+                        Toggle::make('is_promoted')
+                            ->label('Promoted species (essence de promotion)')
+                            ->helperText('A lesser-known species promoted to broaden the harvest.'),
+                        Select::make('log_export_status')
+                            ->label('Log export status')
+                            ->options(LogExportStatus::options())
+                            ->default(LogExportStatus::Unknown->value)
+                            ->native(false)
+                            ->helperText('Informational only. Verify against current MINFOF publications before relying on it.'),
+                        TagsInput::make('region_availability')
+                            ->label('Regions harvested')
+                            ->placeholder('East, South, Centre…'),
+                    ]),
+
+                Section::make('Knowledge System (SEO authority spec §C)')
+                    ->description('Schema.org DefinedTerm data and sourced facts. Leave a field blank rather than guessing — blank is always better than a fabricated claim. Only the EUDR risk note is rendered publicly today, where a blank value shows an honest "not yet assessed" note; the other fields are stored now and surfaced on the public pages in a later phase.')
+                    ->columns(2)
+                    ->schema([
+                        TextInput::make('french_name')->label('French trade name')->maxLength(150),
+                        KeyValue::make('taxonomy')
+                            ->keyLabel('Rank')->valueLabel('Name')
+                            ->helperText('e.g. Kingdom, Order, Family, Genus, Species.')
+                            ->columnSpanFull(),
+                        Textarea::make('workability')->rows(2),
+                        Textarea::make('drying_behaviour')->label('Drying behaviour')->rows(2),
+                        Textarea::make('eudr_risk_note')->label('EUDR risk note')->rows(3)
+                            ->helperText('Only populate with a genuinely sourced, dated regulatory assessment. Leave blank otherwise.')
+                            ->columnSpanFull(),
+                        TagsInput::make('grades_available')->label('Grades available')->placeholder('FAS, Select, Standard'),
+                        TagsInput::make('treatments')->placeholder('Kiln drying, Preservative treatment'),
+                        Repeater::make('authoritative_sources')
+                            ->label('Authoritative sources')
+                            ->defaultItems(0)
+                            ->reorderable()
+                            ->collapsible()
+                            ->itemLabel(fn (array $state): ?string => $state['title'] ?? ($state['url'] ?? null))
+                            ->schema([
+                                TextInput::make('title')->required()->maxLength(255),
+                                TextInput::make('publisher')->required()->maxLength(180),
+                                TextInput::make('url')->url()->required()->maxLength(512),
+                                DatePicker::make('accessed_date')->required(),
+                            ])
+                            ->columns(2)
+                            ->columnSpanFull(),
+                    ]),
+
+                Section::make('Technical properties')
+                    ->columns(2)
+                    ->schema([
+                        TextInput::make('density_kg_m3_min')->label('Density min (kg/m³)')->numeric()->minValue(0),
+                        TextInput::make('density_kg_m3_max')->label('Density max (kg/m³)')->numeric()->minValue(0),
+                        TextInput::make('durability_class')->label('Durability class')->maxLength(60)->placeholder('Class 1 (Very Durable)'),
+                        TextInput::make('janka_hardness')->label('Janka hardness (N)')->numeric()->minValue(0),
+                        TagsInput::make('typical_uses')->label('Typical uses')->placeholder('Add a use')->columnSpanFull(),
+                    ]),
+
+                Section::make('CITES')
                     ->columns(2)
                     ->schema([
                         Toggle::make('is_cites_listed')->live(),

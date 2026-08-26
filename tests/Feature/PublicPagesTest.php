@@ -95,7 +95,7 @@ it('renders the contact page when a published contact CMS page exists', function
     $this->get(route('contact'))
         ->assertOk()
         ->assertSee('Get in touch')
-        ->assertSee('Send message');
+        ->assertSee('Send Message');
 });
 
 it('accepts a valid contact submission and flashes success', function () {
@@ -194,7 +194,7 @@ it('does not expose draft companies on the programmatic exporter page', function
 it('issues a 301 redirect for a GET request to a registered old slug', function (): void {
     SlugRedirect::create([
         'from_slug' => 'old-company-name',
-        'to_url'    => '/exporters/iroko-cameroon',
+        'to_url' => '/exporters/iroko-cameroon',
     ]);
 
     $this->get('/old-company-name')
@@ -209,7 +209,7 @@ it('does not redirect a GET request when no slug_redirects entry exists', functi
 it('does not redirect POST requests even when a slug_redirects entry exists', function (): void {
     SlugRedirect::create([
         'from_slug' => 'old-contact',
-        'to_url'    => '/contact',
+        'to_url' => '/contact',
     ]);
 
     $response = $this->post('/old-contact');

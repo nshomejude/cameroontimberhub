@@ -10,50 +10,61 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
+    /* The approved mockups set every heading in the same geometric sans as body
+       copy (no serif), so display and sans share a stack and differ by weight. */
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
-    --font-display: 'Fraunces', ui-serif, Georgia, 'Times New Roman', serif;
+    --font-display: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
 
-    /* Forest — primary brand green */
-    --color-forest-50: #f1f7f2;
-    --color-forest-100: #dcebe0;
-    --color-forest-200: #bad7c2;
-    --color-forest-300: #8fbb9d;
-    --color-forest-400: #5d9a71;
-    --color-forest-500: #3c7d52;
-    --color-forest-600: #2c6240;
-    --color-forest-700: #254f35;
-    --color-forest-800: #20402c;
-    --color-forest-900: #1b3425;
-    --color-forest-950: #0e1c14;
+    /* Forest — primary brand green. Values sampled directly from the approved
+       marketplace mockups in /frontpages (buttons #0a5223, dark bands #031c12,
+       utility bar #173526) so the build matches the design 1:1. */
+    --color-forest-50: #edf7f0;
+    --color-forest-100: #d3ebda;
+    --color-forest-200: #a8d7b8;
+    --color-forest-300: #74bc8d;
+    --color-forest-400: #439c66;
+    --color-forest-500: #1f7d45;
+    --color-forest-600: #15703d;
+    --color-forest-700: #0a5223;
+    --color-forest-800: #073e20;
+    --color-forest-900: #052d1a;
+    --color-forest-950: #031c12;
 
-    /* Timber — warm wood accent */
+    /* Slate-green chrome — utility bar and footer read cooler/greyer than the
+       button greens in the mockups, so they get their own tokens. */
+    --color-bark-700: #21362b;
+    --color-bark-800: #173526;
+    --color-bark-900: #12251b;
+
+    /* Timber — warm wood accent (logo wordmark, species swatches) */
     --color-timber-50: #faf6ef;
     --color-timber-100: #f3e7d2;
     --color-timber-200: #e6cca1;
     --color-timber-300: #d7ac6c;
-    --color-timber-400: #cb9248;
-    --color-timber-500: #bd7a32;
-    --color-timber-600: #a3612a;
+    --color-timber-400: #c38851;
+    --color-timber-500: #a9713e;
+    --color-timber-600: #8a5a30;
     --color-timber-700: #834b27;
     --color-timber-800: #6c3f25;
     --color-timber-900: #5a3622;
 
-    /* Sand — cream neutrals */
-    --color-sand-50: #fbf9f4;
-    --color-sand-100: #f5f0e6;
-    --color-sand-200: #ebe3d2;
-    --color-sand-300: #dcceb4;
-    --color-sand-400: #c4b08a;
+    /* Sand — near-white page/section neutrals */
+    --color-sand-50: #fbfaf8;
+    --color-sand-100: #f9f9f7;
+    --color-sand-200: #efefec;
+    --color-sand-300: #e0e0da;
+    --color-sand-400: #c2c2b8;
 
     /* Ink — warm near-black text */
-    --color-ink: #201e18;
-    --color-ink-soft: #5b554a;
+    --color-ink: #17201a;
+    --color-ink-soft: #5b6560;
 }
 
 @layer base {
     html {
-        /* Larger editorial base so body/UI text isn't cramped (default ~16px). */
-        font-size: 118.75%;
+        /* The mockups are drawn at a standard 16px root; the previous 118.75%
+           editorial scale would oversize every measurement taken from them. */
+        font-size: 100%;
         scroll-behavior: smooth;
     }
 
@@ -141,3 +152,214 @@
 /* Dark surface scale (for reference / reuse by components):
    page #14130f · card #1f1d18 · raised #26241e · border #2c2a24 / #34302a
    text #f1ece1 · soft #b3ab9b · forest tile #1b2c22 */
+
+/* ---------- Print ----------
+   The receipt is a real document people file and post, so printing it must
+   yield the sheet alone: no site chrome, no dark theme, no page break through
+   the middle of the items table. Screen-only controls carry `print:hidden`. */
+@media print {
+    body > header,
+    body > footer,
+    body > .tab-bar,
+    body > div.bg-bark-800,
+    #pull-indicator {
+        display: none !important;
+    }
+
+    html, body {
+        background: #fff !important;
+        color: #000 !important;
+        font-size: 11pt;
+    }
+
+    /* The app shell reserves space for the mobile tab bar; print must not. */
+    #app-main {
+        padding-bottom: 0 !important;
+    }
+
+    .receipt-page {
+        max-width: none;
+        padding: 0 !important;
+    }
+
+    /* The sheet itself: edge to edge, no card border or shadow. */
+    .receipt-sheet {
+        border: 0 !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        background: #fff !important;
+        color: #000 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    .receipt-sheet header,
+    .receipt-sheet table,
+    .receipt-sheet tr {
+        break-inside: avoid;
+    }
+
+    /* Repeat the column headers when the items table spans pages. */
+    .receipt-sheet thead {
+        display: table-header-group;
+    }
+
+    /* Background utilities are dropped by most print engines; the table head
+       and the total row have to stay legible. */
+    .receipt-sheet thead tr {
+        background: #0a5223 !important;
+        color: #fff !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    /* Scroll containers would clip onto a page that is never printed. */
+    .receipt-sheet .overflow-x-auto {
+        overflow: visible !important;
+    }
+
+    /* No "(https://…)" noise appended to every link. */
+    a[href]::after {
+        content: none !important;
+    }
+
+    @page {
+        margin: 14mm;
+    }
+}
+
+/* ---------- Long-form editorial body (/insights article pages) ----------
+   The site has no @tailwindcss/typography plugin and is not getting one, so the
+   article measure, rhythm and heading scale live here. Measure is capped at
+   ~68ch — the range long-form copy is actually read comfortably at — and the
+   body size sits on the 17px scale used everywhere else, with a taller
+   line-height because these are paragraphs, not UI labels. */
+.article-prose {
+    max-width: 68ch;
+    font-size: 1.0625rem;
+    line-height: 1.8;
+    color: var(--color-ink);
+}
+
+.article-prose > * + * {
+    margin-top: 1.15em;
+}
+
+.article-prose h2 {
+    margin-top: 2.4em;
+    margin-bottom: 0.6em;
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+    scroll-margin-top: 6rem; /* clears the sticky header on a TOC jump */
+}
+
+.article-prose h3 {
+    margin-top: 1.9em;
+    margin-bottom: 0.45em;
+    font-size: 1.1875rem;
+    font-weight: 700;
+    line-height: 1.35;
+    scroll-margin-top: 6rem;
+}
+
+.article-prose h2:first-child,
+.article-prose h3:first-child {
+    margin-top: 0;
+}
+
+.article-prose a {
+    color: var(--color-forest-700);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.article-prose a:hover {
+    color: var(--color-forest-800);
+}
+
+.article-prose strong {
+    font-weight: 600;
+    color: var(--color-ink);
+}
+
+.article-prose ul,
+.article-prose ol {
+    padding-left: 1.5rem;
+}
+
+.article-prose ul { list-style: disc; }
+.article-prose ol { list-style: decimal; }
+
+.article-prose li + li {
+    margin-top: 0.4em;
+}
+
+.article-prose li::marker {
+    color: var(--color-ink-soft);
+}
+
+.article-prose blockquote {
+    border-left: 3px solid var(--color-forest-300);
+    padding-left: 1.1rem;
+    color: var(--color-ink-soft);
+    font-style: italic;
+}
+
+.article-prose code {
+    background: var(--color-sand-100);
+    border-radius: 0.25rem;
+    padding: 0.1em 0.35em;
+    font-size: 0.9em;
+}
+
+.article-prose pre {
+    background: var(--color-forest-950);
+    color: #e6f2ea;
+    border-radius: 0.75rem;
+    padding: 1rem 1.1rem;
+    overflow-x: auto;
+}
+
+.article-prose pre code {
+    background: transparent;
+    padding: 0;
+    color: inherit;
+}
+
+.article-prose img {
+    border-radius: 0.75rem;
+    max-width: 100%;
+    height: auto;
+}
+
+.article-prose hr {
+    border-color: var(--color-sand-300);
+    margin-top: 2.2em;
+    margin-bottom: 2.2em;
+}
+
+.article-prose table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 1rem;
+    display: block;
+    overflow-x: auto;
+}
+
+.article-prose th,
+.article-prose td {
+    border: 1px solid var(--color-sand-300);
+    padding: 0.55rem 0.75rem;
+    text-align: left;
+}
+
+.article-prose thead th {
+    background: var(--color-sand-100);
+    font-weight: 600;
+}
+
+/* `<details>` FAQ rows: hide the native disclosure marker in every engine. */
+details > summary::-webkit-details-marker { display: none; }
+details > summary { list-style: none; }

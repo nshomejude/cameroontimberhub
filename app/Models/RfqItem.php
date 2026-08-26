@@ -16,7 +16,7 @@ class RfqItem extends Model
     protected function casts(): array
     {
         return [
-            'form'     => TimberForm::class,
+            'form' => TimberForm::class,
             'quantity' => 'decimal:2',
         ];
     }
@@ -35,6 +35,10 @@ class RfqItem extends Model
     {
         $name = $this->species?->common_name ?: $this->species_text ?: 'Timber';
 
-        return trim($name.' · '.$this->form.' · '.rtrim(rtrim((string) $this->quantity, '0'), '.').' '.$this->unit, ' ·');
+        // `form` is cast to TimberForm, so read its human label rather than
+        // interpolating the enum object.
+        $form = $this->form?->label() ?? '';
+
+        return trim($name.' · '.$form.' · '.rtrim(rtrim((string) $this->quantity, '0'), '.').' '.$this->unit, ' ·');
     }
 }
