@@ -125,7 +125,7 @@
                         <h2 id="eudr-heading" class="{{ $sectionTitle }}">EUDR risk assessment</h2>
                         <div class="mt-4 {{ $panel }}">
                             @if ($species->eudr_risk_note)
-                                <p class="text-[1.0625rem] text-ink">{{ $species->eudr_risk_note }}</p>
+                                <p class="whitespace-pre-line text-[1.0625rem] text-ink">{{ $species->eudr_risk_note }}</p>
                             @else
                                 <p class="text-[1.0625rem] text-ink-soft">
                                     EU Deforestation Regulation risk for {{ $species->common_name }} is

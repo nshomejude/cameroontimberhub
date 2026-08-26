@@ -68,10 +68,14 @@ class SpeciesForm
                     ]),
 
                 Section::make('Knowledge System (SEO authority spec §C)')
-                    ->description('Schema.org DefinedTerm data and sourced facts for the public species pages. Leave a field blank rather than guessing — a null value renders an honest "not yet assessed" note instead of a fabricated claim.')
+                    ->description('Schema.org DefinedTerm data and sourced facts. Leave a field blank rather than guessing — blank is always better than a fabricated claim. Only the EUDR risk note is rendered publicly today, where a blank value shows an honest "not yet assessed" note; the other fields are stored now and surfaced on the public pages in a later phase.')
                     ->columns(2)
                     ->schema([
                         TextInput::make('french_name')->label('French trade name')->maxLength(150),
+                        KeyValue::make('taxonomy')
+                            ->keyLabel('Rank')->valueLabel('Name')
+                            ->helperText('e.g. Kingdom, Order, Family, Genus, Species.')
+                            ->columnSpanFull(),
                         Textarea::make('workability')->rows(2),
                         Textarea::make('drying_behaviour')->label('Drying behaviour')->rows(2),
                         Textarea::make('eudr_risk_note')->label('EUDR risk note')->rows(3)
@@ -81,14 +85,17 @@ class SpeciesForm
                         TagsInput::make('treatments')->placeholder('Kiln drying, Preservative treatment'),
                         Repeater::make('authoritative_sources')
                             ->label('Authoritative sources')
+                            ->defaultItems(0)
+                            ->reorderable()
+                            ->collapsible()
+                            ->itemLabel(fn (array $state): ?string => $state['title'] ?? ($state['url'] ?? null))
                             ->schema([
-                                TextInput::make('title')->required(),
-                                TextInput::make('publisher')->required(),
-                                TextInput::make('url')->url()->required(),
+                                TextInput::make('title')->required()->maxLength(255),
+                                TextInput::make('publisher')->required()->maxLength(180),
+                                TextInput::make('url')->url()->required()->maxLength(512),
                                 DatePicker::make('accessed_date')->required(),
                             ])
                             ->columns(2)
-                            ->collapsible()
                             ->columnSpanFull(),
                     ]),
 

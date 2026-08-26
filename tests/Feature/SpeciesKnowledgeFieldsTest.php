@@ -3,7 +3,7 @@
 use App\Models\Species;
 
 /** A realistic sourced-and-dated note — the only kind this field should ever hold. */
-const EUDR_NOTE = 'Low risk per the EU Deforestation Regulation country benchmarking of 2026-06-01; verify the operator due-diligence statement per consignment.';
+const EUDR_NOTE = "Low risk per the EU Deforestation Regulation's country benchmarking of 2026-06-01; verify the operator's due-diligence statement (Annex II & IV) per consignment.";
 
 it('persists the knowledge-system fields added for the SEO authority spec', function () {
     $species = Species::factory()->create([
@@ -54,8 +54,8 @@ it('renders an honest not-yet-assessed note when eudr_risk_note is null', functi
 
     $this->get(route('species.show', $species->slug))
         ->assertOk()
-        ->assertSee('not yet assessed', false)
-        ->assertDontSee('Low risk per the EU Deforestation Regulation', false);
+        ->assertSee('not yet assessed')
+        ->assertDontSee('Low risk per the EU Deforestation Regulation');
 });
 
 it('renders the recorded eudr_risk_note instead of the fallback when one is set', function () {
@@ -67,6 +67,6 @@ it('renders the recorded eudr_risk_note instead of the fallback when one is set'
 
     $this->get(route('species.show', $species->slug))
         ->assertOk()
-        ->assertSee(EUDR_NOTE, false)
-        ->assertDontSee('not yet assessed', false);
+        ->assertSee(EUDR_NOTE)
+        ->assertDontSee('not yet assessed');
 });
