@@ -3,6 +3,10 @@
 .env
 .env.backup
 .env.production
+# Points Artisan's --env=testing at the testing database. Without this file
+# `php artisan --env=testing <cmd>` silently falls back to .env and runs
+# against the DEV database -- phpunit.xml's DB_DATABASE only applies to Pest.
+.env.testing
 .phpactor.json
 /.claude
 .phpunit.result.cache

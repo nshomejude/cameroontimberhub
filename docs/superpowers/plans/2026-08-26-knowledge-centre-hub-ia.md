@@ -757,11 +757,19 @@ Expected: FAIL — knowledge URLs absent from both outputs.
 
 `keyPages()` is the shared source of truth both `index()` (XML) and `llms()` (text) consume — added in Phase 1 precisely so the two cannot drift. Add `/knowledge` and, by looping `KnowledgeHub::cases()`, all eleven hub pages, each with a label and priority consistent with the existing rows. Read the method and match its row shape exactly.
 
-- [ ] **Step 4: Confirm the article loops need no change**
+- [ ] **Step 4: Fix the three known stale-URL surfaces**
 
-Both `index()` and `llms()` already emit articles via `Article::url()`, which Task 2 made hub-aware — so hub articles should land at the right URLs automatically. **Verify this by reading both loops.** If either builds the URL with `route('insights.show', ...)` directly rather than calling `url()`, fix it to use `url()`.
+Task 2's review established exactly where an article's URL is built *without* going through the now-hub-aware `Article::url()`. All three must be fixed here:
 
-Also check `llms()`'s article query is still column-scoped and that `hub` is among the selected columns — `url()` now reads it, and a partially-hydrated model throws on an unselected attribute.
+1. **`SitemapController::index()`** — hand-builds `route('insights.show', $article->slug)` rather than calling `url()`, so it emits a stale `/insights/` loc for a hubbed article. Change it to `$article->url()`, and add `hub` to that query's column scope (it selects `['slug','updated_at','published_at']`; a partially-hydrated model **throws** on an unselected attribute).
+
+2. **`SitemapController::llms()`** — already fixed in Task 2 (its select carries `hub`). **Verify, don't re-fix.**
+
+3. **`app/Support/ArticleBody.php`** — the `insights:{slug}` markdown link scheme resolves straight to `route('insights.show', $value)`, so an in-body cross-link to an article that later moves into a hub points at the old URL. The `SlugRedirect` absorbs it as a 301 rather than a 404, so this is a quality issue not a breakage — but resolve the slug to its `Article` and use `url()` so in-body links land on the canonical URL directly. If the article does not exist, keep the current fallback behaviour rather than erroring.
+
+Also confirm `resources/views/public/insights/show.blade.php`'s `<link rel="canonical">` (which calls `url()`) is correct for a hubbed article reached via redirect — it should point at the hub URL, which is the whole intent.
+
+While here, fix the now-half-true class docblock on `app/Models/Article.php` ("An editorial article on /insights") to describe both homes.
 
 - [ ] **Step 5: Run to verify it passes**
 
