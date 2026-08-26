@@ -371,3 +371,49 @@ it('estimates reading time from the body when none is stored', function () {
 
     expect($article->readingTime())->toBe(2);
 });
+
+it('memoises the rendered body so an article page parses its markdown once', function () {
+    ArticleBody::flushMemo();
+
+    $target = Article::factory()->create(['slug' => 'memo-link-target', 'hub' => KnowledgeHub::Compliance]);
+
+    $article = Article::factory()->create([
+        'body' => "## Overview\n\nSee [the target](insights:memo-link-target).",
+    ]);
+
+    // renderedBody() and tableOfContents() render the same markdown. Without
+    // the memo that is two parses and two `insights:` lookups.
+    DB::enableQueryLog();
+    DB::flushQueryLog();
+
+    $html = $article->renderedBody();
+    $toc = $article->tableOfContents();
+
+    $queries = count(DB::getQueryLog());
+    DB::disableQueryLog();
+
+    expect($queries)->toBe(1)
+        ->and($html)->toContain($target->url())
+        ->and($html)->toContain('<h2 id="overview">')
+        ->and($toc)->toBe([['id' => 'overview', 'text' => 'Overview']]);
+});
+
+it('keeps returning an empty string for an empty body rather than memoising one', function () {
+    ArticleBody::flushMemo();
+
+    expect(ArticleBody::render(''))->toBe('')
+        ->and(ArticleBody::render("   \n  "))->toBe('')
+        ->and(ArticleBody::headings('   '))->toBe([]);
+});
+
+it('re-renders cross-links after the linked article moves hub', function () {
+    $target = Article::factory()->create(['slug' => 'memo-moving-target', 'hub' => null]);
+    $article = Article::factory()->create(['body' => 'See [it](insights:memo-moving-target).']);
+
+    expect($article->renderedBody())->toContain('/insights/memo-moving-target');
+
+    $target->hub = KnowledgeHub::Grading;
+    $target->save();
+
+    expect($article->renderedBody())->toContain('/knowledge/grading/memo-moving-target');
+});

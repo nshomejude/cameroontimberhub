@@ -29,12 +29,37 @@ class ArticleBody
     /** Markdown link targets that resolve to real internal routes. */
     private const SCHEMES = ['species', 'marketplace', 'suppliers', 'rfq', 'insights'];
 
+    /**
+     * Rendered HTML keyed by a hash of the source markdown.
+     *
+     * An article page renders the body once for the HTML and once more for the
+     * table of contents, and pass 1 costs a database query for `insights:`
+     * cross-links — so the naive path parses and queries twice per request.
+     * The map lives for one request; ArticleObserver flushes it when a hub or
+     * slug move changes what those cross-links resolve to.
+     *
+     * @var array<string, string>
+     */
+    private static array $rendered = [];
+
     public static function render(string $markdown): string
     {
+        // Checked before the memo so empty/whitespace input keeps returning ''
+        // without ever occupying a cache slot.
         if (trim($markdown) === '') {
             return '';
         }
 
+        return self::$rendered[hash('xxh128', $markdown)] ??= self::renderUncached($markdown);
+    }
+
+    public static function flushMemo(): void
+    {
+        self::$rendered = [];
+    }
+
+    private static function renderUncached(string $markdown): string
+    {
         $html = Str::markdown(self::resolveLinks($markdown), [
             'html_input' => 'escape',
             'allow_unsafe_links' => false,

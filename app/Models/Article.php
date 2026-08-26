@@ -6,7 +6,9 @@ use App\Enums\ArticleCategory;
 use App\Enums\ArticleStatus;
 use App\Enums\KnowledgeHub;
 use App\Models\Concerns\HasSlug;
+use App\Observers\ArticleObserver;
 use App\Support\ArticleBody;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -24,7 +26,12 @@ use Illuminate\Support\Str;
  * through App\Support\ArticleBody, which escapes raw HTML, adds stable heading
  * anchors for the table of contents, and rewrites `species:`/`marketplace:`
  * link targets into real internal routes.
+ *
+ * ArticleObserver is attached here rather than in a service provider so that
+ * every save — importer, admin form, seeder or a bare `$article->save()` —
+ * goes through the same slug-redirect bookkeeping.
  */
+#[ObservedBy(ArticleObserver::class)]
 class Article extends Model
 {
     use HasFactory, HasSlug;

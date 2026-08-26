@@ -6,8 +6,8 @@ use App\Enums\ArticleCategory;
 use App\Enums\ArticleStatus;
 use App\Enums\KnowledgeHub;
 use App\Models\Article;
-use App\Models\SlugRedirect;
 use App\Models\Species;
+use App\Support\ArticleRedirects;
 use App\Support\Frontmatter;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
@@ -174,11 +174,14 @@ class ImportArticles extends Command
             return $existing ? ['updated', 'would update'] : ['created', 'would create'];
         }
 
-        $previousUrl = $existing?->url();
-
         $article = Article::updateOrCreate(['slug' => $slug], $attributes);
 
-        $this->recordRedirects($article, $previousUrl);
+        // ArticleObserver has already recorded a 301 from whatever URL this
+        // article moved off. All that is left for the importer is its own extra
+        // claim: /insights/{slug} is where a published piece was indexed before
+        // the Knowledge Centre existed, so a hubbed article keeps it as a 301
+        // whether or not this particular import moved anything.
+        ArticleRedirects::sync($article, includeLegacyInsights: true);
 
         return $existing ? ['updated', 'updated'] : ['created', 'created'];
     }
@@ -237,47 +240,6 @@ class ImportArticles extends Command
             // "has the file changed since?" and "has a human saved since?".
             'source_synced_at' => now(),
         ];
-    }
-
-    /**
-     * Keeps every URL an article has ever answered on resolving.
-     *
-     * A hubbed article's canonical home is /knowledge/{hub}/{slug}, but the
-     * same piece is reachable — and, for anything already published, indexed —
-     * at /insights/{slug}. Both that legacy path and any hub URL the article
-     * has just moved away from are recorded as 301s, so moving an article into
-     * a hub (or between hubs) never costs a URL. Idempotent: SlugRedirect
-     * upserts on from_slug.
-     */
-    private function recordRedirects(Article $article, ?string $previousUrl): void
-    {
-        $canonical = $article->url();
-        $canonicalPath = ltrim((string) parse_url($canonical, PHP_URL_PATH), '/');
-
-        // A redirect pointing away from the URL the article now answers on
-        // would 301 straight into a 404 — this happens when a piece is pulled
-        // back out of a hub. Drop it before recording the current ones.
-        SlugRedirect::where('from_slug', $canonicalPath)->delete();
-
-        $stale = [route('insights.show', $article->slug)];
-
-        if ($previousUrl !== null) {
-            $stale[] = $previousUrl;
-        }
-
-        foreach (array_unique($stale) as $url) {
-            if ($url === $canonical) {
-                continue;
-            }
-
-            $path = ltrim((string) parse_url($url, PHP_URL_PATH), '/');
-
-            if ($path === '') {
-                continue;
-            }
-
-            SlugRedirect::record($path, $canonical, Article::class, $article->getKey());
-        }
     }
 
     /** @return list<string>|null */
