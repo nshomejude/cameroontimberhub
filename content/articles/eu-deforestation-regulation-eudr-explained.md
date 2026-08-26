@@ -26,11 +26,11 @@ faqs:
       of the country of production.
   - question: When does it apply, and to whom exactly?
     answer: >
-      The application dates and the way obligations differ by operator size have
-      been amended since the regulation was adopted, so this article does not
-      state them. Confirm the dates and scope that apply to your business
-      directly in the consolidated text on EUR-Lex, or with your own legal
-      adviser, before you rely on them.
+      The application dates and the way obligations differ by operator size may
+      have been amended since the regulation was adopted, so this article does
+      not state them. Confirm the dates and scope that apply to your business
+      directly in the official text on EUR-Lex, or with your own legal adviser,
+      before you rely on them.
   - question: Does a certification scheme make me compliant on its own?
     answer: >
       No certification scheme substitutes for the operator's own due diligence
@@ -43,20 +43,20 @@ sources:
 ---
 
 > **This is general information, not legal advice.** The EU Deforestation
-> Regulation has been amended since it was adopted, and its application dates,
-> thresholds and country risk classifications have changed and may change again.
-> Nothing here should be treated as a statement of what applies to you today.
-> Confirm the current requirements in the official EU source — the consolidated
-> text of Regulation (EU) 2023/1115 on EUR-Lex, linked in the sources below —
-> and take your own legal advice before making a commercial or compliance
-> decision.
+> Regulation may have been amended since it was adopted, and its application
+> dates, thresholds and country risk classifications may have changed and may
+> change again. Nothing here should be treated as a statement of what applies to
+> you today. Confirm the current requirements in the official EU source —
+> Regulation (EU) 2023/1115 on EUR-Lex, linked in the sources below, where the
+> currently applicable version of the text is published — and take your own
+> legal advice before making a commercial or compliance decision.
 
 If you buy or sell Cameroonian timber into Europe, one piece of EU law now sits
 underneath the whole transaction. This article explains what it is and what it
 asks for in principle. It deliberately does not give you dates, exemption
-thresholds or country risk ratings, because those are exactly the details that
-have moved — and a wrong date printed confidently on a web page is worse than no
-date at all.
+thresholds or country risk ratings, because those are exactly the details most
+likely to have moved — and a wrong date printed confidently on a web page is
+worse than no date at all.
 
 ## What the regulation is
 

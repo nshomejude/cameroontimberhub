@@ -51,6 +51,39 @@ it('resolves the article internal links to real routes rather than raw schemes',
         ->assertDontSee('](rfq:', false);
 });
 
+/**
+ * The house standard for regulatory content: a "not legal advice" disclaimer as
+ * the first rendered element of the body, and every citation carrying an access
+ * date. This runs over every shipped `regulation` article rather than just the
+ * explainer, so the standard is enforced for whatever ships next.
+ */
+it('holds every shipped regulation article to the legal-content standard', function () {
+    $articles = Article::query()
+        ->where('category', ArticleCategory::Regulation)
+        ->where('status', ArticleStatus::Published)
+        ->get();
+
+    expect($articles)->not->toBeEmpty();
+
+    foreach ($articles as $article) {
+        expect($article->body)->toContain('not legal advice');
+
+        // First rendered element — the disclaimer sits above the prose.
+        expect(trim($article->body))->toStartWith('>');
+
+        expect($article->sources)->not->toBeEmpty();
+
+        foreach ($article->sources as $source) {
+            expect(strtolower((string) ($source['label'] ?? '')))
+                ->toContain('accessed');
+        }
+
+        $this->get($article->url())
+            ->assertOk()
+            ->assertSee('not legal advice', false);
+    }
+});
+
 it('includes the EUDR article in the sitemap', function () {
     $this->get(route('sitemap'))
         ->assertOk()

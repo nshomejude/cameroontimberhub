@@ -23,27 +23,46 @@ related_species:
 faqs:
   - question: Does EUDR apply to a consignment that is already on the water?
     answer: >
-      The trigger is placement on the EU market, not the shipping date. A
-      consignment that clears customs after the application date needs a
-      due-diligence statement regardless of when it left Douala.
+      The trigger is placement on the EU market, not the shipping date. So the
+      question is not when the container left Douala but whether the regulation
+      applies to your consignment at the moment it is placed on the market — and
+      the dates governing that may have been amended. Confirm the
+      applicable date in the official text on EUR-Lex before you assume either
+      way.
   - question: Is a FLEGT licence enough on its own?
     answer: >
-      No. Cameroon has a VPA with the EU but is not yet issuing FLEGT licences,
-      so legality has to be evidenced document by document — permit, transport
-      waybills, tax receipts and the chain of custody linking them to your lots.
+      Cameroonian timber has not been shipping under FLEGT licences, so in
+      practice legality has to be evidenced document by document — permit,
+      transport waybills, tax receipts and the chain of custody linking them to
+      your lots. The status of Cameroon's Voluntary Partnership Agreement with
+      the EU, and of any licensing under it, is something to confirm with the
+      official EU source rather than assume from this page.
   - question: What geolocation detail is actually required?
     answer: >
-      Polygon coordinates for the harvest area where the plot exceeds four
-      hectares, and at minimum a point location otherwise. Ask for it at the
-      quotation stage; retro-fitting it after loading is where most deals stall.
+      Geolocation of the plots of land where the timber was produced. The
+      adopted text of Regulation (EU) 2023/1115 requires polygons for plots
+      above a stated size and permits a point location for smaller ones; read
+      the current requirement in the official text rather than relying on a
+      figure quoted here. Ask for it at the quotation stage — retro-fitting it
+      after loading is where most deals stall.
 sources:
   - url: https://eur-lex.europa.eu/eli/reg/2023/1115/oj
-    label: Regulation (EU) 2023/1115 — the EU Deforestation Regulation
+    label: "Regulation (EU) 2023/1115 on deforestation-free products — EUR-Lex (official text; accessed 26 August 2026)"
   - url: https://www.minfof.cm/
-    label: MINFOF — Cameroon Ministry of Forestry and Wildlife
-  - url: https://www.euflegt.efi.int/cameroon
-    label: EU FLEGT Facility — Cameroon country page
+    label: "MINFOF — Cameroon Ministry of Forestry and Wildlife (accessed 26 August 2026)"
+  - url: https://environment.ec.europa.eu/topics/forests/deforestation/illegal-logging_en
+    label: "EU rules against illegal logging, including FLEGT Voluntary Partnership Agreements — European Commission (accessed 26 August 2026)"
 ---
+
+> **This is general information, not legal advice.** This article is a practical
+> checklist, not a statement of law. The EU Deforestation Regulation may have
+> been amended since it was adopted, and its application dates, thresholds,
+> record-keeping requirements and country risk classifications may have changed.
+> Nothing here should be treated as a statement of what applies to your business
+> or your consignment today. Confirm the current requirements in the official EU
+> source — Regulation (EU) 2023/1115 on EUR-Lex, linked in the sources below —
+> and take your own legal advice before making a commercial or compliance
+> decision.
 
 Buying Cameroonian timber into Europe changed shape when the EU Deforestation
 Regulation shifted responsibility onto the operator placing goods on the market.
@@ -80,12 +99,14 @@ sample lot within a few days will not produce them for yours either.
 ## Species-level risk is not uniform
 
 Risk sits with the operator and the concession rather than the botanical name,
-but volume matters: the high-throughput species move through more hands. Plain
-sawn [Ayous](species:ayous) is the workhorse of the Cameroonian export trade and
-travels through long supply chains, while [Iroko](species:iroko) and
-[Sipo](species:sipo) more often ship as identifiable parcels with a shorter
-custody path. Neither fact excuses skipping the documents; both should shape how
-hard you look.
+but volume matters: the higher-throughput species tend to move through more
+hands, and every extra hand is another break to document. As a general
+observation from the trade rather than a sourced finding, plain sawn
+[Ayous](species:ayous) is a high-volume commodity line whose custody chain is
+often long and mixed, while [Iroko](species:iroko) and [Sipo](species:sipo) are
+more often bought as identifiable parcels. Treat that as a hint about where to
+look harder, not as a risk rating — the risk sits in the specific chain in front
+of you, and none of it excuses skipping a document.
 
 ## Where to start
 
@@ -98,5 +119,7 @@ several of them quote against the same specification: [post an RFQ](rfq:).
 
 Ask for documents at quotation. Assess risk before the proforma. Mitigate — or
 walk away — before the deposit. Keep the due-diligence statement and its
-evidence for five years. Done in that order, compliance costs you a week of
+evidence for the retention period the regulation sets, which is stated in the
+official text on EUR-Lex and is measured in years, not months. Done in that
+order, compliance costs you a week of
 correspondence. Done after loading, it costs you the container.
