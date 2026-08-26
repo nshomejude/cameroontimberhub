@@ -7,7 +7,11 @@ it('lists published glossary terms alphabetically', function () {
     GlossaryTerm::factory()->create(['term' => 'Air Drying', 'slug' => 'air-drying', 'is_published' => true]);
     GlossaryTerm::factory()->create(['term' => 'Chain of Custody', 'slug' => 'chain-of-custody', 'is_published' => true]);
 
-    $response = $this->get(route('glossary.index'))->assertOk();
+    $response = $this->get(route('glossary.index'))
+        ->assertOk()
+        ->assertSee('Air Drying')
+        ->assertSee('Board Foot')
+        ->assertSee('Chain of Custody');
 
     $body = $response->getContent();
     $airPos = strpos($body, 'Air Drying');
@@ -41,6 +45,30 @@ it('shows a single term with definition, related terms and DefinedTerm schema', 
         ->assertSee('CBM');
 
     $response->assertSee('DefinedTerm', false);
+});
+
+it('cannot be broken out of the JSON-LD block by admin-authored content', function () {
+    GlossaryTerm::factory()->create([
+        'term' => 'Hostile Term',
+        'slug' => 'hostile-term',
+        'definition' => 'Breaks out?</script><script>alert(1)</script>',
+        'is_published' => true,
+    ]);
+
+    $body = $this->get(route('glossary.show', 'hostile-term'))->assertOk()->getContent();
+
+    // The raw closing tag must never survive into the document: if it does, the
+    // LD+JSON block is closed early and the following markup runs as script.
+    expect($body)->not->toContain('</script><script>alert(1)</script>');
+
+    // ...and the schema block must still be parseable JSON-LD containing the
+    // escaped text, so the fix did not simply drop the description.
+    preg_match_all('#<script type="application/ld\+json">(.*?)</script>#s', $body, $m);
+    $block = collect($m[1])->first(fn (string $json): bool => str_contains($json, 'DefinedTerm'));
+    expect($block)->not->toBeNull();
+    $decoded = json_decode($block, true);
+    expect($decoded)->toBeArray()
+        ->and($decoded['description'])->toContain('alert(1)');
 });
 
 it('404s an unpublished or unknown term', function () {

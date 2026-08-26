@@ -23,7 +23,10 @@ class GlossaryController extends Controller
         $terms = GlossaryTerm::published()
             ->search($q)
             ->orderBy('term')
-            ->get()
+            // The index renders only the link (slug), the heading letter (term)
+            // and a 140-char truncation of the definition — never the
+            // paragraph-length explanation or the cross-link arrays.
+            ->get(['id', 'slug', 'term', 'definition'])
             ->groupBy(fn (GlossaryTerm $t): string => strtoupper(mb_substr($t->term, 0, 1)));
 
         return view('public.glossary.index', [

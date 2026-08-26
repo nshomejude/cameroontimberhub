@@ -134,7 +134,7 @@
                 ],
             ],
         ],
-    ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
+    ], JSON_HEX_TAG | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
 
     @if ($breadcrumbs)
         <script type="application/ld+json">{!! json_encode([
@@ -146,11 +146,13 @@
                 'name' => $crumb['label'],
                 'item' => $crumb['url'] ?? null,
             ])->all(),
-        ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
+        ], JSON_HEX_TAG | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
     @endif
 
     @if ($schema)
-        <script type="application/ld+json">{!! json_encode($schema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
+        {{-- JSON_HEX_TAG hex-escapes angle brackets so admin-authored free text
+             cannot close this script block; it stays valid JSON-LD. --}}
+        <script type="application/ld+json">{!! json_encode($schema, JSON_HEX_TAG | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
     @endif
     @livewireStyles
     @vite(['resources/css/app.css', 'resources/js/app.js'])

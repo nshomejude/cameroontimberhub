@@ -26,7 +26,7 @@
             <p class="mt-5 text-[1.125rem] leading-relaxed text-ink">{{ $term->definition }}</p>
 
             @if ($term->explanation)
-                <div class="mt-4 text-[1.0625rem] leading-relaxed text-ink-soft">{{ $term->explanation }}</div>
+                <div class="mt-4 whitespace-pre-line text-[1.0625rem] leading-relaxed text-ink-soft">{{ $term->explanation }}</div>
             @endif
 
             @if ($relatedTerms->isNotEmpty())

@@ -75,16 +75,15 @@ class GlossaryTermForm
                             ->searchable(),
                     ]),
 
-                Section::make('SEO & ordering')
-                    ->columns(2)
+                // The sort_order column exists but nothing reads it — the public
+                // glossary lists terms alphabetically — so it is deliberately
+                // not exposed as a form control.
+                Section::make('SEO')
                     ->schema([
                         Textarea::make('meta_description')
                             ->rows(2)->maxLength(320)
                             ->helperText('Leave blank to fall back to the definition.')
                             ->columnSpanFull(),
-                        TextInput::make('sort_order')
-                            ->numeric()->default(0)
-                            ->helperText('Reserved for future manual ordering. The public glossary lists terms alphabetically.'),
                     ]),
             ]);
     }
