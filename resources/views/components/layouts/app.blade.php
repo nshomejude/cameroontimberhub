@@ -22,6 +22,7 @@
         ['label' => 'Export Guide', 'url' => route('insights.category', 'export')],
         ['label' => 'Market Insights', 'url' => route('insights.category', 'market')],
         ['label' => 'Blog', 'url' => route('insights.index')],
+        ['label' => 'Glossary', 'url' => route('glossary.index')],
     ];
 
     // Deep screens swap the mobile hamburger for a back affordance.
@@ -370,6 +371,7 @@
                         ['Export Guide', route('insights.category', 'export')],
                         ['Market Insights', route('insights.category', 'market')],
                         ['Blog', route('insights.index')],
+                        ['Glossary', route('glossary.index')],
                     ]],
                     ['title' => 'Support', 'links' => [
                         ['Help Center', '/help'],

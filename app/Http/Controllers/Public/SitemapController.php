@@ -6,6 +6,7 @@ use App\Enums\ArticleCategory;
 use App\Http\Controllers\Controller;
 use App\Models\Article;
 use App\Models\Company;
+use App\Models\GlossaryTerm;
 use App\Models\Page;
 use App\Models\Species;
 use Illuminate\Http\Response;
@@ -53,6 +54,7 @@ class SitemapController extends Controller
             ['loc' => route('marketplace'), 'priority' => '0.9', 'label' => 'Product marketplace'],
             ['loc' => route('rfq.create'), 'priority' => '0.7', 'label' => 'Request a quote (RFQ)'],
             ['loc' => route('insights.index'), 'priority' => '0.9', 'label' => 'Insights — guides, market and compliance articles'],
+            ['loc' => route('glossary.index'), 'priority' => '0.7', 'label' => 'Timber glossary — Cameroon timber trade terms defined'],
             ['loc' => route('pricing'), 'priority' => '0.7', 'label' => 'Pricing'],
             ['loc' => route('about'), 'priority' => '0.5', 'label' => 'About'],
             ['loc' => route('contact'), 'priority' => '0.5', 'label' => 'Contact'],
@@ -77,6 +79,15 @@ class SitemapController extends Controller
                 'loc' => route('insights.show', $article->slug),
                 'lastmod' => optional($article->updated_at ?? $article->published_at)->toAtomString(),
                 'priority' => '0.8',
+            ];
+        }
+
+        // Glossary terms — published only, through the same gate the public site uses.
+        foreach (GlossaryTerm::published()->get(['slug', 'updated_at']) as $term) {
+            $urls[] = [
+                'loc' => route('glossary.show', $term->slug),
+                'lastmod' => optional($term->updated_at)->toAtomString(),
+                'priority' => '0.5',
             ];
         }
 
@@ -227,6 +238,20 @@ class SitemapController extends Controller
             foreach ($species as $sp) {
                 $out[] = '- ['.str($sp->common_name)->squish()->value().']('.route('species.show', $sp->slug).')'
                     .($sp->scientific_name ? ' — '.str($sp->scientific_name)->squish()->value() : '');
+            }
+            $out[] = '';
+        }
+
+        $terms = GlossaryTerm::published()->orderBy('term')->get(['slug', 'term', 'definition']);
+
+        if ($terms->isNotEmpty()) {
+            $out[] = '## Glossary';
+            $out[] = '';
+            $out[] = 'Definitions of Cameroon timber trade terminology — grading, drying, measurement, shipping and compliance.';
+            $out[] = '';
+            foreach ($terms as $term) {
+                $out[] = '- ['.str($term->term)->squish()->value().']('.route('glossary.show', $term->slug).')'
+                    .': '.str((string) $term->definition)->squish()->limit(200)->value();
             }
             $out[] = '';
         }

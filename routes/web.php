@@ -14,6 +14,7 @@ use App\Http\Controllers\Public\ChatCommerceController;
 use App\Http\Controllers\Public\CompanyController;
 use App\Http\Controllers\Public\ContactController;
 use App\Http\Controllers\Public\DirectoryController;
+use App\Http\Controllers\Public\GlossaryController;
 use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Public\InquiryController;
 use App\Http\Controllers\Public\InsightController;
@@ -58,6 +59,12 @@ Route::post('/mobile-app/notify', [MobileAppController::class, 'subscribe'])
 // Species catalog + programmatic-SEO species pages.
 Route::get('/species', [SpeciesController::class, 'index'])->name('species.index');
 Route::get('/species/{slug}', [SpeciesController::class, 'show'])->name('species.show');
+
+// Knowledge: the Cameroon timber glossary. A flat dictionary — the static
+// index segment is declared before the slug route.
+Route::get('/knowledge/glossary', [GlossaryController::class, 'index'])->name('glossary.index');
+Route::get('/knowledge/glossary/{slug}', [GlossaryController::class, 'show'])
+    ->where('slug', '[a-z0-9][a-z0-9-]*')->name('glossary.show');
 
 // Editorial content platform. `/insights/category/{category}` is declared
 // before `/insights/{slug}` so the static segment always wins.
