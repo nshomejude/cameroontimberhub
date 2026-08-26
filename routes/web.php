@@ -18,6 +18,7 @@ use App\Http\Controllers\Public\GlossaryController;
 use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Public\InquiryController;
 use App\Http\Controllers\Public\InsightController;
+use App\Http\Controllers\Public\KnowledgeController;
 use App\Http\Controllers\Public\MessageController;
 use App\Http\Controllers\Public\MobileAppController;
 use App\Http\Controllers\Public\OrderLifecycleController;
@@ -66,14 +67,13 @@ Route::get('/knowledge/glossary', [GlossaryController::class, 'index'])->name('g
 Route::get('/knowledge/glossary/{slug}', [GlossaryController::class, 'show'])
     ->where('slug', '[a-z0-9][a-z0-9-]*')->name('glossary.show');
 
-// Knowledge Centre placeholders — the URL shapes exist now so Article::url()
-// and KnowledgeHub::url() resolve; the pages themselves are not built yet, so
-// they 404 honestly rather than render invented content. Declared after the
-// glossary routes so the static `glossary` segment always wins.
-Route::get('/knowledge', fn () => abort(404))->name('knowledge.index');
-Route::get('/knowledge/{hub}', fn () => abort(404))
+// Knowledge Centre — the landing page, the eleven hub pillars and evergreen
+// articles at their hub URLs. Declared after the glossary routes so the static
+// `glossary` segment always wins over the `{hub}` placeholder.
+Route::get('/knowledge', [KnowledgeController::class, 'index'])->name('knowledge.index');
+Route::get('/knowledge/{hub}', [KnowledgeController::class, 'hub'])
     ->where('hub', '[a-z0-9][a-z0-9-]*')->name('knowledge.hub');
-Route::get('/knowledge/{hub}/{slug}', fn () => abort(404))
+Route::get('/knowledge/{hub}/{slug}', [InsightController::class, 'hubArticle'])
     ->where(['hub' => '[a-z0-9][a-z0-9-]*', 'slug' => '[a-z0-9][a-z0-9-]*'])
     ->name('knowledge.article');
 

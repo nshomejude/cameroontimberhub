@@ -18,6 +18,7 @@
     ];
 
     $resources = [
+        ['label' => 'Knowledge Centre', 'url' => route('knowledge.index')],
         ['label' => 'Timber Grades', 'url' => route('insights.category', 'guides')],
         ['label' => 'Export Guide', 'url' => route('insights.category', 'export')],
         ['label' => 'Market Insights', 'url' => route('insights.category', 'market')],
@@ -369,6 +370,7 @@
                         ['Contact Us', '/contact'],
                     ]],
                     ['title' => 'Resources', 'links' => [
+                        ['Knowledge Centre', route('knowledge.index')],
                         ['Timber Grades', route('insights.category', 'guides')],
                         ['Export Guide', route('insights.category', 'export')],
                         ['Market Insights', route('insights.category', 'market')],

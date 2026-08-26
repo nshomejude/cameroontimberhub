@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Public;
 
 use App\Enums\ArticleCategory;
+use App\Enums\KnowledgeHub;
 use App\Http\Controllers\Controller;
 use App\Models\Article;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -65,8 +66,34 @@ class InsightController extends Controller
 
     public function show(string $slug): View
     {
-        $article = Article::published()->where('slug', $slug)->firstOrFail();
+        return $this->renderArticle(Article::published()->where('slug', $slug)->firstOrFail());
+    }
 
+    /**
+     * An evergreen article at its Knowledge Centre URL. The hub segment is part
+     * of the article's identity here: requesting a real article under the wrong
+     * hub is a 404, so exactly one canonical URL resolves per piece.
+     */
+    public function hubArticle(string $hub, string $slug): View
+    {
+        abort_unless($knowledgeHub = KnowledgeHub::tryFrom($hub), 404);
+
+        $article = Article::published()
+            ->inHub($knowledgeHub)
+            ->where('slug', $slug)
+            ->firstOrFail();
+
+        return $this->renderArticle($article);
+    }
+
+    /**
+     * The shared article page. Both /insights/{slug} and /knowledge/{hub}/{slug}
+     * render it; the trail above the title follows the article's own canonical
+     * URL, so a hubbed piece reads Knowledge Centre and an unhubbed one reads
+     * Insights.
+     */
+    private function renderArticle(Article $article): View
+    {
         $related = Article::published()
             ->where('category', $article->category->value)
             ->whereKeyNot($article->getKey())
@@ -93,14 +120,31 @@ class InsightController extends Controller
             'faqs' => $article->faqPairs(),
             'sources' => $article->sourceList(),
             'relatedSpecies' => $article->relatedSpecies(),
-            'breadcrumbs' => [
-                ['label' => 'Home', 'url' => route('home')],
-                ['label' => 'Insights', 'url' => route('insights.index')],
-                ['label' => $article->category->label(), 'url' => route('insights.category', $article->category->value)],
-                ['label' => $article->title, 'url' => $article->url()],
-            ],
+            'breadcrumbs' => $this->articleBreadcrumbs($article),
             'schema' => $this->articleSchema($article),
         ]);
+    }
+
+    /**
+     * The trail above an article title, following its canonical URL.
+     *
+     * @return list<array{label: string, url: string}>
+     */
+    private function articleBreadcrumbs(Article $article): array
+    {
+        $trail = [['label' => 'Home', 'url' => route('home')]];
+
+        if ($article->hub) {
+            $trail[] = ['label' => 'Knowledge Centre', 'url' => route('knowledge.index')];
+            $trail[] = ['label' => $article->hub->label(), 'url' => $article->hub->url()];
+        } else {
+            $trail[] = ['label' => 'Insights', 'url' => route('insights.index')];
+            $trail[] = ['label' => $article->category->label(), 'url' => route('insights.category', $article->category->value)];
+        }
+
+        $trail[] = ['label' => $article->title, 'url' => $article->url()];
+
+        return $trail;
     }
 
     /** @return LengthAwarePaginator<int, Article> */
