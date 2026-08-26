@@ -4,8 +4,10 @@ namespace App\Filament\Resources\Species\Schemas;
 
 use App\Enums\LogExportStatus;
 use App\Enums\TimberCategory;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\KeyValue;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
@@ -63,6 +65,31 @@ class SpeciesForm
                         TagsInput::make('region_availability')
                             ->label('Regions harvested')
                             ->placeholder('East, South, Centre…'),
+                    ]),
+
+                Section::make('Knowledge System (SEO authority spec §C)')
+                    ->description('Schema.org DefinedTerm data and sourced facts for the public species pages. Leave a field blank rather than guessing — a null value renders an honest "not yet assessed" note instead of a fabricated claim.')
+                    ->columns(2)
+                    ->schema([
+                        TextInput::make('french_name')->label('French trade name')->maxLength(150),
+                        Textarea::make('workability')->rows(2),
+                        Textarea::make('drying_behaviour')->label('Drying behaviour')->rows(2),
+                        Textarea::make('eudr_risk_note')->label('EUDR risk note')->rows(3)
+                            ->helperText('Only populate with a genuinely sourced, dated regulatory assessment. Leave blank otherwise.')
+                            ->columnSpanFull(),
+                        TagsInput::make('grades_available')->label('Grades available')->placeholder('FAS, Select, Standard'),
+                        TagsInput::make('treatments')->placeholder('Kiln drying, Preservative treatment'),
+                        Repeater::make('authoritative_sources')
+                            ->label('Authoritative sources')
+                            ->schema([
+                                TextInput::make('title')->required(),
+                                TextInput::make('publisher')->required(),
+                                TextInput::make('url')->url()->required(),
+                                DatePicker::make('accessed_date')->required(),
+                            ])
+                            ->columns(2)
+                            ->collapsible()
+                            ->columnSpanFull(),
                     ]),
 
                 Section::make('Technical properties')

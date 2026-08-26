@@ -44,6 +44,12 @@ class Species extends Model
             'density_kg_m3_min' => 'integer',
             'density_kg_m3_max' => 'integer',
             'janka_hardness' => 'integer',
+            // Knowledge System fields (SEO authority spec §C). All nullable —
+            // a null value means "not recorded", never a fabricated fact.
+            'taxonomy' => 'array',
+            'treatments' => 'array',
+            'grades_available' => 'array',
+            'authoritative_sources' => 'array',
         ];
     }
 

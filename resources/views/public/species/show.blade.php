@@ -121,6 +121,21 @@
                         </section>
                     @endif
 
+                    <section aria-labelledby="eudr-heading">
+                        <h2 id="eudr-heading" class="{{ $sectionTitle }}">EUDR risk assessment</h2>
+                        <div class="mt-4 {{ $panel }}">
+                            @if ($species->eudr_risk_note)
+                                <p class="text-[1.0625rem] text-ink">{{ $species->eudr_risk_note }}</p>
+                            @else
+                                <p class="text-[1.0625rem] text-ink-soft">
+                                    EU Deforestation Regulation risk for {{ $species->common_name }} is
+                                    not yet assessed on this platform — consult current EU Deforestation
+                                    Regulation guidance directly.
+                                </p>
+                            @endif
+                        </div>
+                    </section>
+
                     @if (is_array($species->characteristics) && count($species->characteristics))
                         <section aria-labelledby="properties-heading">
                             <h2 id="properties-heading" class="{{ $sectionTitle }}">Properties</h2>
