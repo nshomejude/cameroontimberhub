@@ -356,11 +356,12 @@ Incoterm and one named port. Unfamiliar terms are defined in the
 
 ## About this hub
 
-The Export Academy currently holds no articles — this pillar page is the whole
-of it for now. That is deliberate rather than accidental: export procedure is an
-area where a wrong specific is worse than a missing one, and we would rather
-publish a page that is accurate about process and honest about what it will not
-assert than fill a hub with fees, timings and rules we cannot stand behind. You
+The Export Academy is early. This pillar page is the map; the articles listed
+above go deeper on individual stages of it, and more are being written. The pace
+is deliberate rather than accidental: export procedure is an area where a wrong
+specific is worse than a missing one, and we would rather publish pages that are
+accurate about process and honest about what they will not assert than fill a hub
+with fees, timings and rules we cannot stand behind. You
 will not find port statistics, transit times, freight rates or clearance
 durations anywhere on this site. Where we have not assessed something, the page
 says so.

@@ -288,9 +288,9 @@ defined in the [Cameroon timber glossary](/knowledge/glossary).
 
 ## About this hub
 
-The Buyer Academy is new and currently holds no articles — this pillar page is
-the whole of it for now. Deeper pieces are being written, and we would rather
-publish one page that is accurate than a hub full of confident detail we cannot
-stand behind. In particular, you will not find prices, price indices, lead times
+The Buyer Academy is new. This pillar page is the map; the articles listed above
+are the depth behind individual sections of it, and more are being written. We
+would rather publish a few pages that are accurate than a hub full of confident
+detail we cannot stand behind. In particular, you will not find prices, price indices, lead times
 or minimum quantities anywhere on this site, because we do not have data we trust
 enough to publish. Where we have not assessed something, the page says so.
