@@ -15,7 +15,10 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
 /**
- * An editorial article on /insights.
+ * An editorial article, with two homes. With a `hub` it is evergreen Knowledge
+ * Centre content at /knowledge/{hub}/{slug}; without one it is short-form news
+ * at /insights/{slug}. `url()` is the single place that decides which, and
+ * every surface must go through it rather than building a route by hand.
  *
  * `body` is markdown (see the create migration for why). It is rendered on read
  * through App\Support\ArticleBody, which escapes raw HTML, adds stable heading

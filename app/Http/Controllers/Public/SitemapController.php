@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Public;
 
 use App\Enums\ArticleCategory;
+use App\Enums\KnowledgeHub;
 use App\Http\Controllers\Controller;
 use App\Models\Article;
 use App\Models\Company;
@@ -41,6 +42,13 @@ class SitemapController extends Controller
      * carries the URL plus the metadata each renderer needs: a sitemap priority
      * and a human/LLM-facing label.
      *
+     * The eleven Knowledge Centre hubs are expanded from KnowledgeHub::cases()
+     * rather than listed by hand, so a hub can never reach one output and miss
+     * the other. Every hub is listed, including one with no articles yet: a hub
+     * is a permanent pillar page with authored label and description copy that
+     * returns 200 and honestly says its listing is empty, and its URL is the
+     * final home of the articles written against it — not a fabricated page.
+     *
      * @return list<array{loc: string, priority: string, label: string}>
      */
     private function keyPages(): array
@@ -54,6 +62,15 @@ class SitemapController extends Controller
             ['loc' => route('marketplace'), 'priority' => '0.9', 'label' => 'Product marketplace'],
             ['loc' => route('rfq.create'), 'priority' => '0.7', 'label' => 'Request a quote (RFQ)'],
             ['loc' => route('insights.index'), 'priority' => '0.9', 'label' => 'Insights — guides, market and compliance articles'],
+            ['loc' => route('knowledge.index'), 'priority' => '0.9', 'label' => 'Knowledge Centre — the Cameroon timber knowledge base'],
+            ...array_map(
+                fn (KnowledgeHub $hub) => [
+                    'loc' => $hub->url(),
+                    'priority' => '0.7',
+                    'label' => $hub->label().' — '.$hub->description(),
+                ],
+                KnowledgeHub::cases(),
+            ),
             ['loc' => route('glossary.index'), 'priority' => '0.7', 'label' => 'Timber glossary — Cameroon timber trade terms defined'],
             ['loc' => route('pricing'), 'priority' => '0.7', 'label' => 'Pricing'],
             ['loc' => route('about'), 'priority' => '0.5', 'label' => 'About'],

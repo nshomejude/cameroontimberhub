@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Enums\ProductType;
+use App\Models\Article;
 use Illuminate\Support\Str;
 
 /**
@@ -13,7 +14,10 @@ use Illuminate\Support\Str;
  *   1. Internal-link resolution. Writers reference the catalogue with opaque
  *      targets — `[Sapele](species:sapele)`, `[sawn timber](marketplace:sawn_timber)`,
  *      `[suppliers](suppliers:)`, `[post an RFQ](rfq:)` — so the markdown files
- *      never hard-code a URL that a later route change would break.
+ *      never hard-code a URL that a later route change would break. An
+ *      `insights:{slug}` target resolves through the article's own `url()`, so
+ *      a cross-link to a piece that has moved into a Knowledge Centre hub
+ *      points at the hub URL directly rather than at a 301.
  *   2. CommonMark render with `html_input => escape`. Raw HTML in a body is
  *      escaped rather than passed through, so the column can never carry a
  *      script tag onto a public page.
@@ -65,20 +69,59 @@ class ArticleBody
     {
         $pattern = '/\]\((('.implode('|', self::SCHEMES).'):([a-z0-9_\-]*))\)/i';
 
-        return (string) preg_replace_callback($pattern, function (array $m): string {
-            $url = self::resolve(strtolower($m[2]), strtolower($m[3]));
+        $articles = self::articleUrls($markdown);
+
+        return (string) preg_replace_callback($pattern, function (array $m) use ($articles): string {
+            $url = self::resolve(strtolower($m[2]), strtolower($m[3]), $articles);
 
             return $url === null ? '](#)' : ']('.$url.')';
         }, $markdown);
     }
 
-    private static function resolve(string $scheme, string $value): ?string
+    /**
+     * Canonical URLs for every article an `insights:{slug}` link in this body
+     * points at, resolved in ONE query rather than one per link — a body can
+     * carry a dozen cross-links. An article that has since moved into a
+     * Knowledge Centre hub lives at /knowledge/{hub}/{slug}, so resolving
+     * through Article::url() keeps in-body links on the canonical URL instead
+     * of leaning on the SlugRedirect 301. A slug with no article is simply
+     * absent from the map and falls back to the /insights route.
+     *
+     * @return array<string, string>
+     */
+    private static function articleUrls(string $markdown): array
+    {
+        preg_match_all('/\]\(insights:([a-z0-9_\-]+)\)/i', $markdown, $matches);
+
+        $slugs = array_unique(array_map('strtolower', $matches[1]));
+
+        if ($slugs === []) {
+            return [];
+        }
+
+        // Deliberately not gated by published(): this only chooses between two
+        // URL shapes for a slug an author wrote by hand, and an unpublished
+        // target would otherwise silently get the wrong shape rather than be
+        // hidden — the article page itself is the visibility gate.
+        return Article::query()
+            // `hub` is required: Article::url() reads it, and a partially
+            // hydrated model throws on an unselected attribute.
+            ->whereIn('slug', $slugs)
+            ->get(['slug', 'hub'])
+            ->mapWithKeys(fn (Article $a): array => [$a->slug => $a->url()])
+            ->all();
+    }
+
+    /** @param  array<string, string>  $articles */
+    private static function resolve(string $scheme, string $value, array $articles = []): ?string
     {
         return match ($scheme) {
             'species' => $value === '' ? route('species.index') : route('species.show', $value),
             'suppliers' => $value === '' ? route('directory') : route('companies.show', $value),
             'rfq' => route('rfq.create', $value === '' ? [] : ['species' => $value]),
-            'insights' => $value === '' ? route('insights.index') : route('insights.show', $value),
+            'insights' => $value === ''
+                ? route('insights.index')
+                : ($articles[$value] ?? route('insights.show', $value)),
             'marketplace' => $value === '' || ProductType::tryFrom($value) === null
                 ? url('/marketplace')
                 : url('/marketplace').'?type='.$value,

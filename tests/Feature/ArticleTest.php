@@ -1,8 +1,11 @@
 <?php
 
 use App\Enums\ArticleCategory;
+use App\Enums\KnowledgeHub;
 use App\Models\Article;
 use App\Models\Species;
+use App\Support\ArticleBody;
+use Illuminate\Support\Facades\DB;
 
 /*
 |--------------------------------------------------------------------------
@@ -103,6 +106,45 @@ it('renders catalogue links in the body as real internal links', function () {
         ->assertSee('href="'.route('species.show', 'sapele').'"', false)
         ->assertSee('href="'.route('rfq.create').'"', false)
         ->assertSee('Species covered here');
+});
+
+it('resolves an in-body insights link to the target article canonical url', function () {
+    $hubbed = Article::factory()->create([
+        'slug' => 'body-link-hubbed', 'hub' => KnowledgeHub::Compliance,
+    ]);
+    Article::factory()->create(['slug' => 'body-link-news', 'hub' => null]);
+
+    $article = Article::factory()->create([
+        'body' => "## Reading\n\n[Hubbed](insights:body-link-hubbed), "
+            .'[News](insights:body-link-news), [Gone](insights:body-link-missing), [All](insights:).',
+    ]);
+
+    $this->get($article->url())
+        ->assertOk()
+        ->assertSee('href="'.$hubbed->url().'"', false)
+        ->assertSee('href="'.route('insights.show', 'body-link-news').'"', false)
+        // An unknown slug keeps the old fallback rather than erroring.
+        ->assertSee('href="'.route('insights.show', 'body-link-missing').'"', false)
+        ->assertSee('href="'.route('insights.index').'"', false)
+        ->assertDontSee('href="'.route('insights.show', 'body-link-hubbed').'"', false);
+});
+
+it('resolves many in-body insights links without an n+1 query', function () {
+    foreach (['n1-one', 'n1-two', 'n1-three', 'n1-four'] as $slug) {
+        Article::factory()->create(['slug' => $slug, 'hub' => KnowledgeHub::Buying]);
+    }
+
+    $markdown = '[a](insights:n1-one) [b](insights:n1-two) [c](insights:n1-three) [d](insights:n1-four)';
+
+    $queries = 0;
+    DB::listen(function () use (&$queries) {
+        $queries++;
+    });
+
+    $html = ArticleBody::render($markdown);
+
+    expect($queries)->toBe(1)
+        ->and($html)->toContain(KnowledgeHub::Buying->url().'/n1-one');
 });
 
 it('escapes raw HTML in an article body', function () {
@@ -264,6 +306,29 @@ it('lists published species in llms.txt and omits unpublished ones', function ()
         ->assertSee('Species reference', false)
         ->assertSee(route('species.show', 'iroko-llms-test'), false)
         ->assertDontSee('hidden-llms-test', false);
+});
+
+it('lists the Knowledge Centre and every hub in the sitemap and llms.txt', function () {
+    $sitemap = $this->get(route('sitemap'))->assertOk();
+    $llms = $this->get('/llms.txt')->assertOk();
+
+    $sitemap->assertSee(route('knowledge.index'), false);
+    $llms->assertSee(route('knowledge.index'), false);
+
+    foreach (KnowledgeHub::cases() as $hub) {
+        $sitemap->assertSee($hub->url(), false);
+        $llms->assertSee($hub->url(), false);
+    }
+});
+
+it('lists a hub article at its knowledge URL, not its old insights URL', function () {
+    $article = Article::factory()->create([
+        'slug' => 'sitemap-hub-test', 'hub' => KnowledgeHub::Grading,
+    ]);
+
+    $this->get(route('sitemap'))->assertOk()
+        ->assertSee($article->url(), false)
+        ->assertDontSee(route('insights.show', 'sitemap-hub-test'), false);
 });
 
 it('allows the major AI crawlers in robots.txt', function () {
