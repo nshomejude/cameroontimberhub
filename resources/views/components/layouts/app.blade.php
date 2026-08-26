@@ -18,10 +18,10 @@
     ];
 
     $resources = [
-        ['label' => 'Timber Grades', 'url' => url('/resources/timber-grades')],
-        ['label' => 'Export Guide', 'url' => url('/resources/export-guide')],
-        ['label' => 'Market Insights', 'url' => url('/resources/market-insights')],
-        ['label' => 'Blog', 'url' => url('/resources/blog')],
+        ['label' => 'Timber Grades', 'url' => route('insights.category', 'guides')],
+        ['label' => 'Export Guide', 'url' => route('insights.category', 'export')],
+        ['label' => 'Market Insights', 'url' => route('insights.category', 'market')],
+        ['label' => 'Blog', 'url' => route('insights.index')],
     ];
 
     // Deep screens swap the mobile hamburger for a back affordance.
@@ -366,10 +366,10 @@
                         ['Contact Us', '/contact'],
                     ]],
                     ['title' => 'Resources', 'links' => [
-                        ['Timber Grades', '/resources/timber-grades'],
-                        ['Export Guide', '/resources/export-guide'],
-                        ['Market Insights', '/resources/market-insights'],
-                        ['Blog', '/resources/blog'],
+                        ['Timber Grades', route('insights.category', 'guides')],
+                        ['Export Guide', route('insights.category', 'export')],
+                        ['Market Insights', route('insights.category', 'market')],
+                        ['Blog', route('insights.index')],
                     ]],
                     ['title' => 'Support', 'links' => [
                         ['Help Center', '/help'],

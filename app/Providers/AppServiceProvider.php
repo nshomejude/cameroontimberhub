@@ -63,6 +63,13 @@ class AppServiceProvider extends ServiceProvider
 
         RateLimiter::for('inquiry-submit', fn (Request $request) => Limit::perHour(8)->by('inquiry-ip:'.$request->ip()));
 
+        // "Notify me when the mobile app ships". One address is all anyone
+        // needs; the short burst allowance just covers a typo and a re-submit.
+        RateLimiter::for('app-notify', fn (Request $request) => [
+            Limit::perMinute(4)->by('app-notify-ip:'.$request->ip()),
+            Limit::perHour(15)->by('app-notify-ip-hour:'.$request->ip()),
+        ]);
+
         // Messaging is authenticated, so the budget is per-account rather than
         // per-IP: generous enough for a real negotiation, tight enough that a
         // compromised account cannot firehose a supplier's inbox. Applied to

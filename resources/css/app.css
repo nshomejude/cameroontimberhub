@@ -227,3 +227,139 @@
         margin: 14mm;
     }
 }
+
+/* ---------- Long-form editorial body (/insights article pages) ----------
+   The site has no @tailwindcss/typography plugin and is not getting one, so the
+   article measure, rhythm and heading scale live here. Measure is capped at
+   ~68ch — the range long-form copy is actually read comfortably at — and the
+   body size sits on the 17px scale used everywhere else, with a taller
+   line-height because these are paragraphs, not UI labels. */
+.article-prose {
+    max-width: 68ch;
+    font-size: 1.0625rem;
+    line-height: 1.8;
+    color: var(--color-ink);
+}
+
+.article-prose > * + * {
+    margin-top: 1.15em;
+}
+
+.article-prose h2 {
+    margin-top: 2.4em;
+    margin-bottom: 0.6em;
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+    scroll-margin-top: 6rem; /* clears the sticky header on a TOC jump */
+}
+
+.article-prose h3 {
+    margin-top: 1.9em;
+    margin-bottom: 0.45em;
+    font-size: 1.1875rem;
+    font-weight: 700;
+    line-height: 1.35;
+    scroll-margin-top: 6rem;
+}
+
+.article-prose h2:first-child,
+.article-prose h3:first-child {
+    margin-top: 0;
+}
+
+.article-prose a {
+    color: var(--color-forest-700);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.article-prose a:hover {
+    color: var(--color-forest-800);
+}
+
+.article-prose strong {
+    font-weight: 600;
+    color: var(--color-ink);
+}
+
+.article-prose ul,
+.article-prose ol {
+    padding-left: 1.5rem;
+}
+
+.article-prose ul { list-style: disc; }
+.article-prose ol { list-style: decimal; }
+
+.article-prose li + li {
+    margin-top: 0.4em;
+}
+
+.article-prose li::marker {
+    color: var(--color-ink-soft);
+}
+
+.article-prose blockquote {
+    border-left: 3px solid var(--color-forest-300);
+    padding-left: 1.1rem;
+    color: var(--color-ink-soft);
+    font-style: italic;
+}
+
+.article-prose code {
+    background: var(--color-sand-100);
+    border-radius: 0.25rem;
+    padding: 0.1em 0.35em;
+    font-size: 0.9em;
+}
+
+.article-prose pre {
+    background: var(--color-forest-950);
+    color: #e6f2ea;
+    border-radius: 0.75rem;
+    padding: 1rem 1.1rem;
+    overflow-x: auto;
+}
+
+.article-prose pre code {
+    background: transparent;
+    padding: 0;
+    color: inherit;
+}
+
+.article-prose img {
+    border-radius: 0.75rem;
+    max-width: 100%;
+    height: auto;
+}
+
+.article-prose hr {
+    border-color: var(--color-sand-300);
+    margin-top: 2.2em;
+    margin-bottom: 2.2em;
+}
+
+.article-prose table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 1rem;
+    display: block;
+    overflow-x: auto;
+}
+
+.article-prose th,
+.article-prose td {
+    border: 1px solid var(--color-sand-300);
+    padding: 0.55rem 0.75rem;
+    text-align: left;
+}
+
+.article-prose thead th {
+    background: var(--color-sand-100);
+    font-weight: 600;
+}
+
+/* `<details>` FAQ rows: hide the native disclosure marker in every engine. */
+details > summary::-webkit-details-marker { display: none; }
+details > summary { list-style: none; }

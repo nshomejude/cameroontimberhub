@@ -16,7 +16,9 @@ use App\Http\Controllers\Public\ContactController;
 use App\Http\Controllers\Public\DirectoryController;
 use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Public\InquiryController;
+use App\Http\Controllers\Public\InsightController;
 use App\Http\Controllers\Public\MessageController;
+use App\Http\Controllers\Public\MobileAppController;
 use App\Http\Controllers\Public\OrderLifecycleController;
 use App\Http\Controllers\Public\PageController;
 use App\Http\Controllers\Public\PricingController;
@@ -47,13 +49,29 @@ Route::get('/search', [SearchController::class, 'index'])->name('search');
 // Pricing (plans-as-data).
 Route::get('/pricing', [PricingController::class, 'index'])->name('pricing');
 
+// Buyer mobile app marketing page + "notify me at launch" capture. Static
+// segments, so declared well before the CMS `/{slug}` catch-all.
+Route::get('/mobile-app', [MobileAppController::class, 'show'])->name('mobile.app');
+Route::post('/mobile-app/notify', [MobileAppController::class, 'subscribe'])
+    ->middleware('throttle:app-notify')->name('mobile.app.notify');
+
 // Species catalog + programmatic-SEO species pages.
 Route::get('/species', [SpeciesController::class, 'index'])->name('species.index');
 Route::get('/species/{slug}', [SpeciesController::class, 'show'])->name('species.show');
 
+// Editorial content platform. `/insights/category/{category}` is declared
+// before `/insights/{slug}` so the static segment always wins.
+Route::get('/insights', [InsightController::class, 'index'])->name('insights.index');
+Route::get('/insights/category/{category}', [InsightController::class, 'category'])
+    ->where('category', '[a-z-]+')->name('insights.category');
+Route::get('/insights/{slug}', [InsightController::class, 'show'])
+    ->where('slug', '[a-z0-9][a-z0-9-]*')->name('insights.show');
+
 // SEO infrastructure.
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 Route::get('/robots.txt', [SitemapController::class, 'robots'])->name('robots');
+// AEO: a plain-text map of the site's substantive content for language models.
+Route::get('/llms.txt', [SitemapController::class, 'llms'])->name('llms');
 
 // Signed, auth-gated private compliance document download.
 Route::get('/documents/{document}/download', DocumentDownloadController::class)

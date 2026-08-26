@@ -32,3 +32,6 @@ _ide_helper.php
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Redis dump written into the app root when redis-server is started from here
+/dump.rdb
