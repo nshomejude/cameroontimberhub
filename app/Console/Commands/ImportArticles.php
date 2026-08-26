@@ -4,7 +4,9 @@ namespace App\Console\Commands;
 
 use App\Enums\ArticleCategory;
 use App\Enums\ArticleStatus;
+use App\Enums\KnowledgeHub;
 use App\Models\Article;
+use App\Models\SlugRedirect;
 use App\Models\Species;
 use App\Support\Frontmatter;
 use Carbon\CarbonImmutable;
@@ -43,7 +45,7 @@ class ImportArticles extends Command
 
     /** Frontmatter keys the importer understands. Anything else is reported. */
     private const KNOWN_KEYS = [
-        'title', 'slug', 'h1', 'excerpt', 'category', 'status', 'published_at',
+        'title', 'slug', 'h1', 'excerpt', 'category', 'hub', 'status', 'published_at',
         'meta_title', 'meta_description', 'keywords', 'faqs', 'sources',
         'author', 'author_name', 'author_role', 'hero_image', 'reading_minutes',
         'related_species', 'related_product_types',
@@ -125,6 +127,24 @@ class ImportArticles extends Command
             ));
         }
 
+        // An evergreen article names its Knowledge Centre hub. A wrong value is
+        // a hard failure rather than a silent null: importing with a null hub
+        // would publish the piece at the wrong URL, which is precisely what the
+        // hub architecture exists to prevent.
+        $hub = null;
+
+        if (filled($frontmatter['hub'] ?? null)) {
+            $hub = KnowledgeHub::tryFrom((string) $frontmatter['hub']);
+
+            if (! $hub) {
+                throw new \RuntimeException(sprintf(
+                    'unknown hub "%s" (expected one of: %s)',
+                    $frontmatter['hub'],
+                    implode(', ', KnowledgeHub::values())
+                ));
+            }
+        }
+
         if ($unknown = array_diff(array_keys($frontmatter), self::KNOWN_KEYS)) {
             $this->components->warn(basename($file).': ignoring unknown frontmatter key(s): '.implode(', ', $unknown));
         }
@@ -148,13 +168,17 @@ class ImportArticles extends Command
             }
         }
 
-        $attributes = $this->attributes($frontmatter, $body, $category, $fileTime) + ['source_mtime' => $mtime];
+        $attributes = $this->attributes($frontmatter, $body, $category, $hub, $fileTime) + ['source_mtime' => $mtime];
 
         if ($dryRun) {
             return $existing ? ['updated', 'would update'] : ['created', 'would create'];
         }
 
-        Article::updateOrCreate(['slug' => $slug], $attributes);
+        $previousUrl = $existing?->url();
+
+        $article = Article::updateOrCreate(['slug' => $slug], $attributes);
+
+        $this->recordRedirects($article, $previousUrl);
 
         return $existing ? ['updated', 'updated'] : ['created', 'created'];
     }
@@ -163,7 +187,7 @@ class ImportArticles extends Command
      * @param  array<string, mixed>  $fm
      * @return array<string, mixed>
      */
-    private function attributes(array $fm, string $body, ArticleCategory $category, CarbonImmutable $fileTime): array
+    private function attributes(array $fm, string $body, ArticleCategory $category, ?KnowledgeHub $hub, CarbonImmutable $fileTime): array
     {
         $status = ArticleStatus::tryFrom((string) ($fm['status'] ?? 'published')) ?? ArticleStatus::Published;
 
@@ -194,6 +218,7 @@ class ImportArticles extends Command
             'excerpt' => $fm['excerpt'] ?? null,
             'body' => $body,
             'category' => $category,
+            'hub' => $hub,
             'status' => $status,
             'published_at' => $publishedAt,
             'meta_title' => $fm['meta_title'] ?? null,
@@ -212,6 +237,41 @@ class ImportArticles extends Command
             // "has the file changed since?" and "has a human saved since?".
             'source_synced_at' => now(),
         ];
+    }
+
+    /**
+     * Keeps every URL an article has ever answered on resolving.
+     *
+     * A hubbed article's canonical home is /knowledge/{hub}/{slug}, but the
+     * same piece is reachable — and, for anything already published, indexed —
+     * at /insights/{slug}. Both that legacy path and any hub URL the article
+     * has just moved away from are recorded as 301s, so moving an article into
+     * a hub (or between hubs) never costs a URL. Idempotent: SlugRedirect
+     * upserts on from_slug.
+     */
+    private function recordRedirects(Article $article, ?string $previousUrl): void
+    {
+        $canonical = $article->url();
+
+        $stale = [route('insights.show', $article->slug)];
+
+        if ($previousUrl !== null) {
+            $stale[] = $previousUrl;
+        }
+
+        foreach (array_unique($stale) as $url) {
+            if ($url === $canonical) {
+                continue;
+            }
+
+            $path = ltrim((string) parse_url($url, PHP_URL_PATH), '/');
+
+            if ($path === '') {
+                continue;
+            }
+
+            SlugRedirect::record($path, $canonical, Article::class, $article->getKey());
+        }
     }
 
     /** @return list<string>|null */

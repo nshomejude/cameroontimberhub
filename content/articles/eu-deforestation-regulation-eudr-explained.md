@@ -2,6 +2,7 @@
 title: "The EU Deforestation Regulation (EUDR) explained for timber"
 slug: eu-deforestation-regulation-eudr-explained
 category: regulation
+hub: compliance
 excerpt: >
   What Regulation (EU) 2023/1115 is, who it applies to, and what "due diligence"
   actually means for timber and wood products — with every date and threshold

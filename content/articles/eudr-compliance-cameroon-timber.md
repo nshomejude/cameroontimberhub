@@ -2,6 +2,7 @@
 title: "EUDR compliance for Cameroon timber: what buyers must collect"
 slug: eudr-compliance-cameroon-timber
 category: regulation
+hub: compliance
 excerpt: >
   The EU Deforestation Regulation moves the burden of proof onto the importer.
   Here is what to demand from a Cameroonian exporter — and in what order — before

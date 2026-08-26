@@ -74,9 +74,9 @@ class SitemapController extends Controller
         }
 
         // Articles — published only, through the same gate the public site uses.
-        foreach (Article::published()->get(['slug', 'updated_at', 'published_at']) as $article) {
+        foreach (Article::published()->get(['slug', 'hub', 'updated_at', 'published_at']) as $article) {
             $urls[] = [
-                'loc' => route('insights.show', $article->slug),
+                'loc' => $article->url(),
                 'lastmod' => optional($article->updated_at ?? $article->published_at)->toAtomString(),
                 'priority' => '0.8',
             ];

@@ -7,6 +7,7 @@ use App\Enums\KnowledgeHub;
 use App\Http\Controllers\Controller;
 use App\Models\Article;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -64,9 +65,23 @@ class InsightController extends Controller
         return $this->index($request);
     }
 
-    public function show(string $slug): View
+    /**
+     * An article at its /insights/{slug} URL.
+     *
+     * Once an article has been moved into a Knowledge Centre hub, this is no
+     * longer its home: rendering here as well would serve one piece at two
+     * URLs. A hubbed article therefore 301s to its canonical hub URL, matching
+     * what the recorded SlugRedirect does for the paths that predate it.
+     */
+    public function show(string $slug): View|RedirectResponse
     {
-        return $this->renderArticle(Article::published()->where('slug', $slug)->firstOrFail());
+        $article = Article::published()->where('slug', $slug)->firstOrFail();
+
+        if ($article->hub) {
+            return redirect($article->url(), 301);
+        }
+
+        return $this->renderArticle($article);
     }
 
     /**
