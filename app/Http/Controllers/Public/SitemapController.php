@@ -34,17 +34,37 @@ class SitemapController extends Controller
         'Meta-ExternalAgent',
     ];
 
+    /**
+     * The single source of truth for the site's key landing pages, consumed by
+     * BOTH sitemap.xml and /llms.txt so the two can never drift apart. Each row
+     * carries the URL plus the metadata each renderer needs: a sitemap priority
+     * and a human/LLM-facing label.
+     *
+     * @return list<array{loc: string, priority: string, label: string}>
+     */
+    private function keyPages(): array
+    {
+        return [
+            ['loc' => route('home'), 'priority' => '1.0', 'label' => 'Home'],
+            ['loc' => route('directory'), 'priority' => '0.9', 'label' => 'Supplier directory — verified Cameroon timber suppliers'],
+            ['loc' => route('seo.exporters'), 'priority' => '0.9', 'label' => 'Cameroon timber exporters'],
+            ['loc' => route('seo.suppliers'), 'priority' => '0.8', 'label' => 'Cameroon timber suppliers'],
+            ['loc' => route('species.index'), 'priority' => '0.8', 'label' => 'Timber species directory'],
+            ['loc' => route('marketplace'), 'priority' => '0.9', 'label' => 'Product marketplace'],
+            ['loc' => route('rfq.create'), 'priority' => '0.7', 'label' => 'Request a quote (RFQ)'],
+            ['loc' => route('insights.index'), 'priority' => '0.9', 'label' => 'Insights — guides, market and compliance articles'],
+            ['loc' => route('pricing'), 'priority' => '0.7', 'label' => 'Pricing'],
+            ['loc' => route('about'), 'priority' => '0.5', 'label' => 'About'],
+            ['loc' => route('contact'), 'priority' => '0.5', 'label' => 'Contact'],
+        ];
+    }
+
     public function index(): Response
     {
-        $urls = [
-            ['loc' => route('home'), 'priority' => '1.0'],
-            ['loc' => route('directory'), 'priority' => '0.9'],
-            ['loc' => route('seo.exporters'), 'priority' => '0.9'],
-            ['loc' => route('seo.suppliers'), 'priority' => '0.8'],
-            ['loc' => route('species.index'), 'priority' => '0.8'],
-            ['loc' => route('pricing'), 'priority' => '0.7'],
-            ['loc' => route('insights.index'), 'priority' => '0.9'],
-        ];
+        $urls = array_map(
+            fn (array $page) => ['loc' => $page['loc'], 'priority' => $page['priority']],
+            $this->keyPages(),
+        );
 
         // Editorial category views.
         foreach (ArticleCategory::cases() as $category) {
@@ -61,7 +81,7 @@ class SitemapController extends Controller
         }
 
         // CMS pages (published only — exclude landing aliases which are already listed above).
-        $excludedSlugs = ['timber-exporters-cameroon', 'cameroon-timber-suppliers'];
+        $excludedSlugs = ['timber-exporters-cameroon', 'cameroon-timber-suppliers', 'about'];
         foreach (Page::where('is_published', true)->get(['slug', 'updated_at']) as $page) {
             if (in_array($page->slug, $excludedSlugs, true)) {
                 continue;
@@ -147,7 +167,7 @@ class SitemapController extends Controller
         $lines[] = 'LLM-Content: '.route('llms');
         $lines[] = '';
 
-        return response(implode("\n", $lines), 200, ['Content-Type' => 'text/plain']);
+        return response(implode("\n", $lines), 200, ['Content-Type' => 'text/plain; charset=utf-8']);
     }
 
     /**
@@ -171,22 +191,13 @@ class SitemapController extends Controller
             '',
         ];
 
-        foreach ([
-            'Home' => route('home'),
-            'Supplier directory — verified Cameroon timber suppliers' => route('directory'),
-            'Timber species directory' => route('species.index'),
-            'Product marketplace' => url('/marketplace'),
-            'Request a quote (RFQ)' => route('rfq.create'),
-            'Insights — guides, market and compliance articles' => route('insights.index'),
-            'Pricing' => route('pricing'),
-            'About' => route('about'),
-            'Contact' => route('contact'),
-        ] as $label => $url) {
-            $out[] = '- ['.$label.']('.$url.')';
+        foreach ($this->keyPages() as $page) {
+            $out[] = '- ['.$page['label'].']('.$page['loc'].')';
         }
         $out[] = '';
 
-        $articles = Article::published()->orderByDesc('published_at')->get();
+        $articles = Article::published()->orderByDesc('published_at')
+            ->get(['slug', 'title', 'category', 'meta_description', 'excerpt', 'published_at']);
 
         foreach (ArticleCategory::cases() as $category) {
             $inCategory = $articles->where('category', $category);
@@ -202,7 +213,7 @@ class SitemapController extends Controller
 
             foreach ($inCategory as $article) {
                 $summary = trim((string) ($article->meta_description ?: $article->excerpt));
-                $out[] = '- ['.$article->title.']('.$article->url().')'
+                $out[] = '- ['.str($article->title)->squish()->value().']('.$article->url().')'
                     .($summary !== '' ? ': '.str($summary)->squish()->limit(200)->value() : '');
             }
             $out[] = '';
@@ -214,8 +225,8 @@ class SitemapController extends Controller
             $out[] = '## Species reference';
             $out[] = '';
             foreach ($species as $sp) {
-                $out[] = '- ['.$sp->common_name.']('.route('species.show', $sp->slug).')'
-                    .($sp->scientific_name ? ' — '.$sp->scientific_name : '');
+                $out[] = '- ['.str($sp->common_name)->squish()->value().']('.route('species.show', $sp->slug).')'
+                    .($sp->scientific_name ? ' — '.str($sp->scientific_name)->squish()->value() : '');
             }
             $out[] = '';
         }

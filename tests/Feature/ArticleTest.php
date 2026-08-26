@@ -234,6 +234,7 @@ it('lists published articles in the sitemap and omits drafts', function () {
     $this->get('/sitemap.xml')
         ->assertOk()
         ->assertSee(route('insights.index'), false)
+        ->assertSee(route('marketplace'), false)
         ->assertSee($published->url(), false)
         ->assertDontSee(route('insights.show', $draft->slug), false);
 });
@@ -247,9 +248,22 @@ it('renders llms.txt listing published articles only', function () {
         ->assertHeader('Content-Type', 'text/plain; charset=utf-8')
         ->assertSee('# '.config('app.name'), false)
         ->assertSee('Market Insights', false)
+        ->assertSee(route('marketplace'), false)
+        ->assertSee(route('rfq.create'), false)
         ->assertSee('Llmspiece', false)
         ->assertSee($published->url(), false)
         ->assertDontSee('Llmsdraft', false);
+});
+
+it('lists published species in llms.txt and omits unpublished ones', function () {
+    Species::factory()->create(['common_name' => 'Iroko', 'slug' => 'iroko-llms-test', 'is_published' => true]);
+    Species::factory()->create(['common_name' => 'Hidden', 'slug' => 'hidden-llms-test', 'is_published' => false]);
+
+    $this->get('/llms.txt')
+        ->assertOk()
+        ->assertSee('Species reference', false)
+        ->assertSee(route('species.show', 'iroko-llms-test'), false)
+        ->assertDontSee('hidden-llms-test', false);
 });
 
 it('allows the major AI crawlers in robots.txt', function () {
