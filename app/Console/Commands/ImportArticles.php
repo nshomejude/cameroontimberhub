@@ -252,6 +252,12 @@ class ImportArticles extends Command
     private function recordRedirects(Article $article, ?string $previousUrl): void
     {
         $canonical = $article->url();
+        $canonicalPath = ltrim((string) parse_url($canonical, PHP_URL_PATH), '/');
+
+        // A redirect pointing away from the URL the article now answers on
+        // would 301 straight into a 404 — this happens when a piece is pulled
+        // back out of a hub. Drop it before recording the current ones.
+        SlugRedirect::where('from_slug', $canonicalPath)->delete();
 
         $stale = [route('insights.show', $article->slug)];
 

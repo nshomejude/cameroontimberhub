@@ -88,3 +88,34 @@ it('fails a markdown file whose hub is not a real knowledge hub', function () {
         rmdir($dir);
     }
 });
+
+it('drops a stale redirect that would point an article away from its own URL', function () {
+    $dir = sys_get_temp_dir().DIRECTORY_SEPARATOR.'ctimber-import-'.uniqid();
+    mkdir($dir, 0777, true);
+
+    file_put_contents($dir.'/unhubbed-again.md', <<<'MD'
+    ---
+    title: "An article pulled back out of its hub"
+    slug: unhubbed-again
+    category: guides
+    status: published
+    published_at: 2026-08-26
+    ---
+
+    Body text.
+    MD);
+
+    // The state left behind by an earlier import, when the piece was hubbed.
+    SlugRedirect::record('insights/unhubbed-again', '/knowledge/compliance/unhubbed-again');
+
+    try {
+        $this->artisan('articles:import', ['--path' => $dir])->assertExitCode(0);
+
+        expect(SlugRedirect::where('from_slug', 'insights/unhubbed-again')->exists())->toBeFalse();
+
+        $this->get('/insights/unhubbed-again')->assertOk();
+    } finally {
+        unlink($dir.'/unhubbed-again.md');
+        rmdir($dir);
+    }
+});
