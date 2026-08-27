@@ -191,30 +191,71 @@ class PageSeeder extends Seeder
             'is_published' => true,
             'data' => [
                 'blocks' => [
-                    ['type' => 'paragraph', 'content' => 'These Terms of Service ("Terms") govern access to and use of Cameroon Timber Hub (the "Platform"), operated to connect timber buyers with Cameroonian timber suppliers and exporters. By creating an account or using the Platform, you agree to these Terms.'],
-                    ['type' => 'heading', 'content' => '1. The Platform'],
-                    ['type' => 'paragraph', 'content' => 'Cameroon Timber Hub is a marketplace and directory. We facilitate discovery and introductions between buyers and suppliers — we are not a party to any transaction, sale, shipment, or contract agreed between users, and we do not take title to any goods listed.'],
-                    ['type' => 'heading', 'content' => '2. Accounts'],
+                    ['type' => 'paragraph', 'content' => 'These Terms of Service ("Terms") govern access to and use of Cameroon Timber Hub (the "Platform"), operated to connect international timber buyers with Cameroonian timber suppliers and exporters. By creating an account, submitting a listing, or otherwise using the Platform, you agree to be bound by these Terms. If you are agreeing on behalf of a company, you confirm you have authority to bind that company.'],
+
+                    ['type' => 'heading', 'content' => '1. What the Platform is'],
+                    ['type' => 'paragraph', 'content' => 'Cameroon Timber Hub is a marketplace and directory. We facilitate discovery, document review, and introductions between buyers and suppliers of timber and timber products.'],
                     ['type' => 'list', 'items' => [
-                        'You must provide accurate information when registering a company or buyer account',
-                        'You are responsible for activity that occurs under your account and credentials',
-                        'We may suspend or terminate accounts that provide false information, violate these Terms, or misuse the Platform',
+                        'We are not a party to any sale, shipment, purchase order, or contract agreed between a buyer and a supplier',
+                        'We do not take title to, handle, inspect, or ship any goods listed on the Platform',
+                        'We do not process payments between buyers and suppliers; any payment terms are agreed directly between the parties',
+                        'Listings, prices, availability, and specifications are supplied by suppliers and are not independently verified by us unless explicitly stated',
                     ]],
+
+                    ['type' => 'heading', 'content' => '2. Eligibility and accounts'],
+                    ['type' => 'subheading', 'content' => 'Who can register'],
+                    ['type' => 'paragraph', 'content' => 'You must be at least 18 years old and have the legal capacity to enter binding agreements to register an account, whether as a buyer or as a supplier/exporter representative.'],
+                    ['type' => 'subheading', 'content' => 'Account responsibilities'],
+                    ['type' => 'list', 'items' => [
+                        'You must provide accurate, current information when registering a company or buyer account, and keep it up to date',
+                        'You are responsible for all activity that occurs under your account and credentials, and for keeping your password confidential',
+                        'You must notify us promptly if you suspect unauthorised use of your account',
+                        'We may suspend or terminate accounts that provide false information, violate these Terms, or misuse the Platform, with or without notice depending on severity',
+                    ]],
+
                     ['type' => 'heading', 'content' => '3. Verification badges'],
-                    ['type' => 'paragraph', 'content' => 'A verification badge indicates that our team has reviewed documents submitted by a supplier and found them consistent with the stated credentials at the time of review. It is not a guarantee, endorsement, or warranty of the supplier\'s products, financial standing, legal compliance, or future conduct. Buyers are responsible for conducting their own due diligence before entering into any transaction.'],
-                    ['type' => 'heading', 'content' => '4. Listings and content'],
-                    ['type' => 'paragraph', 'content' => 'Suppliers are responsible for the accuracy of their listings, product information, pricing, and documents. We may remove listings or content that we reasonably believe to be false, misleading, or in violation of applicable law.'],
-                    ['type' => 'heading', 'content' => '5. No liability for transactions'],
-                    ['type' => 'paragraph', 'content' => 'Cameroon Timber Hub is not responsible for the performance of any agreement between a buyer and a supplier, including quality, delivery, payment, customs, or dispute resolution. Any transaction entered into between users is solely between those users.'],
-                    ['type' => 'heading', 'content' => '6. Acceptable use'],
+                    ['type' => 'paragraph', 'content' => 'A verification badge indicates that our team has reviewed documents submitted by a supplier — such as business registration, export permits, and legality/compliance certificates — and found them consistent with the stated credentials at the time of review.'],
                     ['type' => 'list', 'items' => [
-                        'Do not use the Platform for illegal timber trade, fraud, or to circumvent export/import regulations',
-                        'Do not scrape, resell, or misuse Platform data without permission',
-                        'Do not impersonate another company or individual',
+                        'A badge is not a guarantee, endorsement, or warranty of the supplier\'s products, financial standing, legal compliance, or future conduct',
+                        'A badge reflects a point-in-time review; documents can expire, and badges are revoked or lapse if not renewed',
+                        'Buyers are responsible for conducting their own due diligence before entering into any transaction, verified badge or not',
                     ]],
-                    ['type' => 'heading', 'content' => '7. Changes to these Terms'],
-                    ['type' => 'paragraph', 'content' => 'We may update these Terms from time to time. Continued use of the Platform after changes take effect constitutes acceptance of the revised Terms.'],
-                    ['type' => 'heading', 'content' => '8. Contact'],
+
+                    ['type' => 'heading', 'content' => '4. Listings, RFQs, and content'],
+                    ['type' => 'paragraph', 'content' => 'Suppliers are solely responsible for the accuracy of their listings, product information, pricing, species claims, and uploaded documents. Buyers are responsible for the accuracy of information submitted in Requests for Quote (RFQs) and inquiries.'],
+                    ['type' => 'list', 'items' => [
+                        'We may remove, edit, or decline to publish listings or content we reasonably believe to be false, misleading, infringing, or in violation of applicable law',
+                        'We may route an RFQ to multiple matching suppliers at once; submitting an RFQ does not create an exclusive arrangement with any one supplier',
+                        'Content you submit (text, photos, documents) must be your own or used with permission, and must not infringe any third party\'s rights',
+                    ]],
+
+                    ['type' => 'heading', 'content' => '5. No liability for transactions between users'],
+                    ['type' => 'paragraph', 'content' => 'Cameroon Timber Hub is not responsible for the performance of any agreement between a buyer and a supplier, including product quality, quantity, delivery timing, customs clearance, payment, or dispute resolution. Any transaction entered into between users is solely between those users, at their own risk.'],
+                    ['type' => 'paragraph', 'content' => 'To the maximum extent permitted by applicable law, Cameroon Timber Hub disclaims liability for any loss or damage arising from a transaction, communication, or dealing between users of the Platform.'],
+
+                    ['type' => 'heading', 'content' => '6. Acceptable use'],
+                    ['type' => 'paragraph', 'content' => 'You agree not to:'],
+                    ['type' => 'list', 'items' => [
+                        'Use the Platform for illegal timber trade, fraud, or to circumvent export/import regulations or sanctions',
+                        'Scrape, harvest, resell, or otherwise misuse Platform data without our prior written permission',
+                        'Impersonate another company, individual, or misrepresent your affiliation with any entity',
+                        'Upload malicious code, attempt to disrupt the Platform, or bypass its security or access controls',
+                        'Post content that is unlawful, defamatory, or infringes another party\'s intellectual property',
+                    ]],
+
+                    ['type' => 'heading', 'content' => '7. Intellectual property'],
+                    ['type' => 'paragraph', 'content' => 'The Platform\'s software, design, and branding are owned by Cameroon Timber Hub or its licensors. Content you submit (listings, documents, photos) remains yours, but you grant us a licence to display and use it on the Platform for the purpose of operating the marketplace.'],
+
+                    ['type' => 'heading', 'content' => '8. Termination'],
+                    ['type' => 'paragraph', 'content' => 'You may close your account at any time by contacting us. We may suspend or terminate access to the Platform for any account that breaches these Terms, poses a risk to other users, or on reasonable notice for any other reason.'],
+
+                    ['type' => 'heading', 'content' => '9. Changes to these Terms'],
+                    ['type' => 'paragraph', 'content' => 'We may update these Terms from time to time to reflect changes to the Platform or applicable law. The "Last updated" date at the top of this page reflects the most recent revision. Continued use of the Platform after changes take effect constitutes acceptance of the revised Terms.'],
+
+                    ['type' => 'heading', 'content' => '10. Governing law'],
+                    ['type' => 'paragraph', 'content' => 'These Terms are governed by the laws of the Republic of Cameroon, without regard to conflict-of-law principles, unless otherwise required by applicable law in your jurisdiction.'],
+
+                    ['type' => 'heading', 'content' => '11. Contact'],
                     ['type' => 'paragraph', 'content' => 'Questions about these Terms can be sent through our Contact page.'],
                 ],
             ],
@@ -228,33 +269,61 @@ class PageSeeder extends Seeder
             'is_published' => true,
             'data' => [
                 'blocks' => [
-                    ['type' => 'paragraph', 'content' => 'This Privacy Policy explains what information Cameroon Timber Hub collects, how we use it, and the choices you have. It applies to visitors, registered buyers, and registered suppliers/exporters.'],
+                    ['type' => 'paragraph', 'content' => 'This Privacy Policy explains what information Cameroon Timber Hub collects, how we use it, who we share it with, and the choices you have. It applies to visitors, registered buyers, and registered suppliers/exporters using the Platform.'],
+
                     ['type' => 'heading', 'content' => '1. Information we collect'],
+                    ['type' => 'subheading', 'content' => 'Information you give us'],
                     ['type' => 'list', 'items' => [
-                        'Account information: name, email, phone number, company name and details',
-                        'Company verification documents: business registration, export permits, legality certificates',
-                        'Usage data: pages visited, RFQs submitted, inquiries sent, and similar interaction data',
-                        'Technical data: IP address and browser/user-agent, collected for security, fraud prevention, and consent records',
+                        'Account information: name, email, phone number, company name and business details',
+                        'Company verification documents: business registration, export permits, phytosanitary and legality certificates',
+                        'Listing content: product descriptions, species, pricing, and photographs you upload',
+                        'RFQ and inquiry details: quantities, specifications, delivery preferences, and messages you send to suppliers',
                     ]],
-                    ['type' => 'heading', 'content' => '2. How we use information'],
+                    ['type' => 'subheading', 'content' => 'Information collected automatically'],
+                    ['type' => 'list', 'items' => [
+                        'Usage data: pages visited, searches performed, RFQs submitted, and similar interaction data',
+                        'Technical data: IP address, browser and device type, collected for security, fraud prevention, and to maintain consent and evidence records',
+                    ]],
+
+                    ['type' => 'heading', 'content' => '2. How we use your information'],
                     ['type' => 'list', 'items' => [
                         'To operate the marketplace: matching RFQs to suppliers, displaying listings, and enabling messages between buyers and suppliers',
-                        'To review and verify supplier documents',
-                        'To communicate with you about your account, inquiries, and RFQs',
-                        'To protect the Platform against fraud, abuse, and unauthorised access',
+                        'To review and verify supplier documents and issue or revoke verification badges',
+                        'To communicate with you about your account, inquiries, RFQs, and platform updates',
+                        'To protect the Platform and its users against fraud, abuse, and unauthorised access',
+                        'To comply with legal, accounting, and regulatory obligations',
                     ]],
+
                     ['type' => 'heading', 'content' => '3. Sharing your information'],
-                    ['type' => 'paragraph', 'content' => 'When you submit a Request for Quote or an inquiry, relevant details are shared with the supplier(s) it is routed to, so they can respond to you. We do not sell personal data to third parties. We may share information with service providers who help us operate the Platform (e.g. hosting, email delivery), bound by confidentiality obligations, or where required by law.'],
+                    ['type' => 'paragraph', 'content' => 'When you submit a Request for Quote or an inquiry, the relevant contact and requirement details are shared with the supplier(s) it is routed to, so they can respond to you directly. This is the core function of the marketplace — without this sharing, suppliers could not respond to your request.'],
+                    ['type' => 'list', 'items' => [
+                        'We do not sell your personal data to third parties',
+                        'We may share information with service providers who help us operate the Platform (for example, hosting and email delivery), bound by confidentiality obligations',
+                        'We may disclose information where required by law, regulation, or a valid legal process',
+                    ]],
+
                     ['type' => 'heading', 'content' => '4. Consent'],
-                    ['type' => 'paragraph', 'content' => 'Where we ask for your consent before sharing your inquiry or RFQ details with suppliers, we record that consent — including when it was given and, if applicable, when it was revoked — so both you and we have a reliable record.'],
+                    ['type' => 'paragraph', 'content' => 'Where we ask for your consent before sharing your inquiry or RFQ details with suppliers, we record that consent as a structured entry — including when it was given, its scope, and, if applicable, when it was revoked — so both you and we have a reliable, inspectable record rather than an assumption.'],
+                    ['type' => 'paragraph', 'content' => 'You can withdraw consent for future sharing at any time by contacting us; this does not affect sharing that already took place before the withdrawal.'],
+
                     ['type' => 'heading', 'content' => '5. Data retention'],
-                    ['type' => 'paragraph', 'content' => 'We retain account and transaction data for as long as your account is active and as needed to comply with legal, accounting, or reporting obligations. Verification documents are retained for the duration of the review relationship and as required by applicable regulation.'],
-                    ['type' => 'heading', 'content' => '6. Your choices'],
+                    ['type' => 'paragraph', 'content' => 'We retain account and transaction data for as long as your account is active and as needed to comply with legal, accounting, or reporting obligations. Verification documents are retained for the duration of the review relationship and for the period required by applicable regulation. When data is no longer needed for these purposes, we take reasonable steps to delete or anonymise it.'],
+
+                    ['type' => 'heading', 'content' => '6. Data security'],
+                    ['type' => 'paragraph', 'content' => 'We use reasonable technical and organisational measures to protect your information, including access controls on verification documents and encrypted connections to the Platform. No method of transmission or storage is completely secure, and we cannot guarantee absolute security.'],
+
+                    ['type' => 'heading', 'content' => '7. Your choices and rights'],
                     ['type' => 'list', 'items' => [
                         'You can request access to, correction of, or deletion of your personal data by contacting us',
+                        'You can update most account information directly from your dashboard',
                         'You can withdraw consent for future data sharing at any time; this does not affect processing already carried out',
+                        'You can close your account at any time; some information may be retained where required by law',
                     ]],
-                    ['type' => 'heading', 'content' => '7. Contact'],
+
+                    ['type' => 'heading', 'content' => '8. International transfers'],
+                    ['type' => 'paragraph', 'content' => 'Because the Platform connects buyers and suppliers across borders, information you submit (such as an RFQ) may be seen by a supplier located in a different country from you. We take reasonable steps to ensure information is handled consistently with this Policy wherever it is processed.'],
+
+                    ['type' => 'heading', 'content' => '9. Contact'],
                     ['type' => 'paragraph', 'content' => 'Questions about this Privacy Policy or your data can be sent through our Contact page.'],
                 ],
             ],
@@ -268,17 +337,30 @@ class PageSeeder extends Seeder
             'is_published' => true,
             'data' => [
                 'blocks' => [
-                    ['type' => 'paragraph', 'content' => 'Cameroon Timber Hub uses cookies and similar technologies to keep you signed in, remember your preferences, and understand how the Platform is used so we can improve it.'],
+                    ['type' => 'paragraph', 'content' => 'Cameroon Timber Hub uses cookies and similar technologies (such as local storage) to keep you signed in, remember your preferences, and understand how the Platform is used so we can improve it. This policy explains what these technologies are, which ones we use, and how you can control them.'],
+
+                    ['type' => 'heading', 'content' => 'What cookies are'],
+                    ['type' => 'paragraph', 'content' => 'Cookies are small text files placed on your device when you visit a website. They allow the site to recognise your device and remember information about your visit, such as your preferences and whether you are signed in.'],
+
                     ['type' => 'heading', 'content' => 'Types of cookies we use'],
-                    ['type' => 'list', 'items' => [
-                        'Essential cookies — required for login sessions, forms, and core site functionality; the Platform cannot function correctly without these',
-                        'Preference cookies — remember settings such as your chosen theme',
-                        'Analytics cookies — help us understand aggregate usage so we can improve the Platform',
-                    ]],
+                    ['type' => 'subheading', 'content' => 'Essential cookies'],
+                    ['type' => 'paragraph', 'content' => 'Required for login sessions, form submission (including CSRF protection), and core site functionality. The Platform cannot function correctly without these, and they cannot be switched off through our systems.'],
+                    ['type' => 'subheading', 'content' => 'Preference cookies'],
+                    ['type' => 'paragraph', 'content' => 'Remember settings such as your chosen light/dark theme, so you don\'t have to reset it on every visit.'],
+                    ['type' => 'subheading', 'content' => 'Analytics cookies'],
+                    ['type' => 'paragraph', 'content' => 'Help us understand aggregate usage — which pages are visited, how the marketplace is used — so we can find and fix problems and improve the Platform. We use this data in aggregate and do not use it to build advertising profiles.'],
+
+                    ['type' => 'heading', 'content' => 'Cookies set by other services'],
+                    ['type' => 'paragraph', 'content' => 'Some pages may embed or link to third-party content (for example, a map or an external verification tool). Those third parties may set their own cookies, governed by their own privacy and cookie policies, which we do not control.'],
+
                     ['type' => 'heading', 'content' => 'Managing cookies'],
-                    ['type' => 'paragraph', 'content' => 'Most browsers let you block or delete cookies through their settings. Blocking essential cookies may prevent parts of the Platform, such as signing in, from working correctly.'],
+                    ['type' => 'paragraph', 'content' => 'Most browsers let you view, block, or delete cookies through their settings. Blocking essential cookies may prevent parts of the Platform — such as signing in or submitting an RFQ — from working correctly.'],
+
                     ['type' => 'heading', 'content' => 'Changes to this policy'],
-                    ['type' => 'paragraph', 'content' => 'We may update this Cookies Policy from time to time. Check back periodically for changes.'],
+                    ['type' => 'paragraph', 'content' => 'We may update this Cookies Policy from time to time to reflect changes in the technologies we use or applicable law. The "Last updated" date at the top of this page reflects the most recent revision.'],
+
+                    ['type' => 'heading', 'content' => 'Contact'],
+                    ['type' => 'paragraph', 'content' => 'Questions about this Cookies Policy can be sent through our Contact page.'],
                 ],
             ],
         ],
