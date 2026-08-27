@@ -157,11 +157,14 @@
                             </button>
                         </form>
 
-                        {{-- One-click demo logins. Rendered only when
-                             DEMO_LOGINS_ENABLED is true; the route enforces the
-                             same flag, so hiding this is not the security
-                             boundary. See config/demo.php. --}}
-                        @if (config('demo.enabled') === true)
+                        {{-- One-click demo logins. Rendered only when the
+                             DemoLoginsEnabled flag is active — but this is
+                             cosmetic, not the security boundary: the route
+                             itself is gated by the demo.logins.enabled
+                             middleware (App\Http\Middleware\EnsureDemoLoginsEnabled),
+                             so hiding this block does not need to be relied
+                             on for anything. See docs/GAP_PLAN.md item 0.3. --}}
+                        @if (\Laravel\Pennant\Feature::active(\App\Features\DemoLoginsEnabled::class))
                             <div class="mt-7 border-t border-sand-200 pt-6">
                                 <div class="flex items-center gap-2">
                                     <h2 class="text-[1.0625rem] font-semibold uppercase tracking-[0.08em] text-ink-soft">Explore a demo account</h2>

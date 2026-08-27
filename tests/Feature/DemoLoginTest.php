@@ -1,9 +1,10 @@
 <?php
 
+use App\Features\DemoLoginsEnabled;
 use App\Models\User;
 use Database\Seeders\DemoLoginSeeder;
 use Database\Seeders\RolesAndPermissionsSeeder;
-use Illuminate\Support\Facades\Config;
+use Laravel\Pennant\Feature;
 
 /**
  * The demo-login feature signs a visitor in without a password, so every test
@@ -12,7 +13,7 @@ use Illuminate\Support\Facades\Config;
  * must never authenticate anyone.
  */
 beforeEach(function () {
-    Config::set('demo.enabled', true);
+    Feature::activate(DemoLoginsEnabled::class);
     $this->seed(RolesAndPermissionsSeeder::class);
     $this->seed(DemoLoginSeeder::class);
 });
@@ -45,7 +46,7 @@ it('gives the demo admin a staff role', function () {
 /* ------------------------------------------------------------- kill switch */
 
 it('hides the buttons and refuses the route when disabled', function () {
-    Config::set('demo.enabled', false);
+    Feature::deactivate(DemoLoginsEnabled::class);
 
     // The UI is hidden...
     $this->get('/login')->assertOk()->assertDontSee('Explore a demo account');
