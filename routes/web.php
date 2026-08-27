@@ -167,7 +167,10 @@ Route::middleware('guest')->group(function () {
     // would let a link, a prefetch or a crawler authenticate someone. The
     // persona segment is constrained to the three literal keys in
     // config('demo.personas') at the route level as well as in the controller,
-    // and the whole feature 404s unless DEMO_LOGINS_ENABLED is true.
+    // and the whole feature 404s unless the DemoLoginsEnabled Pennant flag is
+    // active (seeded from DEMO_LOGINS_ENABLED, but an admin activate/deactivate
+    // call always wins after the first resolution — see
+    // App\Features\DemoLoginsEnabled and the demo.logins.enabled middleware).
     Route::post('/demo-login/{persona}', DemoLoginController::class)
         ->where('persona', 'buyer|supplier|admin')
         ->middleware(['throttle:demo-login', 'demo.logins.enabled'])
