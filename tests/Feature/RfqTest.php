@@ -1,14 +1,15 @@
 <?php
 
+use App\Enums\ConsentPurpose;
 use App\Mail\InquiryVerificationMail;
 use App\Mail\RfqVerificationMail;
 use App\Models\Company;
 use App\Models\CompanyInquiry;
 use App\Models\Lead;
 use App\Models\Rfq;
-use App\Models\Species;
 use App\Models\SuspiciousEvent;
 use App\Models\User;
+use App\Notifications\RfqRoutedToExporter;
 use App\Services\IntakeService;
 use App\Services\LeadFlowService;
 use App\Services\RfqTriageService;
@@ -67,6 +68,24 @@ it('creates an unverified RFQ with a line item and sends a verification email', 
     Mail::assertSent(RfqVerificationMail::class);
 });
 
+it('persists a Consent row from the wizard checkbox instead of discarding it', function () {
+    $this->withServerVariables(['HTTP_USER_AGENT' => 'PestTestAgent/1.0'])
+        ->post(route('rfq.store'), rfqPayload());
+
+    $rfq = Rfq::firstOrFail();
+
+    expect($rfq->consents)->toHaveCount(1);
+
+    $consent = $rfq->consents->first();
+
+    expect($consent->purpose)->toBe(ConsentPurpose::RfqExporterSharing)
+        ->and($consent->scope)->toBe(['shared_with' => 'verified_exporters', 'contact_channel' => 'email'])
+        ->and($consent->granted_at)->not->toBeNull()
+        ->and($consent->revoked_at)->toBeNull()
+        ->and($consent->evidence['user_agent'])->toBe('PestTestAgent/1.0')
+        ->and($consent->evidence['ip_address'])->not->toBeNull();
+});
+
 it('silently drops honeypot submissions and records a suspicious event', function () {
     Mail::fake();
 
@@ -120,7 +139,7 @@ it('routes an approved RFQ to an exporter, creating one lead, idempotently', fun
         ->and(Lead::where('company_id', $company->id)->where('source', 'rfq')->count())->toBe(1)
         ->and($triage->route($rfq->fresh(), [$company->id], $admin, app(LeadFlowService::class)))->toBe(0);
 
-    Notification::assertSentTo($member, App\Notifications\RfqRoutedToExporter::class);
+    Notification::assertSentTo($member, RfqRoutedToExporter::class);
 });
 
 it('creates a lead when a company inquiry is verified', function () {

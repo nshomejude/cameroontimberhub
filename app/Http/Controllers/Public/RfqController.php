@@ -154,6 +154,7 @@ class RfqController extends Controller
                 'species_id', 'species_text', 'form', 'grade', 'dimensions', 'quantity', 'unit', 'moisture_content',
             ]), $data['items']),
             $request->input('source', 'request_quote'),
+            filled($data['consent'] ?? null),
         );
 
         // Both baskets have been consumed by this request.

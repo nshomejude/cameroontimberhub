@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\ConsentPurpose;
 use App\Mail\InquiryVerificationMail;
 use App\Mail\RfqVerificationMail;
 use App\Models\Company;
@@ -30,9 +31,9 @@ class IntakeService
         return $this->antiSpam->honeypotTripped($data, 'buyer_email');
     }
 
-    public function createRfq(array $header, array $items, ?string $source = null): Rfq
+    public function createRfq(array $header, array $items, ?string $source = null, bool $consentGiven = false): Rfq
     {
-        $rfq = DB::transaction(function () use ($header, $items, $source) {
+        $rfq = DB::transaction(function () use ($header, $items, $source, $consentGiven) {
             // Guests stay guests, but when the address already has an account we
             // bind the RFQ to it so it shows up in that buyer's own screens
             // without needing the signed link.
@@ -51,6 +52,26 @@ class IntakeService
 
             foreach ($items as $item) {
                 $rfq->items()->create($item);
+            }
+
+            // The wizard's consent checkbox ("share this request with
+            // verified exporters and contact me by email") is validated as
+            // `accepted` (RfqWizard::rules()) but historically discarded —
+            // see docs/superpowers/plans/2026-08-27-persisted-consent.md.
+            // A checked box gets a persisted, revocable Consent row here;
+            // RfqTriageService::route() refuses to route an RFQ whose
+            // consent has since been revoked.
+            if ($consentGiven) {
+                $rfq->consents()->create([
+                    'purpose' => ConsentPurpose::RfqExporterSharing,
+                    'scope' => ['shared_with' => 'verified_exporters', 'contact_channel' => 'email'],
+                    'granted_at' => now(),
+                    'evidence' => [
+                        'ip_address' => request()->ip(),
+                        'user_agent' => substr((string) request()->userAgent(), 0, 512),
+                        'captured_at' => now()->toIso8601String(),
+                    ],
+                ]);
             }
 
             return $rfq;
