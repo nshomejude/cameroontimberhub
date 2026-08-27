@@ -5,7 +5,9 @@
     :schema="$schema">
 
     <div class="bg-white">
-        <div class="mx-auto max-w-4xl px-4 py-8 lg:px-6">
+        {{-- The container widens from lg only, to pay for the rail: below lg
+             the page is byte-for-byte the max-w-4xl single column it was. --}}
+        <div class="mx-auto max-w-4xl px-4 py-8 lg:max-w-[1180px] lg:px-6">
 
             <nav aria-label="Breadcrumb">
                 <ol class="flex flex-wrap items-center gap-2 text-[0.9375rem] text-ink-soft">
@@ -17,35 +19,49 @@
                 </ol>
             </nav>
 
-            <p class="eyebrow mt-3">Knowledge Centre</p>
-            <h1 class="mt-1 text-[1.875rem] font-bold tracking-tight text-ink lg:text-[2.125rem]">{{ $hub->label() }}</h1>
-            <p class="mt-1.5 max-w-2xl text-[1.125rem] leading-relaxed text-ink-soft">{{ $hub->description() }}</p>
+            {{-- ---------------- Body + rail ----------------
+                 The hub page has no right rail, so the Knowledge Centre rail
+                 fits from lg. It marks this hub current and nests this hub's
+                 own articles, which the controller has already loaded — the
+                 rail costs no extra query. --}}
+            <div class="mt-3 grid gap-10 lg:grid-cols-[15rem_minmax(0,1fr)] lg:items-start">
 
-            {{-- Authored pillar copy, when a content/knowledge/{hub}.md file exists.
-                 Safe to echo raw: ArticleBody::render() renders markdown with
-                 html_input => escape, so no author HTML survives. --}}
-            @if ($pillar)
-                <div class="article-prose mt-6">{!! $pillar !!}</div>
-            @endif
+                <x-knowledge-rail :hub="$hub" :articles="$articles" class="hidden lg:block" />
 
-            <h2 class="mt-10 text-[1.25rem] font-bold text-forest-800">Articles in this hub</h2>
+                <div class="min-w-0">
 
-            @if ($articles->isNotEmpty())
-                <div class="mt-4 grid gap-4 sm:grid-cols-2">
-                    @foreach ($articles as $entry)
-                        <x-article-card :article="$entry" />
-                    @endforeach
+                    <p class="eyebrow">Knowledge Centre</p>
+                    <h1 class="mt-1 text-[1.875rem] font-bold tracking-tight text-ink lg:text-[2.125rem]">{{ $hub->label() }}</h1>
+                    <p class="mt-1.5 max-w-2xl text-[1.125rem] leading-relaxed text-ink-soft">{{ $hub->description() }}</p>
+
+                    {{-- Authored pillar copy, when a content/knowledge/{hub}.md file exists.
+                         Safe to echo raw: ArticleBody::render() renders markdown with
+                         html_input => escape, so no author HTML survives. --}}
+                    @if ($pillar)
+                        <div class="article-prose mt-6">{!! $pillar !!}</div>
+                    @endif
+
+                    <h2 class="mt-10 text-[1.25rem] font-bold text-forest-800">Articles in this hub</h2>
+
+                    @if ($articles->isNotEmpty())
+                        <div class="mt-4 grid gap-4 sm:grid-cols-2">
+                            @foreach ($articles as $entry)
+                                <x-article-card :article="$entry" />
+                            @endforeach
+                        </div>
+                    @else
+                        <div class="mt-4 rounded-xl border border-dashed border-sand-300 bg-sand-50 px-6 py-12 text-center">
+                            <h3 class="text-[1.25rem] font-bold text-ink">Nothing published in this hub yet</h3>
+                            <p class="mx-auto mt-2 max-w-md text-[1.0625rem] text-ink-soft">
+                                Browse the other <a href="{{ route('knowledge.index') }}" class="font-semibold text-forest-700 transition hover:underline">Knowledge Centre hubs</a>,
+                                the <a href="{{ route('glossary.index') }}" class="font-semibold text-forest-700 transition hover:underline">glossary</a>,
+                                or the latest <a href="{{ route('insights.index') }}" class="font-semibold text-forest-700 transition hover:underline">insights</a>.
+                            </p>
+                        </div>
+                    @endif
+
                 </div>
-            @else
-                <div class="mt-4 rounded-xl border border-dashed border-sand-300 bg-sand-50 px-6 py-12 text-center">
-                    <h3 class="text-[1.25rem] font-bold text-ink">Nothing published in this hub yet</h3>
-                    <p class="mx-auto mt-2 max-w-md text-[1.0625rem] text-ink-soft">
-                        Browse the other <a href="{{ route('knowledge.index') }}" class="font-semibold text-forest-700 transition hover:underline">Knowledge Centre hubs</a>,
-                        the <a href="{{ route('glossary.index') }}" class="font-semibold text-forest-700 transition hover:underline">glossary</a>,
-                        or the latest <a href="{{ route('insights.index') }}" class="font-semibold text-forest-700 transition hover:underline">insights</a>.
-                    </p>
-                </div>
-            @endif
+            </div>
         </div>
     </div>
 </x-layouts.app>

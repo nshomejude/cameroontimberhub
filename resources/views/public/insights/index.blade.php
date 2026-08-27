@@ -60,78 +60,97 @@
                 </div>
             </div>
 
-            {{-- Search + category filter. A plain GET form: no JavaScript needed,
-                 every filtered view is a real, shareable, crawlable URL. --}}
-            <form method="GET" action="{{ route('insights.index') }}" class="mt-6">
-                <div class="flex flex-col gap-3 sm:flex-row">
-                    <label class="sr-only" for="insights-q">Search articles</label>
-                    <div class="relative flex-1">
-                        <x-heroicon-o-magnifying-glass class="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-ink-soft" />
-                        <input id="insights-q" type="search" name="q" value="{{ $q }}"
-                               placeholder="Search insights — grading, EUDR, freight, prices…"
-                               class="w-full rounded-lg border border-sand-300 bg-white py-2.5 pl-10 pr-3 text-[1.0625rem] text-ink transition placeholder:text-ink-soft focus:border-forest-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-forest-200">
-                    </div>
-                    @if ($category)
-                        <input type="hidden" name="category" value="{{ $category->value }}">
-                    @endif
-                    <button type="submit"
-                            class="rounded-lg bg-forest-700 px-5 py-2.5 text-[1.0625rem] font-semibold text-white transition hover:bg-forest-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500 focus-visible:ring-offset-2">
-                        Search
-                    </button>
-                </div>
-            </form>
+            {{-- ---------------- Listing + rail ----------------
+                 This page carries no right rail, so the Knowledge Centre rail
+                 fits from lg: at 1024px it still leaves the card grid 681px,
+                 which holds two comfortable cards (three only from xl, see
+                 below). The CTA stays full-width, and mobile and tablet keep
+                 the single column they had. --}}
+            <div class="mt-6 grid gap-10 lg:grid-cols-[15rem_minmax(0,1fr)] lg:items-start">
 
-            <nav aria-label="Article categories" class="mt-4 flex flex-wrap gap-2">
-                @php $pill = 'rounded-lg border px-3.5 py-2 text-[1.0625rem] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-300'; @endphp
-                <a href="{{ route('insights.index') }}"
-                   @class([$pill, 'border-forest-700 bg-forest-700 text-white' => ! $category, 'border-sand-300 text-ink hover:border-forest-600 hover:text-forest-700' => (bool) $category])>
-                    All <span class="tabular-nums opacity-70">{{ $total }}</span>
-                </a>
-                @foreach (ArticleCategory::cases() as $case)
-                    @php $count = (int) ($counts[$case->value] ?? 0); @endphp
-                    <a href="{{ route('insights.category', $case->value) }}"
-                       @class([$pill, 'border-forest-700 bg-forest-700 text-white' => $category === $case, 'border-sand-300 text-ink hover:border-forest-600 hover:text-forest-700' => $category !== $case])>
-                        {{ $case->label() }} <span class="tabular-nums opacity-70">{{ $count }}</span>
-                    </a>
-                @endforeach
-            </nav>
+                <x-knowledge-rail class="hidden lg:block" />
 
-            {{-- Results --}}
-            @if ($articles->total() === 0)
-                <div class="mt-8 rounded-xl border border-dashed border-sand-300 bg-sand-50 px-6 py-12 text-center">
-                    <h2 class="text-[1.25rem] font-bold text-ink">No articles yet</h2>
-                    <p class="mx-auto mt-2 max-w-md text-[1.0625rem] text-ink-soft">
-                        @if ($q !== '')
-                            Nothing matched “{{ $q }}”. Try a broader term, or browse every article.
-                        @else
-                            This section is being written. In the meantime, browse the species directory or talk to a supplier directly.
+                <div class="min-w-0">
+
+                    {{-- Search + category filter. A plain GET form: no JavaScript needed,
+                         every filtered view is a real, shareable, crawlable URL. --}}
+                    <form method="GET" action="{{ route('insights.index') }}">
+                        <div class="flex flex-col gap-3 sm:flex-row">
+                            <label class="sr-only" for="insights-q">Search articles</label>
+                            <div class="relative flex-1">
+                                <x-heroicon-o-magnifying-glass class="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-ink-soft" />
+                                <input id="insights-q" type="search" name="q" value="{{ $q }}"
+                                       placeholder="Search insights — grading, EUDR, freight, prices…"
+                                       class="w-full rounded-lg border border-sand-300 bg-white py-2.5 pl-10 pr-3 text-[1.0625rem] text-ink transition placeholder:text-ink-soft focus:border-forest-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-forest-200">
+                            </div>
+                            @if ($category)
+                                <input type="hidden" name="category" value="{{ $category->value }}">
+                            @endif
+                            <button type="submit"
+                                    class="rounded-lg bg-forest-700 px-5 py-2.5 text-[1.0625rem] font-semibold text-white transition hover:bg-forest-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500 focus-visible:ring-offset-2">
+                                Search
+                            </button>
+                        </div>
+                    </form>
+
+                    <nav aria-label="Article categories" class="mt-4 flex flex-wrap gap-2">
+                        @php $pill = 'rounded-lg border px-3.5 py-2 text-[1.0625rem] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-300'; @endphp
+                        <a href="{{ route('insights.index') }}"
+                           @class([$pill, 'border-forest-700 bg-forest-700 text-white' => ! $category, 'border-sand-300 text-ink hover:border-forest-600 hover:text-forest-700' => (bool) $category])>
+                            All <span class="tabular-nums opacity-70">{{ $total }}</span>
+                        </a>
+                        @foreach (ArticleCategory::cases() as $case)
+                            @php $count = (int) ($counts[$case->value] ?? 0); @endphp
+                            <a href="{{ route('insights.category', $case->value) }}"
+                               @class([$pill, 'border-forest-700 bg-forest-700 text-white' => $category === $case, 'border-sand-300 text-ink hover:border-forest-600 hover:text-forest-700' => $category !== $case])>
+                                {{ $case->label() }} <span class="tabular-nums opacity-70">{{ $count }}</span>
+                            </a>
+                        @endforeach
+                    </nav>
+
+                    {{-- Results --}}
+                    @if ($articles->total() === 0)
+                        <div class="mt-8 rounded-xl border border-dashed border-sand-300 bg-sand-50 px-6 py-12 text-center">
+                            <h2 class="text-[1.25rem] font-bold text-ink">No articles yet</h2>
+                            <p class="mx-auto mt-2 max-w-md text-[1.0625rem] text-ink-soft">
+                                @if ($q !== '')
+                                    Nothing matched “{{ $q }}”. Try a broader term, or browse every article.
+                                @else
+                                    This section is being written. In the meantime, browse the species directory or talk to a supplier directly.
+                                @endif
+                            </p>
+                            <div class="mt-5 flex flex-wrap justify-center gap-3">
+                                <a href="{{ route('insights.index') }}" class="rounded-lg border border-sand-300 px-4 py-2 text-[1.0625rem] font-semibold text-ink transition hover:border-forest-600 hover:text-forest-700">All insights</a>
+                                <a href="{{ route('species.index') }}" class="rounded-lg bg-forest-700 px-4 py-2 text-[1.0625rem] font-semibold text-white transition hover:bg-forest-800">Browse species</a>
+                            </div>
+                        </div>
+                    @else
+                        @if ($featured)
+                            <div class="mt-7">
+                                <x-article-card :article="$featured" featured />
+                            </div>
                         @endif
-                    </p>
-                    <div class="mt-5 flex flex-wrap justify-center gap-3">
-                        <a href="{{ route('insights.index') }}" class="rounded-lg border border-sand-300 px-4 py-2 text-[1.0625rem] font-semibold text-ink transition hover:border-forest-600 hover:text-forest-700">All insights</a>
-                        <a href="{{ route('species.index') }}" class="rounded-lg bg-forest-700 px-4 py-2 text-[1.0625rem] font-semibold text-white transition hover:bg-forest-800">Browse species</a>
-                    </div>
-                </div>
-            @else
-                @if ($featured)
-                    <div class="mt-7">
-                        <x-article-card :article="$featured" featured />
-                    </div>
-                @endif
 
-                <div class="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                    @foreach ($grid as $article)
-                        <x-article-card :article="$article" />
-                    @endforeach
-                </div>
+                        {{-- Three cards only from xl. Measured: with the rail in
+                         place, three columns at 1024px give 214px cards, too
+                         narrow for 17px type; two give 330px — wider than the
+                         312px this page shipped before the rail existed. --}}
+                    <div class="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                            @foreach ($grid as $article)
+                                <x-article-card :article="$article" />
+                            @endforeach
+                        </div>
 
-                <div class="mt-8 flex flex-col items-center gap-3 sm:flex-row">
-                    {{ $articles->onEachSide(1)->links() }}
-                    <p class="text-[1.0625rem] text-ink-soft sm:ml-auto">
-                        Showing {{ $articles->firstItem() }} to {{ $articles->lastItem() }} of {{ $articles->total() }} articles
-                    </p>
+                        <div class="mt-8 flex flex-col items-center gap-3 sm:flex-row">
+                            {{ $articles->onEachSide(1)->links() }}
+                            <p class="text-[1.0625rem] text-ink-soft sm:ml-auto">
+                                Showing {{ $articles->firstItem() }} to {{ $articles->lastItem() }} of {{ $articles->total() }} articles
+                            </p>
+                        </div>
+                    @endif
+
                 </div>
-            @endif
+            </div>
 
             {{-- Funnel CTA --}}
             <section class="mt-12 overflow-hidden rounded-xl bg-forest-800 px-6 py-8 text-white lg:px-10 lg:py-10">

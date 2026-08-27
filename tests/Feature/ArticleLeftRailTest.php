@@ -3,6 +3,7 @@
 use App\Enums\ArticleStatus;
 use App\Enums\KnowledgeHub;
 use App\Models\Article;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /** Collapse HTML whitespace so attribute adjacency can be asserted. */
@@ -82,4 +83,63 @@ it('shows the hub list with nothing marked current on an unhubbed news article',
     foreach (KnowledgeHub::cases() as $hub) {
         expect($html)->not->toContain('href="'.$hub->url().'" aria-current="true"');
     }
+});
+
+it('renders the rail on the insights index with nothing marked current', function () {
+    Article::factory()->create([
+        'title' => 'Incoterms For Timber Buyers', 'slug' => 'incoterms-rail', 'hub' => KnowledgeHub::Buying,
+    ]);
+
+    $html = railHtml(route('insights.index'));
+
+    expect($html)->toContain('aria-label="Knowledge Centre"');
+
+    // The whole hub list, straight from the enum...
+    foreach (KnowledgeHub::cases() as $hub) {
+        expect($html)->toContain('href="'.$hub->url().'"');
+    }
+
+    // ...and no hub is invented as current for a page that belongs to none,
+    // so no article sublist is nested under one either.
+    foreach (KnowledgeHub::cases() as $hub) {
+        expect($html)->not->toContain('href="'.$hub->url().'" aria-current="true"');
+    }
+
+    $rail = Str::between($html, 'aria-label="Knowledge Centre"', '</aside>');
+    expect($rail)->not->toContain('Incoterms For Timber Buyers');
+});
+
+it('adds no queries to the insights index for the rail', function () {
+    Article::factory()->count(3)->create(['hub' => KnowledgeHub::Buying]);
+
+    $queries = 0;
+    DB::listen(function () use (&$queries): void {
+        $queries++;
+    });
+
+    $this->get(route('insights.index'))->assertOk();
+
+    // Pagination count, the page of articles, the per-category counts and the
+    // total. The rail reads the enum, so it costs nothing on top.
+    expect($queries)->toBeLessThanOrEqual(5);
+});
+
+it('marks the hub current and lists its articles on a hub page', function () {
+    Article::factory()->create([
+        'title' => 'Incoterms For Timber Buyers', 'slug' => 'incoterms-rail', 'hub' => KnowledgeHub::Buying,
+    ]);
+    Article::factory()->create([
+        'title' => 'Draft Sibling Piece', 'slug' => 'draft-sibling', 'hub' => KnowledgeHub::Buying,
+        'status' => ArticleStatus::Draft, 'published_at' => null,
+    ]);
+
+    $html = railHtml(KnowledgeHub::Buying->url());
+    $rail = Str::between($html, 'aria-label="Knowledge Centre"', '</aside>');
+
+    expect($html)->toContain('href="'.KnowledgeHub::Buying->url().'" aria-current="true"')
+        ->and($rail)->toContain('Incoterms For Timber Buyers')
+        // No article is being read here, so none is marked current...
+        ->and($rail)->not->toContain('aria-current="page"')
+        // ...and the one published() gate still holds.
+        ->and($html)->not->toContain('Draft Sibling Piece');
 });

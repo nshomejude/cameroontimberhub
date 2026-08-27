@@ -69,43 +69,11 @@
                      A hubbed article marks its own hub and itself; an unhubbed
                      news piece still gets the hub list with nothing marked —
                      useful navigation, and no hub is invented for it. --}}
-                <aside class="hidden xl:block">
-                    <nav aria-label="Knowledge Centre" class="sticky top-[88px] max-h-[calc(100vh-7rem)] overflow-y-auto {{ $panel }}">
-                        <a href="{{ route('knowledge.index') }}"
-                           class="inline-flex items-center gap-1.5 rounded text-[1rem] font-bold text-ink transition hover:text-forest-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-300">
-                            <x-heroicon-m-arrow-left class="h-3.5 w-3.5" />
-                            Knowledge Centre
-                        </a>
-
-                        <ul class="mt-3 space-y-1.5">
-                            @foreach (\App\Enums\KnowledgeHub::cases() as $navHub)
-                                @php($isCurrentHub = $article->hub === $navHub)
-                                <li>
-                                    <a href="{{ $navHub->url() }}"
-                                       @if ($isCurrentHub) aria-current="true" @endif
-                                       class="block rounded px-2 py-1 text-[1.0625rem] leading-snug transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-300 {{ $isCurrentHub ? 'bg-forest-50 font-semibold text-forest-800' : 'text-ink-soft hover:text-forest-700' }}">
-                                        {{ $navHub->label() }}
-                                    </a>
-
-                                    @if ($isCurrentHub && $hubSiblings->isNotEmpty())
-                                        <ul class="ml-2 mt-1.5 space-y-1.5 border-l border-sand-300/70 pl-3">
-                                            @foreach ($hubSiblings as $sibling)
-                                                @php($isCurrentArticle = $sibling->getKey() === $article->getKey())
-                                                <li>
-                                                    <a href="{{ $sibling->url() }}"
-                                                       @if ($isCurrentArticle) aria-current="page" @endif
-                                                       class="block rounded text-[1.0625rem] leading-snug transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-300 {{ $isCurrentArticle ? 'font-semibold text-ink' : 'text-ink-soft hover:text-forest-700' }}">
-                                                        {{ $sibling->title }}
-                                                    </a>
-                                                </li>
-                                            @endforeach
-                                        </ul>
-                                    @endif
-                                </li>
-                            @endforeach
-                        </ul>
-                    </nav>
-                </aside>
+                <x-knowledge-rail
+                    :hub="$article->hub"
+                    :articles="$hubSiblings"
+                    :current="$article"
+                    class="hidden xl:block" />
 
                 <div class="min-w-0">
 
