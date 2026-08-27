@@ -1,0 +1,182 @@
+# Cameroon Timber Hub — Gap Plan
+
+**Source of truth:** `CTH_Claude_Code_Build_Brief.md` · **Current state:** [`docs/AUDIT.md`](AUDIT.md)
+**Date:** 2026-08-27
+
+220 brief items assessed: 62 BUILT, 55 PARTIAL, 10 STUB, 93 MISSING. This plan covers
+every non-BUILT item, grouped by the brief's own phases.
+
+Effort is in **engineer-days** for a developer who knows this codebase. They are
+estimates for sequencing, not commitments.
+
+---
+
+## Phase 0 — Foundations that unblock everything else
+
+These are not in the brief's phase list, but four subsystems in Phases 1–3 each
+independently require them. Building them first avoids three separate migrations of the
+same tables. **Nothing else should start before these land.**
+
+| # | Work | Why it is a blocker | Days |
+|---|---|---|---:|
+| 0.1 | **Polymorphic `Document` store.** Merge `company_documents`, `order_documents`, `rfqs.attachments` into one `documents(owner_type, owner_id, type, file, issuer, issued_at, expires_at, hash, verification_status)`. Backfill all three; keep old accessors as shims for one release. | Carbon projects, sponsorship files, vehicles, drivers, products and artisans all need documents with expiry + verification. One migration unlocks §3.2, §5, §6, §7 and inherits the working expiry-reminder chain. | 5 |
+| 0.2 | **Polymorphic `Verification`.** `verification_requests.company_id` → `(entity_type, entity_id)`; collapse the two verification state machines (`companies.status` + `verification_requests.status`) into the brief's single 8-state machine ending `published`, with `needs_more_info` at request level. | §9 requires *one* verification framework for supplier, processor, artisan, product, project, retailer, carrier. Today only companies can be verified. | 6 |
+| 0.3 | **Feature flags.** Install Laravel Pennant. Flags enforced in policies/middleware, never only in Blade. | §5 carbon trading, §6 `regulatory_cleared` per structure, §7.6 telematics feed are all gated on this. A UI-only gate is not a gate. | 2 |
+| 0.4 | **Persisted consent records.** `consents(subject_type, subject_id, purpose, scope, granted_at, revoked_at, evidence)`. Today consent is an RFQ checkbox that is validated and discarded. | §7.6 requires per-driver/vehicle/policy consent that is revocable and inspectable; revocation must stop a data feed. | 3 |
+| 0.5 | **Separation of duties + tamper-evident audit.** Add originator≠approver enforcement, dual-authorisation by amount band, a `compliance_officer` block capability, and hash-chaining on the activity log. | §6.9 requires it in code, not policy. Also gives §3.9 its hash-chain primitive for free. | 6 |
+| 0.6 | **`Organisation.type` migration.** `companies.supplier_type` (5 values) → 10 types incl. processor, manufacturer, artisan, retailer, logistics, carbon_developer, financier, training_provider. Map `exporter`/`trader` — they have no target equivalent, so **decide before migrating**. | Every §4 directory and §6/§7 role depends on it. | 4 |
+| 0.7 | **RBAC rebuild.** Seven of the brief's nine roles do not exist. Replace the staff-only role matrix with the brief's set, and remove `EnsureBuyerAccount`'s single-role assumption — the brief requires one account to hold several roles (a sawmill both supplies and buys processing). | §3.1. Blocks every new persona. | 5 |
+
+**Phase 0 total: ~31 days.** Do not compress this. Every day skipped here is repaid with
+interest in Phases 1–2.
+
+---
+
+## Phase 1 — Complete the core trade platform
+
+Acceptance: *supplier registers → KYC → verified → publishes product with documents →
+receives RFQ → quotes → negotiates → order → payment → export docs → receipt whose QR
+resolves to a public verification page.* Mirror journey on mobile for buyers.
+
+| # | Work | Status now | Days |
+|---|---|---|---:|
+| 1.1 | **Product ID + QR + public product verification page.** `CTH-CMR-{SPECIES}-{seq}`, QR library, `/verify/product/{id}`, share card. | MISSING — zero QR code in repo | 6 |
+| 1.2 | **Integrity hash-chain.** `integrity_records(hash, prev_hash, …)`; chain receipts; surface on the verify page; optional public-chain anchor adapter behind a flag. | MISSING — `receipts` has no hash column | 5 |
+| 1.3 | **Product documents.** Per-product datasheet, legal-origin, FSC/PEFC, phytosanitary — each with uploaded/verified/expired status. Stop filling the product page's "Certifications" block from the *supplier's* badges. | MISSING — and currently misleading | 4 |
+| 1.4 | **Supplier self-service products.** Products resource in the exporter panel; split `products.manage` into own-vs-any. | MISSING — staff enter every listing | 4 |
+| 1.5 | **RFQ `type` + matching engine.** Add `rfqs.type` (timber/manufacturing/processing/project); replace admin-picked company arrays with scored matching on species, category, location, capacity, verification. | MISSING | 8 |
+| 1.6 | **`Payment` table.** Extract 6 scalar columns off `orders`. **Migrate before more payment data accrues — partial-payment history is unrecoverable afterwards.** Invoices. | PARTIAL | 6 |
+| 1.7 | **`Shipment` entity.** Extract ~12 columns off `orders`. Export document checklist. | PARTIAL | 5 |
+| 1.8 | **Order status + disputes.** Add `ready` and `disputed`; build the dispute entity, state and UI (none exists). | PARTIAL | 5 |
+| 1.9 | **i18n EN/FR.** Extract all strings; French translation; locale switching; XAF primary with USD/EUR for export. | MISSING in practice — one 40-line English file | 12 |
+| 1.10 | **Reputation metrics.** Response rate, on-time delivery, documentation compliance, dispute history. | PARTIAL | 4 |
+| 1.11 | **Notifications.** In-app + email for RFQ match, quote, order events. SMS/WhatsApp optional. | PARTIAL | 5 |
+| 1.12 | **Unified search** across products, suppliers, species, and later processors/projects. | PARTIAL | 4 |
+
+**Phase 1 total: ~68 days.**
+
+### Carried-over defects (fold into Phase 1, ~2 days)
+
+Not brief items, but live and damaging:
+- Species meta descriptions truncate mid-word at ~303 chars (all 52 pages).
+- Supplier JSON-LD publishes `sales@africanwood.example` beside a "Verified Exporter"
+  credential claim — **directly undermines the trust layer**. Suppress placeholder
+  contact data from schema, or seed real values.
+- `og:type` hardcoded `website`; duplicate `<h1>` on 8 pages (homepage's two differ).
+
+---
+
+## Phase 1.5 — Domestic marketplace + logistics foundation
+
+| # | Work | Days |
+|---|---|---:|
+| 1.5.1 | **`Category` tree** replacing the flat 16-value `product_type` CHECK: raw / secondary processed / finished / construction / residue / equipment, plus sector collections. Backfill existing products. | 7 |
+| 1.5.2 | **Buy Cameroon Wood** experience — domestic search that never requires export vocabulary, domestic filters, delivery zones. | 8 |
+| 1.5.3 | **Transformation Network** — processor/manufacturer directory, separate from timber suppliers; "Find a Processor / Manufacturer" entry points. | 8 |
+| 1.5.4 | **`Capacity`** model `{capability, quantity, unit, period}` + capacity search. | 4 |
+| 1.5.5 | **Manufacturing RFQ + Local Procurement Hub + Project RFQ** (multi-line) over the `rfqs.type` work from 1.5. | 8 |
+| 1.5.6 | **`Inventory`** per product/location with "Available now", decremented on order. | 4 |
+| 1.5.7 | **Made in Cameroon** badge, qualifying rules, filter, landing page; product QR shows transformation history. | 5 |
+| 1.5.8 | **Artisan / professional profiles** with portfolio. | 6 |
+| 1.5.9 | **Logistics directory + verification** (trusted / tech-enabled tiers) over the Phase 0 verification framework. | 6 |
+| 1.5.10 | **Transport RFQ + booking → `Shipment`**, digital waybill with QR linking cargo product IDs. | 7 |
+| 1.5.11 | **Manual checkpoint tracking + public tracking page** (token link, photo + GPS at update). No telematics yet. | 5 |
+| 1.5.12 | **Fleet & driver registry** with document expiries feeding alerts. | 5 |
+| 1.5.13 | **Domestic content** for the Knowledge Centre — §4.10's content hub list. Machinery already exists; this is editorial. | 6 |
+
+**Phase 1.5 total: ~79 days.**
+
+---
+
+## Phase 2 — Tracking engine, sponsorship, carbon registry
+
+| # | Work | Days |
+|---|---|---:|
+| 2.1 | **Tracking engine.** Traccar REST + WebSocket, device↔vehicle mapping, geofences, OwnTracks driver onboarding, OpenGTS import adapter, normalised `Position`/`TrackingEvent`, downsampling, live shipment map, geofenced delivery confirmation, trip records. Needs a broadcasting driver — none configured today. | 25 |
+| 2.2 | **Forest Sponsorship — application to committee.** Operator application (incl. GeoJSON boundary), sponsor KYB onboarding, screening fees with the mandatory disclosure acknowledged and timestamped, due-diligence checklist, configurable scorecard, committee queue with conflicts and minutes. | 22 |
+| 2.3 | **Funding agreements + tranches.** Structures with `regulatory_cleared` enforced at the authorisation layer, milestone schedule, evidence requirements, dual-authorised disbursement. | 15 |
+| 2.4 | **Repayment ledger + waterfall + dashboards.** Typed cash/wood/set-off/adjustment entries, frozen wood valuation, per-sponsor pro-rata allocation, configurable waterfall, and four consistent views (admin all-sponsorships, sponsor, operator, public opportunity) plus settlement statement PDF. **The hardest single item in the brief.** | 25 |
+| 2.5 | **Field monitoring** — geotagged evidence, volume reconciliation, automated alerts, auto-freeze on material incident. | 10 |
+| 2.6 | **Carbon project registry** — profile, GeoJSON boundary, status machine, `CTH-CARB-…` ID + QR + public page. | 12 |
+| 2.7 | **Credit lifecycle** — separate registered/validated/verified/issued/available/sold/retired counters that are never conflated in UI; procurement flow; retirement certificates publicly verifiable. Trading behind a flag. | 14 |
+| 2.8 | **Benefit-sharing ledger.** | 6 |
+| 2.9 | **Residue exchange · equipment marketplace · finance directory.** | 12 |
+| 2.10 | **Growth pathway levels · escrow/milestone payments · market insights aggregation.** | 12 |
+
+**Phase 2 total: ~153 days.**
+
+---
+
+## Phase 3 — Intelligence & advanced
+
+Route risk map · trip/driver/fleet reports · safety scores with disputes and reviews ·
+incident flow · insurance-partner directory · cargo-insurance quotes · consent-based
+telematics feed · Wood Economy dashboard · carbon market intelligence · MRV integrations ·
+calculators · Academy courses & apprenticeships · warehousing · public-chain anchoring.
+
+**Phase 3 total: ~90 days.**
+
+---
+
+## PEFC Certification API integration
+
+Requested addition. It fits the trust layer (§3.2 product documents, §3.4 verification,
+§4.5 Made in Cameroon, §5.10 green manufacturer).
+
+**What the API actually is** (from pefc.org/resources/certification-api, fetched
+2026-08-27): real-time lookup of PEFC certification and licence data — verify an
+organisation's certification status, retrieve linked organisation and certification
+details, monitor validity over time.
+
+**The blocker: it is access-gated.** There are no public endpoint paths, no published
+authentication scheme, and no public rate limits. The page's own call to action is
+*"Request access here… Approved users will receive API access details and onboarding
+support."* **Someone must apply to PEFC and be approved before any integration can be
+written.** I cannot design against endpoints I have not seen.
+
+Plan, in the only order that works:
+
+| # | Work | Depends on | Days |
+|---|---|---|---:|
+| P.1 | **Apply for API access.** Business action, not engineering. | — | — |
+| P.2 | **`CertificateVerifier` interface + manual adapter.** Ship now, without the API: a certificate record (scheme, number, holder, scope, issued/expiry), admin-verified, with a deep link to PEFC's public *Find Certified* search for the reviewer to check by hand. Honest status values: `unverified` / `manually_verified` / `expired`. | 0.1 Document store | 4 |
+| P.3 | **PEFC adapter behind the interface**, once credentials exist: scheduled revalidation, status change → alert, cached responses, graceful degradation to manual when the API is unavailable. | P.1 approved | 6 |
+| P.4 | **Surface on product, supplier and Made in Cameroon pages** — with the source and check date shown, never a bare "certified" badge. | P.2 | 3 |
+
+Two rules for this integration, consistent with the platform's existing discipline:
+- **Never render an unverified certificate as verified.** A number typed by a supplier is
+  a claim; only an API response or a named reviewer's check makes it evidence.
+- **Always show the check date.** A certificate verified six months ago may have lapsed;
+  a stale "verified" badge is worse than none. This mirrors the existing rule that a
+  null `eudr_risk_note` renders as "not yet assessed" rather than silence.
+
+FSC has an equivalent public API and should follow the same interface — worth building
+P.2 with two adapters in mind rather than hardcoding PEFC.
+
+---
+
+## Totals and sequencing reality
+
+| Phase | Days |
+|---|---:|
+| Phase 0 foundations | 31 |
+| Phase 1 core completion | 70 |
+| Phase 1.5 domestic + logistics | 79 |
+| Phase 2 tracking, sponsorship, carbon | 153 |
+| Phase 3 intelligence | 90 |
+| PEFC integration | 13 |
+| **Total** | **~436 engineer-days** |
+
+That is roughly **two engineer-years**, or about 7 months with a team of three. The
+brief's rule 4 — do not start a later phase until the earlier one is functional
+end-to-end — is the right constraint and should hold.
+
+**Recommended immediate sequence:** Phase 0 in full → Phase 1 items 1.1–1.4 (they close
+the Phase 1 acceptance criterion and the trust-layer gaps) → 1.6 `Payment` extraction
+(urgent: it gets harder every day data accrues) → then the rest of Phase 1.
+
+**Three items need a decision before code:**
+1. `exporter`/`trader` have no equivalent in the target 10-type model (0.6).
+2. Whether sponsorship is offered at all before COSUMAF/CEMAC counsel signs off — the
+   flags can be built either way, but the answer changes Phase 2's ordering.
+3. Whether PEFC access has been requested (P.1), since P.3 cannot start without it.
