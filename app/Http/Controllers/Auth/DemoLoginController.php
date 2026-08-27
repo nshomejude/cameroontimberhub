@@ -12,10 +12,12 @@ use Illuminate\Support\Facades\Auth;
 /**
  * One-click demo logins for the public showcase.
  *
- * The whole feature is behind `config('demo.enabled')` (env
- * DEMO_LOGINS_ENABLED, default **false**). The flag is checked *here* as well
- * as in the Blade that draws the buttons, because hiding a control is not a
- * security boundary: with the flag off this route 404s for everyone.
+ * The whole feature is behind the `App\Features\DemoLoginsEnabled` Pennant
+ * flag (seeded from env DEMO_LOGINS_ENABLED, default **false**), enforced by
+ * the `demo.logins.enabled` route middleware — see
+ * `App\Http\Middleware\EnsureDemoLoginsEnabled`. Hiding the buttons in Blade
+ * is not a security boundary; with the flag off the middleware 404s the
+ * route for everyone before this method ever runs.
  *
  * SECURITY NOTE — the `admin` persona is a genuine super_admin with FULL
  * access to the /admin panel. That exposure is deliberate and accepted by the
@@ -36,8 +38,6 @@ class DemoLoginController extends Controller
 
     public function __invoke(Request $request, string $persona): RedirectResponse
     {
-        abort_unless(config('demo.enabled') === true, 404);
-
         /** @var array<string, array{email: string}> $personas */
         $personas = (array) config('demo.personas', []);
 

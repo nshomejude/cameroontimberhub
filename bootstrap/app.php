@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\EnsureApiBuyer;
 use App\Http\Middleware\EnsureBuyerAccount;
+use App\Http\Middleware\EnsureDemoLoginsEnabled;
 use App\Http\Middleware\EnsureExporterOnboarded;
 use App\Http\Middleware\HandleSlugRedirects;
 use App\Http\Middleware\SetLocale;
@@ -33,6 +34,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'exporter.onboarded' => EnsureExporterOnboarded::class,
             'buyer' => EnsureBuyerAccount::class,
             'api.buyer' => EnsureApiBuyer::class,
+            'demo.logins.enabled' => EnsureDemoLoginsEnabled::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -170,7 +170,7 @@ Route::middleware('guest')->group(function () {
     // and the whole feature 404s unless DEMO_LOGINS_ENABLED is true.
     Route::post('/demo-login/{persona}', DemoLoginController::class)
         ->where('persona', 'buyer|supplier|admin')
-        ->middleware('throttle:demo-login')
+        ->middleware(['throttle:demo-login', 'demo.logins.enabled'])
         ->name('demo.login');
 
     Route::get('/register', [RegisterController::class, 'create'])->name('register');
