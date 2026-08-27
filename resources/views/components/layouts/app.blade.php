@@ -49,6 +49,11 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+    {{-- Google Search Console site verification. Site-wide rather than home-page
+         only: Google accepts it on any page it is asked to verify, and keeping it
+         in the shared layout means it cannot go missing if the home page changes. --}}
+    <meta name="google-site-verification" content="cmlfBMygwLWEyKOq8E_j526_BpAdbsaLizMEOV9-m0Y">
     @php
         $metaDescription = $description ?? __('messages.meta.default_description');
         $metaTitle = $title ? $title . ' — ' . config('app.name') : config('app.name');
