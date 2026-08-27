@@ -128,8 +128,21 @@ class InsightController extends Controller
             );
         }
 
+        // Left rail navigation. Siblings are one query, column-scoped with `hub`
+        // selected because the list renders Article::url(). An unhubbed article
+        // is news: it has no hub and no siblings, so the rail shows the hub list
+        // with nothing marked current.
+        $hubSiblings = $article->hub
+            ? Article::published()
+                ->inHub($article->hub)
+                ->select(['id', 'title', 'slug', 'hub', 'published_at'])
+                ->orderByDesc('published_at')
+                ->get()
+            : collect();
+
         return view('public.insights.show', [
             'article' => $article,
+            'hubSiblings' => $hubSiblings,
             'related' => $related,
             'toc' => $article->tableOfContents(),
             'faqs' => $article->faqPairs(),
