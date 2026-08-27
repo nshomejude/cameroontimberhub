@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 /**
  * A timber species in the Cameroon catalogue.
@@ -189,5 +190,10 @@ class Species extends Model
         return $this->belongsToMany(Company::class, 'company_species')
             ->withPivot(['form', 'grade', 'min_order_m3', 'price_amount', 'price_currency', 'is_primary'])
             ->withTimestamps();
+    }
+
+    public function documents(): MorphMany
+    {
+        return $this->morphMany(Document::class, 'owner');
     }
 }
