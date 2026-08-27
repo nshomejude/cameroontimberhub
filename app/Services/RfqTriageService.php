@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\ConsentPurpose;
 use App\Enums\RfqStatus;
 use App\Models\Rfq;
 use App\Models\RfqCompany;
@@ -70,12 +71,26 @@ class RfqTriageService
      * Route an approved RFQ to verified exporters. Idempotent (unique rfq_id,
      * company_id); each new routing creates a lead and notifies the exporter.
      *
+     * Refuses to route an RFQ whose consent has been revoked — this is the
+     * enforcement half of the persisted Consent ledger (see
+     * docs/superpowers/plans/2026-08-27-persisted-consent.md): a revoked
+     * "share with verified exporters" consent must stop this feed, not just
+     * flip a column nothing reads. An RFQ with no Consent row at all (e.g.
+     * one created before this plan shipped, or via a path that does not yet
+     * collect consent) is treated as routable, matching today's behaviour —
+     * only an explicit revocation blocks routing.
+     *
      * @param  list<int>  $companyIds
      */
     public function route(Rfq $rfq, array $companyIds, User $actor, LeadFlowService $leads): int
     {
         if ($rfq->status !== RfqStatus::Approved) {
             throw new RuntimeException('Only approved RFQs can be routed.');
+        }
+
+        if ($rfq->consents()->where('purpose', ConsentPurpose::RfqExporterSharing->value)->exists()
+            && ! $rfq->hasActiveConsent(ConsentPurpose::RfqExporterSharing)) {
+            return 0;
         }
 
         $routed = 0;

@@ -1,12 +1,14 @@
 <?php
 
 use App\Enums\ConsentPurpose;
+use App\Enums\RfqStatus;
 use App\Mail\InquiryVerificationMail;
 use App\Mail\RfqVerificationMail;
 use App\Models\Company;
 use App\Models\CompanyInquiry;
 use App\Models\Lead;
 use App\Models\Rfq;
+use App\Models\RfqCompany;
 use App\Models\SuspiciousEvent;
 use App\Models\User;
 use App\Notifications\RfqRoutedToExporter;
@@ -140,6 +142,41 @@ it('routes an approved RFQ to an exporter, creating one lead, idempotently', fun
         ->and($triage->route($rfq->fresh(), [$company->id], $admin, app(LeadFlowService::class)))->toBe(0);
 
     Notification::assertSentTo($member, RfqRoutedToExporter::class);
+});
+
+it('refuses to route an RFQ whose consent has been revoked, and routes normally when active', function () {
+    Notification::fake();
+    $company = Company::factory()->publiclyVisible()->create();
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+
+    $activeRfq = makeRfq(['status' => RfqStatus::Approved]);
+    $activeRfq->consents()->create([
+        'purpose' => ConsentPurpose::RfqExporterSharing,
+        'scope' => ['shared_with' => 'verified_exporters', 'contact_channel' => 'email'],
+        'granted_at' => now(),
+        'evidence' => ['ip_address' => '203.0.113.9', 'user_agent' => 'Test/1.0', 'captured_at' => now()->toIso8601String()],
+    ]);
+
+    $revokedRfq = makeRfq(['status' => RfqStatus::Approved]);
+    $revokedConsent = $revokedRfq->consents()->create([
+        'purpose' => ConsentPurpose::RfqExporterSharing,
+        'scope' => ['shared_with' => 'verified_exporters', 'contact_channel' => 'email'],
+        'granted_at' => now()->subDay(),
+        'evidence' => ['ip_address' => '203.0.113.9', 'user_agent' => 'Test/1.0', 'captured_at' => now()->subDay()->toIso8601String()],
+    ]);
+    $revokedConsent->revoke();
+
+    $triage = app(RfqTriageService::class);
+    $leads = app(LeadFlowService::class);
+
+    $activeRouted = $triage->route($activeRfq, [$company->id], $admin, $leads);
+    $revokedRouted = $triage->route($revokedRfq, [$company->id], $admin, $leads);
+
+    expect($activeRouted)->toBe(1)
+        ->and($revokedRouted)->toBe(0)
+        ->and(RfqCompany::where('rfq_id', $activeRfq->id)->exists())->toBeTrue()
+        ->and(RfqCompany::where('rfq_id', $revokedRfq->id)->exists())->toBeFalse();
 });
 
 it('creates a lead when a company inquiry is verified', function () {
