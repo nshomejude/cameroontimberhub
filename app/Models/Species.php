@@ -4,13 +4,13 @@ namespace App\Models;
 
 use App\Enums\LogExportStatus;
 use App\Enums\TimberCategory;
+use App\Models\Concerns\HasDocuments;
 use App\Models\Concerns\HasSlug;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 /**
  * A timber species in the Cameroon catalogue.
@@ -23,7 +23,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
  */
 class Species extends Model
 {
-    use HasFactory, HasSlug;
+    use HasDocuments, HasFactory, HasSlug;
 
     protected $table = 'species';
 
@@ -190,10 +190,5 @@ class Species extends Model
         return $this->belongsToMany(Company::class, 'company_species')
             ->withPivot(['form', 'grade', 'min_order_m3', 'price_amount', 'price_currency', 'is_primary'])
             ->withTimestamps();
-    }
-
-    public function documents(): MorphMany
-    {
-        return $this->morphMany(Document::class, 'owner');
     }
 }

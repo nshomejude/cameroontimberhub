@@ -66,3 +66,13 @@ it('scopes to a given owner type and id', function () {
     expect($found)->toHaveCount(1)
         ->and($found->first()->owner_id)->toBe($speciesA->id);
 });
+
+it('exposes documents via the HasDocuments trait, verified-only by default', function () {
+    $species = Species::factory()->create();
+
+    Document::factory()->for($species, 'owner')->create(['verification_status' => 'verified']);
+    Document::factory()->for($species, 'owner')->create(['verification_status' => 'unverified']);
+
+    expect($species->documents)->toHaveCount(2)
+        ->and($species->verifiedDocuments())->toHaveCount(1);
+});
