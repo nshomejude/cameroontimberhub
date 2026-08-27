@@ -7,12 +7,12 @@ use App\Enums\PriceUnit;
 use App\Enums\ProductStatus;
 use App\Enums\ProductType;
 use App\Models\Concerns\HasSlug;
+use App\Models\Concerns\HasVerification;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
@@ -21,7 +21,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class Product extends Model
 {
-    use HasFactory, HasSlug, SoftDeletes;
+    use HasFactory, HasSlug, HasVerification, SoftDeletes;
 
     protected $guarded = ['id'];
 
@@ -60,11 +60,6 @@ class Product extends Model
     public function images(): HasMany
     {
         return $this->hasMany(ProductImage::class)->orderBy('sort_order');
-    }
-
-    public function verification(): MorphOne
-    {
-        return $this->morphOne(Verification::class, 'entity');
     }
 
     // ---- Presentation helpers -------------------------------------------
