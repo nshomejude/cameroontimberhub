@@ -34,6 +34,9 @@ return new class extends Migration
             $table->string('storage_path', 512);
             $table->string('mime_type', 120);
             $table->unsignedBigInteger('file_size');
+            // Reserved for a SHA-256 of the uploaded file's raw bytes, to be
+            // computed by whatever future task actually handles the upload
+            // (verifies file-content integrity). Nothing populates this yet.
             $table->char('checksum_sha256', 64)->nullable();
             $table->string('issuer', 190)->nullable();
             $table->date('issued_at')->nullable();
@@ -43,6 +46,10 @@ return new class extends Migration
             $table->foreignId('reviewed_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestampTz('reviewed_at')->nullable();
             $table->foreignId('uploaded_by')->nullable()->constrained('users')->nullOnDelete();
+            // NOT the file checksum (see checksum_sha256 above). These hash
+            // row metadata (owner, filename, storage path, previous hash,
+            // timestamp) purely to chain documents in per-owner upload
+            // order -- see Document::booted().
             $table->char('hash', 64)->nullable();
             $table->char('prev_hash', 64)->nullable();
             $table->timestampsTz();

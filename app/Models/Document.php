@@ -29,6 +29,12 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * on create, matching how a receipt or order-event log would chain). This
  * gives §3.9 of the brief its hash-chain primitive; do not re-derive it in
  * gap-plan item 0.5 -- extend this.
+ *
+ * hash/prev_hash are NOT the uploaded file's checksum -- they hash row
+ * metadata (owner, filename, storage path, previous hash, timestamp) purely
+ * to chain rows in per-owner upload order. The file's own byte-for-byte
+ * integrity is (or will be) tracked separately in the `checksum_sha256`
+ * column, which nothing currently populates.
  */
 class Document extends Model
 {
@@ -54,6 +60,15 @@ class Document extends Model
     protected static function booted(): void
     {
         static::creating(function (Document $document): void {
+            // NOT ATOMIC: this is a read-then-write (find latest row for this
+            // owner, then chain off its hash) with no locking. Two documents
+            // created concurrently for the same owner (e.g. a future queued
+            // bulk import) can both read the same "latest" row before either
+            // commits, producing two rows with the same prev_hash and
+            // breaking the chain. Fine for today's single synchronous
+            // Filament form submission at a time, but a real fix needs
+            // either lockForUpdate() inside a transaction here, or a DB-level
+            // unique constraint on (owner_type, owner_id, prev_hash).
             $previous = static::withoutGlobalScopes()
                 ->where('owner_type', $document->owner_type)
                 ->where('owner_id', $document->owner_id)
