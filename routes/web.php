@@ -145,6 +145,18 @@ Route::get('/inquiry/{inquiry}/verify', [InquiryController::class, 'verify'])->m
 Route::get('/about', [PageController::class, 'show'])->defaults('slug', 'about')->name('about');
 Route::get('/verification', [PageController::class, 'show'])->defaults('slug', 'verification')->name('verification.info');
 Route::get('/list-your-company', [PageController::class, 'show'])->defaults('slug', 'list-your-company')->name('list.company');
+Route::get('/how-it-works', [PageController::class, 'show'])->defaults('slug', 'how-it-works')->name('how-it-works');
+
+// Legal pages (CMS-backed, template=legal). Linked from the footer, the
+// register-page consent checkboxes, and the account layout footer — all of
+// which were previously 404ing because no route or Page row existed.
+Route::get('/terms', [PageController::class, 'show'])->defaults('slug', 'terms')->name('terms');
+Route::get('/privacy', [PageController::class, 'show'])->defaults('slug', 'privacy')->name('privacy');
+Route::get('/cookies', [PageController::class, 'show'])->defaults('slug', 'cookies')->name('cookies');
+
+// Help Center — no dedicated page content yet, so it points at the existing
+// Contact page rather than 404ing or duplicating contact-form functionality.
+Route::redirect('/help', '/contact', 301)->name('help');
 
 // Contact page — dedicated controller for the POST handler.
 Route::get('/contact', [ContactController::class, 'show'])->name('contact');

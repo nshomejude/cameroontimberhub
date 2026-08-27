@@ -229,7 +229,7 @@
             <div class="flex flex-wrap items-center gap-4">
                 <span>&copy; {{ date('Y') }} {{ config('app.name') }}. All rights reserved.</span>
                 <span class="ml-auto flex gap-4">
-                    <a href="{{ url('/privacy-policy') }}" class="transition hover:text-forest-700">Privacy Policy</a>
+                    <a href="{{ url('/privacy') }}" class="transition hover:text-forest-700">Privacy Policy</a>
                     <a href="{{ url('/terms') }}" class="transition hover:text-forest-700">Terms of Use</a>
                     <a href="{{ route('contact') }}" class="transition hover:text-forest-700">Help Center</a>
                 </span>
