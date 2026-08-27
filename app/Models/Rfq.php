@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\RfqIncoterm;
 use App\Enums\RfqStatus;
+use App\Models\Concerns\HasConsents;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -13,7 +14,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Rfq extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasConsents, HasFactory, SoftDeletes;
 
     protected $guarded = ['id'];
 

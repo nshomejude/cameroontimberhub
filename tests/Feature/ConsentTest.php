@@ -71,3 +71,14 @@ it('scopes to a given subject', function () {
     expect($found)->toHaveCount(1)
         ->and($found->first()->subject_id)->toBe($rfqA->id);
 });
+
+it('gives a subject a consents relation and an active-consent check', function () {
+    $rfq = makeConsentRfq();
+    Consent::factory()->for($rfq, 'subject')->create();
+    $revokedRfq = makeConsentRfq();
+    Consent::factory()->for($revokedRfq, 'subject')->create(['revoked_at' => now()]);
+
+    expect($rfq->consents)->toHaveCount(1)
+        ->and($rfq->hasActiveConsent(ConsentPurpose::RfqExporterSharing))->toBeTrue()
+        ->and($revokedRfq->hasActiveConsent(ConsentPurpose::RfqExporterSharing))->toBeFalse();
+});
