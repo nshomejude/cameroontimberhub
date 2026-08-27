@@ -8,6 +8,7 @@ use App\Enums\CompanyStatus;
 use App\Enums\CompanyUserRole;
 use App\Enums\DocumentStatus;
 use App\Enums\DocumentVisibility;
+use App\Enums\OrganisationType;
 use App\Enums\ProductType;
 use App\Enums\SubscriptionStatus;
 use App\Enums\SupplierType;
@@ -65,6 +66,7 @@ class Company extends Model
         return [
             'status' => CompanyStatus::class,
             'supplier_type' => SupplierType::class,
+            'type' => OrganisationType::class,
             'response_rate_percent' => 'integer',
             'years_experience' => 'integer',
             'rating_avg' => 'decimal:1',
