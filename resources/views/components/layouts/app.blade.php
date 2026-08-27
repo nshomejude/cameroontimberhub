@@ -106,8 +106,11 @@
 
     {{-- AEO: site-wide Organization + WebSite graph so answer engines can
          attribute facts (name, location, contact, search endpoint) to us. --}}
+    {{-- The key is written as '@'.'context' deliberately: Blade compiles a bare
+         `@context` as its own directive, even inside {!! !!}, which replaced this
+         key with raw PHP source and made Google discard the whole block. --}}
     <script type="application/ld+json">{!! json_encode([
-        '@context' => 'https://schema.org',
+        '@'.'context' => 'https://schema.org',
         '@graph' => [
             [
                 '@type' => 'Organization',
@@ -143,8 +146,9 @@
     ], JSON_HEX_TAG | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
 
     @if ($breadcrumbs)
+        {{-- '@'.'context' for the same reason as the graph block above. --}}
         <script type="application/ld+json">{!! json_encode([
-            '@context' => 'https://schema.org',
+            '@'.'context' => 'https://schema.org',
             '@type' => 'BreadcrumbList',
             'itemListElement' => collect($breadcrumbs)->values()->map(fn ($crumb, $i) => [
                 '@type' => 'ListItem',
