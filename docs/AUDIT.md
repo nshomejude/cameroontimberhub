@@ -121,3 +121,26 @@ Not from the brief, but they should not be buried under new scope:
   claim — this actively undermines the trust layer §3.9 makes central.
 - `og:type` is hardcoded `website` sitewide; duplicate `<h1>` on 8 pages, with the two
   on the homepage saying different things.
+
+## Addendum: Rule 0.7 and §8.1 Price Intelligence module ("CTH Price")
+
+Audited separately because both were added to the brief after the rest of this document
+was written. Full field-by-field evidence is in
+[`docs/PRICE_DATA_STANDARD.md`](PRICE_DATA_STANDARD.md), which doubles as deliverable 7
+from §13. This section is the status summary in the same BUILT/PARTIAL/MISSING/STUB
+format as the rest of the audit.
+
+| Brief item | Status | Evidence |
+|---|---|---|
+| Rule 0.7 — structured (not free-text) price fields on every price-bearing write | **BUILT**, already | 13 price columns across 8 tables (`products`, `rfqs`, `leads`, `plans`, `quotes`, `quote_items`, `orders`, `order_items`, `company_species`, `quote_counter_offers`, `receipts`), every one `decimal(14,2)` + `char(3)` currency under a Postgres CHECK. Zero free-text price fields found — there is nothing for rule 0.7's migration instruction to act on. |
+| Rule 0.7 — full basis (species, form, grade, moisture, dimensions, quantity, unit, currency, price, basis, region, volume band, date) on every write | **PARTIAL** | `rfq_items`/`quote_items`/`order_items` carry species/form/grade/dimensions/quantity/unit already; `rfq_items` alone also has `moisture_content` — `quote_items` and `order_items` don't yet (`PRICE_DATA_STANDARD.md` §3). `products` and `company_species` have no `basis`/`region` column at all (§3, G2/G3). No table has a `volume_band` — it does not exist as a stored concept anywhere, only as raw quantities (by design; it is meant to be derived, see the standard §1). |
+| `PriceObservation` emitted on write | **MISSING** | `grep -ril "PriceObservation" app database` — zero matches. No `Observer` on any price-bearing model except `ArticleObserver` (unrelated). None of the six live write paths that could plausibly emit one does. |
+| `ReferencePriceSource` / `PriceBand` / `PriceIndex` / `PriceAlert` / `PriceMethodologyConfig` | **MISSING** | Same grep, zero matches for all five. No migration, model, Filament resource, job or event. |
+| §8.1 aggregation-threshold and anonymisation safeguards (N≥5 sellers, M≥10 obs, 30-day lag, blind quoting, symmetry) | **MISSING** | Nothing to enforce them on — they gate `PriceBand`/`PriceIndex` computation, neither of which exists. Blind quoting itself (a §3.5 RFQ property, not a §8.1 one) is already correctly enforced by the existing quote-visibility rules; this audit did not find that broken. |
+| Nightly aggregation job / event logging (§8.1 phasing, §8.2) | **MISSING** | `routes/console.php` schedules exactly two jobs, both compliance (`compliance:expire-badges`, `compliance:remind-expiring`, `dailyAt`). No price/market aggregation command exists to extend. |
+| Species "price indicators" (§4.10) | **STUB — prose only, confirmed** | `grep -in price database/migrations/*species*` returns nothing on `species` itself; the only price column anywhere in the species lineage is `company_species.price_amount`/`price_currency` (per-company catalogue price, not a species-level indicator). §4.10's "price indicators" is editorial copy the Knowledge Centre could carry, not structured data — matches the existing audit's finding that the Knowledge Centre is machinery-complete and needs content, not schema. |
+| Currency/incoterm enum reuse for `PriceObservation` | **N/A — design decision, not an audit finding** | `PRICE_DATA_STANDARD.md` §1 reuses `App\Enums\RfqCurrency` and `App\Enums\TimberForm` outright; widens `App\Enums\RfqUnit` against `App\Enums\PriceUnit`; and found one pre-existing, unrelated bug while doing so — `RfqIncoterm` has no `Other` case even though the CHECK constraints it mirrors on `rfqs`/`quotes`/`orders` all allow `'other'` (`app/Enums/RfqIncoterm.php:7-11`). |
+
+**Net addition to the headline numbers:** of the 8 items above, 1 BUILT (already counted
+elsewhere, not double-counted in the headline table), 1 PARTIAL, 1 STUB, 5 MISSING — brings
+§8 Intelligence to **0 BUILT, 2 PARTIAL, 1 STUB, 8 MISSING, 11 items** (was 0/1/0/3/4).

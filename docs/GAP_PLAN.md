@@ -52,8 +52,9 @@ resolves to a public verification page.* Mirror journey on mobile for buyers.
 | 1.10 | **Reputation metrics.** Response rate, on-time delivery, documentation compliance, dispute history. | PARTIAL | 4 |
 | 1.11 | **Notifications.** In-app + email for RFQ match, quote, order events. SMS/WhatsApp optional. | PARTIAL | 5 |
 | 1.12 | **Unified search** across products, suppliers, species, and later processors/projects. | PARTIAL | 4 |
+| 1.13 | **Structured price capture completion + first `PriceObservation` emitters (rule 0.7, §8.1).** New `PriceBasis`/`PriceVolumeBand` enums; add `Other` case to `RfqIncoterm` to match its own CHECK constraint; add `products.basis`/`products.region`, `company_species.moisture_content`/`dimensions`/`unit`/`basis`/`region`, `quote_items.moisture_content`, `order_items.moisture_content`; build the missing `CompanySpecies` model + Filament resource (currently schema-only, no code touches it); `price_observations` table + model; emit on order award (`transacted`) and quote submit (`quoted`) — the two sources buildable against today's schema with the columns above. Full schema in `docs/PRICE_DATA_STANDARD.md`. | MISSING — no free-text to migrate (rule 0.7's stated first step finds nothing), but `PriceObservation` and several basis columns don't exist | 10 |
 
-**Phase 1 total: ~68 days.**
+**Phase 1 total: ~78 days.**
 
 ### Carried-over defects (fold into Phase 1, ~2 days)
 
@@ -102,8 +103,9 @@ Not brief items, but live and damaging:
 | 2.8 | **Benefit-sharing ledger.** | 6 |
 | 2.9 | **Residue exchange · equipment marketplace · finance directory.** | 12 |
 | 2.10 | **Growth pathway levels · escrow/milestone payments · market insights aggregation.** | 12 |
+| 2.11 | **Price Intelligence — reference prices, indicative bands, landed-cost estimator (§8.1 Phase 2).** `ReferencePriceSource` + staff-entry Filament resource for MINFOF *mercuriale*/ITTO FOB ranges; extend `PriceObservation` emission to `listed` (product save, `company_species` save once 1.13 lands) and `logistics`/`processing` (once Transport RFQ / processing RFQ exist per 1.5.5/1.5.9/1.5.10); `PriceBand` computation enforcing the N≥5-sellers/M≥10-observations/30-day-lag rules from `docs/PRICE_DATA_STANDARD.md` §4; product-page and RFQ-creation "recent quotes ranged…" surfacing, shown identically to buyers and sellers; landed-cost estimator (timber + processing + logistics + documentation fees, labelled estimate); nightly aggregation job extending the existing `routes/console.php` schedule pattern. | 14 |
 
-**Phase 2 total: ~153 days.**
+**Phase 2 total: ~167 days.**
 
 ---
 
@@ -114,7 +116,16 @@ incident flow · insurance-partner directory · cargo-insurance quotes · consen
 telematics feed · Wood Economy dashboard · carbon market intelligence · MRV integrations ·
 calculators · Academy courses & apprenticeships · warehousing · public-chain anchoring.
 
-**Phase 3 total: ~90 days.**
+**Price indices, alerts and data product (§8.1 Phase 3, ~10 days):** `PriceIndex` monthly
+series per species/product/region with export-vs-domestic split and charts; `PriceAlert`
+for watched species/products with a notification hook onto the existing notification
+system (item 1.11); subscription reports/API data product for industry, banks, insurers
+and policymakers, feeding the Wood Economy dashboard (§8.2); legal review of the
+methodology and publication policy against Cameroon/CEMAC competition rules, and a
+published methodology page, before public launch — a business/legal gate, not engineering,
+but the launch checklist item belongs here.
+
+**Phase 3 total: ~100 days.**
 
 ---
 
@@ -160,12 +171,12 @@ P.2 with two adapters in mind rather than hardcoding PEFC.
 | Phase | Days |
 |---|---:|
 | Phase 0 foundations | 31 |
-| Phase 1 core completion | 70 |
+| Phase 1 core completion | 78 |
 | Phase 1.5 domestic + logistics | 79 |
-| Phase 2 tracking, sponsorship, carbon | 153 |
-| Phase 3 intelligence | 90 |
+| Phase 2 tracking, sponsorship, carbon, price intelligence | 167 |
+| Phase 3 intelligence | 100 |
 | PEFC integration | 13 |
-| **Total** | **~436 engineer-days** |
+| **Total** | **~468 engineer-days** |
 
 That is roughly **two engineer-years**, or about 7 months with a team of three. The
 brief's rule 4 — do not start a later phase until the earlier one is functional
