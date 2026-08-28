@@ -224,6 +224,19 @@ class Company extends Model
         return (bool) data_get($this->planFeatures(), $key, false);
     }
 
+    /**
+     * The numeric gallery-image cap for this company's active plan
+     * (docs/PRICING_SPEC.md §5's `max_gallery` feature). hasFeature() is
+     * boolean-shaped and wrong for a count -- this reads the same
+     * planFeatures() data but as an int, defaulting to the Free plan's
+     * documented limit (3) for a company with no plan or a plan missing
+     * the key entirely, never 0 or unlimited by omission.
+     */
+    public function maxGalleryImages(): int
+    {
+        return (int) data_get($this->planFeatures(), 'max_gallery', 3);
+    }
+
     public function products(): HasMany
     {
         return $this->hasMany(Product::class);
