@@ -61,6 +61,29 @@ class RolesAndPermissionsSeeder extends Seeder
     /** Seedable-but-unused-in-MVP platform roles (no permissions yet). */
     public const FUTURE_ROLES = ['sales_officer', 'finance_officer', 'support_officer'];
 
+    /**
+     * Account-capability roles (brief §3.1) -- what a USER account can DO on
+     * the platform, distinct from the staff roles above which gate the
+     * /admin Filament panel. Spatie roles are many-to-many, so one user can
+     * hold several of these at once (the brief's own example: a sawmill
+     * account is both `supplier` and `buyer`).
+     *
+     * Only `buyer` and `supplier` are wired to real behaviour today
+     * (EnsureBuyerAccount). The rest are seeded so they exist and can be
+     * assigned, but have no feature gate yet -- see gap-plan item 0.7b for
+     * why (each depends on an entity/workflow that doesn't exist yet:
+     * Processor directory, Carbon Project, Logistics/telematics).
+     */
+    public const ACCOUNT_ROLES = [
+        'buyer',
+        'supplier',
+        'processor',
+        'artisan',
+        'carbon_developer',
+        'carbon_buyer',
+        'logistics_partner',
+    ];
+
     public function run(): void
     {
         app(PermissionRegistrar::class)->forgetCachedPermissions();
@@ -81,6 +104,10 @@ class RolesAndPermissionsSeeder extends Seeder
         }
 
         foreach (self::FUTURE_ROLES as $role) {
+            Role::findOrCreate($role, 'web');
+        }
+
+        foreach (self::ACCOUNT_ROLES as $role) {
             Role::findOrCreate($role, 'web');
         }
 
