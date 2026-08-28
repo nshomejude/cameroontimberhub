@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * A file attached to any owning entity (Species today; carbon projects,
@@ -33,8 +34,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * hash/prev_hash are NOT the uploaded file's checksum -- they hash row
  * metadata (owner, filename, storage path, previous hash, timestamp) purely
  * to chain rows in per-owner upload order. The file's own byte-for-byte
- * integrity is (or will be) tracked separately in the `checksum_sha256`
- * column, which nothing currently populates.
+ * integrity is tracked separately in `checksum_sha256`, computed from the
+ * actual file bytes on the configured disk at creation time (see booted()).
  */
 class Document extends Model
 {
@@ -84,6 +85,21 @@ class Document extends Model
                 $document->prev_hash ?? '',
                 now()->toISOString(),
             ]));
+
+            // First real population of checksum_sha256 -- see this model's
+            // own class docblock, which until now documented that nothing
+            // populated it. This is the file's own byte-for-byte integrity
+            // hash (distinct from hash/prev_hash above, which chain row
+            // METADATA in upload order, not file contents). Left null,
+            // never fabricated, if the file genuinely cannot be read yet
+            // (e.g. a row created before its file finished uploading).
+            if ($document->checksum_sha256 === null && $document->disk && $document->storage_path) {
+                $disk = Storage::disk($document->disk);
+
+                $document->checksum_sha256 = $disk->exists($document->storage_path)
+                    ? hash('sha256', (string) $disk->get($document->storage_path))
+                    : null;
+            }
         });
     }
 
