@@ -67,6 +67,13 @@ class CompaniesTable
                     ->state(fn (Company $record): bool => $record->activeBadges()->exists()),
                 TextColumn::make('species_count')->counts('species')->label('Species')->badge()->sortable(),
                 IconColumn::make('is_featured')->label('Featured')->boolean()->toggleable(),
+                TextColumn::make('featured_entitlement_warning')
+                    ->label('')
+                    ->badge()
+                    ->color('danger')
+                    ->placeholder('')
+                    ->state(fn (Company $record): ?string => $record->is_featured && ! $record->hasFeature('featured') ? 'Featured without plan' : null)
+                    ->toggleable(),
                 TextColumn::make('created_at')->date('d M Y')->sortable()->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
