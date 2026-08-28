@@ -177,13 +177,18 @@
         padding-bottom: 0 !important;
     }
 
-    .receipt-page {
+    /* The certificate sheet reuses these rules verbatim: it is the same
+       "printable verifiable document" problem, so it gets the same print
+       treatment rather than a second copy of it. */
+    .receipt-page,
+    .certificate-page {
         max-width: none;
         padding: 0 !important;
     }
 
     /* The sheet itself: edge to edge, no card border or shadow. */
-    .receipt-sheet {
+    .receipt-sheet,
+    .certificate-sheet {
         border: 0 !important;
         border-radius: 0 !important;
         box-shadow: none !important;
@@ -195,7 +200,9 @@
 
     .receipt-sheet header,
     .receipt-sheet table,
-    .receipt-sheet tr {
+    .receipt-sheet tr,
+    .certificate-sheet header,
+    .certificate-sheet section {
         break-inside: avoid;
     }
 
@@ -214,7 +221,8 @@
     }
 
     /* Scroll containers would clip onto a page that is never printed. */
-    .receipt-sheet .overflow-x-auto {
+    .receipt-sheet .overflow-x-auto,
+    .certificate-sheet .overflow-x-auto {
         overflow: visible !important;
     }
 
