@@ -34,6 +34,7 @@ class RolesAndPermissionsSeeder extends Seeder
         'plans.manage',
         'users.manage',
         'audit.view',
+        'certificates.manage',
     ];
 
     /** Role => permission matrix (spec decision G). super_admin gets all. */
@@ -45,10 +46,12 @@ class RolesAndPermissionsSeeder extends Seeder
             'species.manage', 'products.manage',
             'rfqs.triage', 'rfqs.route', 'inquiries.review',
             'pages.manage', 'audit.view',
+            'certificates.manage',
         ],
         'verification_officer' => [
             'companies.view', 'documents.review', 'verification.review',
             'badges.issue', 'badges.revoke', 'audit.view',
+            'certificates.manage',
         ],
         'content_manager' => [
             'companies.view', 'species.manage', 'pages.manage',
