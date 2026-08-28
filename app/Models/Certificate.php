@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 /**
  * One immutable version of a TimberHub certificate (gap-plan 0.8, Rings 1+2
@@ -26,9 +28,25 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  */
 class Certificate extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsActivity;
 
     protected $guarded = ['id'];
+
+    /**
+     * The immutable audit trail (docs/CERTIFICATE_SPEC.md Ring 2, Layer 10).
+     * Only the integrity-bearing attributes are logged -- a change to any of
+     * them is exactly what an auditor needs to see. CertificateService adds
+     * named events ('signed', 'issued', 'version_created', 'superseded')
+     * carrying the acting user as causer, which attribute diffs alone cannot
+     * express.
+     */
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly(['status', 'version', 'data_hash', 'signature', 'evidence_manifest_hash', 'geospatial_hash'])
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
+    }
 
     protected function casts(): array
     {

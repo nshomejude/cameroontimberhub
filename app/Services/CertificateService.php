@@ -50,7 +50,7 @@ class CertificateService
 
         $result = $this->signer->sign($certificate->data_hash);
 
-        return DB::transaction(function () use ($certificate, $result) {
+        return DB::transaction(function () use ($certificate, $result, $actor) {
             $certificate->update([
                 'key_id' => $result['key_id'],
                 'algorithm' => $result['algorithm'],
@@ -59,6 +59,8 @@ class CertificateService
                 'approved_at' => now(),
                 'status' => CertificateStatus::Verified,
             ]);
+
+            activity()->performedOn($certificate)->causedBy($actor)->log('signed');
 
             return $certificate->fresh();
         });
@@ -70,11 +72,13 @@ class CertificateService
             throw new RuntimeException('A certificate must be signed and verified before it can be issued. Call sign() first.');
         }
 
-        return DB::transaction(function () use ($certificate) {
+        return DB::transaction(function () use ($certificate, $actor) {
             $certificate->update([
                 'status' => CertificateStatus::Active,
                 'issued_at' => now(),
             ]);
+
+            activity()->performedOn($certificate)->causedBy($actor)->log('issued');
 
             return $certificate->fresh();
         });
@@ -116,6 +120,10 @@ class CertificateService
                 'quantity_unit' => $current->quantity_unit,
                 'status' => CertificateStatus::Draft,
             ]);
+
+            activity()->performedOn($next)->causedBy($actor)->log('version_created');
+            activity()->performedOn($current)->causedBy($actor)
+                ->withProperties(['superseded_by' => $next->id])->log('superseded');
 
             return $next->fresh();
         });
