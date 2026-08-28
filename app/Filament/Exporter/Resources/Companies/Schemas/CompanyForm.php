@@ -2,6 +2,7 @@
 
 namespace App\Filament\Exporter\Resources\Companies\Schemas;
 
+use App\Models\Company;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
@@ -111,6 +112,8 @@ class CompanyForm
                         Repeater::make('gallery')
                             ->relationship()
                             ->columns(2)
+                            ->maxItems(fn (?Company $record) => $record?->maxGalleryImages() ?? 3)
+                            ->helperText(fn (?Company $record) => 'Your plan allows up to '.($record?->maxGalleryImages() ?? 3).' gallery images.')
                             ->schema([
                                 FileUpload::make('image_path')->image()->disk('public')->directory('companies/gallery')->required(),
                                 TextInput::make('caption'),

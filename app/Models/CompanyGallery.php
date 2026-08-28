@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use RuntimeException;
 
 class CompanyGallery extends Model
 {
@@ -17,5 +18,22 @@ class CompanyGallery extends Model
     public function company(): BelongsTo
     {
         return $this->belongsTo(Company::class);
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (CompanyGallery $image) {
+            $company = $image->company_id ? Company::find($image->company_id) : null;
+
+            if (! $company) {
+                return;
+            }
+
+            $limit = $company->maxGalleryImages();
+
+            if ($company->gallery()->count() >= $limit) {
+                throw new RuntimeException("This company's plan allows a gallery image limit of {$limit} images. Upgrade the plan or remove an existing image before adding another.");
+            }
+        });
     }
 }
