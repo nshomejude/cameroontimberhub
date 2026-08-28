@@ -53,6 +53,14 @@ class AppServiceProvider extends ServiceProvider
             Limit::perHour(60)->by('receipt-verify-ip-hour:'.$request->ip()),
         ]);
 
+        // Public certificate verification, same reasoning as receipt-verify
+        // above: open to anyone, so it is the one place a stranger could
+        // grind verification tokens.
+        RateLimiter::for('certificate-verify', fn (Request $request) => [
+            Limit::perMinute(10)->by('certificate-verify-ip:'.$request->ip()),
+            Limit::perHour(60)->by('certificate-verify-ip-hour:'.$request->ip()),
+        ]);
+
         // One-click demo logins. Nobody legitimately needs more than a handful
         // a minute, and the budget blunts a script cycling demo sessions to
         // farm CSRF-valid authenticated sessions.

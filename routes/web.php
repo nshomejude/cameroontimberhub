@@ -10,6 +10,7 @@ use App\Http\Controllers\OrderDocumentDownloadController;
 use App\Http\Controllers\Public\AccountController;
 use App\Http\Controllers\Public\BuyerOrderController;
 use App\Http\Controllers\Public\BuyerQuoteController;
+use App\Http\Controllers\Public\CertificateVerificationController;
 use App\Http\Controllers\Public\ChatCommerceController;
 use App\Http\Controllers\Public\CompanyController;
 use App\Http\Controllers\Public\ContactController;
@@ -136,6 +137,20 @@ Route::post('/verify', [ReceiptVerificationController::class, 'store'])
 Route::get('/verify/{token}', [ReceiptVerificationController::class, 'token'])
     ->where('token', '[A-Za-z0-9]{16,64}')
     ->middleware('throttle:receipt-verify')->name('receipts.verify.token');
+
+// Public certificate verification. Open to anyone by design, so it is
+// throttled hard and discloses only CertificateVerifier::publicPayload().
+// Note these do not collide with /verify/{token} above: that route's token
+// pattern requires 16+ characters, and "certificate" is 11.
+Route::get('/verify/certificate', [CertificateVerificationController::class, 'create'])->name('certificates.verify');
+Route::get('/verify/certificate/{token}', [CertificateVerificationController::class, 'token'])
+    ->where('token', '[A-Za-z0-9]{16,64}')
+    ->middleware('throttle:certificate-verify')->name('certificates.verify.token');
+
+// The staff-facing printable certificate document. Authorization is checked
+// inside the controller against the certificates.manage permission.
+Route::get('/certificates/{certificateNumber}', [CertificateVerificationController::class, 'show'])
+    ->middleware('auth')->name('certificates.show');
 
 // Public company inquiry intake + email verification.
 Route::post('/companies/{company:slug}/inquiries', [InquiryController::class, 'store'])->middleware('throttle:inquiry-submit')->name('inquiry.store');
