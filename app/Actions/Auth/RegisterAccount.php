@@ -82,6 +82,12 @@ class RegisterAccount
                     'role' => CompanyUserRole::Owner->value,
                     'is_primary' => true,
                 ]);
+
+                // Account-capability role (brief §3.1), distinct from the
+                // company_user pivot role above -- see RolesAndPermissionsSeeder.
+                $user->assignRole('supplier');
+            } else {
+                $user->assignRole('buyer');
             }
 
             // Adopt any account-free RFQs this address submitted earlier, so

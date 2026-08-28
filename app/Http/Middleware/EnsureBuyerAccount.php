@@ -41,7 +41,11 @@ class EnsureBuyerAccount
             return redirect()->to('/admin');
         }
 
-        if ($user->companies()->exists()) {
+        // A company-owning user who ALSO holds the `buyer` account role
+        // (brief §3.1's "a sawmill both supplies and buys processing") is
+        // allowed through to buyer-only routes rather than always being
+        // bounced to /dashboard purely because they own a company.
+        if ($user->companies()->exists() && ! $user->hasRole('buyer')) {
             return redirect()->to('/dashboard');
         }
 
