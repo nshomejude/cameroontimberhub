@@ -11,6 +11,7 @@ use App\Models\Company;
 use App\Models\Conversation;
 use App\Models\Lead;
 use App\Models\Order;
+use App\Models\Plan;
 use App\Models\Quote;
 use App\Models\QuoteItem;
 use App\Models\Rfq;
@@ -57,7 +58,8 @@ function roReorders(): ReorderService
  */
 function roScene(float $unitPrice = 620.00): array
 {
-    $company = Company::factory()->publiclyVisible()->create();
+    $plan = Plan::factory()->create(['features' => ['leads_receive' => true]]);
+    $company = Company::factory()->publiclyVisible()->create(['plan_id' => $plan->id]);
     $staff = User::factory()->create(['email' => 'rostaff'.uniqid().'@example.com']);
     $company->users()->attach($staff, ['role' => CompanyUserRole::Owner->value, 'is_primary' => true]);
 

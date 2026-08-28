@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\ConsentPurpose;
 use App\Enums\RfqStatus;
+use App\Models\Company;
 use App\Models\Rfq;
 use App\Models\RfqCompany;
 use App\Models\User;
@@ -95,6 +96,17 @@ class RfqTriageService
 
         $routed = 0;
         foreach ($companyIds as $companyId) {
+            $company = Company::find($companyId);
+
+            // leads_receive entitlement (docs/PRICING_SPEC.md §5) -- a
+            // company whose plan does not include lead delivery is skipped
+            // silently here (not an error): the caller passed a candidate
+            // list, this is the entitlement filter on top of it, exactly
+            // like the pre-existing consent guard above it in this method.
+            if (! $company || ! $company->hasFeature('leads_receive')) {
+                continue;
+            }
+
             $routing = RfqCompany::firstOrCreate(
                 ['rfq_id' => $rfq->getKey(), 'company_id' => $companyId],
                 ['status' => 'sent', 'routed_by' => $actor->getKey(), 'routed_at' => now()],

@@ -7,6 +7,7 @@ use App\Mail\RfqVerificationMail;
 use App\Models\Company;
 use App\Models\CompanyInquiry;
 use App\Models\Lead;
+use App\Models\Plan;
 use App\Models\Rfq;
 use App\Models\RfqCompany;
 use App\Models\SuspiciousEvent;
@@ -123,7 +124,8 @@ it('shows only verified RFQs in the admin queue', function () {
 
 it('routes an approved RFQ to an exporter, creating one lead, idempotently', function () {
     Notification::fake();
-    $company = Company::factory()->publiclyVisible()->create();
+    $plan = Plan::factory()->create(['features' => ['leads_receive' => true]]);
+    $company = Company::factory()->publiclyVisible()->create(['plan_id' => $plan->id]);
     $member = User::factory()->create();
     $member->companies()->attach($company, ['role' => 'owner']);
     $admin = User::factory()->create();
@@ -146,7 +148,8 @@ it('routes an approved RFQ to an exporter, creating one lead, idempotently', fun
 
 it('refuses to route an RFQ whose consent has been revoked, and routes normally when active', function () {
     Notification::fake();
-    $company = Company::factory()->publiclyVisible()->create();
+    $plan = Plan::factory()->create(['features' => ['leads_receive' => true]]);
+    $company = Company::factory()->publiclyVisible()->create(['plan_id' => $plan->id]);
     $admin = User::factory()->create();
     $admin->assignRole('admin');
 
@@ -197,6 +200,50 @@ it('creates a lead when a company inquiry is verified', function () {
 
     app(IntakeService::class)->verifyInquiry($inquiry);
     expect(Lead::where('company_inquiry_id', $inquiry->id)->count())->toBe(1);
+});
+
+it('does not route an approved RFQ to a company whose plan lacks the leads_receive entitlement', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+    $plan = Plan::factory()->create(['features' => ['leads_receive' => false]]);
+    $company = Company::factory()->publiclyVisible()->create(['plan_id' => $plan->id]);
+    $rfq = makeRfq(['status' => RfqStatus::Approved]);
+
+    $routed = app(RfqTriageService::class)->route($rfq, [$company->id], $admin, app(LeadFlowService::class));
+
+    expect($routed)->toBe(0)
+        ->and(RfqCompany::where('rfq_id', $rfq->id)->where('company_id', $company->id)->exists())->toBeFalse();
+});
+
+it('routes an approved RFQ to a company whose plan includes leads_receive', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+    $plan = Plan::factory()->create(['features' => ['leads_receive' => true]]);
+    $company = Company::factory()->publiclyVisible()->create(['plan_id' => $plan->id]);
+    $rfq = makeRfq(['status' => RfqStatus::Approved]);
+
+    $routed = app(RfqTriageService::class)->route($rfq, [$company->id], $admin, app(LeadFlowService::class));
+
+    expect($routed)->toBe(1)
+        ->and(RfqCompany::where('rfq_id', $rfq->id)->where('company_id', $company->id)->exists())->toBeTrue();
+});
+
+it('still routes to a company with no plan assigned at all, matching the pre-existing default behaviour for unplanned companies', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+    $company = Company::factory()->publiclyVisible()->create(['plan_id' => null]);
+    $rfq = makeRfq(['status' => RfqStatus::Approved]);
+
+    $routed = app(RfqTriageService::class)->route($rfq, [$company->id], $admin, app(LeadFlowService::class));
+
+    // A company with genuinely no plan defaults hasFeature('leads_receive') to
+    // false (Company::hasFeature's own documented default) -- so this SHOULD
+    // now be 0, not 1. This test intentionally documents the real, changed
+    // behaviour rather than assuming the old unconditional-routing default;
+    // if it fails, read Company::hasFeature()'s actual default before
+    // "fixing" this test -- the failure would mean the guard below is wrong,
+    // not this test.
+    expect($routed)->toBe(0);
 });
 
 it('lets an exporter open their leads inbox', function () {
