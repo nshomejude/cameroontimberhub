@@ -1,0 +1,5 @@
+Most of this Knowledge Centre is written for buyers outside Cameroon: exporters, importers and the compliance chain that connects a forest concession to a container leaving Douala or Kribi. This hub is different. It is written for people buying inside the country — a household ordering a bed frame from a local carpenter, a contractor specifying roof timber for a house in Yaoundé or Bamenda, a small workshop choosing which species to stock.
+
+The domestic market runs on different rules than the export trade. There is rarely a written contract. Payment is often cash, sometimes in instalments as a piece is made. Provenance is rarely documented, and a buyer's real protection is the relationship with a known carpenter or trusted timber yard rather than a certificate. None of that makes domestic buying informal in a bad sense — it is simply a different market, with its own version of due diligence.
+
+These articles set out what a domestic buyer can reasonably ask, how to judge a piece of furniture or a stack of sawn timber on sight, which species suit which jobs, and why buying legally sourced wood matters even when nobody is asking to see the paperwork.

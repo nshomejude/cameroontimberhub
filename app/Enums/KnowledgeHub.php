@@ -27,6 +27,7 @@ enum KnowledgeHub: string
     case Sustainability = 'sustainability';
     case Logistics = 'logistics';
     case Business = 'business';
+    case Domestic = 'domestic';
 
     public function label(): string
     {
@@ -42,6 +43,7 @@ enum KnowledgeHub: string
             self::Sustainability => 'Sustainability Academy',
             self::Logistics => 'Logistics Academy',
             self::Business => 'Business Academy',
+            self::Domestic => 'Cameroon Home Market',
         };
     }
 
@@ -60,6 +62,7 @@ enum KnowledgeHub: string
             self::Sustainability => 'Certification, legal sourcing, forest management and what sustainability claims can and cannot assert.',
             self::Logistics => 'Freight, routing, packing, insurance and the practical mechanics of shipping timber internationally.',
             self::Business => 'Contracts, pricing, risk, financing and the commercial mechanics of the timber trade.',
+            self::Domestic => 'Buying timber and timber furniture inside Cameroon — for households, builders and local buyers.',
         };
     }
 
