@@ -25,6 +25,7 @@ class VerificationService
     public function __construct(
         private readonly BadgeService $badges,
         private readonly CompanyStatusService $companyStatus,
+        private readonly CompanyVerificationMirror $mirror,
     ) {}
 
     public function submit(Company $company, array $requestedBadges = [], ?User $actor = null): VerificationRequest
@@ -43,6 +44,8 @@ class VerificationService
             if (in_array($company->status, [CompanyStatus::Draft, CompanyStatus::Rejected], true)) {
                 $this->companyStatus->submit($company, $actor);
             }
+
+            $this->mirror->submitted($company);
 
             activity('compliance')->performedOn($request)->causedBy($actor)->event('verification_submitted')->log('Verification submitted');
 
@@ -144,6 +147,8 @@ class VerificationService
             activity('compliance')->performedOn($request)->causedBy($actor)->event('verification_approved')
                 ->withProperties(['issued' => $issued, 'skipped' => $skipped])->log('Verification approved');
 
+            $this->mirror->approved($company, $actor);
+
             return ['issued' => $issued, 'skipped' => $skipped];
         });
     }
@@ -167,6 +172,8 @@ class VerificationService
         }
 
         activity('compliance')->performedOn($request)->causedBy($actor)->event('verification_rejected')->log('Verification rejected');
+
+        $this->mirror->rejected($company, $actor);
     }
 
     /** @return list<array{id:int, document_type_id:int, status:string}> */
