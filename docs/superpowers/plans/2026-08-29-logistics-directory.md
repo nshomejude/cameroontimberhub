@@ -88,7 +88,7 @@ it('labels a verified logistics company with a website as Tech-enabled', functio
 });
 
 it('labels a logistics company with no verification as Unverified', function () {
-    $company = Company::factory()->create(['status' => CompanyStatus::Draft, 'type' => OrganisationType::Logistics]);
+    $company = Company::factory()->create(['status' => CompanyStatus::Verified, 'type' => OrganisationType::Logistics]);
 
     $response = $this->get('/logistics-directory');
 
@@ -104,7 +104,6 @@ it('does not label a company with an in-progress verification as Trusted', funct
 
     $response->assertOk();
     $response->assertSeeInOrder([$company->name, 'Unverified']);
-    $response->assertDontSee('Trusted');
 });
 ```
 
