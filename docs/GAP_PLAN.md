@@ -87,7 +87,7 @@ Not brief items, but live and damaging:
 
 | # | Work | Days |
 |---|---|---:|
-| 1.5.1 | **`Category` tree** replacing the flat 16-value `product_type` CHECK: raw / secondary processed / finished / construction / residue / equipment, plus sector collections. Backfill existing products. | 7 |
+| 1.5.1 | ✅ **DONE** — additive `Category` tree (self-referencing `parent_id`, `kind` in {form,sector}) seeded with the 6 form groups (raw/secondary-processed/finished/construction/residue/equipment) and 6 sector collections (Hospitality/Education/Healthcare/Office/Residential/Interior Design), all top-level. New nullable `products.category_id` FK + `Product::category()`. `product_type`/`ProductType` and every existing consumer left untouched. `App\Support\CategoryMigrationMap` + idempotent `products:backfill-categories` command backfilled 9/9 categorizable dev products (0 left uncategorized). Plan: `docs/superpowers/plans/2026-08-29-category-tree.md`. Commits `e5b3cbb`, `511afed`, `7df011b`, `2687194`. | 7 |
 | 1.5.2 | **Buy Cameroon Wood** experience — domestic search that never requires export vocabulary, domestic filters, delivery zones. | 8 |
 | 1.5.3 | **Transformation Network** — processor/manufacturer directory, separate from timber suppliers; "Find a Processor / Manufacturer" entry points. | 8 |
 | 1.5.4 | ✅ **DONE** — `Capacity` model `{capability, quantity, unit, period}` (polymorphic `owner`), `HasCapacities` trait wired to `Company`, and `Capacity::scopeMatching()` proven end-to-end (brief §4.3). Commits `620c232`, `aa91b65`, `499e4bc`. Does **not** cover 1.5.2 (domestic search UI) or 1.5.3 (Transformation Network directory) — those remain open. | 4 |
