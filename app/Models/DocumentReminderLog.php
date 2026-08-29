@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class DocumentReminderLog extends Model
 {
@@ -14,8 +14,8 @@ class DocumentReminderLog extends Model
         return ['sent_at' => 'datetime'];
     }
 
-    public function document(): BelongsTo
+    public function owner(): MorphTo
     {
-        return $this->belongsTo(CompanyDocument::class, 'company_document_id');
+        return $this->morphTo('document_owner');
     }
 }

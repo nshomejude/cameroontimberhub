@@ -84,7 +84,7 @@ it('sends document-expiry reminders once per threshold (idempotent)', function (
     $this->artisan('compliance:remind-expiring')->assertSuccessful();
     $this->artisan('compliance:remind-expiring')->assertSuccessful(); // re-run is a no-op
 
-    expect(DocumentReminderLog::where('company_document_id', $doc->id)->where('threshold', '30')->count())->toBe(1);
+    expect(DocumentReminderLog::where('document_owner_type', CompanyDocument::class)->where('document_owner_id', $doc->id)->where('threshold', '30')->count())->toBe(1);
 });
 
 it('rejects unsigned document downloads and logs signed-URL issuance', function () {
