@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -14,6 +15,19 @@ class CompanyGallery extends Model
     protected $table = 'company_gallery';
 
     protected $guarded = ['id'];
+
+    protected function casts(): array
+    {
+        return [
+            'completed_on' => 'date',
+            'is_portfolio' => 'boolean',
+        ];
+    }
+
+    public function scopePortfolio(Builder $query): Builder
+    {
+        return $query->where('is_portfolio', true);
+    }
 
     public function company(): BelongsTo
     {
