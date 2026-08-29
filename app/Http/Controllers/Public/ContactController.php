@@ -143,6 +143,15 @@ class ContactController extends Controller
             'form_rendered_at' => ['nullable'],
         ]);
 
+        $intake->createContactMessage([
+            'name' => trim($data['name']),
+            'company' => $data['company'] ?? null,
+            'email' => strtolower(trim($data['email'])),
+            'phone' => $data['phone'] ?? null,
+            'subject' => $data['subject'],
+            'message' => $data['message'],
+        ], filled($data['consent'] ?? null));
+
         Mail::to(config('mail.from.address'))->send(new ContactMessageMail($data));
 
         return back()->with('contact_sent', true);

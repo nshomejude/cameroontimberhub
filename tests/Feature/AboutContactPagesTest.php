@@ -1,8 +1,10 @@
 <?php
 
+use App\Enums\ConsentPurpose;
 use App\Mail\ContactMessageMail;
 use App\Models\Company;
 use App\Models\CompanyExportMarket;
+use App\Models\ContactMessage;
 use App\Models\Page;
 use App\Models\Product;
 use App\Models\Species;
@@ -328,6 +330,25 @@ it('accepts a valid contact submission and mails the team', function () {
             && str_contains($mail->data['message'], 'sapele supplier');
     });
 });
+
+it('persists a contact message and a Consent record when the checkbox is checked', function () {
+    Mail::fake();
+    makeContactPage();
+
+    $this->post(route('contact.store'), validContactPayload())->assertRedirect();
+
+    $message = ContactMessage::where('email', 'jane@example.com')->firstOrFail();
+
+    expect($message->name)->toBe('Jane Buyer')
+        ->and($message->company)->toBe('Nordic Timber Imports')
+        ->and($message->subject)->toBe('Inquiry about sapele')
+        ->and($message->consents()->where('purpose', ConsentPurpose::ContactMessageSharing->value)->exists())->toBeTrue();
+});
+
+// `consent` is validated as `accepted` on ContactController::store(), so an
+// unchecked box never reaches persistence — the submission is rejected by
+// validation (see "rejects an invalid contact submission..." below) before
+// createContactMessage() is ever called.
 
 it('rejects an invalid contact submission and repopulates the submitted input', function () {
     Mail::fake();

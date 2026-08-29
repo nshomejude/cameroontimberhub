@@ -7,6 +7,7 @@ use App\Mail\InquiryVerificationMail;
 use App\Mail\RfqVerificationMail;
 use App\Models\Company;
 use App\Models\CompanyInquiry;
+use App\Models\ContactMessage;
 use App\Models\Rfq;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -126,6 +127,35 @@ class IntakeService
         Mail::to($inquiry->email)->send(new InquiryVerificationMail($inquiry, $this->inquiryVerifyUrl($inquiry)));
 
         return $inquiry;
+    }
+
+    /**
+     * The contact form's own consent checkbox ("share this message with the
+     * team") is validated as `accepted` (ContactController::store()) but,
+     * unlike the RFQ wizard and inquiry form before items 0.4/0.4b, this
+     * whole submission was previously discarded once the email was sent —
+     * see docs/superpowers/plans/2026-08-29-contact-consent.md. A checked
+     * box gets a persisted, revocable Consent row here, mirroring
+     * createRfq()/createInquiry() above.
+     */
+    public function createContactMessage(array $data, bool $consentGiven = false): ContactMessage
+    {
+        $message = ContactMessage::create(array_merge($data, [
+            'ip_address' => request()->ip(),
+        ]));
+
+        if ($consentGiven) {
+            $message->consents()->create([
+                'purpose' => ConsentPurpose::ContactMessageSharing,
+                'granted_at' => now(),
+                'evidence' => [
+                    'ip_address' => request()->ip(),
+                    'user_agent' => request()->userAgent(),
+                ],
+            ]);
+        }
+
+        return $message;
     }
 
     public function verifyRfq(Rfq $rfq): void
