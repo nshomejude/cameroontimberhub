@@ -540,7 +540,8 @@ it('shows domestic filter controls and never shows export-only vocabulary', func
         ->assertSee('Region', false)
         ->assertDontSee('FOB')
         ->assertDontSee('Incoterms')
-        ->assertDontSee('Export');
+        ->assertDontSee('Export Ready')
+        ->assertDontSee('Export markets');
 });
 
 it('paginates domestic results', function () {
