@@ -16,12 +16,18 @@ use Illuminate\Support\Facades\Schema;
  * are deliberately only creatable through OrderService::createFromQuote()
  * and therefore have no factory -- see App\Models\Order's docblock.)
  *
- * KNOWN LIMITATION, stated honestly rather than silently: an allocation
- * references one certificate row (one version). If a certificate is
- * versioned (CertificateService::createVersion), existing allocations stay
- * attached to the SUPERSEDED row and are not automatically carried forward
- * to the new version. Carrying allocations across versions is real follow-up
- * work, tracked in docs/GAP_PLAN.md.
+ * RESOLVED (0.8c, part 1): an allocation row still references one specific
+ * certificate row (one version), but CertificateAllocationService::remaining()
+ * sums allocations across every row sharing the same certificate_number --
+ * the whole version chain -- not just the current row's certificate_id. A
+ * re-issued version therefore inherits its predecessor's already-claimed
+ * quantity instead of starting clean, so the same certified quantity cannot
+ * be double-claimed across a version boundary created by
+ * CertificateService::createVersion(). No schema change was needed.
+ *
+ * KNOWN LIMITATION still open, stated honestly rather than silently: the
+ * signing/verification half of 0.8c (moving certificate signing to a real
+ * KMS/HSM provider) is separate follow-up work, tracked in docs/GAP_PLAN.md.
  */
 return new class extends Migration
 {
