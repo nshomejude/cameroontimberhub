@@ -99,7 +99,7 @@
                             </p>
                         </div>
 
-                        <h1 class="sr-only lg:hidden">Create Your Account</h1>
+                        <h2 class="sr-only lg:hidden">Create Your Account</h2>
 
                         <div class="mt-5 lg:mt-6">
                             <x-auth.error-summary />

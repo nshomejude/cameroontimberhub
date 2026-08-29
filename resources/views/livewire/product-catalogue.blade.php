@@ -169,7 +169,7 @@
                 </ol>
             </nav>
 
-            <h1 class="mt-2 text-[1.75rem] font-bold leading-tight tracking-tight text-ink">Timber Marketplace</h1>
+            <h2 class="mt-2 text-[1.75rem] font-bold leading-tight tracking-tight text-ink">Timber Marketplace</h2>
             <p class="mt-2 text-[1.125rem] leading-relaxed text-ink-soft">
                 Browse live listings from verified Cameroon timber exporters.
             </p>

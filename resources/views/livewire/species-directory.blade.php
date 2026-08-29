@@ -177,7 +177,7 @@
                 </ol>
             </nav>
 
-            <h1 class="mt-2 text-[1.75rem] font-bold leading-tight tracking-tight text-ink">Timber Species Directory</h1>
+            <h2 class="mt-2 text-[1.75rem] font-bold leading-tight tracking-tight text-ink">Timber Species Directory</h2>
             <p class="mt-2 text-[1.125rem] leading-relaxed text-ink-soft">
                 Explore our comprehensive directory of timber species sourced from Cameroon's rich forests.
             </p>

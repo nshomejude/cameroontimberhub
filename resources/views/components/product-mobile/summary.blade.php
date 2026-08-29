@@ -18,7 +18,7 @@
 
 <section class="px-4 pt-5">
     <div class="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
-        <h1 class="min-w-0 flex-1 text-[1.625rem] font-bold leading-tight tracking-tight text-ink">{{ $product->name }}</h1>
+        <h2 class="min-w-0 flex-1 text-[1.625rem] font-bold leading-tight tracking-tight text-ink">{{ $product->name }}</h2>
 
         @if ($verified)
             <span class="mt-1 inline-flex shrink-0 items-center gap-1.5 rounded-full bg-forest-50 px-3 py-1.5 text-[1.0625rem] font-semibold text-forest-800">

@@ -117,11 +117,11 @@
                 {{ __('messages.home.hero_eyebrow') }}
             </p>
 
-            <h1 class="mt-5 text-[2.4rem] font-bold leading-[1.12] tracking-tight text-white">
+            <h2 class="mt-5 text-[2.4rem] font-bold leading-[1.12] tracking-tight text-white">
                 Connect.<br>
                 Source. Trade.<br>
                 <span class="text-forest-300">Grow</span> Globally.
-            </h1>
+            </h2>
 
             <p class="mt-4 max-w-[22rem] text-[1.125rem] leading-relaxed text-sand-200/90">
                 {{ __('messages.home.hero_subtitle_mobile') }}

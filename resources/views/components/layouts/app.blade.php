@@ -6,6 +6,7 @@
     'image' => null,
     'noindex' => false,
     'breadcrumbs' => null,
+    'type' => 'website',
 ])
 
 @php
@@ -71,7 +72,7 @@
     @endif
 
     {{-- Open Graph / Twitter: drives link unfurls and is parsed by answer engines. --}}
-    <meta property="og:type" content="website">
+    <meta property="og:type" content="{{ $type }}">
     <meta property="og:site_name" content="{{ config('app.name') }}">
     <meta property="og:title" content="{{ $metaTitle }}">
     <meta property="og:description" content="{{ $metaDescription }}">

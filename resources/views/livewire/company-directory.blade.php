@@ -126,7 +126,7 @@
     =============================================================== --}}
     <div x-data="{ drawer: false }" @close-filter-drawer.window="drawer = false" class="lg:hidden">
         <div class="px-4 pt-5">
-            <h1 class="text-[1.75rem] font-bold leading-tight tracking-tight text-ink">Supplier Directory</h1>
+            <h2 class="text-[1.75rem] font-bold leading-tight tracking-tight text-ink">Supplier Directory</h2>
             <p class="mt-2 text-[1.125rem] leading-relaxed text-ink-soft">
                 Connect with verified timber suppliers, exporters and manufacturers in Cameroon.
             </p>
