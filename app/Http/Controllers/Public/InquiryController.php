@@ -37,7 +37,7 @@ class InquiryController extends Controller
             'email' => strtolower(trim($data['email'])),
             'phone' => $data['phone'] ?? null,
             'message' => $data['message'],
-        ]);
+        ], filled($data['consent'] ?? null));
 
         return back()->with('inquiry_sent', true);
     }

@@ -98,12 +98,30 @@ class IntakeService
         Mail::to($rfq->buyer_email)->send(new RfqVerificationMail($rfq, $this->rfqVerifyUrl($rfq)));
     }
 
-    public function createInquiry(Company $company, array $data): CompanyInquiry
+    public function createInquiry(Company $company, array $data, bool $consentGiven = false): CompanyInquiry
     {
         $inquiry = $company->inquiries()->create(array_merge($data, [
             'status' => 'new',
             'ip_address' => request()->ip(),
         ]));
+
+        // The inquiry form's consent checkbox ("share this inquiry with the
+        // company") is validated as `accepted` (InquiryController::store())
+        // but historically discarded — see
+        // docs/superpowers/plans/2026-08-28-inquiry-consent.md. A checked
+        // box gets a persisted, revocable Consent row here, mirroring how
+        // createRfq() above handles the RFQ wizard's own checkbox.
+        if ($consentGiven) {
+            $inquiry->consents()->create([
+                'purpose' => ConsentPurpose::CompanyInquirySharing,
+                'granted_at' => now(),
+                'scope' => ['shared_with' => 'company'],
+                'evidence' => [
+                    'ip_address' => request()->ip(),
+                    'user_agent' => request()->userAgent(),
+                ],
+            ]);
+        }
 
         Mail::to($inquiry->email)->send(new InquiryVerificationMail($inquiry, $this->inquiryVerifyUrl($inquiry)));
 
