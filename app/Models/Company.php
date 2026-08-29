@@ -157,6 +157,11 @@ class Company extends Model
         return $this->hasMany(CompanyGallery::class)->orderBy('sort_order');
     }
 
+    public function portfolioItems(): HasMany
+    {
+        return $this->gallery()->portfolio();
+    }
+
     public function exportMarkets(): HasMany
     {
         return $this->hasMany(CompanyExportMarket::class);
@@ -242,6 +247,18 @@ class Company extends Model
     public function products(): HasMany
     {
         return $this->hasMany(Product::class);
+    }
+
+    /** Fleet registry (gap-plan item 1.5.12). */
+    public function vehicles(): HasMany
+    {
+        return $this->hasMany(Vehicle::class);
+    }
+
+    /** Fleet registry (gap-plan item 1.5.12). */
+    public function drivers(): HasMany
+    {
+        return $this->hasMany(Driver::class);
     }
 
     public function species(): BelongsToMany
