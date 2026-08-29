@@ -15,6 +15,7 @@ use App\Http\Controllers\Public\ChatCommerceController;
 use App\Http\Controllers\Public\CompanyController;
 use App\Http\Controllers\Public\ContactController;
 use App\Http\Controllers\Public\DirectoryController;
+use App\Http\Controllers\Public\DomesticMarketplaceController;
 use App\Http\Controllers\Public\GlossaryController;
 use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Public\InquiryController;
@@ -51,6 +52,9 @@ Route::get('/transformation-network/match', [TransformationNetworkController::cl
 // Product marketplace (static segment before the CMS slug catch-all).
 Route::get('/marketplace', [ProductController::class, 'index'])->name('marketplace');
 Route::get('/marketplace/{product:slug}', [ProductController::class, 'show'])->name('products.show');
+
+// Domestic-market search — never requires export vocabulary (gap-plan 1.5.2).
+Route::get('/buy-cameroon-wood', [DomesticMarketplaceController::class, 'index'])->name('domestic.marketplace');
 
 // "Made in Cameroon" badge landing page (gap-plan 1.5.7).
 Route::get('/made-in-cameroon', [MadeInCameroonController::class, 'index'])->name('made-in-cameroon');
