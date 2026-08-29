@@ -17,6 +17,7 @@ it('defines every hub from the spec taxonomy with a stable slug', function () {
         'sustainability',
         'logistics',
         'business',
+        'domestic',
     ]);
 });
 
