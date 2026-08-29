@@ -162,6 +162,36 @@ class VerificationFlowService
         });
     }
 
+    /**
+     * Jump directly to a target stage in ONE checkpoint, for consumers whose
+     * real review process has no distinct per-stage checkpoints of its own
+     * (see docs/superpowers/plans/2026-08-29-verification-consumer-migration-v2.md
+     * — Company's flat pending/in_review/approved/rejected workflow). Unlike
+     * approve(), this does not require $target to be FORWARD's single next
+     * hop; it still refuses a terminal source stage.
+     */
+    public function fastForward(Verification $verification, VerificationStage $target, User $actor, string $note): Verification
+    {
+        $this->assertNotTerminal($verification);
+
+        return DB::transaction(function () use ($verification, $target, $actor, $note) {
+            $verification->checkpoints()->create([
+                'stage' => $verification->stage,
+                'status' => $target === VerificationStage::Rejected ? CheckpointStatus::Rejected : CheckpointStatus::Approved,
+                'reviewed_by' => $actor->getKey(),
+                'reviewed_at' => now(),
+                'notes' => $note,
+            ]);
+
+            $verification->update([
+                'stage' => $target,
+                'published_at' => $target === VerificationStage::Published ? now() : $verification->published_at,
+            ]);
+
+            return $verification->fresh();
+        });
+    }
+
     protected function assertNotTerminal(Verification $verification): void
     {
         if ($verification->stage->isTerminal()) {

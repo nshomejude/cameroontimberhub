@@ -14,6 +14,7 @@ use App\Enums\SubscriptionStatus;
 use App\Enums\SupplierType;
 use App\Models\Concerns\HasCapacities;
 use App\Models\Concerns\HasSlug;
+use App\Models\Concerns\HasVerification;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -26,7 +27,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Company extends Model
 {
-    use HasCapacities, HasFactory, HasSlug, SoftDeletes;
+    use HasCapacities, HasFactory, HasSlug, HasVerification, SoftDeletes;
 
     protected $guarded = ['id'];
 
