@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\DocumentVerificationStatus;
+use App\Enums\DocumentVisibility;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -36,6 +37,13 @@ use Illuminate\Support\Facades\Storage;
  * to chain rows in per-owner upload order. The file's own byte-for-byte
  * integrity is tracked separately in `checksum_sha256`, computed from the
  * actual file bytes on the configured disk at creation time (see booted()).
+ *
+ * `document_type_id`/`visibility`/`sigif_fields` were added additively
+ * (2026_08_29_100020_add_company_document_fields_to_documents_table.php)
+ * specifically to support gap-plan item 0.1b -- migrating CompanyDocument's
+ * consumers onto this table without losing the three fields CompanyDocument
+ * had that this table originally didn't. All three are nullable: no other
+ * owner type (Species, Product) is expected to populate them.
  */
 class Document extends Model
 {
@@ -51,6 +59,8 @@ class Document extends Model
     {
         return [
             'verification_status' => DocumentVerificationStatus::class,
+            'visibility' => DocumentVisibility::class,
+            'sigif_fields' => 'array',
             'issued_at' => 'date',
             'expires_at' => 'date',
             'reviewed_at' => 'datetime',
@@ -106,6 +116,11 @@ class Document extends Model
     public function owner(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    public function documentType(): BelongsTo
+    {
+        return $this->belongsTo(DocumentType::class);
     }
 
     public function reviewedBy(): BelongsTo
