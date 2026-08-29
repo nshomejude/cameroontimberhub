@@ -5,13 +5,17 @@ namespace App\Services;
 use App\Enums\OrderPaymentStatus;
 use App\Enums\OrderStatus;
 use App\Enums\QuoteStatus;
+use App\Models\Inventory;
 use App\Models\Order;
+use App\Models\OrderItem;
+use App\Models\Product;
 use App\Models\Quote;
 use App\Models\QuoteItem;
 use App\Models\Receipt;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use RuntimeException;
 
 /**
@@ -33,7 +37,10 @@ class OrderService
         'cancelled' => [],
     ];
 
-    public function __construct(private readonly OrderReferenceGenerator $references) {}
+    public function __construct(
+        private readonly OrderReferenceGenerator $references,
+        private readonly InventoryService $inventory,
+    ) {}
 
     /* ------------------------------------------------------------ creation */
 
@@ -131,6 +138,10 @@ class OrderService
 
             $order->load('items')->recalculateTotals()->save();
 
+            foreach ($order->items as $orderItem) {
+                $this->reserveInventoryForItem($order, $orderItem);
+            }
+
             $this->issueReceipt($order);
 
             $log = activity('order')->performedOn($order)->event('created')
@@ -148,6 +159,51 @@ class OrderService
 
             return $order->refresh();
         });
+    }
+
+    /**
+     * Reserve inventory for one order line, opt-in per product (brief §4,
+     * gap-plan 1.5.6).
+     *
+     * Order/quote line items carry a species, not a product — a listing is
+     * resolved by matching the order's supplier (company_id) against a
+     * product for that species. Most products have no tracked Inventory row
+     * yet, so a miss here is a silent no-op, not an error. When a row does
+     * exist but does not hold enough quantity, this is deliberately
+     * non-blocking: inventory tracking is new and must not be able to break
+     * order creation on day one, so the shortfall is only logged.
+     */
+    private function reserveInventoryForItem(Order $order, OrderItem $orderItem): void
+    {
+        if ($orderItem->species_id === null) {
+            return;
+        }
+
+        $product = Product::query()
+            ->where('company_id', $order->company_id)
+            ->where('species_id', $orderItem->species_id)
+            ->first();
+
+        if (! $product) {
+            return;
+        }
+
+        $inventory = Inventory::query()->where('product_id', $product->getKey())->first();
+
+        if (! $inventory) {
+            return;
+        }
+
+        try {
+            $this->inventory->reserve($inventory, (float) $orderItem->quantity);
+        } catch (RuntimeException $e) {
+            Log::warning('Order created despite insufficient inventory.', [
+                'order_id' => $order->getKey(),
+                'order_item_id' => $orderItem->getKey(),
+                'inventory_id' => $inventory->getKey(),
+                'message' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**

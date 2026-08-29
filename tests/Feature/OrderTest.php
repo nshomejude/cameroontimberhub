@@ -5,11 +5,14 @@ use App\Enums\OrderStatus;
 use App\Enums\QuoteStatus;
 use App\Filament\Exporter\Resources\Orders\OrderResource;
 use App\Models\Company;
+use App\Models\Inventory;
 use App\Models\Order;
+use App\Models\Product;
 use App\Models\Quote;
 use App\Models\QuoteItem;
 use App\Models\Rfq;
 use App\Models\RfqCompany;
+use App\Models\Species;
 use App\Models\User;
 use App\Services\BuyerRfqAccess;
 use App\Services\OrderService;
@@ -136,6 +139,51 @@ it('is idempotent — a second createFromQuote returns the same order', function
 
     expect($again->getKey())->toBe($order->getKey())
         ->and(Order::count())->toBe(1);
+});
+
+/* --------------------------------------------------------- inventory (1.5.6) */
+
+it('reserves inventory for a line item whose species matches a tracked product', function () {
+    [$rfq, $company] = orderContext();
+    $species = Species::factory()->create();
+    $product = Product::factory()->create(['company_id' => $company->getKey(), 'species_id' => $species->getKey()]);
+    $inventory = Inventory::factory()->create(['product_id' => $product->getKey(), 'quantity_available' => 500]);
+
+    $quote = orderQuote($rfq, $company);
+    $quote->items()->update(['species_id' => $species->getKey(), 'quantity' => 100]);
+
+    awardOrder($quote);
+
+    expect((float) $inventory->fresh()->quantity_available)->toBe(400.0);
+});
+
+it('does not fail order creation when a line item has no matching Inventory row', function () {
+    [$rfq, $company] = orderContext();
+    $species = Species::factory()->create();
+    Product::factory()->create(['company_id' => $company->getKey(), 'species_id' => $species->getKey()]);
+    // No Inventory row created for this product — tracking is opt-in.
+
+    $quote = orderQuote($rfq, $company);
+    $quote->items()->update(['species_id' => $species->getKey()]);
+
+    $order = awardOrder($quote);
+
+    expect($order->status)->toBe(OrderStatus::Awarded);
+});
+
+it('does not block order creation when a line item exceeds available inventory', function () {
+    [$rfq, $company] = orderContext();
+    $species = Species::factory()->create();
+    $product = Product::factory()->create(['company_id' => $company->getKey(), 'species_id' => $species->getKey()]);
+    $inventory = Inventory::factory()->create(['product_id' => $product->getKey(), 'quantity_available' => 10]);
+
+    $quote = orderQuote($rfq, $company);
+    $quote->items()->update(['species_id' => $species->getKey(), 'quantity' => 100]);
+
+    $order = awardOrder($quote);
+
+    expect($order->status)->toBe(OrderStatus::Awarded)
+        ->and((float) $inventory->fresh()->quantity_available)->toBe(10.0);
 });
 
 it('lets the database, not just the guard, enforce one order per quote', function () {
