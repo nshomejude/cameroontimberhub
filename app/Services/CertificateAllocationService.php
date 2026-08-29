@@ -50,8 +50,12 @@ class CertificateAllocationService
 
     public function remaining(Certificate $certificate): float
     {
+        // Sums allocations across every version sharing this
+        // certificate_number, not just this row's own certificate_id --
+        // a version is the same underlying commercial claim
+        // (docs/GAP_PLAN.md item 0.8c: inherits, does not start clean).
         $allocated = (float) CertificateAllocation::query()
-            ->where('certificate_id', $certificate->getKey())
+            ->whereIn('certificate_id', Certificate::query()->where('certificate_number', $certificate->certificate_number)->pluck('id'))
             ->sum('quantity');
 
         return (float) $certificate->certified_quantity - $allocated;
