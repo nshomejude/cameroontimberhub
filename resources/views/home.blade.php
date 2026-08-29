@@ -137,6 +137,17 @@
                     <x-heroicon-o-paper-airplane class="h-5 w-5" /> Post an RFQ
                 </a>
             </div>
+
+            <div class="mt-4 flex flex-wrap gap-3">
+                <a href="{{ route('transformation-network', ['type' => 'processor']) }}"
+                   class="inline-flex items-center gap-1 text-[1.0625rem] font-semibold text-forest-300">
+                    Find a Processor <x-heroicon-m-chevron-right class="h-4 w-4" />
+                </a>
+                <a href="{{ route('transformation-network', ['type' => 'manufacturer']) }}"
+                   class="inline-flex items-center gap-1 text-[1.0625rem] font-semibold text-forest-300">
+                    Find a Manufacturer <x-heroicon-m-chevron-right class="h-4 w-4" />
+                </a>
+            </div>
         </div>
 
         <div class="relative mx-4 mb-24 rounded-2xl bg-forest-950/80 px-2 py-3 ring-1 ring-white/10">

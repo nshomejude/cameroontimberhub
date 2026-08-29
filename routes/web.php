@@ -20,6 +20,7 @@ use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Public\InquiryController;
 use App\Http\Controllers\Public\InsightController;
 use App\Http\Controllers\Public\KnowledgeController;
+use App\Http\Controllers\Public\MadeInCameroonController;
 use App\Http\Controllers\Public\MessageController;
 use App\Http\Controllers\Public\MobileAppController;
 use App\Http\Controllers\Public\OrderLifecycleController;
@@ -34,6 +35,7 @@ use App\Http\Controllers\Public\RfqListController;
 use App\Http\Controllers\Public\SearchController;
 use App\Http\Controllers\Public\SitemapController;
 use App\Http\Controllers\Public\SpeciesController;
+use App\Http\Controllers\Public\TransformationNetworkController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -42,9 +44,16 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/companies', [DirectoryController::class, 'index'])->name('directory');
 Route::get('/companies/{slug}', [CompanyController::class, 'show'])->name('companies.show');
 
+// Transformation Network: processor/manufacturer directory (gap-plan 1.5.3), separate from /companies.
+Route::get('/transformation-network', [TransformationNetworkController::class, 'index'])->name('transformation-network');
+Route::get('/transformation-network/match', [TransformationNetworkController::class, 'match'])->name('transformation-network.match');
+
 // Product marketplace (static segment before the CMS slug catch-all).
 Route::get('/marketplace', [ProductController::class, 'index'])->name('marketplace');
 Route::get('/marketplace/{product:slug}', [ProductController::class, 'show'])->name('products.show');
+
+// "Made in Cameroon" badge landing page (gap-plan 1.5.7).
+Route::get('/made-in-cameroon', [MadeInCameroonController::class, 'index'])->name('made-in-cameroon');
 
 // Cross-entity search (products + companies + species).
 Route::get('/search', [SearchController::class, 'index'])->name('search');
@@ -99,6 +108,7 @@ Route::get('/documents/{document}/download', DocumentDownloadController::class)
 
 // Public RFQ intake (no login) + email verification.
 Route::get('/request-quote', [RfqController::class, 'create'])->name('rfq.create');
+Route::get('/request-quote/manufacturing', [RfqController::class, 'createManufacturing'])->name('rfq.create.manufacturing');
 Route::post('/request-quote', [RfqController::class, 'store'])->middleware('throttle:rfq-submit')->name('rfq.store');
 Route::get('/request-quote/thanks', [RfqController::class, 'thanks'])->name('rfq.thanks');
 // Wizard steps. Each is a real GET URL so refresh and browser back/forward work
