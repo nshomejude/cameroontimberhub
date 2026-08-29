@@ -115,12 +115,32 @@ counsel and must be answered before those features are enabled for real users.
 
 Not from the brief, but they should not be buried under new scope:
 
-- Species meta descriptions truncate mid-word at ~303 chars across all 52 species pages.
-- Supplier profiles publish placeholder contact data (`sales@africanwood.example`) in
+- ~~Species meta descriptions truncate mid-word at ~303 chars across all 52 species
+  pages.~~ **RESOLVED.** `App\Models\Species::metaDescription()` now re-truncates on
+  read at a word boundary via `Species::wordSafeExcerpt()` (`app/Models/Species.php`),
+  so every species page's rendered `<meta name="description">` ends on a whole word
+  regardless of how the stored value was produced. Regression test:
+  `tests/Feature/SeoDefectsTest.php`.
+- ~~Supplier profiles publish placeholder contact data (`sales@africanwood.example`) in
   live `Organization` JSON-LD, directly beside a `hasCredential: "Verified Exporter"`
-  claim — this actively undermines the trust layer §3.9 makes central.
-- `og:type` is hardcoded `website` sitewide; duplicate `<h1>` on 8 pages, with the two
-  on the homepage saying different things.
+  claim.~~ **RESOLVED.** `CompanyController::schema()` now runs the company email
+  through `realEmail()`, which omits it when the domain is an RFC 2606
+  reserved-for-documentation placeholder (`example.com/.net/.org`, `*.example`,
+  `*.test`, `*.invalid`) instead of publishing it as if real. A genuine email is
+  still published unchanged. Regression test: `tests/Feature/SeoDefectsTest.php`.
+- ~~`og:type` is hardcoded `website` sitewide; duplicate `<h1>` on 8 pages, with the two
+  on the homepage saying different things.~~ **RESOLVED.**
+  `resources/views/components/layouts/app.blade.php` now accepts an optional `:type`
+  prop (defaults to `website`, additive — no caller needs to change). The duplicate
+  `<h1>`s were each a responsive mobile/desktop pair rendering the same (or, on the
+  homepage, different) heading text twice in the DOM; the mobile copy in each pair was
+  demoted to `<h2>`: `resources/views/home.blade.php`,
+  `resources/views/livewire/species-directory.blade.php`,
+  `resources/views/livewire/product-catalogue.blade.php`,
+  `resources/views/livewire/company-directory.blade.php`,
+  `resources/views/auth/register.blade.php`,
+  `resources/views/components/product-mobile/summary.blade.php`. Regression test:
+  `tests/Feature/SeoDefectsTest.php`.
 
 ## Addendum: Rule 0.7 and §8.1 Price Intelligence module ("CTH Price")
 
