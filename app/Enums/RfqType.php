@@ -11,12 +11,14 @@ enum RfqType: string
 {
     case Export = 'export';
     case DomesticManufacturing = 'domestic_manufacturing';
+    case Transport = 'transport';
 
     public function label(): string
     {
         return match ($this) {
             self::Export => 'Export',
             self::DomesticManufacturing => 'Manufacturing / Local Procurement',
+            self::Transport => 'Transport',
         };
     }
 }
