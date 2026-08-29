@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Enums\BadgeType;
+use App\Enums\CompanyStatus;
+use App\Enums\OrganisationType;
 use App\Enums\PriceUnit;
 use App\Enums\ProductStatus;
 use App\Enums\ProductType;
@@ -55,6 +57,11 @@ class Product extends Model
     public function species(): BelongsTo
     {
         return $this->belongsTo(Species::class);
+    }
+
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(Category::class);
     }
 
     public function images(): HasMany
@@ -320,5 +327,44 @@ class Product extends Model
     public function scopeFeatured(Builder $query): Builder
     {
         return $query->where('is_featured', true);
+    }
+
+    /**
+     * "Made in Cameroon" is a computed fact, not a manually-reviewed document
+     * badge — it does not go through BadgeService/VerificationBadge. A
+     * listing qualifies when its company is a verified, Cameroon-based
+     * domestic-transformation business (manufacturer, processor or artisan —
+     * not a raw-material supplier) and the listing itself is live.
+     */
+    public function qualifiesForMadeInCameroon(): bool
+    {
+        $company = $this->company;
+
+        if (! $company || $this->status !== ProductStatus::Active) {
+            return false;
+        }
+
+        return $company->country_code === 'CM'
+            && $company->status === CompanyStatus::Verified
+            && in_array($company->type, [
+                OrganisationType::Manufacturer,
+                OrganisationType::Processor,
+                OrganisationType::Artisan,
+            ], true);
+    }
+
+    /** Query-level equivalent of {@see qualifiesForMadeInCameroon()}, for listings. */
+    public function scopeMadeInCameroon(Builder $query): Builder
+    {
+        return $query
+            ->where('status', ProductStatus::Active)
+            ->whereHas('company', fn (Builder $c) => $c
+                ->where('country_code', 'CM')
+                ->where('status', CompanyStatus::Verified->value)
+                ->whereIn('type', [
+                    OrganisationType::Manufacturer->value,
+                    OrganisationType::Processor->value,
+                    OrganisationType::Artisan->value,
+                ]));
     }
 }
