@@ -91,7 +91,7 @@ Not brief items, but live and damaging:
 | 1.5.3 | **Transformation Network** — processor/manufacturer directory, separate from timber suppliers; "Find a Processor / Manufacturer" entry points. | 8 |
 | 1.5.4 | ✅ **DONE** — `Capacity` model `{capability, quantity, unit, period}` (polymorphic `owner`), `HasCapacities` trait wired to `Company`, and `Capacity::scopeMatching()` proven end-to-end (brief §4.3). Commits `620c232`, `aa91b65`, `499e4bc`. Does **not** cover 1.5.2 (domestic search UI) or 1.5.3 (Transformation Network directory) — those remain open. | 4 |
 | 1.5.5 | **Manufacturing RFQ + Local Procurement Hub + Project RFQ** (multi-line) over the `rfqs.type` work from 1.5. | 8 |
-| 1.5.6 | **`Inventory`** per product/location with "Available now", decremented on order. | 4 |
+| 1.5.6 | ✅ **DONE** — `Inventory` model `{product_id, location, quantity_available, unit}` (CHECK quantity_available >= 0), `InventoryService::reserve()`/`restock()` atomic row-locked (mirrors `CertificateAllocationService`), wired as an additive, opt-in call into `OrderService::createFromQuote()` — a line item with no matching `Inventory` row is a silent no-op, and an insufficient-quantity reservation is logged, not blocking, order creation. Commits `5950242`, `0b29935`, `f3d045b`. | 4 |
 | 1.5.7 | **Made in Cameroon** badge, qualifying rules, filter, landing page; product QR shows transformation history. | 5 |
 | 1.5.8 | **Artisan / professional profiles** with portfolio. | 6 |
 | 1.5.9 | **Logistics directory + verification** (trusted / tech-enabled tiers) over the Phase 0 verification framework. | 6 |
