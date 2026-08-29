@@ -7,6 +7,7 @@ use App\Enums\TimberCategory;
 use App\Models\Concerns\HasDocuments;
 use App\Models\Concerns\HasSlug;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -52,6 +53,41 @@ class Species extends Model
             'grades_available' => 'array',
             'authoritative_sources' => 'array',
         ];
+    }
+
+    /**
+     * `meta_description` is stored pre-truncated (see SpeciesSeeder), but
+     * older/legacy rows may still hold a raw value cut mid-word by a plain
+     * character-count limit. Re-truncating on read at a word boundary makes
+     * every species page's rendered <meta name="description"> correct
+     * regardless of how the stored value was produced.
+     */
+    protected function metaDescription(): Attribute
+    {
+        return Attribute::make(
+            get: fn (?string $value) => $value === null ? null : static::wordSafeExcerpt($value, 300),
+        );
+    }
+
+    /**
+     * Truncate to at most $limit characters without cutting a word in half.
+     * Text already within the limit is returned unchanged; otherwise it is
+     * cut back to the last preceding space and an ellipsis is appended.
+     */
+    public static function wordSafeExcerpt(string $text, int $limit): string
+    {
+        if (mb_strlen($text) <= $limit) {
+            return $text;
+        }
+
+        $truncated = mb_substr($text, 0, $limit);
+        $lastSpace = mb_strrpos($truncated, ' ');
+
+        if ($lastSpace !== false) {
+            $truncated = mb_substr($truncated, 0, $lastSpace);
+        }
+
+        return rtrim($truncated, " \t\n\r\0\x0B.,;:").'...';
     }
 
     /** "450–650 kg/m³", or null when no density is recorded. */
