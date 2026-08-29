@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Public;
 
 use App\Enums\RfqCurrency;
 use App\Enums\RfqIncoterm;
+use App\Enums\RfqType;
 use App\Enums\RfqUnit;
 use App\Enums\TimberForm;
 use App\Http\Controllers\Controller;
@@ -36,6 +37,27 @@ class RfqController extends Controller
 
         // Returning visitors land back where they left off, but /request-quote
         // itself always renders (never redirects) so it stays a linkable entry.
+        return $this->render($request, $wizard, $list, 'details');
+    }
+
+    /**
+     * The domestic manufacturing / local procurement / project RFQ entry
+     * point (gap-plan 1.5.5). Same wizard, same steps, same views as the
+     * export flow — the only difference is the `type` tag stamped into the
+     * session before it starts, which rides through to `rfqs.type` on
+     * submit. Multi-line-item support ("500 doors + 200 windows") is nothing
+     * new: the products step has always accepted multiple rows.
+     */
+    public function createManufacturing(Request $request, RfqWizard $wizard, RfqList $list): View|RedirectResponse
+    {
+        $isFirstVisit = $wizard->all() === [];
+
+        $this->seed($request, $wizard, $list);
+
+        if ($isFirstVisit) {
+            $wizard->putType(RfqType::DomesticManufacturing);
+        }
+
         return $this->render($request, $wizard, $list, 'details');
     }
 
@@ -144,6 +166,7 @@ class RfqController extends Controller
                 'title', 'project_name', 'buyer_name', 'buyer_company', 'buyer_phone',
                 'incoterm', 'target_amount', 'deadline', 'shipping_port', 'notes',
             ]), [
+                'type' => $wizard->type()->value,
                 'buyer_name' => trim($data['buyer_name']),
                 'buyer_email' => strtolower(trim($data['buyer_email'])),
                 'buyer_country_code' => strtoupper($data['buyer_country_code']),

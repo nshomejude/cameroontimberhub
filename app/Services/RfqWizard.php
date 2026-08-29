@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\RfqCurrency;
 use App\Enums\RfqIncoterm;
+use App\Enums\RfqType;
 use App\Enums\RfqUnit;
 use App\Enums\TimberForm;
 use App\Models\Company;
@@ -94,6 +95,24 @@ class RfqWizard
     public function clear(): void
     {
         Session::forget(self::KEY);
+    }
+
+    /**
+     * Which RFQ flow this session's wizard is filling in — the original
+     * export flow (default) or the domestic manufacturing / local
+     * procurement / project flow (gap-plan 1.5.5). Both are the same wizard;
+     * only the tag carried on the final row differs.
+     */
+    public function type(): RfqType
+    {
+        return RfqType::tryFrom((string) Arr::get($this->all(), 'type')) ?? RfqType::Export;
+    }
+
+    public function putType(RfqType $type): void
+    {
+        $state = $this->all();
+        $state['type'] = $type->value;
+        Session::put(self::KEY, $state);
     }
 
     /**
