@@ -89,7 +89,7 @@ Not brief items, but live and damaging:
 | 1.5.1 | **`Category` tree** replacing the flat 16-value `product_type` CHECK: raw / secondary processed / finished / construction / residue / equipment, plus sector collections. Backfill existing products. | 7 |
 | 1.5.2 | **Buy Cameroon Wood** experience — domestic search that never requires export vocabulary, domestic filters, delivery zones. | 8 |
 | 1.5.3 | **Transformation Network** — processor/manufacturer directory, separate from timber suppliers; "Find a Processor / Manufacturer" entry points. | 8 |
-| 1.5.4 | **`Capacity`** model `{capability, quantity, unit, period}` + capacity search. | 4 |
+| 1.5.4 | ✅ **DONE** — `Capacity` model `{capability, quantity, unit, period}` (polymorphic `owner`), `HasCapacities` trait wired to `Company`, and `Capacity::scopeMatching()` proven end-to-end (brief §4.3). Commits `620c232`, `aa91b65`, `499e4bc`. Does **not** cover 1.5.2 (domestic search UI) or 1.5.3 (Transformation Network directory) — those remain open. | 4 |
 | 1.5.5 | **Manufacturing RFQ + Local Procurement Hub + Project RFQ** (multi-line) over the `rfqs.type` work from 1.5. | 8 |
 | 1.5.6 | **`Inventory`** per product/location with "Available now", decremented on order. | 4 |
 | 1.5.7 | **Made in Cameroon** badge, qualifying rules, filter, landing page; product QR shows transformation history. | 5 |
