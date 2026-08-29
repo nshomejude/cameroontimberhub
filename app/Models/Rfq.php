@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\RfqIncoterm;
 use App\Enums\RfqStatus;
+use App\Enums\RfqType;
 use App\Models\Concerns\HasConsents;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -22,6 +23,7 @@ class Rfq extends Model
     {
         return [
             'status' => RfqStatus::class,
+            'type' => RfqType::class,
             'incoterm' => RfqIncoterm::class,
             'email_verified_at' => 'datetime',
             'is_spam' => 'boolean',
@@ -99,5 +101,11 @@ class Rfq extends Model
     public function isVerified(): bool
     {
         return $this->email_verified_at !== null;
+    }
+
+    /** RFQs of a given type — e.g. the domestic manufacturing/local-procurement flow. */
+    public function scopeOfType(Builder $query, RfqType $type): Builder
+    {
+        return $query->where('type', $type->value);
     }
 }
