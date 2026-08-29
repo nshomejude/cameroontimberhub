@@ -17,6 +17,7 @@ use App\Http\Controllers\Public\CompanyController;
 use App\Http\Controllers\Public\ContactController;
 use App\Http\Controllers\Public\DirectoryController;
 use App\Http\Controllers\Public\DomesticMarketplaceController;
+use App\Http\Controllers\Public\FleetRegistryController;
 use App\Http\Controllers\Public\GlossaryController;
 use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Public\InquiryController;
@@ -247,6 +248,12 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::post('/logout', [LoginController::class, 'destroy'])->middleware('auth')->name('logout');
+
+// Company-facing fleet & driver registry (gap-plan item 1.5.12). Not under
+// `buyer`/`account` -- the audience is a company member, not a buyer.
+// FleetRegistryController scopes to the signed-in user's own company and
+// 404s when they have none.
+Route::middleware(['auth'])->get('/fleet', [FleetRegistryController::class, 'index'])->name('fleet.index');
 
 // Buyer account area. `/dashboard` is the Filament exporter panel and `/admin`
 // the staff panel, so the buyer's own home lives at `/account`. `auth` bounces

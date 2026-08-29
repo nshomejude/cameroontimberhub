@@ -61,6 +61,26 @@ class RfqController extends Controller
         return $this->render($request, $wizard, $list, 'details');
     }
 
+    /**
+     * The transport RFQ entry point (gap-plan 1.5.10). Same wizard, same
+     * steps as export/manufacturing — only the `type` tag stamped into the
+     * session before it starts differs, which rides through to `rfqs.type`
+     * on submit. Booking a resulting Order into a Shipment is a separate,
+     * later step (ShipmentService), not part of the wizard itself.
+     */
+    public function createTransport(Request $request, RfqWizard $wizard, RfqList $list): View|RedirectResponse
+    {
+        $isFirstVisit = $wizard->all() === [];
+
+        $this->seed($request, $wizard, $list);
+
+        if ($isFirstVisit) {
+            $wizard->putType(RfqType::Transport);
+        }
+
+        return $this->render($request, $wizard, $list, 'details');
+    }
+
     public function step(Request $request, RfqWizard $wizard, RfqList $list, string $step): View|RedirectResponse
     {
         abort_unless(RfqWizard::isStep($step), 404);
