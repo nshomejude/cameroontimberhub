@@ -98,7 +98,7 @@ Not brief items, but live and damaging:
 | 1.5.10 | **Transport RFQ + booking → `Shipment`**, digital waybill with QR linking cargo product IDs. | 7 |
 | 1.5.11 | **Manual checkpoint tracking + public tracking page** (token link, photo + GPS at update). No telematics yet. | 5 |
 | 1.5.12 | **Fleet & driver registry** with document expiries feeding alerts. | 5 |
-| 1.5.13 | **Domestic content** for the Knowledge Centre — §4.10's content hub list. Machinery already exists; this is editorial. | 6 |
+| 1.5.13 | ✅ **DONE** — 8 real articles for brief §4.10's content hub list (why-buy-legal-cameroon-wood, from-forest-to-furniture, meet-the-maker-series, know-your-wood-cameroon, how-to-verify-your-furniture-cameroon, local-vs-imported-timber-cameroon, choosing-timber-construction-furniture-cameroon, sustainable-buying-guide-cameroon), 846–1,323 words each, no fabricated facts/names/stats. New `KnowledgeHub::Domestic` case added additively. Commit `05140de`. | 0 (done) |
 
 **Phase 1.5 total: ~79 days.**
 
