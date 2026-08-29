@@ -116,7 +116,7 @@ class CompanyController extends Controller
             'url' => route('companies.show', $company->slug),
             'description' => Str::limit(strip_tags((string) $company->description), 300),
             'address' => count($address) > 1 ? $address : null,
-            'email' => $company->email,
+            'email' => $this->realEmail($company->email),
             'telephone' => $company->phone,
             'foundingDate' => $company->year_founded ? (string) $company->year_founded : null,
             'numberOfEmployees' => $company->employee_count,
@@ -154,5 +154,31 @@ class CompanyController extends Controller
         }
 
         return $schema;
+    }
+
+    /**
+     * Never let a reserved-for-documentation placeholder address (RFC 2606:
+     * example.com/.net/.org and any *.example host, e.g.
+     * "sales@africanwood.example") reach live Organization JSON-LD as if it
+     * were a real contact — omit the field instead of publishing a falsehood
+     * beside a `hasCredential: "Verified Exporter"` claim.
+     */
+    private function realEmail(?string $email): ?string
+    {
+        if (! $email || ! str_contains($email, '@')) {
+            return $email;
+        }
+
+        $domain = strtolower(Str::afterLast($email, '@'));
+
+        if ($domain === 'example.com' || $domain === 'example.net' || $domain === 'example.org') {
+            return null;
+        }
+
+        if (Str::endsWith($domain, '.example') || $domain === 'test' || Str::endsWith($domain, '.test') || Str::endsWith($domain, '.invalid')) {
+            return null;
+        }
+
+        return $email;
     }
 }
