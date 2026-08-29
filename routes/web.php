@@ -12,6 +12,7 @@ use App\Http\Controllers\Public\BuyerOrderController;
 use App\Http\Controllers\Public\BuyerQuoteController;
 use App\Http\Controllers\Public\CertificateVerificationController;
 use App\Http\Controllers\Public\ChatCommerceController;
+use App\Http\Controllers\Public\CheckpointTrackingController;
 use App\Http\Controllers\Public\CompanyController;
 use App\Http\Controllers\Public\ContactController;
 use App\Http\Controllers\Public\DirectoryController;
@@ -21,6 +22,7 @@ use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Public\InquiryController;
 use App\Http\Controllers\Public\InsightController;
 use App\Http\Controllers\Public\KnowledgeController;
+use App\Http\Controllers\Public\LogisticsDirectoryController;
 use App\Http\Controllers\Public\MadeInCameroonController;
 use App\Http\Controllers\Public\MessageController;
 use App\Http\Controllers\Public\MobileAppController;
@@ -34,6 +36,7 @@ use App\Http\Controllers\Public\ReorderController;
 use App\Http\Controllers\Public\RfqController;
 use App\Http\Controllers\Public\RfqListController;
 use App\Http\Controllers\Public\SearchController;
+use App\Http\Controllers\Public\ShipmentWaybillController;
 use App\Http\Controllers\Public\SitemapController;
 use App\Http\Controllers\Public\SpeciesController;
 use App\Http\Controllers\Public\TransformationNetworkController;
@@ -44,10 +47,14 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 // Directory & company profiles (static segments before slug routes).
 Route::get('/companies', [DirectoryController::class, 'index'])->name('directory');
 Route::get('/companies/{slug}', [CompanyController::class, 'show'])->name('companies.show');
+Route::get('/companies/{slug}/portfolio', [CompanyController::class, 'portfolio'])->name('companies.portfolio');
 
 // Transformation Network: processor/manufacturer directory (gap-plan 1.5.3), separate from /companies.
 Route::get('/transformation-network', [TransformationNetworkController::class, 'index'])->name('transformation-network');
 Route::get('/transformation-network/match', [TransformationNetworkController::class, 'match'])->name('transformation-network.match');
+
+// Logistics Directory: logistics/transport company directory (gap-plan 1.5.9), separate from /companies.
+Route::get('/logistics-directory', [LogisticsDirectoryController::class, 'index'])->name('logistics-directory');
 
 // Product marketplace (static segment before the CMS slug catch-all).
 Route::get('/marketplace', [ProductController::class, 'index'])->name('marketplace');
@@ -113,6 +120,7 @@ Route::get('/documents/{document}/download', DocumentDownloadController::class)
 // Public RFQ intake (no login) + email verification.
 Route::get('/request-quote', [RfqController::class, 'create'])->name('rfq.create');
 Route::get('/request-quote/manufacturing', [RfqController::class, 'createManufacturing'])->name('rfq.create.manufacturing');
+Route::get('/request-quote/transport', [RfqController::class, 'createTransport'])->name('rfq.create.transport');
 Route::post('/request-quote', [RfqController::class, 'store'])->middleware('throttle:rfq-submit')->name('rfq.store');
 Route::get('/request-quote/thanks', [RfqController::class, 'thanks'])->name('rfq.thanks');
 // Wizard steps. Each is a real GET URL so refresh and browser back/forward work
@@ -160,6 +168,17 @@ Route::get('/verify/certificate', [CertificateVerificationController::class, 'cr
 Route::get('/verify/certificate/{token}', [CertificateVerificationController::class, 'token'])
     ->where('token', '[A-Za-z0-9]{16,64}')
     ->middleware('throttle:certificate-verify')->name('certificates.verify.token');
+
+// Public checkpoint tracking (gap-plan 1.5.11). Open to anyone holding the
+// link; throttled like /verify and /verify/certificate above.
+Route::get('/track/{token}', [CheckpointTrackingController::class, 'show'])
+    ->middleware('throttle:checkpoint-track')->name('checkpoints.track');
+
+// Public digital waybill (gap-plan 1.5.10). No auth — a printed/scanned
+// waybill must work for a checkpoint officer or receiving clerk with no
+// account. Looked up by the unguessable waybill_number token, not the id.
+Route::get('/shipments/{shipment:waybill_number}/waybill', [ShipmentWaybillController::class, 'show'])
+    ->name('shipments.waybill.show');
 
 // The staff-facing printable certificate document. Authorization is checked
 // inside the controller against the certificates.manage permission.

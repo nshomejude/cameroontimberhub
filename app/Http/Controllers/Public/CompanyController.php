@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Public;
 
+use App\Enums\OrganisationType;
 use App\Enums\ProductStatus;
 use App\Enums\ProductType;
 use App\Http\Controllers\Controller;
@@ -87,6 +88,26 @@ class CompanyController extends Controller
             'reviewCount' => $company->reviews()->published()->count(),
             'breadcrumbs' => $breadcrumbs,
             'schema' => $this->schema($company, $badges, $productCount),
+        ]);
+    }
+
+    /**
+     * Public portfolio page for an artisan/professional company — the
+     * completed-work gallery items flagged `is_portfolio`. Gated to
+     * `OrganisationType::Artisan` companies; anything else 404s, matching
+     * show()'s "do not disclose" pattern for non-public companies.
+     */
+    public function portfolio(string $slug): View
+    {
+        $company = Company::publiclyVisible()
+            ->where('slug', $slug)
+            ->where('type', OrganisationType::Artisan->value)
+            ->with(['portfolioItems'])
+            ->firstOrFail();
+
+        return view('public.companies.portfolio', [
+            'company' => $company,
+            'items' => $company->portfolioItems,
         ]);
     }
 
