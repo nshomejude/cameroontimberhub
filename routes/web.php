@@ -380,6 +380,10 @@ Route::get('/order-documents/{document}/download', OrderDocumentDownloadControll
     ->middleware(['auth'])
     ->name('order-documents.download');
 
+// Payment gateway routes (checkout entry point + one file per provider's
+// own webhook/callback route) — see routes/payments.php.
+require __DIR__.'/payments.php';
+
 // CMS catch-all — must be last. Resolves any published page by slug (legal, static, etc.).
 Route::get('/{slug}', [PageController::class, 'show'])
     ->where('slug', '[a-z0-9][a-z0-9-]*')
