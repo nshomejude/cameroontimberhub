@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\LotEventType;
 use App\Enums\TimberLotStatus;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -83,5 +84,36 @@ class TimberLot extends Model
     public function scopeForCompany(Builder $query, int $companyId): Builder
     {
         return $query->where('company_id', $companyId);
+    }
+
+    /** Records a Traceability Event Ledger entry (blueprint §10) for this lot, without callers needing to know the hash-chaining mechanics. */
+    public function recordEvent(LotEventType $type, array $attributes = []): \App\Models\LotEvent
+    {
+        return $this->lotEvents()->create(array_merge([
+            'event_type' => $type,
+            'actor_id' => auth()->id(),
+            'occurred_at' => now(),
+        ], $attributes));
+    }
+
+    public function lotEvents(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Models\LotEvent::class);
+    }
+
+    /** Transformations (blueprint §11 mass-balance ledger) that consumed this lot as an input. */
+    public function inputTransformations(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(\App\Models\LotTransformation::class, 'lot_transformation_inputs')
+            ->withPivot('quantity_m3')
+            ->withTimestamps();
+    }
+
+    /** Transformations (blueprint §11 mass-balance ledger) that produced this lot as an output. */
+    public function outputTransformations(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(\App\Models\LotTransformation::class, 'lot_transformation_outputs')
+            ->withPivot('quantity_m3')
+            ->withTimestamps();
     }
 }
