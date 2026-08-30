@@ -41,6 +41,7 @@ use App\Http\Controllers\Public\SearchController;
 use App\Http\Controllers\Public\ShipmentWaybillController;
 use App\Http\Controllers\Public\SitemapController;
 use App\Http\Controllers\Public\SpeciesController;
+use App\Http\Controllers\Public\TimberPassportController;
 use App\Http\Controllers\Public\TransformationNetworkController;
 use Illuminate\Support\Facades\Route;
 
@@ -71,6 +72,7 @@ Route::get('/made-in-cameroon', [MadeInCameroonController::class, 'index'])->nam
 // Public carbon-project directory: carbon-developer companies' self-posted projects.
 Route::get('/carbon-projects', [CarbonProjectsController::class, 'index'])->name('carbon-projects');
 Route::get('/carbon-projects/{carbonProject}', [CarbonProjectsController::class, 'show'])->name('carbon-projects.show');
+Route::get('/passport/{timberLot}', [TimberPassportController::class, 'show'])->name('passport.show');
 
 // Cross-entity search (products + companies + species).
 Route::get('/search', [SearchController::class, 'index'])->name('search');
