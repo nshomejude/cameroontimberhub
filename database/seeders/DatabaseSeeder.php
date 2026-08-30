@@ -31,6 +31,7 @@ class DatabaseSeeder extends Seeder
             GlossaryTermSeeder::class,
             DemoCompanySeeder::class,
             ProductSeeder::class,
+            DomesticMarketDemoSeeder::class,
             QuoteSeeder::class,
             OrderSeeder::class,
             MessagingSeeder::class,
