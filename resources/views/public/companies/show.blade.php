@@ -104,6 +104,8 @@
     $tabs = collect([
         ['id' => 'overview', 'label' => 'Overview', 'icon' => 'clipboard-document-list', 'show' => true],
         ['id' => 'products', 'label' => 'Products'.($productCount ? ' ('.$productCount.')' : ''), 'icon' => 'squares-2x2', 'show' => $productCount > 0],
+        ['id' => 'capacity', 'label' => 'Capacity'.($capacities->count() ? ' ('.$capacities->count().')' : ''), 'icon' => 'chart-bar', 'show' => $capacities->isNotEmpty()],
+        ['id' => 'carbon-projects', 'label' => 'Carbon Projects'.($carbonProjects->count() ? ' ('.$carbonProjects->count().')' : ''), 'icon' => 'globe-alt', 'show' => $carbonProjects->isNotEmpty()],
         ['id' => 'certificates', 'label' => 'Certificates'.($badges->count() ? ' ('.$badges->count().')' : ''), 'icon' => 'check-badge', 'show' => $badges->isNotEmpty()],
         ['id' => 'sourcing', 'label' => 'Forest & Sourcing', 'icon' => 'globe-europe-africa', 'show' => $forestRows->isNotEmpty() || $company->species->isNotEmpty()],
         ['id' => 'logistics', 'label' => 'Logistics', 'icon' => 'truck', 'show' => $logisticsRows->isNotEmpty()],
@@ -510,6 +512,51 @@
                                     <div class="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
                                         @foreach ($products as $product)
                                             <x-product-card :product="$product" />
+                                        @endforeach
+                                    </div>
+                                </section>
+                                @break
+
+                            {{-- ---------------- Capacity ---------------- --}}
+                            @case('capacity')
+                                <section>
+                                    <h2 class="text-[1.0625rem] font-bold text-ink">Capacity from {{ $company->name }}</h2>
+                                    <div class="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
+                                        @foreach ($capacities as $item)
+                                            <div class="{{ $card }} p-4">
+                                                <p class="font-semibold text-ink">{{ $item->capability }}</p>
+                                                <p class="mt-1 text-[1.0625rem] text-ink-soft">
+                                                    {{ number_format((float) $item->quantity) }} {{ $item->unit }}@if ($item->period) / {{ $item->period }}@endif
+                                                </p>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </section>
+                                @break
+
+                            {{-- ---------------- Carbon Projects ---------------- --}}
+                            @case('carbon-projects')
+                                <section>
+                                    <h2 class="text-[1.0625rem] font-bold text-ink">Carbon projects from {{ $company->name }}</h2>
+                                    <div class="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
+                                        @foreach ($carbonProjects as $project)
+                                            <div class="{{ $card }} p-4">
+                                                <div class="flex items-start justify-between gap-2">
+                                                    <p class="font-semibold text-ink">{{ $project->name }}</p>
+                                                    @if ($project->project_type)
+                                                        <span class="shrink-0 rounded-full bg-forest-100 px-2 py-0.5 text-[0.8125rem] font-medium text-forest-800">{{ $project->project_type }}</span>
+                                                    @endif
+                                                </div>
+                                                @if ($project->region)
+                                                    <p class="mt-1 text-[0.9375rem] text-ink-soft">{{ $project->region }}</p>
+                                                @endif
+                                                @if ($project->area_hectares)
+                                                    <p class="mt-1 text-[0.9375rem] text-ink-soft">{{ number_format((float) $project->area_hectares) }} ha</p>
+                                                @endif
+                                                @if ($project->description)
+                                                    <p class="mt-2 text-[0.9375rem] leading-relaxed text-ink-soft">{{ Str::limit(strip_tags($project->description), 120) }}</p>
+                                                @endif
+                                            </div>
                                         @endforeach
                                     </div>
                                 </section>

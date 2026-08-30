@@ -252,6 +252,12 @@ class Company extends Model
         return $this->hasMany(Product::class);
     }
 
+    /** Carbon projects listed by this (CarbonDeveloper-type) company. */
+    public function carbonProjects(): HasMany
+    {
+        return $this->hasMany(CarbonProject::class);
+    }
+
     /** Fleet registry (gap-plan item 1.5.12). */
     public function vehicles(): HasMany
     {

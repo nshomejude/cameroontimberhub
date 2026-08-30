@@ -35,6 +35,7 @@ class CompanyController extends Controller
                 // Public + approved + unexpired only. Private, admin-only and
                 // buyer-gated documents never reach a public response.
                 'publicDocuments.documentType',
+                'capacities',
             ])
             ->firstOrFail();
 
@@ -66,6 +67,17 @@ class CompanyController extends Controller
             ->sortByDesc('count')
             ->values();
 
+        // Company-generated content shown on the profile's own tabs — mirrors
+        // the products query's "publicly showable" filtering. Capacity rows
+        // have no status column of their own (visibility is owner-gated only),
+        // so every row belonging to this company is shown. Carbon projects
+        // reuse ProductStatus and only Active rows are public.
+        $capacities = $company->capacities;
+
+        $carbonProjects = $company->type === OrganisationType::CarbonDeveloper
+            ? $company->carbonProjects()->where('status', ProductStatus::Active->value)->get()
+            : collect();
+
         $breadcrumbs = [
             ['label' => 'Home', 'url' => route('home')],
             ['label' => 'Suppliers', 'url' => route('directory')],
@@ -79,6 +91,8 @@ class CompanyController extends Controller
             'products' => $products,
             'productCount' => $productCount,
             'categories' => $categories,
+            'capacities' => $capacities,
+            'carbonProjects' => $carbonProjects,
             'documents' => $company->publicDocuments,
             // Real buyer reviews, each one earned by a completed order. Before
             // Phase 3 there was no reviews table at all and this section did
