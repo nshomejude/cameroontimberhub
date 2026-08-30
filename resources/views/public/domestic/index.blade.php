@@ -78,19 +78,47 @@
                         </div>
                     </div>
 
-                    <div>
-                        <p class="mb-2 text-sm font-semibold text-ink dark:text-sand-100">Region / delivery</p>
+                    <div id="location-filter" data-city-map="{{ json_encode($cityOptionsByRegion) }}" data-region-coords="{{ json_encode($regionCoordinates) }}">
+                        <div class="mb-2 flex items-center justify-between gap-2">
+                            <p class="text-sm font-semibold text-ink dark:text-sand-100">Region / Delivery</p>
+                            <button type="button" id="use-my-location"
+                                    class="inline-flex items-center gap-1 text-[0.8125rem] font-medium text-forest-700 hover:underline">
+                                <x-heroicon-m-map-pin class="h-3.5 w-3.5" />
+                                Use my location
+                            </button>
+                        </div>
+                        <p id="location-status" class="mb-2 hidden text-[0.8125rem] text-ink-soft dark:text-[#b3ab9b]"></p>
+
                         <div class="space-y-1.5">
                             @foreach ($regionFacets as $facet)
                                 <label class="flex items-center justify-between gap-2 text-[0.9375rem] text-ink-soft dark:text-[#b3ab9b]">
                                     <span class="flex items-center gap-2">
                                         <input type="radio" name="region" value="{{ $facet['value'] }}" @checked($filters['region'] === $facet['value'])
-                                               class="border-sand-300 text-forest-700 focus:ring-forest-500">
+                                               class="region-radio border-sand-300 text-forest-700 focus:ring-forest-500">
                                         {{ $facet['label'] }}
                                     </span>
                                     <span class="text-[0.8125rem] tabular-nums text-ink-soft/70">{{ $facet['count'] }}</span>
                                 </label>
                             @endforeach
+                            <label class="flex items-center gap-2 text-[0.9375rem] text-ink-soft dark:text-[#b3ab9b]">
+                                <input type="radio" name="region" value="" @checked($filters['region'] === '')
+                                       class="region-radio border-sand-300 text-forest-700 focus:ring-forest-500">
+                                Any region
+                            </label>
+                        </div>
+
+                        <div class="mt-3">
+                            <label for="city" class="mb-1 block text-sm font-medium text-ink-soft dark:text-[#b3ab9b]">City / town</label>
+                            <select name="city" id="city" class="{{ $field }}">
+                                <option value="">Any city</option>
+                                @foreach ($cityOptionsByRegion as $regionName => $cities)
+                                    @foreach ($cities as $cityName)
+                                        <option value="{{ $cityName }}" data-region="{{ $regionName }}" @selected($filters['city'] === $cityName)>
+                                            {{ $cityName }} ({{ $regionName }})
+                                        </option>
+                                    @endforeach
+                                @endforeach
+                            </select>
                         </div>
                     </div>
 
@@ -151,4 +179,90 @@
             </div>
         </div>
     </div>
+
+    <script>
+            (function () {
+                const wrap = document.getElementById('location-filter');
+                if (!wrap) return;
+
+                const cityMap = JSON.parse(wrap.dataset.cityMap || '{}');
+                const regionCoords = JSON.parse(wrap.dataset.regionCoords || '{}');
+                const citySelect = document.getElementById('city');
+                const regionRadios = document.querySelectorAll('.region-radio');
+                const locateBtn = document.getElementById('use-my-location');
+                const statusEl = document.getElementById('location-status');
+
+                function currentRegion() {
+                    const checked = Array.from(regionRadios).find((r) => r.checked);
+                    return checked ? checked.value : '';
+                }
+
+                function filterCitiesForRegion(region) {
+                    Array.from(citySelect.options).forEach((option) => {
+                        if (!option.value) return; // "Any city"
+                        option.hidden = region !== '' && option.dataset.region !== region;
+                    });
+                    if (region !== '' && citySelect.selectedOptions[0]?.dataset.region !== region && citySelect.value !== '') {
+                        citySelect.value = '';
+                    }
+                }
+
+                regionRadios.forEach((radio) => {
+                    radio.addEventListener('change', () => filterCitiesForRegion(currentRegion()));
+                });
+                filterCitiesForRegion(currentRegion());
+
+                function nearestRegion(lat, lng) {
+                    const toRad = (deg) => (deg * Math.PI) / 180;
+                    let closest = null;
+                    let closestDistance = Infinity;
+
+                    Object.entries(regionCoords).forEach(([region, coord]) => {
+                        const dLat = toRad(coord.lat - lat);
+                        const dLng = toRad(coord.lng - lng);
+                        const a = Math.sin(dLat / 2) ** 2
+                            + Math.cos(toRad(lat)) * Math.cos(toRad(coord.lat)) * Math.sin(dLng / 2) ** 2;
+                        const distance = 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+                        if (distance < closestDistance) {
+                            closestDistance = distance;
+                            closest = region;
+                        }
+                    });
+
+                    return closest;
+                }
+
+                if (locateBtn) {
+                    locateBtn.addEventListener('click', () => {
+                        if (!navigator.geolocation) {
+                            statusEl.textContent = 'Location is not supported by this browser.';
+                            statusEl.classList.remove('hidden');
+                            return;
+                        }
+
+                        statusEl.textContent = 'Finding your region…';
+                        statusEl.classList.remove('hidden');
+
+                        navigator.geolocation.getCurrentPosition(
+                            (position) => {
+                                const region = nearestRegion(position.coords.latitude, position.coords.longitude);
+                                const radio = Array.from(regionRadios).find((r) => r.value === region);
+                                if (radio) {
+                                    radio.checked = true;
+                                    filterCitiesForRegion(region);
+                                    statusEl.textContent = `Detected region: ${region}. Applying…`;
+                                    radio.closest('form').submit();
+                                } else {
+                                    statusEl.textContent = "Couldn't match your location to a region.";
+                                }
+                            },
+                            () => {
+                                statusEl.textContent = 'Location access was denied or unavailable.';
+                            }
+                        );
+                    });
+                }
+            })();
+    </script>
 </x-layouts.app>

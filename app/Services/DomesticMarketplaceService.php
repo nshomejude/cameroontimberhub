@@ -6,6 +6,7 @@ use App\Enums\ProductStatus;
 use App\Enums\ProductType;
 use App\Models\Company;
 use App\Models\Product;
+use App\Support\CameroonGeography;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -76,6 +77,7 @@ class DomesticMarketplaceService
     {
         $q = trim((string) ($filters['q'] ?? ''));
         $region = (string) ($filters['region'] ?? '');
+        $city = (string) ($filters['city'] ?? '');
         $grade = trim((string) ($filters['grade'] ?? ''));
         $treatment = (string) ($filters['treatment'] ?? '');
         $types = array_values(array_intersect((array) ($filters['types'] ?? []), array_column(ProductType::cases(), 'value')));
@@ -86,6 +88,7 @@ class DomesticMarketplaceService
         return $query
             ->when($q !== '', fn (Builder $b) => $b->whereRaw("products.search_vector @@ plainto_tsquery('english', ?)", [$q]))
             ->when($region !== '', fn (Builder $b) => $b->whereHas('company', fn ($c) => $c->where('region', $region)))
+            ->when($city !== '', fn (Builder $b) => $b->whereHas('company', fn ($c) => $c->where('city', $city)))
             ->when($grade !== '', fn (Builder $b) => $b->where('products.grade', $grade))
             ->when($treatment !== '', fn (Builder $b) => $b->where('products.moisture_content', 'ilike', "%{$treatment}%"))
             ->when($types !== [], fn (Builder $b) => $b->whereIn('products.product_type', $types))
@@ -112,17 +115,39 @@ class DomesticMarketplaceService
             ->all();
     }
 
-    /** @return list<array{value: string, label: string, count: int}> */
+    /**
+     * All 10 Cameroon regions, always -- not just the ones with listings
+     * today. Counts are overlaid from live data where present, 0 otherwise,
+     * so the filter is never missing a region just because nobody has
+     * listed there yet.
+     *
+     * @return list<array{value: string, label: string, count: int}>
+     */
     public function regionFacets(): array
     {
-        return $this->base()
+        $counts = $this->base()
             ->join('companies', 'companies.id', '=', 'products.company_id')
             ->whereNotNull('companies.region')
             ->selectRaw('companies.region, count(*) as aggregate')
             ->groupBy('companies.region')
-            ->orderBy('companies.region')
-            ->get()
-            ->map(fn ($row) => ['value' => $row->region, 'label' => $row->region, 'count' => (int) $row->aggregate])
+            ->pluck('aggregate', 'region');
+
+        return collect(CameroonGeography::regionNames())
+            ->map(fn (string $region) => ['value' => $region, 'label' => $region, 'count' => (int) ($counts[$region] ?? 0)])
+            ->all();
+    }
+
+    /**
+     * Every city/town in Cameroon, grouped by region, for the location
+     * sidebar's city select -- again independent of whether anyone has
+     * listed there yet.
+     *
+     * @return array<string, list<string>>
+     */
+    public function cityOptionsByRegion(): array
+    {
+        return collect(CameroonGeography::regions())
+            ->map(fn (array $data) => $data['cities'])
             ->all();
     }
 }

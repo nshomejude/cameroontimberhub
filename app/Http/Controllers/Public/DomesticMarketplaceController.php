@@ -6,6 +6,7 @@ use App\Enums\ProductType;
 use App\Http\Controllers\Controller;
 use App\Models\Species;
 use App\Services\DomesticMarketplaceService;
+use App\Support\CameroonGeography;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -29,6 +30,7 @@ class DomesticMarketplaceController extends Controller
             'grade' => (string) $request->query('grade', ''),
             'treatment' => (string) $request->query('treatment', ''),
             'region' => (string) $request->query('region', ''),
+            'city' => (string) $request->query('city', ''),
             'minQuantity' => $request->query('quantity'),
             'maxThicknessMm' => $request->query('max_thickness'),
             'sort' => (string) $request->query('sort', 'newest'),
@@ -45,6 +47,8 @@ class DomesticMarketplaceController extends Controller
             'filters' => $filters,
             'typeFacets' => $this->catalogue->typeFacets($filters),
             'regionFacets' => $this->catalogue->regionFacets(),
+            'cityOptionsByRegion' => $this->catalogue->cityOptionsByRegion(),
+            'regionCoordinates' => collect(CameroonGeography::regions())->map(fn (array $d) => ['lat' => $d['lat'], 'lng' => $d['lng']])->all(),
             'sortOptions' => DomesticMarketplaceService::sortOptions(),
             'speciesOptions' => Species::published()->orderBy('common_name')->pluck('common_name', 'slug'),
             'typeOptions' => collect(ProductType::cases())->mapWithKeys(fn (ProductType $t) => [$t->value => $t->label()]),
