@@ -10,6 +10,7 @@ use App\Services\CompanyStatusService;
 use App\Services\SubscriptionService;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
+use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -97,6 +98,24 @@ class CompaniesTable
                     DeleteBulkAction::make(),
                     ForceDeleteBulkAction::make(),
                     RestoreBulkAction::make(),
+                    BulkAction::make('assignPlan')->label('Assign plan')
+                        ->icon('heroicon-o-credit-card')->color('info')
+                        ->visible(fn (): bool => (bool) auth()->user()?->can('plans.manage'))
+                        ->schema([
+                            Select::make('plan_id')->label('Plan')->required()
+                                ->options(fn () => Plan::where('is_active', true)->orderBy('sort_order')->pluck('name', 'id')),
+                        ])
+                        ->action(function (\Illuminate\Database\Eloquent\Collection $records, array $data): void {
+                            $plan = Plan::findOrFail($data['plan_id']);
+                            $service = app(SubscriptionService::class);
+
+                            foreach ($records as $record) {
+                                $service->assign($record, $plan, auth()->user());
+                            }
+
+                            Notification::make()->title('Plan assigned to '.$records->count().' compan'.($records->count() === 1 ? 'y' : 'ies'))->success()->send();
+                        })
+                        ->deselectRecordsAfterCompletion(),
                 ]),
             ]);
     }
