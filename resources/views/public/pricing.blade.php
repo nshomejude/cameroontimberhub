@@ -40,9 +40,10 @@
                 <p class="mt-2 max-w-2xl text-[0.9375rem] text-ink-soft dark:text-[#b3ab9b]">{{ $segment['intro'] }}</p>
 
                 <div class="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                    @if ($segment['id'] === 'sell')
-                        {{-- Live, DB-backed supplier tiers --}}
-                        @foreach ($supplierPlans as $plan)
+                    @php($dbPlans = match ($segment['id']) { 'sell' => $supplierPlans, 'buy' => $buyerPlans, default => null })
+                    @if ($dbPlans !== null)
+                        {{-- Live, DB-backed tiers (segment column on `plans`) --}}
+                        @foreach ($dbPlans as $plan)
                             <div @class([
                                 'flex flex-col rounded-2xl border bg-white dark:bg-[#1f1d18] p-6 shadow-sm',
                                 'border-forest-300 ring-1 ring-forest-200' => $plan->slug === 'professional',

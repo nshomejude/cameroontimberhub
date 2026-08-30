@@ -27,6 +27,16 @@ class PlanForm
                         Select::make('billing_period')->options(['monthly' => 'Monthly', 'yearly' => 'Yearly', 'once' => 'One-off'])->default('yearly')->required(),
                         TextInput::make('sort_order')->numeric()->default(0),
                         Toggle::make('is_active')->default(true),
+                        Select::make('segment')->options([
+                            'sell' => 'Sell timber locally',
+                            'buy' => 'Buy timber',
+                            'deal' => 'Deal timber',
+                            'export' => 'Export timber',
+                            'buy-international' => 'Buy internationally',
+                            'verify-comply' => 'Verify & comply',
+                            'analyze' => 'Analyze the market',
+                            'learn' => 'Learn',
+                        ])->helperText('Which /pricing section this plan appears in. Only "sell" and "buy" are currently DB-backed.'),
                     ]),
 
                 Section::make('Features (feature gates)')

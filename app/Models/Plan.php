@@ -42,6 +42,11 @@ class Plan extends Model
         return $query->where('is_active', true)->orderBy('sort_order');
     }
 
+    public function scopeForSegment(Builder $query, string $segment): Builder
+    {
+        return $query->where('segment', $segment);
+    }
+
     public function feature(string $key, mixed $default = null): mixed
     {
         return data_get($this->features, $key, $default);

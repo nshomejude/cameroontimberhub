@@ -13,24 +13,29 @@ use Illuminate\View\View;
  * internationally / Verify & comply / Analyze the market / Learn).
  *
  * Scope, stated plainly (see docs/GAP_PLAN.md item 0.9 vs 0.9b): this is
- * DISPLAY ONLY. The domestic supplier tier is the one segment genuinely
- * backed by live data (the existing `plans` table, already driving real
- * `companies.plan_id` assignment) — those cards render from `Plan::active()`
- * exactly as before. Every other segment below is static catalogue content
- * matching docs/PRICING_SPEC.md's published launch prices; none of it is
- * wired to checkout, billing, subscriptions, entitlement enforcement, tax
- * calculation, or invoicing yet — every CTA in those sections points at
- * registration or contact, never a live payment flow, so the page never
- * claims to sell something that doesn't yet exist to be sold. Building
- * that infrastructure is tracked separately as 0.9b, blocked on a real
- * payment-provider decision.
+ * DISPLAY ONLY. Two segments are genuinely backed by live, admin-manageable
+ * data in the `plans` table (each row now carries a `segment` column —
+ * `Plan::forSegment('sell')` / `Plan::forSegment('buy')` — editable via
+ * `app/Filament/Resources/Plans/`): the domestic supplier tier ("Sell
+ * timber locally", already driving real `companies.plan_id` assignment)
+ * and the domestic buyer tier ("Buy timber"). Those cards render from the
+ * `Plan` model exactly as before. Every other segment below is still
+ * static catalogue content matching docs/PRICING_SPEC.md's published
+ * launch prices; none of it is wired to checkout, billing, subscriptions,
+ * entitlement enforcement, tax calculation, or invoicing yet — every CTA
+ * in those sections points at registration or contact, never a live
+ * payment flow, so the page never claims to sell something that doesn't
+ * yet exist to be sold. Migrating the remaining 6 segments into the same
+ * DB-backed pattern, and building real checkout, is tracked separately as
+ * 0.9b, blocked on a real payment-provider decision.
  */
 class PricingController extends Controller
 {
     public function index(): View
     {
         return view('public.pricing', [
-            'supplierPlans' => Plan::active()->get(),
+            'supplierPlans' => Plan::active()->forSegment('sell')->get(),
+            'buyerPlans' => Plan::active()->forSegment('buy')->get(),
             'segments' => $this->segments(),
         ]);
     }
@@ -54,12 +59,7 @@ class PricingController extends Controller
                 'label' => 'Buy timber',
                 'eyebrow' => 'Domestic buyers',
                 'intro' => 'For individuals, contractors, and procurement teams sourcing timber inside Cameroon. Prices in XAF.',
-                'plans' => [
-                    ['name' => 'Buyer Free', 'price' => '0 XAF', 'period' => 'forever', 'description' => 'Individuals and occasional buyers.', 'features' => ['3 RFQs / month', 'Basic quote comparison', '2 saved searches', '1 user']],
-                    ['name' => 'Buyer Plus', 'price' => '5,000 XAF', 'period' => 'month (50,000/yr)', 'description' => 'Frequent local buyers.', 'features' => ['Unlimited RFQs', 'Advanced quote comparison', 'Availability alerts', '10 saved searches']],
-                    ['name' => 'Business Buyer', 'price' => '15,000 XAF', 'period' => 'month (150,000/yr)', 'description' => 'Contractors, furniture businesses, developers.', 'features' => ['Full procurement workspace', 'Purchase orders + approval workflow', 'Supplier performance tracking', '5 users'], 'highlight' => true],
-                    ['name' => 'Corporate Buyer', 'price' => '50,000 XAF', 'period' => 'month (500,000/yr)', 'description' => 'Large procurement teams.', 'features' => ['Advanced approval workflow', 'Spend analytics', 'API / integration access', '25 users']],
-                ],
+                'plans' => [], // rendered live from $buyerPlans in the view
             ],
             'sell' => [
                 'id' => 'sell',
