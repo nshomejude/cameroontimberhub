@@ -5,7 +5,10 @@
 
 @php
     $profileUrl = route('companies.show', $company->slug);
-    $verified = $company->status === \App\Enums\CompanyStatus::Verified;
+    // Gate the visible badge, not the underlying verification: an unverified
+    // plan (e.g. Free) never displays a "Verified" mark even for a company
+    // whose status is Verified.
+    $verified = $company->status === \App\Enums\CompanyStatus::Verified && $company->hasFeature('verified_badge');
 
     // Specialisations: the product forms this supplier actually lists, falling
     // back to the species it handles. Never invented.

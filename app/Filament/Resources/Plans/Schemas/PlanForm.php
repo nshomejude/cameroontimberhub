@@ -45,6 +45,12 @@ class PlanForm
                         Toggle::make('features.verified_badge')->label('Verified badge'),
                         Toggle::make('features.leads_receive')->label('Receive RFQ leads'),
                         Toggle::make('features.featured')->label('Featured placement'),
+                        // No company-facing API exists yet to gate. routes/api.php (v1) is
+                        // a buyer/mobile-app surface only (auth, catalogue browse, RFQ,
+                        // quotes) — there is no authenticated endpoint where a company
+                        // reads/writes its own data and no enforcement point for this flag.
+                        // Reserved for future API access; wire a check here once such an
+                        // endpoint exists.
                         Toggle::make('features.api')->label('API access'),
                         TextInput::make('features.max_gallery')->label('Max gallery images')->numeric()->default(3),
                     ]),
