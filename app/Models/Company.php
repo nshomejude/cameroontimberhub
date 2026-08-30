@@ -12,6 +12,7 @@ use App\Enums\OrganisationType;
 use App\Enums\ProductType;
 use App\Enums\SubscriptionStatus;
 use App\Enums\SupplierType;
+use App\Enums\VerificationTier;
 use App\Models\Concerns\HasCapacities;
 use App\Models\Concerns\HasSlug;
 use App\Models\Concerns\HasVerification;
@@ -96,6 +97,30 @@ class Company extends Model
     public function getRouteKeyName(): string
     {
         return 'slug';
+    }
+
+    /**
+     * Trust-tier scale (blueprint §4). Layered on top of the existing
+     * VerificationStage workflow -- NOT a replacement for it. Enforces the
+     * hard cap here (a mutator, not just optimistic UI validation): a
+     * company that is not yet `isVerified()` under the existing workflow
+     * cannot hold any tier above 0, no matter what is submitted, including
+     * a crafted admin form payload.
+     */
+    protected function verificationTier(): Attribute
+    {
+        return Attribute::make(
+            get: fn (?int $value) => VerificationTier::from($value ?? 0),
+            set: function (VerificationTier|int $value) {
+                $tier = $value instanceof VerificationTier ? $value : VerificationTier::from($value);
+
+                if ($tier->value > 0 && ! $this->isVerified()) {
+                    $tier = VerificationTier::Unverified;
+                }
+
+                return $tier->value;
+            },
+        );
     }
 
     protected function slugSourceColumn(): string

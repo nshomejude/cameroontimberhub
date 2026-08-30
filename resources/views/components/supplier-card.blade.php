@@ -5,7 +5,8 @@
 
 @php
     $profileUrl = route('companies.show', $company->slug);
-    $verified = $company->status === \App\Enums\CompanyStatus::Verified;
+    $verified = $company->status === \App\Enums\CompanyStatus::Verified && $company->verification_tier->value > 0;
+    $tier = $company->verification_tier;
 
     // Specialisations: the product forms this supplier actually lists, falling
     // back to the species it handles. Never invented.
@@ -43,7 +44,7 @@
         @endif
 
         @if ($compact && $verified)
-            <span class="absolute right-2 top-2 inline-flex items-center rounded-full bg-forest-700 px-2 py-0.5 text-[0.8125rem] font-semibold text-white">Verified</span>
+            <span class="absolute right-2 top-2 inline-flex items-center rounded-full bg-forest-700 px-2 py-0.5 text-[0.8125rem] font-semibold text-white" title="{{ $tier->scopeDescription() }}">{{ $tier->label() }}</span>
         @endif
 
         <button type="button"
@@ -65,7 +66,7 @@
                 {{ $company->name }}
             </a>
             @if ($verified && ! $compact)
-                <span class="inline-flex items-center rounded-full bg-forest-700 px-2 py-0.5 text-[0.8125rem] font-semibold text-white">Verified</span>
+                <span class="inline-flex items-center rounded-full bg-forest-700 px-2 py-0.5 text-[0.8125rem] font-semibold text-white" title="{{ $tier->scopeDescription() }}">{{ $tier->label() }}</span>
             @endif
         </h3>
 

@@ -166,14 +166,19 @@
                          class="h-24 w-24 shrink-0 rounded-full border-2 border-white/70 bg-white object-contain p-2 lg:h-32 lg:w-32">
 
                     <div class="min-w-0">
-                        <span class="inline-flex items-center gap-1.5 rounded-full bg-forest-600 px-3 py-1 text-[0.9375rem] font-semibold text-white">
-                            <x-heroicon-s-check-badge class="h-4 w-4" aria-hidden="true" />
-                            CTH Verified Supplier
-                        </span>
-                        <a href="{{ route('verification.info') }}"
-                           class="ml-2 inline-flex items-center text-[0.8125rem] font-medium text-forest-200 underline decoration-forest-400/60 underline-offset-2 transition hover:text-white">
-                            How verification works
-                        </a>
+                        @php($tier = $company->verification_tier)
+                        @if ($tier->value > 0)
+                            <span class="inline-flex items-center gap-1.5 rounded-full bg-forest-600 px-3 py-1 text-[0.9375rem] font-semibold text-white"
+                                  title="{{ $tier->scopeDescription() }}">
+                                <x-heroicon-s-check-badge class="h-4 w-4" aria-hidden="true" />
+                                CTH Verified Supplier — {{ $tier->label() }}
+                            </span>
+                            <a href="{{ route('verification.info') }}"
+                               class="ml-2 inline-flex items-center text-[0.8125rem] font-medium text-forest-200 underline decoration-forest-400/60 underline-offset-2 transition hover:text-white">
+                                How verification works
+                            </a>
+                            <p class="mt-1 max-w-md text-[0.8125rem] text-forest-200">{{ $tier->scopeDescription() }}</p>
+                        @endif
 
                         <h1 class="mt-2 font-display text-[1.75rem] font-semibold leading-tight text-white lg:text-[2.5rem]">
                             {{ $company->name }}

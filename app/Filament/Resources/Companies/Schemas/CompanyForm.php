@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Companies\Schemas;
 
 use App\Enums\SupplierType;
+use App\Enums\VerificationTier;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
@@ -93,6 +94,21 @@ class CompanyForm
                         TextInput::make('forest_location')->maxLength(255),
                         TextInput::make('forest_management')->maxLength(255),
                         TextInput::make('annual_harvest_capacity_m3')->label('Annual harvest capacity (m³)')->numeric(),
+                    ]),
+
+                Section::make('Trust tier (blueprint §4)')
+                    ->description('Tier 1 (Identity Verified) is derived automatically once the company passes the existing verification workflow. Tiers 2-5 have no automated evidence source yet and are administratively asserted here until operational-document review, site visits and lot inspections are built. A company that is not yet verified is hard-capped at Unverified regardless of what is selected.')
+                    ->visible(fn () => auth()->user()?->can('verification.review') ?? false)
+                    ->columns(1)
+                    ->schema([
+                        Select::make('verification_tier')
+                            ->label('Verification tier')
+                            ->options(VerificationTier::options())
+                            ->native(false)
+                            ->formatStateUsing(fn ($state) => $state instanceof VerificationTier ? $state->value : $state)
+                            ->dehydrateStateUsing(fn ($state) => (int) $state)
+                            ->helperText(fn ($state) => VerificationTier::tryFrom((int) $state)?->scopeDescription() ?? '')
+                            ->live(),
                     ]),
 
                 Section::make('Location & contact')
