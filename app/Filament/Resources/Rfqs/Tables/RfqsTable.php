@@ -54,15 +54,20 @@ class RfqsTable
                         ->visible(fn (Rfq $r): bool => in_array($r->status, [RfqStatus::New, RfqStatus::InReview], true) && static::canTriage())
                         ->action(fn (Rfq $record) => static::run(fn () => app(RfqTriageService::class)->approve($record, auth()->user()), 'RFQ approved — you can now route it')),
 
-                    Action::make('route')->label('Route to exporters')->icon('heroicon-o-paper-airplane')->color('success')
+                    Action::make('route')->label('Route to companies')->icon('heroicon-o-paper-airplane')->color('success')
                         ->visible(fn (Rfq $r): bool => $r->status === RfqStatus::Approved && static::canRoute())
                         ->schema([
-                            Select::make('companies')->label('Exporters')->multiple()->required()->searchable()
-                                ->options(fn () => Company::where('status', 'verified')->orderBy('legal_name')->pluck('legal_name', 'id')),
+                            Select::make('companies')->label('Companies')->multiple()->required()->searchable()
+                                ->options(fn () => Company::where('status', 'verified')->orderBy('legal_name')->get()
+                                    ->mapWithKeys(fn (Company $company) => [
+                                        $company->id => $company->type instanceof \App\Enums\OrganisationType
+                                            ? "{$company->legal_name} ({$company->type->label()})"
+                                            : $company->legal_name,
+                                    ])),
                         ])
                         ->action(function (Rfq $record, array $data): void {
                             $count = app(RfqTriageService::class)->route($record, $data['companies'], auth()->user(), app(LeadFlowService::class));
-                            Notification::make()->title("Routed to {$count} exporter(s)")->success()->send();
+                            Notification::make()->title("Routed to {$count} company/companies")->success()->send();
                         }),
 
                     Action::make('reject')->label('Reject')->icon('heroicon-o-x-circle')->color('danger')
