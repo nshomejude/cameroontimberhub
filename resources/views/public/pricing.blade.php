@@ -40,64 +40,60 @@
                 <p class="mt-2 max-w-2xl text-[0.9375rem] text-ink-soft dark:text-[#b3ab9b]">{{ $segment['intro'] }}</p>
 
                 <div class="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                    @php($dbPlans = match ($segment['id']) { 'sell' => $supplierPlans, 'buy' => $buyerPlans, default => null })
-                    @if ($dbPlans !== null)
-                        {{-- Live, DB-backed tiers (segment column on `plans`) --}}
-                        @foreach ($dbPlans as $plan)
-                            <div @class([
-                                'flex flex-col rounded-2xl border bg-white dark:bg-[#1f1d18] p-6 shadow-sm',
-                                'border-forest-300 ring-1 ring-forest-200' => $plan->slug === 'professional',
-                                'border-sand-200 dark:border-[#2c2a24]' => $plan->slug !== 'professional',
-                            ])>
-                                @if ($plan->slug === 'professional')
-                                    <span class="mb-3 inline-block self-start rounded-full bg-forest-700 px-3 py-0.5 text-xs font-semibold text-white">Most popular</span>
-                                @endif
-                                <h3 class="font-display text-lg font-semibold text-forest-900 dark:text-sand-100">{{ $plan->name }}</h3>
-                                <p class="mt-1.5 text-[0.8125rem] text-ink-soft dark:text-[#b3ab9b]">{{ $plan->description }}</p>
-                                <p class="mt-4">
-                                    <span class="font-display text-2xl font-semibold text-forest-950 dark:text-sand-100">{{ number_format((float) $plan->price_amount) }}</span>
-                                    <span class="text-[0.8125rem] text-ink-soft dark:text-[#b3ab9b]">{{ $plan->price_currency }} / {{ $plan->billing_period }}</span>
-                                </p>
-                                <ul class="mt-5 space-y-2 text-[0.8125rem] text-ink-soft dark:text-[#b3ab9b]">
+                    @php($dbPlans = match ($segment['id']) {
+                        'sell' => $supplierPlans,
+                        'buy' => $buyerPlans,
+                        'deal' => $dealerPlans,
+                        'export' => $exporterPlans,
+                        'buy-international' => $buyInternationalPlans,
+                        'verify-comply' => $verifyComplyPlans,
+                        'analyze' => $analyzePlans,
+                        'learn' => $learnPlans,
+                        default => collect(),
+                    })
+                    {{-- Live, DB-backed tiers (segment column on `plans`) --}}
+                    @foreach ($dbPlans as $plan)
+                        @php($bullets = $plan->features['bullets'] ?? null)
+                        <div @class([
+                            'flex flex-col rounded-2xl border bg-white dark:bg-[#1f1d18] p-6 shadow-sm',
+                            'border-forest-300 ring-1 ring-forest-200' => $plan->slug === 'professional',
+                            'border-sand-200 dark:border-[#2c2a24]' => $plan->slug !== 'professional',
+                        ])>
+                            @if ($plan->slug === 'professional')
+                                <span class="mb-3 inline-block self-start rounded-full bg-forest-700 px-3 py-0.5 text-xs font-semibold text-white">Most popular</span>
+                            @endif
+                            <h3 class="font-display text-lg font-semibold text-forest-900 dark:text-sand-100">{{ $plan->name }}</h3>
+                            <p class="mt-1.5 text-[0.8125rem] text-ink-soft dark:text-[#b3ab9b]">{{ $plan->description }}</p>
+                            <p class="mt-4">
+                                <span class="font-display text-2xl font-semibold text-forest-950 dark:text-sand-100">{{ number_format((float) $plan->price_amount) }}</span>
+                                <span class="text-[0.8125rem] text-ink-soft dark:text-[#b3ab9b]">{{ $plan->price_currency }} / {{ $plan->billing_period }}</span>
+                            </p>
+                            <ul class="mt-5 space-y-2 text-[0.8125rem] text-ink-soft dark:text-[#b3ab9b]">
+                                @if ($bullets !== null)
+                                    {{-- Flat feature bullet list — no boolean feature gates behind these plans yet --}}
+                                    @foreach ($bullets as $bullet)
+                                        <li class="flex items-start gap-2"><x-heroicon-m-check-circle class="mt-0.5 h-4 w-4 shrink-0 text-forest-500" />{{ $bullet }}</li>
+                                    @endforeach
+                                @else
                                     <li class="flex items-start gap-2"><x-heroicon-m-check-circle class="mt-0.5 h-4 w-4 shrink-0 text-forest-500" />Up to {{ (int) $plan->feature('max_gallery', 3) }} gallery images</li>
                                     @foreach ($featureLabels as $key => $label)
                                         @if ($plan->feature($key))
                                             <li class="flex items-start gap-2"><x-heroicon-m-check-circle class="mt-0.5 h-4 w-4 shrink-0 text-forest-500" />{{ $label }}</li>
                                         @endif
                                     @endforeach
-                                </ul>
+                                @endif
+                            </ul>
+                            @if (in_array($segment['id'], ['sell', 'buy'], true))
                                 <a href="{{ route('register') }}" class="mt-6 inline-flex items-center justify-center gap-1.5 rounded-full bg-forest-700 px-4 py-2 text-[0.8125rem] font-semibold text-white transition hover:bg-forest-800">
                                     List your company
                                 </a>
-                            </div>
-                        @endforeach
-                    @else
-                        @foreach ($segment['plans'] as $plan)
-                            <div @class([
-                                'flex flex-col rounded-2xl border bg-white dark:bg-[#1f1d18] p-6 shadow-sm',
-                                'border-forest-300 ring-1 ring-forest-200' => $plan['highlight'] ?? false,
-                                'border-sand-200 dark:border-[#2c2a24]' => ! ($plan['highlight'] ?? false),
-                            ])>
-                                @if ($plan['highlight'] ?? false)
-                                    <span class="mb-3 inline-block self-start rounded-full bg-forest-700 px-3 py-0.5 text-xs font-semibold text-white">Most popular</span>
-                                @endif
-                                <h3 class="font-display text-lg font-semibold text-forest-900 dark:text-sand-100">{{ $plan['name'] }}</h3>
-                                <p class="mt-1.5 text-[0.8125rem] text-ink-soft dark:text-[#b3ab9b]">{{ $plan['description'] }}</p>
-                                <p class="mt-4">
-                                    <span class="font-display text-2xl font-semibold text-forest-950 dark:text-sand-100">{{ $plan['price'] }}</span>
-                                    <span class="text-[0.8125rem] text-ink-soft dark:text-[#b3ab9b]">/ {{ $plan['period'] }}</span>
-                                </p>
-                                <ul class="mt-5 space-y-2 text-[0.8125rem] text-ink-soft dark:text-[#b3ab9b]">
-                                    @foreach ($plan['features'] as $feature)
-                                        <li class="flex items-start gap-2"><x-heroicon-m-check-circle class="mt-0.5 h-4 w-4 shrink-0 text-forest-500" />{{ $feature }}</li>
-                                    @endforeach
-                                </ul>
+                            @else
                                 <a href="{{ route('contact') }}" class="mt-6 inline-flex items-center justify-center gap-1.5 rounded-full border border-forest-300 px-4 py-2 text-[0.8125rem] font-semibold text-forest-700 transition hover:bg-forest-50 dark:border-forest-700 dark:text-forest-300 dark:hover:bg-forest-950">
                                     Get in touch
                                 </a>
-                            </div>
-                        @endforeach
-                    @endif
+                            @endif
+                        </div>
+                    @endforeach
                 </div>
             </section>
         @endforeach
