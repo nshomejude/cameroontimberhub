@@ -32,6 +32,7 @@ class DatabaseSeeder extends Seeder
             DemoCompanySeeder::class,
             ProductSeeder::class,
             DomesticMarketDemoSeeder::class,
+            DomesticServiceDemoSeeder::class,
             QuoteSeeder::class,
             OrderSeeder::class,
             MessagingSeeder::class,
