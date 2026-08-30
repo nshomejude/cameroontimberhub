@@ -15,7 +15,8 @@
         "laravel/tinker": "^3.0",
         "predis/predis": "*",
         "spatie/laravel-activitylog": "*",
-        "spatie/laravel-permission": "*"
+        "spatie/laravel-permission": "*",
+        "stripe/stripe-php": "^21.3"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
