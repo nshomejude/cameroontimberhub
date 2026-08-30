@@ -109,6 +109,7 @@ it('accepts a valid contact submission and flashes success', function () {
     $this->post(route('contact.store'), [
         'name' => 'Jane Buyer',
         'email' => 'jane@example.com',
+        'category' => 'general',
         'subject' => 'Inquiry about sapele',
         'message' => 'I am looking for a reliable sapele supplier in Cameroon.',
         'consent' => '1',

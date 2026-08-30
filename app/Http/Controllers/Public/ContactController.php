@@ -9,6 +9,7 @@ use App\Services\IntakeService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class ContactController extends Controller
@@ -22,6 +23,7 @@ class ContactController extends Controller
         return view('public.pages.contact', [
             'page' => $page,
             'details' => $details,
+            'categories' => self::categories(),
             'mapUrl' => self::mapUrl($details),
             'schema' => self::schema($details),
             'breadcrumbs' => [
@@ -125,6 +127,24 @@ class ContactController extends Controller
         ];
     }
 
+    /**
+     * Contact form categories, keyed by the submitted value, mapped to the
+     * label stored as a subject prefix. "dispute" gives visitors a genuine,
+     * identifiable channel to raise a complaint or dispute — see Privacy
+     * Policy §11.
+     *
+     * @return array<string, string>
+     */
+    public static function categories(): array
+    {
+        return [
+            'general' => 'General',
+            'verification' => 'Verification',
+            'partnership' => 'Partnership',
+            'dispute' => 'Dispute or complaint',
+        ];
+    }
+
     public function store(Request $request, IntakeService $intake): RedirectResponse
     {
         if ($intake->honeypotTripped($request->all())) {
@@ -136,6 +156,7 @@ class ContactController extends Controller
             'company' => ['nullable', 'string', 'max:160'],
             'email' => ['required', 'email:rfc', 'max:180'],
             'phone' => ['nullable', 'string', 'max:40'],
+            'category' => ['required', 'string', Rule::in(array_keys(self::categories()))],
             'subject' => ['required', 'string', 'min:4', 'max:200'],
             'message' => ['required', 'string', 'min:20', 'max:3000'],
             'consent' => ['accepted'],
@@ -143,14 +164,24 @@ class ContactController extends Controller
             'form_rendered_at' => ['nullable'],
         ]);
 
+        // No dedicated category column exists on contact_messages (see its
+        // migration): a non-default category is folded into the stored
+        // subject as a prefix, so a "Dispute or complaint" submission stays
+        // identifiable to the team reviewing messages without a schema
+        // change. "General" is the implicit default and is left unprefixed.
+        $prefix = $data['category'] !== 'general' ? (self::categories()[$data['category']] ?? null) : null;
+        $subject = $prefix ? "[{$prefix}] {$data['subject']}" : $data['subject'];
+
         $intake->createContactMessage([
             'name' => trim($data['name']),
             'company' => $data['company'] ?? null,
             'email' => strtolower(trim($data['email'])),
             'phone' => $data['phone'] ?? null,
-            'subject' => $data['subject'],
+            'subject' => mb_substr($subject, 0, 200),
             'message' => $data['message'],
         ], filled($data['consent'] ?? null));
+
+        $data['subject'] = mb_substr($subject, 0, 200);
 
         Mail::to(config('mail.from.address'))->send(new ContactMessageMail($data));
 

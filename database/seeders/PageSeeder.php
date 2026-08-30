@@ -314,16 +314,27 @@ class PageSeeder extends Seeder
 
                     ['type' => 'heading', 'content' => '7. Your choices and rights'],
                     ['type' => 'list', 'items' => [
-                        'You can request access to, correction of, or deletion of your personal data by contacting us',
-                        'You can update most account information directly from your dashboard',
+                        'You can request access to a copy of the personal data we hold about you by contacting us',
+                        'You can request correction of inaccurate or incomplete personal data by contacting us, or by updating most account information directly from your dashboard',
+                        'You can request deletion of your personal data by contacting us, where this is legally appropriate — for example, we cannot delete verification documents or transaction records while we remain under a legal or regulatory obligation to retain them',
                         'You can withdraw consent for future data sharing at any time; this does not affect processing already carried out',
                         'You can close your account at any time; some information may be retained where required by law',
                     ]],
+                    ['type' => 'paragraph', 'content' => 'We do not currently offer an automated, self-service data export or account-deletion tool. Access, correction, and deletion requests are handled manually by our team: contact us through our Contact page, and we will confirm receipt and the expected timeframe for resolving your request.'],
 
                     ['type' => 'heading', 'content' => '8. International transfers'],
                     ['type' => 'paragraph', 'content' => 'Because the Platform connects buyers and suppliers across borders, information you submit (such as an RFQ) may be seen by a supplier located in a different country from you. We take reasonable steps to ensure information is handled consistently with this Policy wherever it is processed.'],
 
-                    ['type' => 'heading', 'content' => '9. Contact'],
+                    ['type' => 'heading', 'content' => '9. How we manage service providers (processors)'],
+                    ['type' => 'paragraph', 'content' => 'We use a small number of third-party service providers to operate the Platform — for example, hosting infrastructure and transactional email delivery. We select these providers based on their security practices, limit the data we share with each one to what is needed for the service they provide, and bind them to confidentiality and data-protection obligations. We do not permit a service provider to use your data for its own purposes.'],
+
+                    ['type' => 'heading', 'content' => '10. Data incidents and breach response'],
+                    ['type' => 'paragraph', 'content' => 'If we become aware of a security incident that puts your personal data at risk, we will investigate, take reasonable steps to contain and remediate it, and notify affected users and any competent authority where required by applicable law, without undue delay. If you believe your account or data may have been compromised, contact us immediately through our Contact page.'],
+
+                    ['type' => 'heading', 'content' => '11. Disputes and complaints'],
+                    ['type' => 'paragraph', 'content' => 'If you have a complaint about how your data has been handled, or a dispute involving another user of the Platform you would like us to be aware of, use our Contact page and select "Dispute or complaint" as the category. We review each submission and respond to the contact details provided.'],
+
+                    ['type' => 'heading', 'content' => '12. Contact'],
                     ['type' => 'paragraph', 'content' => 'Questions about this Privacy Policy or your data can be sent through our Contact page.'],
                 ],
             ],

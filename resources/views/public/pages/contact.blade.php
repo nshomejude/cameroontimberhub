@@ -18,7 +18,7 @@
 
     // Focus management: on a failed submit the browser lands the caret on the
     // first field that actually has an error (no JavaScript required).
-    $fieldOrder = ['name', 'company', 'email', 'phone', 'subject', 'message', 'consent'];
+    $fieldOrder = ['name', 'company', 'email', 'phone', 'category', 'subject', 'message', 'consent'];
     $firstError = collect($fieldOrder)->first(fn ($f) => $errors->has($f));
     $sent = session('contact_sent');
 @endphp
@@ -241,6 +241,24 @@
                                 @enderror
                             </div>
                         @endforeach
+                    </div>
+
+                    <div>
+                        <label for="contact-category" class="block text-[1.0625rem] font-medium text-ink">
+                            What is this about?<span class="text-red-600" aria-hidden="true"> *</span>
+                        </label>
+                        <select id="contact-category" name="category" required
+                                @if ($firstError === 'category') autofocus @endif
+                                @error('category') aria-invalid="true" aria-describedby="contact-category-error" @enderror
+                                class="mt-1.5 @error('category') {{ $input.' '.$inputError }} @else {{ $input }} @enderror">
+                            @foreach (($categories ?? []) as $value => $label)
+                                <option value="{{ $value }}" @selected(old('category') === $value)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                        <p class="mt-1.5 text-[0.9375rem] text-ink-soft">Choose "Dispute or complaint" to raise an issue with another user or with the Platform.</p>
+                        @error('category')
+                            <p id="contact-category-error" class="mt-1.5 text-[0.9375rem] font-medium text-red-700">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <div>

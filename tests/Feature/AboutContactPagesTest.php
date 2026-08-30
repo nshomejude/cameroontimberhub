@@ -89,6 +89,7 @@ function validContactPayload(array $overrides = []): array
         'company' => 'Nordic Timber Imports',
         'email' => 'jane@example.com',
         'phone' => '+44 20 7000 0000',
+        'category' => 'general',
         'subject' => 'Inquiry about sapele',
         'message' => 'I am looking for a reliable sapele supplier in Cameroon for a recurring order.',
         'consent' => '1',

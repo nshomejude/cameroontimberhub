@@ -424,6 +424,7 @@
                     ]],
                     ['title' => 'Support', 'links' => [
                         ['Help Center', '/help'],
+                        ['Report a Dispute', '/contact#contact-category'],
                         ['Terms of Service', '/terms'],
                         ['Privacy Policy', '/privacy'],
                         ['Cookies Policy', '/cookies'],
