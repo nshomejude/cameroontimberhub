@@ -687,7 +687,7 @@
             <div class="relative">
                 <h2 class="text-[1.25rem] font-bold leading-tight text-white">Source Cameroon Timber<br>with Confidence</h2>
                 <p class="mt-2 text-[1.0625rem] leading-relaxed text-sand-200/90">
-                    Join thousands of businesses worldwide who trust Cameroon Timber Hub.
+                    Join a growing network of verified suppliers and buyers who trust Cameroon Timber Hub.
                 </p>
                 <div class="mt-5 space-y-3">
                     <a href="{{ route('marketplace') }}"
@@ -715,7 +715,7 @@
                     Source Cameroon Timber<br>with Confidence
                 </h2>
                 <p class="mt-3 max-w-[28rem] text-[1.0625rem] leading-relaxed text-sand-200/90">
-                    Join thousands of businesses worldwide who trust Cameroon Timber Hub for their timber needs.
+                    Join a growing network of verified suppliers and buyers who trust Cameroon Timber Hub for their timber needs.
                 </p>
             </div>
 

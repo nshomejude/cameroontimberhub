@@ -28,6 +28,8 @@
                 @if ($usd !== null)
                     <p class="mt-1.5 text-[1.0625rem] text-ink-soft">(~ USD {{ $usd }} / {{ $product->price_unit->label() }} — indicative)</p>
                 @endif
+
+                <p class="mt-1 text-[0.9375rem] text-ink-soft/80">Supplier-reported price</p>
             @else
                 <p class="mt-1 text-[1.25rem] font-bold text-forest-700">Price on request</p>
             @endif

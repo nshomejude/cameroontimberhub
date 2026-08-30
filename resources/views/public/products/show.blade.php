@@ -247,6 +247,7 @@
                                 {{ number_format((float) $product->price_amount) }}
                                 <span class="text-[1rem] font-semibold text-ink-soft">{{ $product->currencyLabel() }} /{{ $product->price_unit->label() }}</span>
                             </p>
+                            <p class="mt-0.5 text-[0.875rem] text-ink-soft/80">Supplier-reported price</p>
                         @else
                             <p class="text-[1.25rem] font-bold text-forest-700">Price on request</p>
                         @endif
