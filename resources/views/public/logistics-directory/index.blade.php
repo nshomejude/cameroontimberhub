@@ -103,6 +103,16 @@
                                     'bg-timber-100 text-timber-800' => $tierLabel === \App\Http\Controllers\Public\LogisticsDirectoryController::TIER_TRUSTED,
                                     'bg-sand-100 text-ink-soft' => $tierLabel === \App\Http\Controllers\Public\LogisticsDirectoryController::TIER_UNVERIFIED,
                                 ])>{{ $tierLabel }}</span>
+
+                                @if ($company->relationLoaded('capacities') && $company->capacities->isNotEmpty())
+                                    <div class="mt-3 flex flex-wrap gap-1.5">
+                                        @foreach ($company->capacities->take(4) as $capacity)
+                                            <span class="inline-block rounded-full bg-sand-100 px-2.5 py-1 text-xs font-medium text-ink-soft dark:bg-[#2c2a24] dark:text-[#b3ab9b]">
+                                                {{ $capacity->capability }} &middot; {{ number_format((float) $capacity->quantity) }} {{ $capacity->unit }}/{{ $capacity->period }}
+                                            </span>
+                                        @endforeach
+                                    </div>
+                                @endif
                             </a>
                         @endforeach
                     </div>

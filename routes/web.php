@@ -10,6 +10,7 @@ use App\Http\Controllers\OrderDocumentDownloadController;
 use App\Http\Controllers\Public\AccountController;
 use App\Http\Controllers\Public\BuyerOrderController;
 use App\Http\Controllers\Public\BuyerQuoteController;
+use App\Http\Controllers\Public\CarbonProjectsController;
 use App\Http\Controllers\Public\CertificateVerificationController;
 use App\Http\Controllers\Public\ChatCommerceController;
 use App\Http\Controllers\Public\CheckpointTrackingController;
@@ -66,6 +67,9 @@ Route::get('/buy-cameroon-wood', [DomesticMarketplaceController::class, 'index']
 
 // "Made in Cameroon" badge landing page (gap-plan 1.5.7).
 Route::get('/made-in-cameroon', [MadeInCameroonController::class, 'index'])->name('made-in-cameroon');
+
+// Public carbon-project directory: carbon-developer companies' self-posted projects.
+Route::get('/carbon-projects', [CarbonProjectsController::class, 'index'])->name('carbon-projects');
 
 // Cross-entity search (products + companies + species).
 Route::get('/search', [SearchController::class, 'index'])->name('search');

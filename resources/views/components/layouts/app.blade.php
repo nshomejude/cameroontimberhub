@@ -36,6 +36,7 @@
         ['label' => 'Transformation Network', 'url' => route('transformation-network')],
         ['label' => 'Made in Cameroon', 'url' => route('made-in-cameroon')],
         ['label' => 'Logistics Directory', 'url' => route('logistics-directory')],
+        ['label' => 'Carbon Projects', 'url' => route('carbon-projects')],
     ];
 
     // Deep screens swap the mobile hamburger for a back affordance.
@@ -405,6 +406,7 @@
                         ['Transformation Network', route('transformation-network')],
                         ['Made in Cameroon', route('made-in-cameroon')],
                         ['Logistics Directory', route('logistics-directory')],
+                        ['Carbon Projects', route('carbon-projects')],
                     ]],
                     ['title' => 'Company', 'links' => [
                         ['About Us', '/about'],
