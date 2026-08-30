@@ -130,6 +130,18 @@ class ProductForm
                             ->helperText('e.g. botanical_name, density, packaging, delivery.')
                             ->columnSpanFull(),
                         TagsInput::make('key_benefits')->placeholder('Add a benefit')->columnSpanFull(),
+                        TextInput::make('materials_used')
+                            ->maxLength(255)
+                            ->helperText('e.g. Solid oak, reclaimed teak, bamboo composite')
+                            ->visible(fn (Get $get): bool => in_array($get('product_type'), self::finishedTypes(), true)),
+                        TextInput::make('finish')
+                            ->maxLength(120)
+                            ->helperText('e.g. Matte lacquer, oiled, powder-coated')
+                            ->visible(fn (Get $get): bool => in_array($get('product_type'), self::finishedTypes(), true)),
+                        TextInput::make('dimensions_description')
+                            ->maxLength(255)
+                            ->helperText('e.g. 80cm W x 45cm D x 90cm H')
+                            ->visible(fn (Get $get): bool => in_array($get('product_type'), self::finishedTypes(), true)),
                         KeyValue::make('custom_attributes')
                             ->label('Additional attributes')
                             ->keyLabel('Attribute')->valueLabel('Value')

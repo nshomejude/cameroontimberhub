@@ -300,6 +300,9 @@ class Product extends Model
             'Janka Hardness' => $species?->janka_hardness ? $species->janka_hardness.' N' : null,
             'Appearance' => is_array($species?->characteristics) ? ($species->characteristics['Colour'] ?? null) : null,
             'Common Uses' => $species && is_array($species->typical_uses) ? implode(', ', $species->typical_uses) : null,
+            'Materials Used' => $this->materials_used,
+            'Finish' => $this->finish,
+            'Dimensions' => $this->dimensions_description,
         ];
 
         $rows = [];
