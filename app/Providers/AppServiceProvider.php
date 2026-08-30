@@ -61,6 +61,14 @@ class AppServiceProvider extends ServiceProvider
             Limit::perHour(60)->by('certificate-verify-ip-hour:'.$request->ip()),
         ]);
 
+        // Public checkpoint tracking, same reasoning as receipt-verify /
+        // certificate-verify: open to anyone holding the link, so budgeted
+        // per-IP against token-grinding.
+        RateLimiter::for('checkpoint-track', fn (Request $request) => [
+            Limit::perMinute(10)->by('checkpoint-track-ip:'.$request->ip()),
+            Limit::perHour(60)->by('checkpoint-track-ip-hour:'.$request->ip()),
+        ]);
+
         // One-click demo logins. Nobody legitimately needs more than a handful
         // a minute, and the budget blunts a script cycling demo sessions to
         // farm CSRF-valid authenticated sessions.
