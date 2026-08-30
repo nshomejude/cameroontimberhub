@@ -93,7 +93,7 @@
                         Showing {{ $products->firstItem() }}–{{ $products->lastItem() }} of {{ $products->total() }} listings
                     </p>
 
-                    <div class="mt-5 grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
+                    <div class="mt-5 grid grid-cols-2 gap-6 lg:grid-cols-4">
                         @foreach ($products as $product)
                             <x-product-card :product="$product" />
                         @endforeach

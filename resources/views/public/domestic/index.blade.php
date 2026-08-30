@@ -185,7 +185,7 @@
                 </div>
 
                 @if ($products->isNotEmpty())
-                    <div class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                    <div class="mt-5 grid grid-cols-2 gap-5 lg:grid-cols-4">
                         @foreach ($products as $product)
                             <x-product-card :product="$product" />
                         @endforeach

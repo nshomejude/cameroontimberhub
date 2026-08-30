@@ -129,7 +129,7 @@
                 @if ($products->isNotEmpty())
                     <div @class([
                         'grid gap-5',
-                        'grid-cols-3 xl:grid-cols-4' => $view === 'grid',
+                        'grid-cols-4' => $view === 'grid',
                         'grid-cols-1' => $view === 'list',
                     ])>
                         @foreach ($products as $product)

@@ -346,7 +346,7 @@
                     </a>
                 </div>
 
-                <ul class="mt-6 grid grid-cols-6 gap-4">
+                <ul class="mt-6 grid grid-cols-4 gap-4">
                     @foreach($products as $product)
                         <li class="flex flex-col overflow-hidden rounded-xl bg-white ring-1 ring-sand-300/70 transition hover:ring-forest-300">
                             <div class="relative">

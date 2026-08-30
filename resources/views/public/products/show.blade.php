@@ -663,7 +663,7 @@
                         </a>
                     </div>
 
-                    <div class="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+                    <div class="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
                         @foreach ($similar as $item)
                             <x-product-card :product="$item" compact />
                         @endforeach
