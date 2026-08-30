@@ -52,7 +52,57 @@ class Species extends Model
             'treatments' => 'array',
             'grades_available' => 'array',
             'authoritative_sources' => 'array',
+            // Species Data Governance fields (blueprint §77).
+            'synonyms' => 'array',
+            'commercial_categories' => 'array',
+            'country_presence' => 'array',
+            'last_reviewed_at' => 'date',
         ];
+    }
+
+    /**
+     * Map a free-text species name a supplier might type to the canonical
+     * `Species` record, per blueprint §77/§76 ("supplier-entered names
+     * should map to canonical species where possible" / "do not allow every
+     * supplier to invent arbitrary species spellings without
+     * normalisation"). Matches case-insensitively (trimmed) against
+     * `common_name`, `scientific_name`, `french_name`, `synonyms`, and
+     * `trade_names`. Returns null when nothing matches — this is an exact
+     * match against known names/aliases, not fuzzy string-distance matching.
+     */
+    public static function normalizeSupplierInput(string $rawName): ?self
+    {
+        $needle = mb_strtolower(trim($rawName));
+
+        if ($needle === '') {
+            return null;
+        }
+
+        $direct = static::query()
+            ->whereRaw('lower(common_name) = ?', [$needle])
+            ->orWhereRaw('lower(scientific_name) = ?', [$needle])
+            ->orWhereRaw('lower(french_name) = ?', [$needle])
+            ->first();
+
+        if ($direct !== null) {
+            return $direct;
+        }
+
+        $matchId = static::query()
+            ->get(['id', 'synonyms', 'trade_names'])
+            ->first(function (self $species) use ($needle) {
+                foreach (['synonyms', 'trade_names'] as $field) {
+                    foreach ((array) $species->{$field} as $alias) {
+                        if (is_string($alias) && mb_strtolower(trim($alias)) === $needle) {
+                            return true;
+                        }
+                    }
+                }
+
+                return false;
+            })?->id;
+
+        return $matchId === null ? null : static::query()->find($matchId);
     }
 
     /**

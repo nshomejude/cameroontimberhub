@@ -34,6 +34,11 @@ class SpeciesForm
                         TextInput::make('family')->maxLength(120),
                         TagsInput::make('local_names')->placeholder('Add a name')->columnSpanFull(),
                         TagsInput::make('trade_names')->placeholder('Add a name')->columnSpanFull(),
+                        TagsInput::make('synonyms')
+                            ->label('Synonyms')
+                            ->placeholder('Other known common/scientific names')
+                            ->helperText('Used to map supplier-entered names to this species (Species::normalizeSupplierInput()).')
+                            ->columnSpanFull(),
                     ]),
 
                 Section::make('Content')
@@ -65,6 +70,22 @@ class SpeciesForm
                         TagsInput::make('region_availability')
                             ->label('Regions harvested')
                             ->placeholder('East, South, Centre…'),
+                        TagsInput::make('commercial_categories')
+                            ->label('Commercial category tags')
+                            ->placeholder('hardwood, decorative, structural…')
+                            ->helperText('Free-form market tags — distinct from the single commercial category above.'),
+                        TagsInput::make('country_presence')
+                            ->label('Country presence')
+                            ->placeholder('CM, GA, CG…')
+                            ->helperText('ISO country codes where this species is found.'),
+                    ]),
+
+                Section::make('Data governance (blueprint §77)')
+                    ->columns(2)
+                    ->schema([
+                        DatePicker::make('last_reviewed_at')
+                            ->label('Last reviewed')
+                            ->helperText('When this species record was last checked for accuracy.'),
                     ]),
 
                 Section::make('Knowledge System (SEO authority spec §C)')
