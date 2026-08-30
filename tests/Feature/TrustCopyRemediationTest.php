@@ -1,10 +1,22 @@
 <?php
 
+use App\Enums\VerificationStage;
 use App\Models\Company;
+use App\Models\Verification;
 use Database\Seeders\PageSeeder;
 
 it('shows the CTH-branded verified badge and a link to how verification works, not the bare overclaiming badge', function () {
     $company = Company::factory()->publiclyVisible()->create();
+    // The badge now also requires verification_tier > 0, which is hard-capped
+    // to 0 unless isVerified() (the real Verification workflow) is true.
+    Verification::factory()->create([
+        'entity_type' => Company::class,
+        'entity_id' => $company->id,
+        'stage' => VerificationStage::Verified,
+    ]);
+    $company->unsetRelation('verification');
+    $company->verification_tier = \App\Enums\VerificationTier::IdentityVerified;
+    $company->save();
 
     $response = $this->get(route('companies.show', $company->slug));
 
