@@ -18,7 +18,7 @@
                             aria-controls="browse-types-panel"
                             class="flex w-full items-center gap-3 rounded-lg bg-forest-800 px-4 py-3 text-[1.0625rem] font-semibold text-white transition hover:bg-forest-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-300 focus-visible:ring-offset-2">
                         <x-heroicon-o-bars-3 class="h-5 w-5" />
-                        Browse Categories
+                        {{ __('messages.marketplace.browse_categories') }}
                         <x-heroicon-m-chevron-down class="ml-auto h-4 w-4 transition" ::class="open && 'rotate-180'" />
                     </button>
                     <ul id="browse-types-panel" x-show="open" x-cloak class="mt-2 space-y-0.5">
@@ -53,17 +53,17 @@
 
             <nav aria-label="Breadcrumb">
                 <ol class="flex items-center gap-2 text-[0.9375rem] text-ink-soft">
-                    <li><a href="{{ route('home') }}" class="rounded transition hover:text-forest-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-300">Home</a></li>
+                    <li><a href="{{ route('home') }}" class="rounded transition hover:text-forest-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-300">{{ __('messages.marketplace.breadcrumb_home') }}</a></li>
                     <li aria-hidden="true">/</li>
-                    <li><span aria-current="page" class="font-medium text-ink">Marketplace</span></li>
+                    <li><span aria-current="page" class="font-medium text-ink">{{ __('messages.marketplace.breadcrumb_marketplace') }}</span></li>
                 </ol>
             </nav>
 
             <div class="mt-3 flex items-start gap-6">
                 <div class="min-w-0 flex-1">
-                    <h1 class="text-[1.875rem] font-bold tracking-tight text-ink">Timber Marketplace</h1>
+                    <h1 class="text-[1.875rem] font-bold tracking-tight text-ink">{{ __('messages.marketplace.page_heading') }}</h1>
                     <p class="mt-1.5 max-w-xl text-[1.0625rem] leading-relaxed text-ink-soft">
-                        Sawn timber, logs, veneer, flooring and decking listed by verified Cameroon exporters. Every listing links to a supplier we have checked.
+                        {{ __('messages.marketplace.page_intro') }}
                     </p>
                 </div>
 
@@ -73,17 +73,17 @@
                     </span>
                     <div>
                         <p class="text-[1.5rem] font-bold leading-none text-ink">{{ $catalogueCount }}</p>
-                        <p class="mt-1 text-[0.9375rem] text-ink-soft">Live Listings</p>
+                        <p class="mt-1 text-[0.9375rem] text-ink-soft">{{ __('messages.marketplace.live_listings') }}</p>
                     </div>
                 </div>
 
                 <div class="relative w-[20rem] shrink-0 overflow-hidden rounded-xl bg-forest-800 px-5 py-4 text-white">
                     <x-heroicon-o-document-text class="pointer-events-none absolute -right-3 top-1/2 h-24 w-24 -translate-y-1/2 text-white/10" aria-hidden="true" />
-                    <p class="text-[1rem] font-bold">Can't find it here?</p>
-                    <p class="mt-1 text-[1.0625rem] text-forest-100">Post an RFQ and let suppliers quote you</p>
+                    <p class="text-[1rem] font-bold">{{ __('messages.marketplace.cant_find_it_here') }}</p>
+                    <p class="mt-1 text-[1.0625rem] text-forest-100">{{ __('messages.marketplace.post_rfq_prompt') }}</p>
                     <a href="{{ route('rfq.create') }}"
                        class="mt-3 inline-flex rounded-lg bg-white px-4 py-2 text-[1.0625rem] font-semibold text-forest-800 transition hover:bg-forest-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-forest-800">
-                        Post an RFQ
+                        {{ __('messages.marketplace.post_an_rfq') }}
                     </a>
                 </div>
             </div>
@@ -91,15 +91,15 @@
             <div class="mt-6 flex items-center gap-3">
                 <p class="text-[1.0625rem] text-ink-soft" aria-live="polite">
                     @if ($total > 0)
-                        Showing {{ $products->firstItem() }} – {{ $products->lastItem() }} of {{ $total }} products
+                        {{ __('messages.marketplace.showing_range', ['first' => $products->firstItem(), 'last' => $products->lastItem(), 'total' => $total]) }}
                     @else
-                        No products match these filters
+                        {{ __('messages.marketplace.no_products_match') }}
                     @endif
                 </p>
 
                 <div class="ml-auto flex items-center gap-3">
                     <div class="inline-flex rounded-lg border border-sand-300 p-0.5" role="group" aria-label="Result layout">
-                        @foreach ([['grid', 'Grid view', 'squares-2x2'], ['list', 'List view', 'bars-3']] as [$mode, $label, $icon])
+                        @foreach ([['grid', __('messages.marketplace.grid_view'), 'squares-2x2'], ['list', __('messages.marketplace.list_view'), 'bars-3']] as [$mode, $label, $icon])
                             <button type="button" wire:click="setView('{{ $mode }}')"
                                     aria-pressed="{{ $view === $mode ? 'true' : 'false' }}"
                                     aria-label="{{ $label }}"
@@ -114,10 +114,10 @@
                     </div>
 
                     <div class="relative">
-                        <label for="d-sort" class="sr-only">Sort products by</label>
+                        <label for="d-sort" class="sr-only">{{ __('messages.marketplace.sort_products_by') }}</label>
                         <select id="d-sort" wire:model.live="sort" class="{{ $select }}">
                             @foreach ($sortOptions as $value => $label)
-                                <option value="{{ $value }}">Sort by: {{ $label }}</option>
+                                <option value="{{ $value }}">{{ __('messages.marketplace.sort_by', ['label' => $label]) }}</option>
                             @endforeach
                         </select>
                         <x-heroicon-m-chevron-down class="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-soft" />
@@ -140,13 +140,13 @@
                     <div class="mt-8 flex flex-col items-center gap-3 sm:flex-row">
                         <div class="flex-1"><x-directory-pagination :paginator="$products" noun="products" /></div>
                         <div class="relative flex items-center gap-2">
-                            <label for="d-per-page" class="text-[1.0625rem] text-ink-soft">Show</label>
+                            <label for="d-per-page" class="text-[1.0625rem] text-ink-soft">{{ __('messages.marketplace.show') }}</label>
                             <select id="d-per-page" wire:model.live="perPage" class="{{ $select }}">
                                 @foreach ([12, 24, 48] as $n)
                                     <option value="{{ $n }}">{{ $n }}</option>
                                 @endforeach
                             </select>
-                            <span class="text-[1.0625rem] text-ink-soft">per page</span>
+                            <span class="text-[1.0625rem] text-ink-soft">{{ __('messages.marketplace.per_page') }}</span>
                         </div>
                     </div>
                 @else
@@ -163,29 +163,29 @@
         <div class="px-4 pt-4">
             <nav aria-label="Breadcrumb">
                 <ol class="flex items-center gap-2 text-[1.0625rem] text-ink-soft">
-                    <li><a href="{{ route('home') }}" class="rounded transition hover:text-forest-700">Home</a></li>
+                    <li><a href="{{ route('home') }}" class="rounded transition hover:text-forest-700">{{ __('messages.marketplace.breadcrumb_home') }}</a></li>
                     <li aria-hidden="true">›</li>
-                    <li><span aria-current="page" class="text-ink">Marketplace</span></li>
+                    <li><span aria-current="page" class="text-ink">{{ __('messages.marketplace.breadcrumb_marketplace') }}</span></li>
                 </ol>
             </nav>
 
-            <h2 class="mt-2 text-[1.75rem] font-bold leading-tight tracking-tight text-ink">Timber Marketplace</h2>
+            <h2 class="mt-2 text-[1.75rem] font-bold leading-tight tracking-tight text-ink">{{ __('messages.marketplace.page_heading') }}</h2>
             <p class="mt-2 text-[1.125rem] leading-relaxed text-ink-soft">
-                Browse live listings from verified Cameroon timber exporters.
+                {{ __('messages.marketplace.page_intro_mobile') }}
             </p>
 
             <div class="mt-4 flex gap-3">
                 <div class="relative flex-1">
-                    <label for="m-search" class="sr-only">Search products</label>
+                    <label for="m-search" class="sr-only">{{ __('messages.marketplace.search_products') }}</label>
                     <x-heroicon-o-magnifying-glass class="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-ink-soft" />
                     <input id="m-search" type="search" wire:model.live.debounce.400ms="search"
-                           placeholder="Search products..."
+                           placeholder="{{ __('messages.marketplace.search_products_placeholder') }}"
                            class="w-full rounded-xl border border-sand-300 bg-white py-3 pl-11 pr-3 text-[1.125rem] text-ink placeholder:text-ink-soft/70 focus:border-forest-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-forest-200">
                 </div>
                 <button type="button" @click="drawer = true"
                         class="flex shrink-0 items-center gap-2 rounded-xl border border-sand-300 px-5 text-[1.125rem] font-semibold text-ink transition hover:border-forest-600 hover:text-forest-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500 focus-visible:ring-offset-2">
                     <x-heroicon-o-funnel class="h-5 w-5" />
-                    Filter
+                    {{ __('messages.marketplace.filter') }}
                 </button>
             </div>
         </div>
@@ -198,7 +198,7 @@
                         'border-forest-700 bg-forest-50 text-forest-800' => $types === [],
                         'border-sand-300 text-ink' => $types !== [],
                     ])>
-                All Products
+                {{ __('messages.marketplace.all_products') }}
             </button>
             @foreach ($typeFacets as $facet)
                 <button type="button" wire:click="selectType('{{ $facet['value'] }}')"
@@ -215,13 +215,13 @@
         </div>
 
         <div class="mt-4 flex items-center gap-3 px-4">
-            <p class="text-[1.125rem] text-ink" aria-live="polite">{{ $total }} Products Found</p>
+            <p class="text-[1.125rem] text-ink" aria-live="polite">{{ __('messages.marketplace.products_found', ['count' => $total]) }}</p>
             <div class="relative ml-auto">
-                <label for="m-sort" class="sr-only">Sort products by</label>
+                <label for="m-sort" class="sr-only">{{ __('messages.marketplace.sort_products_by') }}</label>
                 <select id="m-sort" wire:model.live="sort"
                         class="appearance-none rounded-xl border border-sand-300 bg-white py-3 pl-4 pr-10 text-[1.125rem] text-ink focus:border-forest-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-forest-200">
                     @foreach ($sortOptions as $value => $label)
-                        <option value="{{ $value }}">Sort: {{ $label }}</option>
+                        <option value="{{ $value }}">{{ __('messages.marketplace.sort_colon', ['label' => $label]) }}</option>
                     @endforeach
                 </select>
                 <x-heroicon-m-chevron-down class="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-ink-soft" />
@@ -248,12 +248,12 @@
                 <x-heroicon-o-document-text class="h-5 w-5" />
             </span>
             <div class="min-w-0 flex-1">
-                <p class="text-[1.125rem] font-bold text-ink">Can't find what you need?</p>
-                <p class="mt-0.5 text-[1.0625rem] text-ink-soft">Post an RFQ and get quotes from verified suppliers.</p>
+                <p class="text-[1.125rem] font-bold text-ink">{{ __('messages.marketplace.cant_find_what_you_need') }}</p>
+                <p class="mt-0.5 text-[1.0625rem] text-ink-soft">{{ __('messages.marketplace.post_rfq_get_quotes') }}</p>
             </div>
             <a href="{{ route('rfq.create') }}"
                class="shrink-0 rounded-lg bg-forest-700 px-4 py-2.5 text-[1.0625rem] font-semibold text-white transition hover:bg-forest-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500 focus-visible:ring-offset-2">
-                Post an RFQ
+                {{ __('messages.marketplace.post_an_rfq') }}
             </a>
         </div>
 
@@ -268,10 +268,10 @@
                  x-transition:leave-start="translate-y-0" x-transition:leave-end="translate-y-full"
                  class="absolute inset-x-0 bottom-0 flex max-h-[88vh] flex-col rounded-t-2xl bg-white shadow-2xl">
                 <div class="flex items-center justify-between border-b border-sand-200 px-5 py-3">
-                    <span class="text-[1.125rem] font-bold text-ink">Filter products</span>
+                    <span class="text-[1.125rem] font-bold text-ink">{{ __('messages.marketplace.filter_products') }}</span>
                     <button type="button" @click="drawer = false"
                             class="flex h-9 w-9 items-center justify-center rounded-lg text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500"
-                            aria-label="Close filters">
+                            aria-label="{{ __('messages.marketplace.close_filters') }}">
                         <x-heroicon-o-x-mark class="h-6 w-6" />
                     </button>
                 </div>

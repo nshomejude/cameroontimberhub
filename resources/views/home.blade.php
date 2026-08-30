@@ -48,39 +48,39 @@
 
     // Hero trust row (desktop) — six items, per the approved mockup.
     $trust = [
-        ['icon' => 'shield-check', 'label' => 'Verified Suppliers'],
-        ['icon' => 'squares-2x2', 'label' => 'Bulk & Wholesale Trading'],
-        ['icon' => 'document-text', 'label' => 'RFQ & Quotations'],
-        ['icon' => 'lock-closed', 'label' => 'Secure Transactions'],
-        ['icon' => 'clipboard-document-check', 'label' => 'Export Documentation'],
-        ['icon' => 'globe-alt', 'label' => 'Global Network'],
+        ['icon' => 'shield-check', 'label' => __('messages.home.trust_verified_suppliers')],
+        ['icon' => 'squares-2x2', 'label' => __('messages.home.trust_bulk_wholesale')],
+        ['icon' => 'document-text', 'label' => __('messages.home.trust_rfq_quotations')],
+        ['icon' => 'lock-closed', 'label' => __('messages.home.trust_secure_transactions')],
+        ['icon' => 'clipboard-document-check', 'label' => __('messages.home.trust_export_documentation')],
+        ['icon' => 'globe-alt', 'label' => __('messages.home.trust_global_network')],
     ];
 
     // Hero trust strip (mobile) — five items on a darker bar.
     $trustMobile = [
-        ['icon' => 'shield-check', 'label' => "Verified\nSuppliers"],
-        ['icon' => 'check-badge', 'label' => "Quality\nAssurance"],
-        ['icon' => 'lock-closed', 'label' => "Secure\nTransactions"],
-        ['icon' => 'globe-alt', 'label' => "Global\nNetwork"],
-        ['icon' => 'document-text', 'label' => "Export\nSupport"],
+        ['icon' => 'shield-check', 'label' => __('messages.home.trust_mobile_verified')],
+        ['icon' => 'check-badge', 'label' => __('messages.home.trust_mobile_quality')],
+        ['icon' => 'lock-closed', 'label' => __('messages.home.trust_mobile_secure')],
+        ['icon' => 'globe-alt', 'label' => __('messages.home.trust_mobile_global')],
+        ['icon' => 'document-text', 'label' => __('messages.home.trust_mobile_export')],
     ];
 
     $steps = [
-        ['icon' => 'magnifying-glass', 'title' => '1. Discover', 'body' => 'Find products & verified suppliers'],
-        ['icon' => 'clipboard-document-list', 'title' => '2. Request', 'body' => 'Send RFQ or request for quotation'],
-        ['icon' => 'scale', 'title' => '3. Compare', 'body' => 'Receive & compare competitive quotes'],
-        ['icon' => 'chat-bubble-left-right', 'title' => '4. Negotiate', 'body' => 'Chat & negotiate terms with suppliers'],
-        ['icon' => 'clipboard-document-check', 'title' => '5. Order', 'body' => 'Confirm order & make payment'],
-        ['icon' => 'truck', 'title' => '6. Export', 'body' => 'We handle documentation and delivery'],
+        ['icon' => 'magnifying-glass', 'title' => __('messages.home.step_1_title'), 'body' => __('messages.home.step_1_body')],
+        ['icon' => 'clipboard-document-list', 'title' => __('messages.home.step_2_title'), 'body' => __('messages.home.step_2_body')],
+        ['icon' => 'scale', 'title' => __('messages.home.step_3_title'), 'body' => __('messages.home.step_3_body')],
+        ['icon' => 'chat-bubble-left-right', 'title' => __('messages.home.step_4_title'), 'body' => __('messages.home.step_4_body')],
+        ['icon' => 'clipboard-document-check', 'title' => __('messages.home.step_5_title'), 'body' => __('messages.home.step_5_body')],
+        ['icon' => 'truck', 'title' => __('messages.home.step_6_title'), 'body' => __('messages.home.step_6_body')],
     ];
 
     $reasons = [
-        ['icon' => 'shield-check', 'title' => 'Verified & Trusted', 'body' => 'All suppliers are verified for legitimacy'],
-        ['icon' => 'check-badge', 'title' => 'Quality Assurance', 'body' => 'Strict quality control and grading'],
-        ['icon' => 'lock-closed', 'title' => 'Secure Transactions', 'body' => 'Safe payments and data protection'],
-        ['icon' => 'building-office-2', 'title' => 'Export Support', 'body' => 'Documentation & logistics assistance'],
-        ['icon' => 'globe-alt', 'title' => 'Global Network', 'body' => 'Connect with suppliers worldwide'],
-        ['icon' => 'banknotes', 'title' => 'Competitive Pricing', 'body' => 'Best value for your business'],
+        ['icon' => 'shield-check', 'title' => __('messages.home.reason_verified_title'), 'body' => __('messages.home.reason_verified_body')],
+        ['icon' => 'check-badge', 'title' => __('messages.home.reason_quality_title'), 'body' => __('messages.home.reason_quality_body')],
+        ['icon' => 'lock-closed', 'title' => __('messages.home.reason_secure_title'), 'body' => __('messages.home.reason_secure_body')],
+        ['icon' => 'building-office-2', 'title' => __('messages.home.reason_export_title'), 'body' => __('messages.home.reason_export_body')],
+        ['icon' => 'globe-alt', 'title' => __('messages.home.reason_global_title'), 'body' => __('messages.home.reason_global_body')],
+        ['icon' => 'banknotes', 'title' => __('messages.home.reason_pricing_title'), 'body' => __('messages.home.reason_pricing_body')],
     ];
 
     $statIcons = [
@@ -90,7 +90,7 @@
         'countries' => 'globe-alt',
     ];
 
-    $supplierPerks = ['Verified & Trusted', 'Global Exposure', 'More Business Opportunities'];
+    $supplierPerks = [__('messages.home.perk_verified_trusted'), __('messages.home.perk_global_exposure'), __('messages.home.perk_more_business')];
 @endphp
 
 <x-layouts.app
@@ -118,9 +118,8 @@
             </p>
 
             <h2 class="mt-5 text-[2.4rem] font-bold leading-[1.12] tracking-tight text-white">
-                Connect.<br>
-                Source. Trade.<br>
-                <span class="text-forest-300">Grow</span> Globally.
+                {!! nl2br(e(__('messages.home.hero_headline_mobile'))) !!}<br>
+                <span class="text-forest-300">{{ __('messages.home.hero_headline_grow') }}</span> {{ __('messages.home.hero_headline_globally') }}
             </h2>
 
             <p class="mt-4 max-w-[22rem] text-[1.125rem] leading-relaxed text-sand-200/90">
@@ -130,22 +129,22 @@
             <div class="mt-6 space-y-3">
                 <a href="{{ route('marketplace') }}"
                    class="flex w-full items-center justify-center gap-2.5 rounded-xl bg-forest-700 px-5 py-3.5 text-[1.125rem] font-semibold text-white transition hover:bg-forest-600">
-                    <x-heroicon-o-shopping-bag class="h-5 w-5" /> Browse Marketplace
+                    <x-heroicon-o-shopping-bag class="h-5 w-5" /> {{ __('messages.home.browse_marketplace') }}
                 </a>
                 <a href="{{ route('rfq.create') }}"
                    class="flex w-full items-center justify-center gap-2.5 rounded-xl border border-white/40 bg-black/25 px-5 py-3.5 text-[1.125rem] font-semibold text-white transition hover:bg-black/40">
-                    <x-heroicon-o-paper-airplane class="h-5 w-5" /> Post an RFQ
+                    <x-heroicon-o-paper-airplane class="h-5 w-5" /> {{ __('messages.home.post_an_rfq') }}
                 </a>
             </div>
 
             <div class="mt-4 flex flex-wrap gap-3">
                 <a href="{{ route('transformation-network', ['type' => 'processor']) }}"
                    class="inline-flex items-center gap-1 text-[1.0625rem] font-semibold text-forest-300">
-                    Find a Processor <x-heroicon-m-chevron-right class="h-4 w-4" />
+                    {{ __('messages.home.find_a_processor') }} <x-heroicon-m-chevron-right class="h-4 w-4" />
                 </a>
                 <a href="{{ route('transformation-network', ['type' => 'manufacturer']) }}"
                    class="inline-flex items-center gap-1 text-[1.0625rem] font-semibold text-forest-300">
-                    Find a Manufacturer <x-heroicon-m-chevron-right class="h-4 w-4" />
+                    {{ __('messages.home.find_a_manufacturer') }} <x-heroicon-m-chevron-right class="h-4 w-4" />
                 </a>
             </div>
         </div>
@@ -176,8 +175,8 @@
                 </p>
 
                 <h1 class="mt-4 text-[3.5rem] font-bold leading-[1.1] tracking-[-0.02em] text-ink">
-                    Connect. Source.<br>
-                    Trade <span class="text-forest-700">Timber</span> Globally.
+                    {{ __('messages.home.hero_headline_desktop') }}<br>
+                    {!! str_replace(':species', '<span class="text-forest-700">'.e(__('messages.home.hero_headline_timber')).'</span>', e(__('messages.home.hero_headline_desktop_2'))) !!}
                 </h1>
 
                 <p class="mt-5 max-w-[34rem] text-[1.0625rem] leading-[1.65] text-ink-soft">
@@ -187,23 +186,23 @@
                 {{-- Hero search --}}
                 <form method="GET" action="{{ route('search') }}"
                       class="mt-7 flex max-w-[45rem] items-stretch gap-0 rounded-xl bg-white p-1.5 shadow-lg shadow-forest-950/10 ring-1 ring-black/5">
-                    <label for="hero-q" class="sr-only">Search timber products, species or suppliers</label>
-                    <input id="hero-q" name="q" type="search" placeholder="Search timber products, species, suppliers..."
+                    <label for="hero-q" class="sr-only">{{ __('messages.home.search_label') }}</label>
+                    <input id="hero-q" name="q" type="search" placeholder="{{ __('messages.home.search_placeholder') }}"
                            class="min-w-0 flex-1 border-0 bg-transparent px-4 text-[1.125rem] text-ink placeholder:text-ink-soft/70 focus:outline-none focus:ring-0">
 
-                    <label for="hero-species" class="sr-only">Species</label>
+                    <label for="hero-species" class="sr-only">{{ __('messages.home.species_label') }}</label>
                     <select id="hero-species" name="species"
                             class="shrink-0 border-0 border-l border-sand-300 bg-transparent py-2.5 pl-3 pr-7 text-[1.125rem] font-medium text-ink focus:outline-none focus:ring-0">
-                        <option value="">Species</option>
+                        <option value="">{{ __('messages.home.species_label') }}</option>
                         @foreach($speciesOptions as $sp)
                             <option value="{{ $sp->slug }}">{{ $sp->common_name }}</option>
                         @endforeach
                     </select>
 
-                    <label for="hero-type" class="sr-only">Product type</label>
+                    <label for="hero-type" class="sr-only">{{ __('messages.home.product_type_label') }}</label>
                     <select id="hero-type" name="type"
                             class="shrink-0 border-0 border-l border-sand-300 bg-transparent py-2.5 pl-3 pr-7 text-[1.125rem] font-medium text-ink focus:outline-none focus:ring-0">
-                        <option value="">Product Type</option>
+                        <option value="">{{ __('messages.home.product_type_label') }}</option>
                         @foreach($typeOptions as $value => $label)
                             <option value="{{ $value }}">{{ $label }}</option>
                         @endforeach
@@ -211,18 +210,18 @@
 
                     <button type="submit"
                             class="ml-1.5 inline-flex shrink-0 items-center gap-2 rounded-lg bg-forest-700 px-7 text-[1.125rem] font-semibold text-white transition hover:bg-forest-800">
-                        <x-heroicon-o-magnifying-glass class="h-5 w-5" /> Search
+                        <x-heroicon-o-magnifying-glass class="h-5 w-5" /> {{ __('messages.home.search') }}
                     </button>
                 </form>
 
                 <div class="mt-6 flex flex-wrap items-center gap-3">
                     <a href="{{ route('marketplace') }}"
                        class="inline-flex items-center gap-2.5 rounded-lg bg-forest-700 px-7 py-3.5 text-[1.125rem] font-semibold text-white transition hover:bg-forest-800">
-                        <x-heroicon-o-shopping-bag class="h-5 w-5" /> Browse Timber Marketplace
+                        <x-heroicon-o-shopping-bag class="h-5 w-5" /> {{ __('messages.home.browse_timber_marketplace') }}
                     </a>
                     <a href="{{ route('rfq.create') }}"
                        class="inline-flex items-center gap-2.5 rounded-lg border border-forest-300 bg-white px-7 py-3.5 text-[1.125rem] font-semibold text-forest-800 transition hover:border-forest-600 hover:bg-forest-50">
-                        <x-heroicon-o-paper-airplane class="h-5 w-5" /> Post an RFQ
+                        <x-heroicon-o-paper-airplane class="h-5 w-5" /> {{ __('messages.home.post_an_rfq') }}
                     </a>
                 </div>
 
@@ -259,29 +258,29 @@
     =================================================================== --}}
     <section class="relative z-10 -mt-24 px-4 lg:hidden" aria-labelledby="find-heading">
         <div class="rounded-2xl bg-white p-5 shadow-xl shadow-forest-950/10 ring-1 ring-black/5">
-            <h2 id="find-heading" class="text-[1.1875rem] font-bold text-ink">Find Timber Products</h2>
+            <h2 id="find-heading" class="text-[1.1875rem] font-bold text-ink">{{ __('messages.home.find_products_heading') }}</h2>
 
             <form method="GET" action="{{ route('search') }}" class="mt-4 space-y-3">
                 <div class="relative">
                     <x-heroicon-o-magnifying-glass class="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-ink-soft" />
-                    <label for="m-q" class="sr-only">Search species, products or suppliers</label>
-                    <input id="m-q" name="q" type="search" placeholder="Search species, products, suppliers..."
+                    <label for="m-q" class="sr-only">{{ __('messages.home.search_species_products_suppliers') }}</label>
+                    <input id="m-q" name="q" type="search" placeholder="{{ __('messages.home.search_species_products_suppliers_placeholder') }}"
                            class="w-full rounded-xl border border-sand-300 bg-white py-3.5 pl-12 pr-4 text-[1.125rem] text-ink placeholder:text-ink-soft/70 focus:border-forest-600 focus:outline-none focus:ring-0">
                 </div>
 
-                <label for="m-species" class="sr-only">Species</label>
+                <label for="m-species" class="sr-only">{{ __('messages.home.species_label') }}</label>
                 <select id="m-species" name="species"
                         class="w-full rounded-xl border border-sand-300 bg-white px-4 py-3.5 text-[1.125rem] text-ink focus:border-forest-600 focus:outline-none focus:ring-0">
-                    <option value="">All Species</option>
+                    <option value="">{{ __('messages.home.all_species') }}</option>
                     @foreach($speciesOptions as $sp)
                         <option value="{{ $sp->slug }}">{{ $sp->common_name }}</option>
                     @endforeach
                 </select>
 
-                <label for="m-type" class="sr-only">Product type</label>
+                <label for="m-type" class="sr-only">{{ __('messages.home.product_type_label') }}</label>
                 <select id="m-type" name="type"
                         class="w-full rounded-xl border border-sand-300 bg-white px-4 py-3.5 text-[1.125rem] text-ink focus:border-forest-600 focus:outline-none focus:ring-0">
-                    <option value="">All Product Types</option>
+                    <option value="">{{ __('messages.home.all_product_types') }}</option>
                     @foreach($typeOptions as $value => $label)
                         <option value="{{ $value }}">{{ $label }}</option>
                     @endforeach
@@ -289,7 +288,7 @@
 
                 <button type="submit"
                         class="flex w-full items-center justify-center gap-2.5 rounded-xl bg-forest-700 px-5 py-3.5 text-[1.125rem] font-semibold text-white transition hover:bg-forest-800">
-                    <x-heroicon-o-magnifying-glass class="h-5 w-5" /> Search
+                    <x-heroicon-o-magnifying-glass class="h-5 w-5" /> {{ __('messages.home.search') }}
                 </button>
             </form>
         </div>
@@ -300,9 +299,9 @@
     =================================================================== --}}
     <section class="mt-8 lg:hidden" aria-labelledby="categories-heading">
         <div class="flex items-center justify-between px-4">
-            <h2 id="categories-heading" class="text-[1.1875rem] font-bold text-ink">Browse Timber Products</h2>
+            <h2 id="categories-heading" class="text-[1.1875rem] font-bold text-ink">{{ __('messages.home.browse_products_heading') }}</h2>
             <a href="{{ route('marketplace') }}" class="inline-flex items-center gap-1 text-[1.0625rem] font-semibold text-forest-700">
-                View All <x-heroicon-m-chevron-right class="h-4 w-4" />
+                {{ __('messages.home.view_all') }} <x-heroicon-m-chevron-right class="h-4 w-4" />
             </a>
         </div>
 
@@ -337,12 +336,12 @@
             <div class="mx-auto max-w-[80rem] px-8 pb-4 pt-12">
                 <div class="flex items-end justify-between gap-6">
                     <div>
-                        <p class="text-[0.9375rem] font-bold uppercase tracking-[0.11em] text-forest-700">Browse Timber Marketplace</p>
-                        <h2 id="products-heading" class="mt-2 text-[1.75rem] font-bold tracking-tight text-ink">Popular Timber Products</h2>
+                        <p class="text-[0.9375rem] font-bold uppercase tracking-[0.11em] text-forest-700">{{ __('messages.home.popular_products_eyebrow') }}</p>
+                        <h2 id="products-heading" class="mt-2 text-[1.75rem] font-bold tracking-tight text-ink">{{ __('messages.home.popular_products_heading') }}</h2>
                     </div>
                     <a href="{{ route('marketplace') }}"
                        class="shrink-0 rounded-lg border border-sand-300 bg-white px-5 py-2.5 text-[1.0625rem] font-semibold text-ink transition hover:border-forest-600 hover:text-forest-800">
-                        View All Products
+                        {{ __('messages.home.view_all_products') }}
                     </a>
                 </div>
 
@@ -357,7 +356,7 @@
                                 </a>
                                 <button type="button"
                                         class="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-white/95 text-ink-soft shadow-sm transition hover:text-forest-700"
-                                        aria-label="Save {{ $product->name }} to your wishlist">
+                                        aria-label="{{ __('messages.home.save_to_wishlist', ['name' => $product->name]) }}">
                                     <x-heroicon-o-heart class="h-4 w-4" />
                                 </button>
                             </div>
@@ -370,19 +369,19 @@
                                 <p class="mt-0.5 text-[0.9375rem] text-ink-soft">{{ $moqLine($product) }}</p>
 
                                 <p class="mt-1.5 flex items-center gap-1 text-[0.9375rem] text-ink">
-                                    <span>Supplier:</span>
-                                    <span class="font-semibold">Verified</span>
+                                    <span>{{ __('messages.home.supplier_label') }}</span>
+                                    <span class="font-semibold">{{ __('messages.home.verified') }}</span>
                                     <x-heroicon-s-check-circle class="h-3.5 w-3.5 text-forest-600" />
                                 </p>
                                 <p class="mt-1 flex items-center gap-1 text-[0.9375rem] text-ink-soft">
                                     <x-heroicon-o-map-pin class="h-3.5 w-3.5" />
-                                    {{ $product->origin ?: 'Cameroon' }}
+                                    {{ $product->origin ?: __('messages.home.origin_default') }}
                                 </p>
 
                                 <div class="mt-auto pt-3">
                                     <a href="{{ route('rfq.create', ['product' => $product->slug]) }}"
                                        class="block rounded-md bg-forest-700 px-3 py-2 text-center text-[1.0625rem] font-semibold text-white transition hover:bg-forest-800">
-                                        Request Quote
+                                        {{ __('messages.home.request_quote') }}
                                     </a>
                                 </div>
                             </div>
@@ -400,9 +399,9 @@
         {{-- Mobile: heading + horizontally scrollable swatch rail --}}
         <div class="lg:hidden">
             <div class="flex items-center justify-between px-4">
-                <h2 id="species-heading" class="text-[1.1875rem] font-bold text-ink">Popular Timber Species</h2>
+                <h2 id="species-heading" class="text-[1.1875rem] font-bold text-ink">{{ __('messages.home.popular_species_heading') }}</h2>
                 <a href="{{ route('species.index') }}" class="inline-flex items-center gap-1 text-[1.0625rem] font-semibold text-forest-700">
-                    View All <x-heroicon-m-chevron-right class="h-4 w-4" />
+                    {{ __('messages.home.view_all') }} <x-heroicon-m-chevron-right class="h-4 w-4" />
                 </a>
             </div>
 
@@ -424,10 +423,10 @@
         <div class="mx-auto hidden max-w-[80rem] grid-cols-[1fr_25rem] gap-5 px-8 py-8 lg:grid">
             <div class="rounded-2xl bg-sand-100 p-6 ring-1 ring-sand-300/60">
                 <div class="flex items-start justify-between gap-6">
-                    <h2 class="text-[1.375rem] font-bold text-ink">Popular Timber Species</h2>
+                    <h2 class="text-[1.375rem] font-bold text-ink">{{ __('messages.home.popular_species_heading') }}</h2>
                     <a href="{{ route('species.index') }}"
                        class="shrink-0 rounded-lg border border-forest-300 bg-white px-4 py-2 text-[1.0625rem] font-semibold text-forest-800 transition hover:border-forest-600">
-                        View All Species
+                        {{ __('messages.home.view_all_species') }}
                     </a>
                 </div>
 
@@ -451,13 +450,13 @@
                      width="560" height="418"
                      class="pointer-events-none absolute -right-3 bottom-2 h-[8.5rem] w-auto drop-shadow-lg">
                 <div class="relative max-w-[13.5rem]">
-                    <h3 class="text-[1.0625rem] font-bold text-white">Can't find what you need?</h3>
+                    <h3 class="text-[1.0625rem] font-bold text-white">{{ __('messages.home.cant_find_heading') }}</h3>
                     <p class="mt-2 text-[1.0625rem] leading-relaxed text-sand-200/90">
-                        Post an RFQ and get quotations from multiple verified suppliers.
+                        {{ __('messages.home.cant_find_body') }}
                     </p>
                     <a href="{{ route('rfq.create') }}"
                        class="mt-5 inline-flex items-center gap-2 rounded-lg bg-forest-700 px-5 py-3 text-[1.0625rem] font-semibold text-white transition hover:bg-forest-600">
-                        <x-heroicon-o-paper-airplane class="h-4 w-4" /> Post an RFQ Now
+                        <x-heroicon-o-paper-airplane class="h-4 w-4" /> {{ __('messages.home.post_rfq_now') }}
                     </a>
                 </div>
             </div>
@@ -472,15 +471,15 @@
                      alt="Clipboard with a checklist beside stacked timber logs" loading="lazy"
                      width="560" height="418" class="mt-1 h-16 w-auto shrink-0">
                 <div class="min-w-0">
-                    <h2 class="text-[1.0625rem] font-bold text-white">Can't find what you need?</h2>
+                    <h2 class="text-[1.0625rem] font-bold text-white">{{ __('messages.home.cant_find_heading') }}</h2>
                     <p class="mt-1.5 text-[1.0625rem] leading-relaxed text-sand-200/90">
-                        Post an RFQ and get quotations from multiple verified suppliers.
+                        {{ __('messages.home.cant_find_body') }}
                     </p>
                 </div>
             </div>
             <a href="{{ route('rfq.create') }}"
                class="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-white px-5 py-3.5 text-[1.125rem] font-semibold text-forest-800 transition hover:bg-sand-100">
-                <x-heroicon-o-paper-airplane class="h-5 w-5" /> Post an RFQ Now
+                <x-heroicon-o-paper-airplane class="h-5 w-5" /> {{ __('messages.home.post_rfq_now') }}
             </a>
         </div>
     </section>
@@ -491,7 +490,7 @@
     @if($suppliers->isNotEmpty())
         <section class="hidden lg:block" aria-labelledby="suppliers-heading">
             <div class="mx-auto max-w-[80rem] px-8 py-6">
-                <h2 id="suppliers-heading" class="text-[1.75rem] font-bold tracking-tight text-ink">Verified Timber Suppliers</h2>
+                <h2 id="suppliers-heading" class="text-[1.75rem] font-bold tracking-tight text-ink">{{ __('messages.home.verified_suppliers_heading') }}</h2>
 
                 <div class="mt-5 grid grid-cols-[1fr_15rem] gap-5">
                     <ul class="grid grid-cols-4 gap-4">
@@ -505,18 +504,18 @@
                                         <h3 class="truncate text-[1.125rem] font-bold text-ink">
                                             <a href="{{ route('companies.show', $supplier->slug) }}" class="hover:text-forest-800">{{ $supplier->name }}</a>
                                         </h3>
-                                        <p class="mt-0.5 truncate text-[0.9375rem] text-ink-soft">{{ $supplier->city }}, Cameroon</p>
+                                        <p class="mt-0.5 truncate text-[0.9375rem] text-ink-soft">{{ __('messages.home.supplier_city_country', ['city' => $supplier->city]) }}</p>
                                         <p class="mt-1.5 inline-flex items-center gap-1 text-[0.9375rem] font-semibold text-forest-700">
-                                            <x-heroicon-s-check-circle class="h-3.5 w-3.5" /> Verified Supplier
+                                            <x-heroicon-s-check-circle class="h-3.5 w-3.5" /> {{ __('messages.home.verified_supplier') }}
                                         </p>
                                     </div>
                                 </div>
 
                                 <dl class="mt-4 grid grid-cols-3 gap-1 border-t border-sand-200 pt-3 text-center">
                                     @foreach ([
-                                        ['Products', max($supplier->products_count, 10).'+'],
-                                        ['Markets', max($supplier->export_markets_count, 5).'+'],
-                                        ['Exp. (Years)', ($supplier->year_founded ? max(now()->year - $supplier->year_founded, 1) : 15).'+'],
+                                        [__('messages.home.stat_products'), max($supplier->products_count, 10).'+'],
+                                        [__('messages.home.stat_markets'), max($supplier->export_markets_count, 5).'+'],
+                                        [__('messages.home.stat_experience_years'), ($supplier->year_founded ? max(now()->year - $supplier->year_founded, 1) : 15).'+'],
                                     ] as [$label, $value])
                                         <div>
                                             <dt class="text-[0.875rem] text-ink-soft">{{ $label }}</dt>
@@ -528,11 +527,11 @@
                                 <div class="mt-4 flex gap-2">
                                     <a href="{{ route('companies.show', $supplier->slug) }}"
                                        class="flex-1 rounded-md border border-sand-300 px-2 py-2 text-center text-[0.9375rem] font-semibold text-ink transition hover:border-forest-600 hover:text-forest-800">
-                                        View Company
+                                        {{ __('messages.home.view_company') }}
                                     </a>
                                     <a href="{{ route('rfq.create', ['company' => $supplier->slug]) }}"
                                        class="flex-1 rounded-md bg-forest-700 px-2 py-2 text-center text-[0.9375rem] font-semibold text-white transition hover:bg-forest-800">
-                                        Request Quote
+                                        {{ __('messages.home.request_quote') }}
                                     </a>
                                 </div>
                             </li>
@@ -541,9 +540,9 @@
 
                     {{-- Join as a Supplier --}}
                     <aside class="flex flex-col rounded-xl bg-forest-800 p-5">
-                        <h3 class="text-[1.125rem] font-bold text-white">Join as a Supplier</h3>
+                        <h3 class="text-[1.125rem] font-bold text-white">{{ __('messages.home.join_as_supplier_heading') }}</h3>
                         <p class="mt-3 text-[1.0625rem] leading-relaxed text-sand-200/90">
-                            Grow your business and reach international buyers on our trusted platform.
+                            {{ __('messages.home.join_as_supplier_body') }}
                         </p>
                         <ul class="mt-4 space-y-2">
                             @foreach($supplierPerks as $perk)
@@ -554,7 +553,7 @@
                         </ul>
                         <a href="{{ route('register') }}"
                            class="mt-6 flex items-center justify-center gap-2 rounded-lg bg-white px-5 py-3 text-[1.0625rem] font-semibold text-ink transition hover:bg-sand-100">
-                            <x-heroicon-o-user-plus class="h-4 w-4" /> Join Now
+                            <x-heroicon-o-user-plus class="h-4 w-4" /> {{ __('messages.home.join_now') }}
                         </a>
                     </aside>
                 </div>
@@ -569,7 +568,7 @@
         <div class="mx-auto max-w-[80rem] px-4 lg:px-8">
             <div class="rounded-2xl bg-sand-100 px-4 py-7 lg:px-8">
                 <h2 id="how-heading" class="text-center text-[1.1875rem] font-bold tracking-tight text-ink lg:text-[1.0625rem] lg:uppercase lg:tracking-[0.11em] lg:text-forest-800">
-                    How B2B Trading Works
+                    {{ __('messages.home.how_it_works_heading') }}
                 </h2>
 
                 {{-- Mobile: 3 × 2 grid with dotted connectors --}}
@@ -615,7 +614,7 @@
     <section class="mt-9 lg:mt-6" aria-labelledby="why-heading">
         <div class="mx-auto max-w-[80rem] px-4 lg:px-8">
             <h2 id="why-heading" class="text-center text-[1.1875rem] font-bold tracking-tight text-ink lg:text-[1.5rem]">
-                Why Buyers Choose Cameroon Timber Hub
+                {{ __('messages.home.why_choose_heading') }}
             </h2>
 
             <ul class="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-6 lg:gap-3">
@@ -653,10 +652,10 @@
     <section class="mt-10 lg:mt-12" aria-labelledby="faq-heading">
         <div class="mx-auto max-w-[80rem] px-4 lg:px-8">
             <h2 id="faq-heading" class="text-center text-[1.1875rem] font-bold tracking-tight text-ink lg:text-[1.5rem]">
-                Sourcing Cameroon Timber — Frequently Asked Questions
+                {{ __('messages.home.faq_heading') }}
             </h2>
             <p class="mx-auto mt-2 max-w-[42rem] text-center text-[1.0625rem] leading-relaxed text-ink-soft">
-                Legality, minimum order quantities, lead times and how quotations work on the marketplace.
+                {{ __('messages.home.faq_subtitle') }}
             </p>
 
             <div class="mt-6 grid gap-3 lg:grid-cols-2">
@@ -685,18 +684,18 @@
             <div class="absolute inset-0 bg-gradient-to-r from-forest-950 via-forest-950/80 to-forest-950/40" aria-hidden="true"></div>
 
             <div class="relative">
-                <h2 class="text-[1.25rem] font-bold leading-tight text-white">Source Cameroon Timber<br>with Confidence</h2>
+                <h2 class="text-[1.25rem] font-bold leading-tight text-white">{!! nl2br(e(__('messages.home.closing_heading'))) !!}</h2>
                 <p class="mt-2 text-[1.0625rem] leading-relaxed text-sand-200/90">
-                    Join a growing network of verified suppliers and buyers who trust Cameroon Timber Hub.
+                    {{ __('messages.home.closing_body_mobile') }}
                 </p>
                 <div class="mt-5 space-y-3">
                     <a href="{{ route('marketplace') }}"
                        class="flex w-full items-center justify-center gap-2.5 rounded-xl bg-forest-700 px-5 py-3.5 text-[1.125rem] font-semibold text-white transition hover:bg-forest-600">
-                        <x-heroicon-o-shopping-bag class="h-5 w-5" /> Browse Marketplace
+                        <x-heroicon-o-shopping-bag class="h-5 w-5" /> {{ __('messages.home.browse_marketplace') }}
                     </a>
                     <a href="{{ route('register') }}"
                        class="flex w-full items-center justify-center gap-2.5 rounded-xl border border-white/40 px-5 py-3.5 text-[1.125rem] font-semibold text-white transition hover:bg-white/10">
-                        <x-heroicon-o-user-plus class="h-5 w-5" /> Join as a Supplier
+                        <x-heroicon-o-user-plus class="h-5 w-5" /> {{ __('messages.home.join_as_a_supplier') }}
                     </a>
                 </div>
             </div>
@@ -712,21 +711,21 @@
         <div class="relative mx-auto flex max-w-[80rem] items-center gap-10 px-8 py-10">
             <div class="min-w-0 flex-1">
                 <h2 class="text-[1.75rem] font-bold leading-tight tracking-tight text-white">
-                    Source Cameroon Timber<br>with Confidence
+                    {!! nl2br(e(__('messages.home.closing_heading'))) !!}
                 </h2>
                 <p class="mt-3 max-w-[28rem] text-[1.0625rem] leading-relaxed text-sand-200/90">
-                    Join a growing network of verified suppliers and buyers who trust Cameroon Timber Hub for their timber needs.
+                    {{ __('messages.home.closing_body_desktop') }}
                 </p>
             </div>
 
             <div class="flex shrink-0 items-center gap-4">
                 <a href="{{ route('marketplace') }}"
                    class="inline-flex items-center gap-2.5 rounded-lg bg-white px-8 py-3.5 text-[1.125rem] font-semibold text-forest-800 transition hover:bg-sand-100">
-                    <x-heroicon-o-shopping-bag class="h-5 w-5" /> Browse Marketplace
+                    <x-heroicon-o-shopping-bag class="h-5 w-5" /> {{ __('messages.home.browse_marketplace') }}
                 </a>
                 <a href="{{ route('rfq.create') }}"
                    class="inline-flex items-center gap-2.5 rounded-lg border border-white/60 px-8 py-3.5 text-[1.125rem] font-semibold text-white transition hover:bg-white/10">
-                    <x-heroicon-o-paper-airplane class="h-5 w-5" /> Post an RFQ
+                    <x-heroicon-o-paper-airplane class="h-5 w-5" /> {{ __('messages.home.post_an_rfq') }}
                 </a>
             </div>
         </div>

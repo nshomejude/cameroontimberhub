@@ -77,6 +77,16 @@ Route::get('/passport/{timberLot}', [TimberPassportController::class, 'show'])->
 // Cross-entity search (products + companies + species).
 Route::get('/search', [SearchController::class, 'index'])->name('search');
 
+// Language switcher (header "EN/Français" button) — stores the choice in
+// session; App\Http\Middleware\SetLocale reads it back on every request.
+Route::post('/locale/{locale}', function (\Illuminate\Http\Request $request, string $locale) {
+    abort_unless(in_array($locale, \App\Http\Middleware\SetLocale::SUPPORTED, true), 404);
+
+    $request->session()->put('locale', $locale);
+
+    return back();
+})->name('locale.set');
+
 // Pricing (plans-as-data).
 Route::get('/pricing', [PricingController::class, 'index'])->name('pricing');
 

@@ -12,19 +12,19 @@
 @php
     // Primary nav, mirroring the header in the approved mockups.
     $nav = [
-        ['label' => 'Marketplace', 'url' => url('/marketplace'), 'active' => request()->is('marketplace*')],
-        ['label' => 'Suppliers', 'url' => route('directory'), 'active' => request()->routeIs('directory') || request()->routeIs('companies.*')],
-        ['label' => 'Timber Species', 'url' => route('species.index'), 'active' => request()->routeIs('species.*')],
-        ['label' => 'RFQ Center', 'url' => route('rfq.create'), 'active' => request()->routeIs('rfq.*')],
+        ['label' => __('messages.nav.marketplace'), 'url' => url('/marketplace'), 'active' => request()->is('marketplace*')],
+        ['label' => __('messages.nav.suppliers'), 'url' => route('directory'), 'active' => request()->routeIs('directory') || request()->routeIs('companies.*')],
+        ['label' => __('messages.nav.timber_species'), 'url' => route('species.index'), 'active' => request()->routeIs('species.*')],
+        ['label' => __('messages.nav.rfq_center'), 'url' => route('rfq.create'), 'active' => request()->routeIs('rfq.*')],
     ];
 
     $resources = [
-        ['label' => 'Knowledge Centre', 'url' => route('knowledge.index')],
-        ['label' => 'Timber Grades', 'url' => route('insights.category', 'guides')],
-        ['label' => 'Export Guide', 'url' => route('insights.category', 'export')],
-        ['label' => 'Market Insights', 'url' => route('insights.category', 'market')],
-        ['label' => 'Blog', 'url' => route('insights.index')],
-        ['label' => 'Glossary', 'url' => route('glossary.index')],
+        ['label' => __('messages.nav.knowledge_centre'), 'url' => route('knowledge.index')],
+        ['label' => __('messages.nav.timber_grades'), 'url' => route('insights.category', 'guides')],
+        ['label' => __('messages.nav.export_guide'), 'url' => route('insights.category', 'export')],
+        ['label' => __('messages.nav.market_insights'), 'url' => route('insights.category', 'market')],
+        ['label' => __('messages.nav.blog'), 'url' => route('insights.index')],
+        ['label' => __('messages.nav.glossary'), 'url' => route('glossary.index')],
     ];
 
     // Domestic Cameroon market — Phase 1.5 (brief §4). A separate dropdown
@@ -32,11 +32,11 @@
     // export vocabulary and serve a different audience (local buyers,
     // processors/manufacturers, logistics providers).
     $domesticMarket = [
-        ['label' => 'Buy Cameroon Wood', 'url' => route('domestic.marketplace')],
-        ['label' => 'Transformation Network', 'url' => route('transformation-network')],
-        ['label' => 'Made in Cameroon', 'url' => route('made-in-cameroon')],
-        ['label' => 'Logistics Directory', 'url' => route('logistics-directory')],
-        ['label' => 'Carbon Projects', 'url' => route('carbon-projects')],
+        ['label' => __('messages.nav.buy_cameroon_wood'), 'url' => route('domestic.marketplace')],
+        ['label' => __('messages.nav.transformation_network'), 'url' => route('transformation-network')],
+        ['label' => __('messages.nav.made_in_cameroon'), 'url' => route('made-in-cameroon')],
+        ['label' => __('messages.nav.logistics_directory'), 'url' => route('logistics-directory')],
+        ['label' => __('messages.nav.carbon_projects'), 'url' => route('carbon-projects')],
     ];
 
     // Deep screens swap the mobile hamburger for a back affordance.
@@ -49,11 +49,11 @@
 
     // Bottom tab bar (mobile), per the mobile mockups.
     $tabs = [
-        ['label' => 'Home', 'icon' => 'home', 'url' => route('home'), 'active' => request()->routeIs('home')],
-        ['label' => 'Marketplace', 'icon' => 'squares-2x2', 'url' => url('/marketplace'), 'active' => request()->is('marketplace*')],
-        ['label' => 'RFQ Center', 'icon' => 'document-text', 'url' => route('rfq.create'), 'active' => request()->routeIs('rfq.*')],
-        ['label' => 'Suppliers', 'icon' => 'user-group', 'url' => route('directory'), 'active' => request()->routeIs('directory') || request()->routeIs('companies.*')],
-        ['label' => 'Account', 'icon' => 'user', 'url' => url('/admin/login'), 'active' => false],
+        ['label' => __('messages.nav.home'), 'icon' => 'home', 'url' => route('home'), 'active' => request()->routeIs('home')],
+        ['label' => __('messages.nav.marketplace'), 'icon' => 'squares-2x2', 'url' => url('/marketplace'), 'active' => request()->is('marketplace*')],
+        ['label' => __('messages.nav.rfq_center'), 'icon' => 'document-text', 'url' => route('rfq.create'), 'active' => request()->routeIs('rfq.*')],
+        ['label' => __('messages.nav.suppliers'), 'icon' => 'user-group', 'url' => route('directory'), 'active' => request()->routeIs('directory') || request()->routeIs('companies.*')],
+        ['label' => __('messages.nav.account'), 'icon' => 'user', 'url' => url('/admin/login'), 'active' => false],
     ];
 @endphp
 
@@ -206,9 +206,24 @@
                         {{ $headerEmail }}
                     </a>
                 @endif
-                <button type="button" class="flex items-center gap-1 transition hover:text-forest-200">
-                    EN <x-heroicon-m-chevron-down class="h-3 w-3" />
-                </button>
+                <div class="relative" x-data="{ langOpen: false }" @keydown.escape.window="langOpen = false">
+                    <button type="button" @click="langOpen = !langOpen" :aria-expanded="langOpen ? 'true' : 'false'"
+                            class="flex items-center gap-1 transition hover:text-forest-200">
+                        {{ strtoupper(app()->getLocale()) }} <x-heroicon-m-chevron-down class="h-3 w-3" />
+                    </button>
+                    <div x-show="langOpen" x-cloak x-transition.opacity @click.outside="langOpen = false"
+                         class="absolute right-0 top-full z-50 mt-1 w-36 rounded-lg border border-sand-200 bg-white py-1 text-left shadow-lg">
+                        @foreach (['en' => __('messages.locale.english'), 'fr' => __('messages.locale.french')] as $code => $label)
+                            <form method="POST" action="{{ route('locale.set', $code) }}">
+                                @csrf
+                                <button type="submit" @class([
+                                    'block w-full px-3 py-1.5 text-left text-sm text-ink transition hover:bg-sand-100 hover:text-forest-700',
+                                    'font-semibold text-forest-700' => app()->getLocale() === $code,
+                                ])>{{ $label }}</button>
+                            </form>
+                        @endforeach
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -250,7 +265,7 @@
 
                 <div class="relative" @mouseenter="resources = true" @mouseleave="resources = false">
                     <button type="button" class="flex items-center gap-1 py-2 text-sm font-medium text-ink transition hover:text-forest-700">
-                        Resources <x-heroicon-m-chevron-down class="h-4 w-4" />
+                        {{ __('messages.nav.resources') }} <x-heroicon-m-chevron-down class="h-4 w-4" />
                     </button>
                     <div x-show="resources" x-cloak x-transition.opacity
                          class="absolute left-0 top-full z-50 w-52 rounded-xl border border-sand-200 bg-white py-2 shadow-lg">
@@ -262,7 +277,7 @@
 
                 <div class="relative" @mouseenter="domesticMarket = true" @mouseleave="domesticMarket = false">
                     <button type="button" class="flex items-center gap-1 py-2 text-sm font-medium text-ink transition hover:text-forest-700">
-                        Domestic Market <x-heroicon-m-chevron-down class="h-4 w-4" />
+                        {{ __('messages.nav.domestic_market') }} <x-heroicon-m-chevron-down class="h-4 w-4" />
                     </button>
                     <div x-show="domesticMarket" x-cloak x-transition.opacity
                          class="absolute left-0 top-full z-50 w-56 rounded-xl border border-sand-200 bg-white py-2 shadow-lg">
@@ -276,28 +291,28 @@
                     'py-2 text-sm font-medium transition',
                     'text-forest-700' => request()->routeIs('about'),
                     'text-ink hover:text-forest-700' => ! request()->routeIs('about'),
-                ])>About Us</a>
+                ])>{{ __('messages.nav.about_us') }}</a>
                 <a href="{{ route('contact') }}" @class([
                     'py-2 text-sm font-medium transition',
                     'text-forest-700' => request()->routeIs('contact'),
                     'text-ink hover:text-forest-700' => ! request()->routeIs('contact'),
-                ])>Contact</a>
+                ])>{{ __('messages.nav.contact') }}</a>
             </nav>
 
             {{-- Desktop auth actions --}}
             <div class="ml-6 hidden items-center gap-3 lg:flex">
                 <a href="{{ route('login') }}"
-                   class="rounded-lg border border-forest-700 px-5 py-2 text-sm font-semibold text-forest-700 transition hover:bg-forest-50">Log In</a>
+                   class="rounded-lg border border-forest-700 px-5 py-2 text-sm font-semibold text-forest-700 transition hover:bg-forest-50">{{ __('messages.nav.log_in') }}</a>
                 <a href="{{ route('register') }}"
-                   class="rounded-lg bg-forest-700 px-5 py-2 text-sm font-semibold text-white transition hover:bg-forest-800">Join Now</a>
+                   class="rounded-lg bg-forest-700 px-5 py-2 text-sm font-semibold text-white transition hover:bg-forest-800">{{ __('messages.nav.join_now') }}</a>
             </div>
 
             {{-- Mobile actions --}}
             <div class="ml-auto flex items-center gap-1 lg:hidden">
-                <a href="{{ url('/search') }}" class="flex h-10 w-10 items-center justify-center rounded-lg text-ink" aria-label="Search">
+                <a href="{{ url('/search') }}" class="flex h-10 w-10 items-center justify-center rounded-lg text-ink" aria-label="{{ __('messages.nav.search') }}">
                     <x-heroicon-o-magnifying-glass class="h-6 w-6" />
                 </a>
-                <a href="{{ route('login') }}" class="relative flex h-10 w-10 items-center justify-center rounded-lg text-ink" aria-label="Account">
+                <a href="{{ route('login') }}" class="relative flex h-10 w-10 items-center justify-center rounded-lg text-ink" aria-label="{{ __('messages.nav.account') }}">
                     <x-heroicon-o-user class="h-6 w-6" />
                 </a>
             </div>
@@ -323,20 +338,20 @@
                             'text-ink' => ! $item['active'],
                         ])>{{ $item['label'] }}</a>
                     @endforeach
-                    <a href="{{ route('about') }}" class="block rounded-lg px-3 py-3 text-[15px] font-medium text-ink">About Us</a>
-                    <a href="{{ route('contact') }}" class="block rounded-lg px-3 py-3 text-[15px] font-medium text-ink">Contact</a>
-                    <p class="px-3 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wider text-ink-soft">Resources</p>
+                    <a href="{{ route('about') }}" class="block rounded-lg px-3 py-3 text-[15px] font-medium text-ink">{{ __('messages.nav.about_us') }}</a>
+                    <a href="{{ route('contact') }}" class="block rounded-lg px-3 py-3 text-[15px] font-medium text-ink">{{ __('messages.nav.contact') }}</a>
+                    <p class="px-3 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wider text-ink-soft">{{ __('messages.nav.resources') }}</p>
                     @foreach ($resources as $r)
                         <a href="{{ $r['url'] }}" class="block rounded-lg px-3 py-2.5 text-[15px] text-ink">{{ $r['label'] }}</a>
                     @endforeach
-                    <p class="px-3 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wider text-ink-soft">Domestic Market</p>
+                    <p class="px-3 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wider text-ink-soft">{{ __('messages.nav.domestic_market') }}</p>
                     @foreach ($domesticMarket as $d)
                         <a href="{{ $d['url'] }}" class="block rounded-lg px-3 py-2.5 text-[15px] text-ink">{{ $d['label'] }}</a>
                     @endforeach
                 </nav>
                 <div class="space-y-2 border-t border-sand-200 p-4">
-                    <a href="{{ route('login') }}" class="block rounded-lg border border-forest-700 px-4 py-2.5 text-center text-sm font-semibold text-forest-700">Log In</a>
-                    <a href="{{ route('register') }}" class="block rounded-lg bg-forest-700 px-4 py-2.5 text-center text-sm font-semibold text-white">Join Now</a>
+                    <a href="{{ route('login') }}" class="block rounded-lg border border-forest-700 px-4 py-2.5 text-center text-sm font-semibold text-forest-700">{{ __('messages.nav.log_in') }}</a>
+                    <a href="{{ route('register') }}" class="block rounded-lg bg-forest-700 px-4 py-2.5 text-center text-sm font-semibold text-white">{{ __('messages.nav.join_now') }}</a>
                 </div>
             </div>
         </div>
@@ -361,9 +376,9 @@
          style="bottom: calc(5rem + env(safe-area-inset-bottom))">
         <div class="flex items-center gap-3">
             <img src="/brand/icon-96.png" alt="" class="h-9 w-9 shrink-0" width="96" height="94">
-            <p class="flex-1 text-sm">Install Timber Hub for an app-like experience.</p>
+            <p class="flex-1 text-sm">{{ __('messages.footer.install_app') }}</p>
             <button @click="window.__installPwa && window.__installPwa(); installable = false"
-                    class="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-forest-800">Install</button>
+                    class="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-forest-800">{{ __('messages.footer.install') }}</button>
             <button @click="installable = false" class="text-forest-200" aria-label="Dismiss">
                 <x-heroicon-m-x-mark class="h-5 w-5" />
             </button>
@@ -377,7 +392,7 @@
                 <div>
                     <img src="/brand/logo-600.png" alt="Cameroon Timber Hub" class="h-11 w-auto brightness-0 invert">
                     <p class="mt-4 max-w-xs text-[13px] leading-relaxed text-sand-300/80">
-                        The leading B2B marketplace connecting Cameroon's timber industry with global buyers.
+                        {{ __('messages.footer.tagline') }}
                     </p>
                     <div class="mt-5 flex items-center gap-2">
                         @foreach ([
@@ -395,39 +410,39 @@
                 </div>
 
                 @foreach ([
-                    ['title' => 'Marketplace', 'links' => [
-                        ['Browse Products', '/marketplace'],
-                        ['Timber Species', '/species'],
-                        ['Suppliers', '/companies'],
-                        ['RFQ Center', '/request-quote'],
+                    ['title' => __('messages.footer.col_marketplace'), 'links' => [
+                        [__('messages.footer.link_browse_products'), '/marketplace'],
+                        [__('messages.footer.link_timber_species'), '/species'],
+                        [__('messages.footer.link_suppliers'), '/companies'],
+                        [__('messages.footer.link_rfq_center'), '/request-quote'],
                     ]],
-                    ['title' => 'Domestic Market', 'links' => [
-                        ['Buy Cameroon Wood', route('domestic.marketplace')],
-                        ['Transformation Network', route('transformation-network')],
-                        ['Made in Cameroon', route('made-in-cameroon')],
-                        ['Logistics Directory', route('logistics-directory')],
-                        ['Carbon Projects', route('carbon-projects')],
+                    ['title' => __('messages.footer.col_domestic_market'), 'links' => [
+                        [__('messages.footer.link_buy_cameroon_wood'), route('domestic.marketplace')],
+                        [__('messages.footer.link_transformation_network'), route('transformation-network')],
+                        [__('messages.footer.link_made_in_cameroon'), route('made-in-cameroon')],
+                        [__('messages.footer.link_logistics_directory'), route('logistics-directory')],
+                        [__('messages.footer.link_carbon_projects'), route('carbon-projects')],
                     ]],
-                    ['title' => 'Company', 'links' => [
-                        ['About Us', '/about'],
-                        ['How It Works', '/how-it-works'],
-                        ['Pricing', '/pricing'],
-                        ['Contact Us', '/contact'],
+                    ['title' => __('messages.footer.col_company'), 'links' => [
+                        [__('messages.footer.link_about_us'), '/about'],
+                        [__('messages.footer.link_how_it_works'), '/how-it-works'],
+                        [__('messages.footer.link_pricing'), '/pricing'],
+                        [__('messages.footer.link_contact_us'), '/contact'],
                     ]],
-                    ['title' => 'Resources', 'links' => [
-                        ['Knowledge Centre', route('knowledge.index')],
-                        ['Timber Grades', route('insights.category', 'guides')],
-                        ['Export Guide', route('insights.category', 'export')],
-                        ['Market Insights', route('insights.category', 'market')],
-                        ['Blog', route('insights.index')],
-                        ['Glossary', route('glossary.index')],
+                    ['title' => __('messages.footer.col_resources'), 'links' => [
+                        [__('messages.footer.link_knowledge_centre'), route('knowledge.index')],
+                        [__('messages.footer.link_timber_grades'), route('insights.category', 'guides')],
+                        [__('messages.footer.link_export_guide'), route('insights.category', 'export')],
+                        [__('messages.footer.link_market_insights'), route('insights.category', 'market')],
+                        [__('messages.footer.link_blog'), route('insights.index')],
+                        [__('messages.footer.link_glossary'), route('glossary.index')],
                     ]],
-                    ['title' => 'Support', 'links' => [
-                        ['Help Center', '/help'],
-                        ['Report a Dispute', '/contact#contact-category'],
-                        ['Terms of Service', '/terms'],
-                        ['Privacy Policy', '/privacy'],
-                        ['Cookies Policy', '/cookies'],
+                    ['title' => __('messages.footer.col_support'), 'links' => [
+                        [__('messages.footer.link_help_center'), '/help'],
+                        [__('messages.footer.link_report_dispute'), '/contact#contact-category'],
+                        [__('messages.footer.link_terms'), '/terms'],
+                        [__('messages.footer.link_privacy'), '/privacy'],
+                        [__('messages.footer.link_cookies'), '/cookies'],
                     ]],
                 ] as $col)
                     <div>
@@ -441,15 +456,15 @@
                 @endforeach
 
                 <div>
-                    <h3 class="text-sm font-semibold text-white">Subscribe to our newsletter</h3>
+                    <h3 class="text-sm font-semibold text-white">{{ __('messages.footer.newsletter_heading') }}</h3>
                     <p class="mt-4 text-[13px] leading-relaxed text-sand-300/80">
-                        Get timber market updates, new products and industry insights.
+                        {{ __('messages.footer.newsletter_body') }}
                     </p>
                     <form action="{{ url('/newsletter') }}" method="POST" class="mt-4 flex">
                         @csrf
-                        <input type="email" name="email" required placeholder="Enter your email"
+                        <input type="email" name="email" required placeholder="{{ __('messages.footer.newsletter_placeholder') }}"
                                class="w-full rounded-l-lg border-0 bg-white px-3 py-2.5 text-[13px] text-ink placeholder:text-ink-soft/60 focus:outline-none focus:ring-2 focus:ring-forest-500">
-                        <button type="submit" class="shrink-0 rounded-r-lg bg-forest-600 px-4 py-2.5 text-[13px] font-semibold text-white transition hover:bg-forest-700">Subscribe</button>
+                        <button type="submit" class="shrink-0 rounded-r-lg bg-forest-600 px-4 py-2.5 text-[13px] font-semibold text-white transition hover:bg-forest-700">{{ __('messages.footer.newsletter_subscribe') }}</button>
                     </form>
                 </div>
             </div>
@@ -457,8 +472,8 @@
 
         <div class="border-t border-white/10">
             <div class="mx-auto flex max-w-[1400px] flex-col items-center gap-2 px-6 py-4 text-[12px] text-sand-300/70 sm:flex-row">
-                <p>&copy; {{ date('Y') }} Cameroon Timber Hub. All rights reserved.</p>
-                <p class="sm:ml-auto">Made in Cameroon 🇨🇲</p>
+                <p>&copy; {{ __('messages.footer.all_rights_reserved', ['year' => date('Y')]) }}</p>
+                <p class="sm:ml-auto">{{ __('messages.footer.made_in_cameroon') }}</p>
             </div>
         </div>
     </footer>
