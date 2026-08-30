@@ -3,6 +3,7 @@
 namespace App\Providers\Filament;
 
 use App\Http\Middleware\EnsureExporterOnboarded;
+use App\Http\Middleware\RedirectIncompleteOnboarding;
 use App\Providers\Filament\Concerns\AppliesHubBranding;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -57,6 +58,7 @@ class ExporterPanelProvider extends PanelProvider
             ->authMiddleware([
                 Authenticate::class,
                 EnsureExporterOnboarded::class,
+                RedirectIncompleteOnboarding::class,
             ]);
     }
 }
