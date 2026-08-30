@@ -166,12 +166,10 @@
                          class="h-24 w-24 shrink-0 rounded-full border-2 border-white/70 bg-white object-contain p-2 lg:h-32 lg:w-32">
 
                     <div class="min-w-0">
-                        @if ($company->hasFeature('verified_badge'))
-                            <span class="inline-flex items-center gap-1.5 rounded-full bg-forest-600 px-3 py-1 text-[0.9375rem] font-semibold text-white">
-                                <x-heroicon-s-check-badge class="h-4 w-4" aria-hidden="true" />
-                                Verified Supplier
-                            </span>
-                        @endif
+                        <span class="inline-flex items-center gap-1.5 rounded-full bg-forest-600 px-3 py-1 text-[0.9375rem] font-semibold text-white">
+                            <x-heroicon-s-check-badge class="h-4 w-4" aria-hidden="true" />
+                            Verified Supplier
+                        </span>
 
                         <h1 class="mt-2 font-display text-[1.75rem] font-semibold leading-tight text-white lg:text-[2.5rem]">
                             {{ $company->name }}
@@ -408,10 +406,7 @@
                                             </section>
                                         @endif
 
-                                        {{-- Verified badge is a plan entitlement (verified_badge): gate the
-                                             display, not the underlying verification record. --}}
-                                        @if ($company->hasFeature('verified_badge'))
-                                            <section class="{{ $card }} p-5">
+                                        <section class="{{ $card }} p-5">
                                                 <h2 class="flex items-center gap-2 text-[1.0625rem] font-bold text-ink">
                                                     <x-heroicon-s-shield-check class="h-5 w-5 text-forest-600" aria-hidden="true" />
                                                     Verification
@@ -432,8 +427,7 @@
                                                     Documents reviewed by Cameroon Timber Hub based on information submitted by the company.
                                                     Buyers should conduct final due diligence before any transaction.
                                                 </p>
-                                            </section>
-                                        @endif
+                                        </section>
 
                                         {{--
                                             Buyer reviews.
