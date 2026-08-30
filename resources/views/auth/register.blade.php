@@ -155,10 +155,15 @@
                                         <legend class="text-[1.0625rem] font-semibold text-ink">
                                             I am a <span aria-hidden="true" class="text-red-600">*</span><span class="sr-only">(required)</span>
                                         </legend>
-                                        <div class="mt-1.5 grid grid-cols-2 gap-3">
+                                        <div class="mt-1.5 grid grid-cols-2 gap-3 sm:grid-cols-3">
                                             @foreach ([
                                                 ['buyer', 'Buyer', 'I source timber', 'shopping-bag'],
                                                 ['supplier', 'Supplier', 'I sell timber', 'building-office-2'],
+                                                ['processor', 'Processor', 'I process/transform raw timber', 'cog-6-tooth'],
+                                                ['artisan', 'Artisan', 'I make finished wood products', 'wrench-screwdriver'],
+                                                ['logistics_partner', 'Logistics Partner', 'I move and deliver timber', 'truck'],
+                                                ['carbon_developer', 'Carbon Developer', 'I run a carbon/reforestation project', 'globe-alt'],
+                                                ['carbon_buyer', 'Carbon Buyer', 'I buy carbon credits', 'banknotes'],
                                             ] as [$value, $label, $hint, $icon])
                                                 <label class="flex cursor-pointer items-start gap-3 rounded-xl border px-4 py-3.5 transition focus-within:ring-2 focus-within:ring-forest-100"
                                                        :class="accountType === '{{ $value }}'
@@ -185,7 +190,7 @@
                                     </fieldset>
 
                                     {{-- Supplier-only: everything here lands on the new Company row. --}}
-                                    <div x-show="accountType === 'supplier'" x-cloak class="space-y-4">
+                                    <div x-show="['supplier','processor','artisan','logistics_partner','carbon_developer'].includes(accountType)" x-cloak class="space-y-4">
                                         <x-auth.field
                                             name="company_name"
                                             label="Business / company name"

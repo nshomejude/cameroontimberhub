@@ -4,6 +4,7 @@ namespace App\Actions\Auth;
 
 use App\Enums\CompanyStatus;
 use App\Enums\CompanyUserRole;
+use App\Enums\OrganisationType;
 use App\Models\Company;
 use App\Models\Rfq;
 use App\Models\User;
@@ -32,17 +33,35 @@ class RegisterAccount
      *
      * @return array<string, mixed>
      */
+    /**
+     * Account-capability roles that create a Company row at registration.
+     * Mirrors 5 of the 7 ACCOUNT_ROLES seeded by RolesAndPermissionsSeeder;
+     * `buyer` and `carbon_buyer` are pure-demand roles with no company.
+     *
+     * @return list<string>
+     */
+    public static function companyFormingTypes(): array
+    {
+        return ['supplier', 'processor', 'artisan', 'logistics_partner', 'carbon_developer'];
+    }
+
     public static function rules(bool $forApi = false): array
     {
+        $excludeUnlessCompanyForming = Rule::excludeIf(
+            fn () => ! in_array(request()->input('account_type'), self::companyFormingTypes(), true)
+        );
+
         $rules = [
-            'account_type' => ['required', Rule::in(['buyer', 'supplier'])],
+            'account_type' => ['required', Rule::in([
+                'buyer', 'supplier', 'processor', 'artisan', 'carbon_developer', 'carbon_buyer', 'logistics_partner',
+            ])],
             'name' => ['required', 'string', 'min:2', 'max:120'],
             'email' => ['required', 'email:rfc', 'max:180', Rule::unique('users', 'email')],
-            'company_name' => ['exclude_unless:account_type,supplier', 'required', 'string', 'min:2', 'max:255'],
-            'company_phone' => ['exclude_unless:account_type,supplier', 'nullable', 'string', 'max:32'],
-            'company_city' => ['exclude_unless:account_type,supplier', 'nullable', 'string', 'max:120'],
-            'company_country' => ['exclude_unless:account_type,supplier', 'nullable', 'string', 'size:2'],
-            'company_registration_number' => ['exclude_unless:account_type,supplier', 'nullable', 'string', 'max:100'],
+            'company_name' => [$excludeUnlessCompanyForming, 'required', 'string', 'min:2', 'max:255'],
+            'company_phone' => [$excludeUnlessCompanyForming, 'nullable', 'string', 'max:32'],
+            'company_city' => [$excludeUnlessCompanyForming, 'nullable', 'string', 'max:120'],
+            'company_country' => [$excludeUnlessCompanyForming, 'nullable', 'string', 'size:2'],
+            'company_registration_number' => [$excludeUnlessCompanyForming, 'nullable', 'string', 'max:100'],
             'password' => ['required', 'confirmed', Password::defaults()],
             'terms' => ['accepted'],
         ];
@@ -65,11 +84,22 @@ class RegisterAccount
                 'password' => $data['password'],
             ]);
 
-            if (($data['account_type'] ?? 'buyer') === 'supplier') {
+            $accountType = $data['account_type'] ?? 'buyer';
+
+            $organisationTypeByAccountType = [
+                'supplier' => OrganisationType::Supplier,
+                'processor' => OrganisationType::Processor,
+                'artisan' => OrganisationType::Artisan,
+                'logistics_partner' => OrganisationType::Logistics,
+                'carbon_developer' => OrganisationType::CarbonDeveloper,
+            ];
+
+            if (in_array($accountType, self::companyFormingTypes(), true)) {
                 // Only the non-nullable columns; the rest of the profile is
                 // completed by the owner in the exporter panel.
                 $company = Company::create([
                     'legal_name' => $data['company_name'],
+                    'type' => $organisationTypeByAccountType[$accountType],
                     'status' => CompanyStatus::Pending,
                     'created_by' => $user->id,
                     'phone' => $data['company_phone'] ?? null,
@@ -85,9 +115,10 @@ class RegisterAccount
 
                 // Account-capability role (brief §3.1), distinct from the
                 // company_user pivot role above -- see RolesAndPermissionsSeeder.
-                $user->assignRole('supplier');
+                $user->assignRole($accountType);
             } else {
-                $user->assignRole('buyer');
+                // 'buyer' and 'carbon_buyer': pure-demand roles, no company.
+                $user->assignRole($accountType);
             }
 
             // Adopt any account-free RFQs this address submitted earlier, so
