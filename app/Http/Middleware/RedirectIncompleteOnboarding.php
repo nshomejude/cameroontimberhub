@@ -32,6 +32,15 @@ class RedirectIncompleteOnboarding
             return $next($request);
         }
 
+        // Only nag on the panel's actual landing page (the Dashboard). Any
+        // other panel route -- a resource list, a Livewire form post, an API
+        // style GET used by tests/automation -- should behave normally; a
+        // blanket "first request of the session" gate here would silently
+        // redirect legitimate direct visits to unrelated exporter pages.
+        if (! $request->routeIs('filament.exporter.pages.dashboard')) {
+            return $next($request);
+        }
+
         if ($request->session()->has(self::SESSION_KEY)) {
             return $next($request);
         }

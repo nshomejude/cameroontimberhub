@@ -1,7 +1,12 @@
 <?php
 
 use App\Models\Company;
+use App\Models\CompanyContact;
+use App\Models\CompanyDocument;
+use App\Models\CompanyGallery;
+use App\Models\Species;
 use App\Models\User;
+use App\Models\VerificationRequest;
 use Database\Seeders\RolesAndPermissionsSeeder;
 
 beforeEach(function () {
@@ -17,7 +22,15 @@ function exporterFor(Company $company): User
 }
 
 it('lets a company member reach the dashboard and edit their own company', function () {
-    $company = Company::factory()->publiclyVisible()->create();
+    // profile_completion: 100 plus every onboarding-checklist ingredient so
+    // this request isn't intercepted by RedirectIncompleteOnboarding -- this
+    // test is about company edit access, not the onboarding flow itself.
+    $company = Company::factory()->publiclyVisible()->create(['profile_completion' => 100]);
+    CompanyContact::factory()->create(['company_id' => $company->id]);
+    CompanyGallery::create(['company_id' => $company->id, 'image_path' => 'gallery/test.jpg']);
+    CompanyDocument::factory()->create(['company_id' => $company->id]);
+    VerificationRequest::factory()->create(['company_id' => $company->id]);
+    $company->species()->attach(Species::factory()->create());
 
     $this->actingAs(exporterFor($company));
 
