@@ -8,6 +8,12 @@
             <p class="eyebrow">No account needed</p>
             <h1 class="mt-3 font-display text-4xl font-semibold text-forest-950 dark:text-sand-100">Request a quote</h1>
             <p class="mt-3 text-ink-soft dark:text-[#b3ab9b]">Describe what you need; we'll route it to verified exporters. Submitting does not constitute a contract — buyers should conduct final due diligence before any transaction.</p>
+            <p class="mt-4 text-sm text-ink-soft dark:text-[#b3ab9b]">
+                Sourcing domestically instead?
+                <a href="{{ route('rfq.create.manufacturing') }}" class="font-semibold text-forest-700 underline underline-offset-2 dark:text-forest-300">Manufacturing / local procurement RFQ</a>
+                · Need transport?
+                <a href="{{ route('rfq.create.transport') }}" class="font-semibold text-forest-700 underline underline-offset-2 dark:text-forest-300">Transport RFQ</a>
+            </p>
         </div>
     </section>
 

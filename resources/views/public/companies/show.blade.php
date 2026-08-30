@@ -183,6 +183,13 @@
                                 {{ $location }}
                             </p>
                         @endif
+
+                        @if ($company->type === \App\Enums\OrganisationType::Artisan)
+                            <a href="{{ route('companies.portfolio', $company->slug) }}"
+                               class="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/10 px-4 py-1.5 text-sm font-semibold text-white transition hover:bg-white/20">
+                                <x-heroicon-m-photo class="h-4 w-4" /> View portfolio
+                            </a>
+                        @endif
                     </div>
                 </div>
 

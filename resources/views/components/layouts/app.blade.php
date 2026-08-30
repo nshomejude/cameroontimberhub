@@ -27,6 +27,17 @@
         ['label' => 'Glossary', 'url' => route('glossary.index')],
     ];
 
+    // Domestic Cameroon market — Phase 1.5 (brief §4). A separate dropdown
+    // from Marketplace/Resources since these pages deliberately avoid
+    // export vocabulary and serve a different audience (local buyers,
+    // processors/manufacturers, logistics providers).
+    $domesticMarket = [
+        ['label' => 'Buy Cameroon Wood', 'url' => route('domestic.marketplace')],
+        ['label' => 'Transformation Network', 'url' => route('transformation-network')],
+        ['label' => 'Made in Cameroon', 'url' => route('made-in-cameroon')],
+        ['label' => 'Logistics Directory', 'url' => route('logistics-directory')],
+    ];
+
     // Deep screens swap the mobile hamburger for a back affordance.
     $showBack = request()->routeIs('companies.show')
         || request()->routeIs('species.show')
@@ -202,7 +213,7 @@
     </div>
 
     {{-- ---------------- Header ---------------- --}}
-    <header x-data="{ mobileMenu: false, resources: false }"
+    <header x-data="{ mobileMenu: false, resources: false, domesticMarket: false }"
             class="sticky top-0 z-40 border-b border-sand-200 bg-white">
         <div class="mx-auto flex h-16 max-w-[1400px] items-center gap-4 px-4 lg:h-[72px] lg:px-6">
 
@@ -244,6 +255,18 @@
                          class="absolute left-0 top-full z-50 w-52 rounded-xl border border-sand-200 bg-white py-2 shadow-lg">
                         @foreach ($resources as $r)
                             <a href="{{ $r['url'] }}" class="block px-4 py-2 text-sm text-ink transition hover:bg-sand-100 hover:text-forest-700">{{ $r['label'] }}</a>
+                        @endforeach
+                    </div>
+                </div>
+
+                <div class="relative" @mouseenter="domesticMarket = true" @mouseleave="domesticMarket = false">
+                    <button type="button" class="flex items-center gap-1 py-2 text-sm font-medium text-ink transition hover:text-forest-700">
+                        Domestic Market <x-heroicon-m-chevron-down class="h-4 w-4" />
+                    </button>
+                    <div x-show="domesticMarket" x-cloak x-transition.opacity
+                         class="absolute left-0 top-full z-50 w-56 rounded-xl border border-sand-200 bg-white py-2 shadow-lg">
+                        @foreach ($domesticMarket as $d)
+                            <a href="{{ $d['url'] }}" class="block px-4 py-2 text-sm text-ink transition hover:bg-sand-100 hover:text-forest-700">{{ $d['label'] }}</a>
                         @endforeach
                     </div>
                 </div>
@@ -304,6 +327,10 @@
                     <p class="px-3 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wider text-ink-soft">Resources</p>
                     @foreach ($resources as $r)
                         <a href="{{ $r['url'] }}" class="block rounded-lg px-3 py-2.5 text-[15px] text-ink">{{ $r['label'] }}</a>
+                    @endforeach
+                    <p class="px-3 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wider text-ink-soft">Domestic Market</p>
+                    @foreach ($domesticMarket as $d)
+                        <a href="{{ $d['url'] }}" class="block rounded-lg px-3 py-2.5 text-[15px] text-ink">{{ $d['label'] }}</a>
                     @endforeach
                 </nav>
                 <div class="space-y-2 border-t border-sand-200 p-4">
@@ -372,6 +399,12 @@
                         ['Timber Species', '/species'],
                         ['Suppliers', '/companies'],
                         ['RFQ Center', '/request-quote'],
+                    ]],
+                    ['title' => 'Domestic Market', 'links' => [
+                        ['Buy Cameroon Wood', route('domestic.marketplace')],
+                        ['Transformation Network', route('transformation-network')],
+                        ['Made in Cameroon', route('made-in-cameroon')],
+                        ['Logistics Directory', route('logistics-directory')],
                     ]],
                     ['title' => 'Company', 'links' => [
                         ['About Us', '/about'],
