@@ -373,6 +373,20 @@
                     </section>
                 @endif
 
+                @if ($product->custom_attributes)
+                    <section class="{{ $card }} overflow-hidden" aria-labelledby="attributes-heading">
+                        <h2 id="attributes-heading" class="border-b border-sand-200 bg-sand-100 px-5 py-3.5 text-[1.0625rem] font-bold text-ink">Additional Attributes</h2>
+                        <dl class="divide-y divide-sand-200">
+                            @foreach ($product->custom_attributes as $key => $value)
+                                <div class="flex items-start gap-3 px-5 py-2.5">
+                                    <dt class="w-2/5 shrink-0 text-[1.0625rem] font-normal text-ink-soft">{{ Str::headline($key) }}</dt>
+                                    <dd class="min-w-0 flex-1 text-[1.0625rem] font-medium text-ink">{{ $value }}</dd>
+                                </div>
+                            @endforeach
+                        </dl>
+                    </section>
+                @endif
+
                 @if ($company)
                     <section class="{{ $card }} overflow-hidden" aria-labelledby="supplier-heading">
                         <h2 id="supplier-heading" class="border-b border-sand-200 bg-sand-100 px-5 py-3.5 text-[1.0625rem] font-bold text-ink">Supplier Information</h2>

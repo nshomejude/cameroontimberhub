@@ -41,7 +41,14 @@ class Product extends Model
             'rating' => 'decimal:1',
             'specifications' => 'array',
             'key_benefits' => 'array',
+            'custom_attributes' => 'array',
         ];
+    }
+
+    /** A single free-form attribute recorded on this listing (materials, finish, style, ...). */
+    public function attribute(string $key, mixed $default = null): mixed
+    {
+        return data_get($this->custom_attributes, $key, $default);
     }
 
     public function getRouteKeyName(): string

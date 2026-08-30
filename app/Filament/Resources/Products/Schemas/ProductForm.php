@@ -82,6 +82,11 @@ class ProductForm
                             ->helperText('e.g. botanical_name, density, durability_class, packaging, delivery.')
                             ->columnSpanFull(),
                         TagsInput::make('key_benefits')->placeholder('Add a benefit')->columnSpanFull(),
+                        KeyValue::make('custom_attributes')
+                            ->label('Additional attributes')
+                            ->keyLabel('Attribute')->valueLabel('Value')
+                            ->helperText('Add any extra details buyers should know — materials, finish, style, etc.')
+                            ->columnSpanFull(),
                     ]),
 
                 Section::make('Media')
