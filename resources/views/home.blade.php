@@ -95,7 +95,7 @@
 
 <x-layouts.app
     title="Cameroon Timber Hub — B2B marketplace for verified Cameroon timber suppliers"
-    description="Source Iroko, Sapele, Tali, Ayous, Padouk, Wenge, Doussie and Azobé from verified Cameroon timber suppliers. Compare quotes, post an RFQ and export with full FLEGT and SIGIF II documentation."
+    description="Source Iroko, Sapele, Tali, Ayous, Padouk, Wenge, Doussie and Azobé from verified Cameroon timber suppliers. Compare quotes, post an RFQ and export with full SIGIF II and legality documentation."
     :schema="$schema"
     :image="asset('img/hero/timber-logs-forest.jpg')">
 

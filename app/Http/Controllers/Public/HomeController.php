@@ -143,7 +143,7 @@ class HomeController extends Controller
             ],
             [
                 'q' => 'What is FLEGT and does Cameroon timber need it?',
-                'a' => 'FLEGT (Forest Law Enforcement, Governance and Trade) is the EU framework for proving timber was harvested legally. Cameroon has signed a Voluntary Partnership Agreement with the EU, and legality is evidenced through the national SIGIF II traceability system plus permit and transport documents. Buyers importing into the EU must also satisfy the EU Deforestation Regulation, so ask your supplier for geolocation data on the harvest plot.',
+                'a' => 'FLEGT (Forest Law Enforcement, Governance and Trade) was the EU framework built around Voluntary Partnership Agreements (VPAs) for proving timber was harvested legally. Cameroon\'s VPA with the EU is no longer in force — it terminated at the end of November 2025 and Cameroon Timber Hub does not issue FLEGT licences or represent it as a current licensing framework. Legality is instead evidenced through the national SIGIF II traceability system plus permit and transport documents, which CTH helps buyers and suppliers verify. Buyers importing into the EU must also satisfy the EU Deforestation Regulation, so ask your supplier for geolocation data on the harvest plot.',
             ],
             [
                 'q' => 'What are typical minimum order quantities for Cameroon hardwood?',
