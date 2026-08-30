@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Company;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\View\View;
 
 /**
@@ -34,16 +35,33 @@ class LogisticsDirectoryController extends Controller
     public function index(Request $request): View
     {
         $region = (string) $request->query('region', '');
+        $tier = (string) $request->query('tier', '');
 
-        $companies = $this->base()
+        $filtered = $this->base()
             ->when($region !== '', fn (Builder $q) => $q->where('region', $region))
             ->orderBy('legal_name')
-            ->paginate(12)
-            ->withQueryString();
+            ->get()
+            ->filter(fn (Company $company) => $tier === '' || $this->tierOf($company) === $tier)
+            ->values();
+
+        $perPage = 12;
+        $page = LengthAwarePaginator::resolveCurrentPage();
+        $companies = new LengthAwarePaginator(
+            $filtered->forPage($page, $perPage),
+            $filtered->count(),
+            $perPage,
+            $page,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
+
+        $regionOptions = $this->base()->distinct()->orderBy('region')->pluck('region')->filter()->values();
 
         return view('public.logistics-directory.index', [
             'companies' => $companies,
             'region' => $region,
+            'tier' => $tier,
+            'regionOptions' => $regionOptions,
+            'tierOptions' => [self::TIER_TECH_ENABLED, self::TIER_TRUSTED, self::TIER_UNVERIFIED],
             'tierOf' => fn (Company $company): string => $this->tierOf($company),
         ]);
     }
