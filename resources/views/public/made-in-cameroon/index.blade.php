@@ -16,12 +16,32 @@
         </div>
     </section>
 
-    <div class="mx-auto max-w-7xl px-4 py-10">
+    <div class="mx-auto max-w-7xl px-4 py-10" x-data="{ filtersOpen: false }">
         <div class="grid grid-cols-1 gap-8 lg:grid-cols-4">
 
-            {{-- Filter sidebar --}}
-            <aside class="lg:col-span-1">
-                <form method="GET" action="{{ route('made-in-cameroon') }}" class="space-y-6 rounded-2xl border border-sand-200 dark:border-[#2c2a24] bg-white dark:bg-[#1f1d18] p-5">
+            {{-- Mobile filter trigger — sidebars never appear inline on mobile, only as an on-demand drawer --}}
+            <button type="button" @click="filtersOpen = true"
+                    class="flex w-full items-center justify-center gap-2 rounded-full border border-sand-300 dark:border-[#3a352e] bg-white dark:bg-[#1f1d18] px-5 py-3 text-sm font-semibold text-ink dark:text-sand-100 lg:hidden">
+                <x-heroicon-o-adjustments-horizontal class="h-4 w-4" />
+                Filters
+            </button>
+
+            {{-- Backdrop (mobile only) --}}
+            <div x-show="filtersOpen" x-cloak x-transition.opacity @click="filtersOpen = false"
+                 class="fixed inset-0 z-40 bg-black/40 lg:hidden"></div>
+
+            {{-- Filter drawer on mobile, static sidebar on desktop --}}
+            <aside
+                :class="filtersOpen ? 'translate-x-0' : '-translate-x-full'"
+                class="fixed inset-y-0 left-0 z-50 w-[85%] max-w-sm overflow-y-auto bg-white pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)] shadow-xl transition-transform duration-300 ease-out dark:bg-[#1f1d18] lg:static lg:z-auto lg:col-span-1 lg:w-auto lg:max-w-none lg:translate-x-0 lg:overflow-visible lg:bg-transparent lg:p-0 lg:pt-0 lg:pb-0 lg:shadow-none lg:transition-none lg:dark:bg-transparent">
+                <div class="flex items-center justify-between border-b border-sand-200 p-4 dark:border-[#2c2a24] lg:hidden">
+                    <p class="text-base font-semibold text-ink dark:text-sand-100">Filters</p>
+                    <button type="button" @click="filtersOpen = false" class="flex h-9 w-9 items-center justify-center rounded-lg text-ink-soft" aria-label="Close filters">
+                        <x-heroicon-o-x-mark class="h-5 w-5" />
+                    </button>
+                </div>
+
+                <form method="GET" action="{{ route('made-in-cameroon') }}" class="space-y-6 p-4 lg:rounded-2xl lg:border lg:border-sand-200 lg:dark:border-[#2c2a24] lg:bg-white lg:dark:bg-[#1f1d18] lg:p-5">
                     <div>
                         <p class="mb-2 text-sm font-semibold text-ink dark:text-sand-100">Species</p>
                         <div class="max-h-56 space-y-1.5 overflow-y-auto pr-1">
@@ -57,6 +77,14 @@
                     @endif
                 </form>
             </aside>
+
+            {{-- Sticky "show results" bar while the mobile drawer is open --}}
+            <div x-show="filtersOpen" x-cloak class="fixed inset-x-0 bottom-0 z-50 border-t border-sand-200 bg-white p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-[0_-4px_12px_rgba(0,0,0,0.08)] dark:border-[#2c2a24] dark:bg-[#1f1d18] lg:hidden">
+                <button type="button" @click="filtersOpen = false"
+                        class="w-full rounded-full bg-forest-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-forest-800">
+                    Show results
+                </button>
+            </div>
 
             {{-- Results --}}
             <div class="lg:col-span-3">
