@@ -22,7 +22,7 @@
         ['icon' => 'calendar-days', 'value' => $company->year_founded ? 'Since '.$company->year_founded : null,
          'label' => $company->years_experience ? $company->years_experience.'+ years in service' : 'In service'],
         ['icon' => 'users', 'value' => $company->employee_count ? number_format($company->employee_count).'+' : null, 'label' => 'Employees'],
-        ['icon' => 'truck', 'value' => $company->on_time_delivery_percent !== null ? $company->on_time_delivery_percent.'%' : null, 'label' => 'On-time delivery'],
+        ['icon' => 'truck', 'value' => $company->on_time_delivery_percent !== null ? $company->on_time_delivery_percent.'%' : null, 'label' => 'On-time delivery (as reported by supplier)'],
         ['icon' => 'clipboard-document-check', 'value' => $company->orders_completed ? number_format($company->orders_completed).'+' : null, 'label' => 'Orders completed'],
         ['icon' => 'cube', 'value' => $capacity, 'label' => 'Annual capacity'],
     ])->filter(fn ($s) => filled($s['value']))->values();
@@ -48,7 +48,7 @@
         ['icon' => 'chat-bubble-left-right', 'label' => 'Total reviews', 'value' => $company->hasRating() ? number_format((int) $company->rating_count) : null],
         ['icon' => 'clock', 'label' => 'Response time', 'value' => $company->responseTimeLabel()],
         ['icon' => 'inbox-arrow-down', 'label' => 'Response rate', 'value' => $company->response_rate_percent !== null ? $company->response_rate_percent.'%' : null],
-        ['icon' => 'truck', 'label' => 'On-time delivery', 'value' => $company->on_time_delivery_percent !== null ? $company->on_time_delivery_percent.'%' : null],
+        ['icon' => 'truck', 'label' => 'On-time delivery (self-reported)', 'value' => $company->on_time_delivery_percent !== null ? $company->on_time_delivery_percent.'%' : null],
         ['icon' => 'clipboard-document-check', 'label' => 'Orders completed', 'value' => $company->orders_completed ? number_format($company->orders_completed) : null],
     ])->filter(fn ($r) => filled($r['value']))->values();
 
@@ -97,7 +97,7 @@
         ['icon' => 'language', 'label' => 'Languages', 'value' => is_array($company->languages) && $company->languages !== [] ? implode(', ', $company->languages) : null],
         ['icon' => 'cube', 'label' => 'Annual capacity', 'value' => $capacity],
         ['icon' => 'clock', 'label' => 'Response time', 'value' => $company->responseTimeLabel()],
-        ['icon' => 'truck', 'label' => 'On-time delivery', 'value' => $company->on_time_delivery_percent !== null ? $company->on_time_delivery_percent.'%' : null],
+        ['icon' => 'truck', 'label' => 'On-time delivery (self-reported)', 'value' => $company->on_time_delivery_percent !== null ? $company->on_time_delivery_percent.'%' : null],
     ])->filter(fn ($f) => filled($f['value']))->values();
 
     // ---- Tabs. A tab exists only when its panel has real content. --------
@@ -168,8 +168,12 @@
                     <div class="min-w-0">
                         <span class="inline-flex items-center gap-1.5 rounded-full bg-forest-600 px-3 py-1 text-[0.9375rem] font-semibold text-white">
                             <x-heroicon-s-check-badge class="h-4 w-4" aria-hidden="true" />
-                            Verified Supplier
+                            CTH Verified Supplier
                         </span>
+                        <a href="{{ route('verification.info') }}"
+                           class="ml-2 inline-flex items-center text-[0.8125rem] font-medium text-forest-200 underline decoration-forest-400/60 underline-offset-2 transition hover:text-white">
+                            How verification works
+                        </a>
 
                         <h1 class="mt-2 font-display text-[1.75rem] font-semibold leading-tight text-white lg:text-[2.5rem]">
                             {{ $company->name }}
