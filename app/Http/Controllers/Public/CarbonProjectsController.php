@@ -57,4 +57,26 @@ class CarbonProjectsController extends Controller
             ],
         ]);
     }
+
+    public function show(CarbonProject $carbonProject): View
+    {
+        $carbonProject = CarbonProject::query()
+            ->whereKey($carbonProject->getKey())
+            ->where('status', ProductStatus::Active->value)
+            ->whereHas('company', fn (Builder $q) => $q
+                ->publiclyVisible()
+                ->where('type', OrganisationType::CarbonDeveloper->value))
+            ->with('company')
+            ->firstOrFail();
+
+        return view('public.carbon-projects.show', [
+            'project' => $carbonProject,
+            'company' => $carbonProject->company,
+            'breadcrumbs' => [
+                ['label' => 'Home', 'url' => route('home')],
+                ['label' => 'Carbon Projects', 'url' => route('carbon-projects')],
+                ['label' => $carbonProject->name, 'url' => route('carbon-projects.show', $carbonProject)],
+            ],
+        ]);
+    }
 }

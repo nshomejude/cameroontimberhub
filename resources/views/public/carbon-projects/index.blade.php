@@ -86,7 +86,7 @@
                                 </span>
 
                                 <h3 class="mt-3 text-[1.0625rem] font-bold leading-tight text-ink dark:text-sand-100">
-                                    {{ $project->name }}
+                                    <a href="{{ route('carbon-projects.show', $project) }}" class="relative z-10">{{ $project->name }}</a>
                                 </h3>
 
                                 @if ($project->company)
@@ -118,9 +118,7 @@
                                     @endif
                                 </dl>
 
-                                @if ($project->company)
-                                    <a href="{{ route('companies.show', $project->company->slug) }}" class="absolute inset-0" aria-label="View {{ $project->name }}"></a>
-                                @endif
+                                <a href="{{ route('carbon-projects.show', $project) }}" class="absolute inset-0" aria-label="View {{ $project->name }}"></a>
                             </article>
                         @endforeach
                     </div>

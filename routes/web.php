@@ -70,6 +70,7 @@ Route::get('/made-in-cameroon', [MadeInCameroonController::class, 'index'])->nam
 
 // Public carbon-project directory: carbon-developer companies' self-posted projects.
 Route::get('/carbon-projects', [CarbonProjectsController::class, 'index'])->name('carbon-projects');
+Route::get('/carbon-projects/{carbonProject}', [CarbonProjectsController::class, 'show'])->name('carbon-projects.show');
 
 // Cross-entity search (products + companies + species).
 Route::get('/search', [SearchController::class, 'index'])->name('search');

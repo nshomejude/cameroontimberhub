@@ -166,10 +166,12 @@
                          class="h-24 w-24 shrink-0 rounded-full border-2 border-white/70 bg-white object-contain p-2 lg:h-32 lg:w-32">
 
                     <div class="min-w-0">
-                        <span class="inline-flex items-center gap-1.5 rounded-full bg-forest-600 px-3 py-1 text-[0.9375rem] font-semibold text-white">
-                            <x-heroicon-s-check-badge class="h-4 w-4" aria-hidden="true" />
-                            Verified Supplier
-                        </span>
+                        @if ($company->hasFeature('verified_badge'))
+                            <span class="inline-flex items-center gap-1.5 rounded-full bg-forest-600 px-3 py-1 text-[0.9375rem] font-semibold text-white">
+                                <x-heroicon-s-check-badge class="h-4 w-4" aria-hidden="true" />
+                                Verified Supplier
+                            </span>
+                        @endif
 
                         <h1 class="mt-2 font-display text-[1.75rem] font-semibold leading-tight text-white lg:text-[2.5rem]">
                             {{ $company->name }}
@@ -406,28 +408,32 @@
                                             </section>
                                         @endif
 
-                                        <section class="{{ $card }} p-5">
-                                            <h2 class="flex items-center gap-2 text-[1.0625rem] font-bold text-ink">
-                                                <x-heroicon-s-shield-check class="h-5 w-5 text-forest-600" aria-hidden="true" />
-                                                Verification
-                                            </h2>
-                                            <dl class="mt-3 space-y-2 text-[1.0625rem]">
-                                                <div class="flex justify-between gap-3"><dt class="text-ink-soft">Status</dt><dd class="font-semibold text-forest-700">Verified profile</dd></div>
-                                                @if ($badge?->issued_at)
-                                                    <div class="flex justify-between gap-3"><dt class="text-ink-soft">Verification date</dt><dd class="text-ink">{{ $badge->issued_at->format('d M Y') }}</dd></div>
-                                                @endif
-                                                @if ($badge?->valid_until)
-                                                    <div class="flex justify-between gap-3"><dt class="text-ink-soft">Valid until</dt><dd class="text-ink">{{ $badge->valid_until->format('d M Y') }}</dd></div>
-                                                @endif
-                                                @if ($badge?->reference_code)
-                                                    <div class="flex justify-between gap-3"><dt class="text-ink-soft">Reference</dt><dd class="text-ink">{{ $badge->reference_code }}</dd></div>
-                                                @endif
-                                            </dl>
-                                            <p class="mt-4 border-t border-sand-200 pt-3 text-[0.9375rem] leading-relaxed text-ink-soft">
-                                                Documents reviewed by Cameroon Timber Hub based on information submitted by the company.
-                                                Buyers should conduct final due diligence before any transaction.
-                                            </p>
-                                        </section>
+                                        {{-- Verified badge is a plan entitlement (verified_badge): gate the
+                                             display, not the underlying verification record. --}}
+                                        @if ($company->hasFeature('verified_badge'))
+                                            <section class="{{ $card }} p-5">
+                                                <h2 class="flex items-center gap-2 text-[1.0625rem] font-bold text-ink">
+                                                    <x-heroicon-s-shield-check class="h-5 w-5 text-forest-600" aria-hidden="true" />
+                                                    Verification
+                                                </h2>
+                                                <dl class="mt-3 space-y-2 text-[1.0625rem]">
+                                                    <div class="flex justify-between gap-3"><dt class="text-ink-soft">Status</dt><dd class="font-semibold text-forest-700">Verified profile</dd></div>
+                                                    @if ($badge?->issued_at)
+                                                        <div class="flex justify-between gap-3"><dt class="text-ink-soft">Verification date</dt><dd class="text-ink">{{ $badge->issued_at->format('d M Y') }}</dd></div>
+                                                    @endif
+                                                    @if ($badge?->valid_until)
+                                                        <div class="flex justify-between gap-3"><dt class="text-ink-soft">Valid until</dt><dd class="text-ink">{{ $badge->valid_until->format('d M Y') }}</dd></div>
+                                                    @endif
+                                                    @if ($badge?->reference_code)
+                                                        <div class="flex justify-between gap-3"><dt class="text-ink-soft">Reference</dt><dd class="text-ink">{{ $badge->reference_code }}</dd></div>
+                                                    @endif
+                                                </dl>
+                                                <p class="mt-4 border-t border-sand-200 pt-3 text-[0.9375rem] leading-relaxed text-ink-soft">
+                                                    Documents reviewed by Cameroon Timber Hub based on information submitted by the company.
+                                                    Buyers should conduct final due diligence before any transaction.
+                                                </p>
+                                            </section>
+                                        @endif
 
                                         {{--
                                             Buyer reviews.
@@ -540,7 +546,7 @@
                                     <h2 class="text-[1.0625rem] font-bold text-ink">Carbon projects from {{ $company->name }}</h2>
                                     <div class="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
                                         @foreach ($carbonProjects as $project)
-                                            <div class="{{ $card }} p-4">
+                                            <a href="{{ route('carbon-projects.show', $project) }}" class="{{ $card }} block p-4 transition hover:border-forest-200 hover:shadow-lg">
                                                 <div class="flex items-start justify-between gap-2">
                                                     <p class="font-semibold text-ink">{{ $project->name }}</p>
                                                     @if ($project->project_type)
@@ -556,7 +562,7 @@
                                                 @if ($project->description)
                                                     <p class="mt-2 text-[0.9375rem] leading-relaxed text-ink-soft">{{ Str::limit(strip_tags($project->description), 120) }}</p>
                                                 @endif
-                                            </div>
+                                            </a>
                                         @endforeach
                                     </div>
                                 </section>
