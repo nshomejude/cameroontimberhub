@@ -7,6 +7,7 @@ use App\Enums\ProductStatus;
 use App\Enums\TimberLotStatus;
 use App\Models\Product;
 use App\Models\TimberLot;
+use App\Services\FraudDetectionService;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -14,6 +15,11 @@ use Throwable;
  * Wires real Product listings into the Timber Lot system: a genuine
  * tradeable listing (active + a real moq_quantity) gets a linked TimberLot,
  * and archiving the listing archives its lot in turn.
+ *
+ * Also runs pricing-anomaly detection (blueprint §25) on every save — added
+ * inside this observer's existing try/catch rather than as a second,
+ * competing Product observer, so a fraud-detection bug shares the exact same
+ * "never block the real save" guarantee as the TimberLot wiring below.
  *
  * Every entry point is wrapped in try/catch and logs-and-returns on failure:
  * a bug here must never prevent a product from being created or saved,
@@ -25,6 +31,7 @@ class ProductObserver
     {
         try {
             $this->maybeCreateLot($product);
+            $this->detectPricingAnomaly($product);
         } catch (Throwable $e) {
             Log::error('ProductObserver::created failed to wire TimberLot', [
                 'product_id' => $product->id ?? null,
@@ -38,12 +45,19 @@ class ProductObserver
         try {
             $this->maybeCreateLot($product);
             $this->maybeArchiveLot($product);
+            $this->detectPricingAnomaly($product);
         } catch (Throwable $e) {
             Log::error('ProductObserver::updated failed to wire TimberLot', [
                 'product_id' => $product->id ?? null,
                 'exception' => $e->getMessage(),
             ]);
         }
+    }
+
+    /** Blueprint §25 pricing-anomaly detection — detection/alerting only, never blocks the save. */
+    private function detectPricingAnomaly(Product $product): void
+    {
+        app(FraudDetectionService::class)->detectPricingAnomaly($product);
     }
 
     /**

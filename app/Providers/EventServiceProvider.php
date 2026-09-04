@@ -10,9 +10,11 @@ use App\Events\DocumentRejected;
 use App\Events\PlanAssigned;
 use App\Events\RfqApproved;
 use App\Events\RfqRoutedToCompany;
+use App\Listeners\DetectLoginAnomaly;
 use App\Listeners\NotifyExporterOfRfq;
 use App\Listeners\NotifyExporterOfVerification;
 use App\Listeners\SendBuyerRfqAcknowledgement;
+use Illuminate\Auth\Events\Login;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 
 class EventServiceProvider extends ServiceProvider
@@ -21,6 +23,11 @@ class EventServiceProvider extends ServiceProvider
     protected $listen = [
         CompanyVerified::class => [
             NotifyExporterOfVerification::class,
+        ],
+
+        // Blueprint §25 login-anomaly detection (detection/alerting only).
+        Login::class => [
+            DetectLoginAnomaly::class,
         ],
 
         RfqRoutedToCompany::class => [

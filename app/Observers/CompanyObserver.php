@@ -4,7 +4,10 @@ namespace App\Observers;
 
 use App\Models\Company;
 use App\Models\Plan;
+use App\Services\FraudDetectionService;
 use App\Services\SubscriptionService;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 /**
  * Every company needs a plan_id for Company::hasFeature() (and the
@@ -17,19 +20,34 @@ class CompanyObserver
 {
     public function created(Company $company): void
     {
-        if ($company->plan_id !== null) {
-            return;
+        if ($company->plan_id === null) {
+            $freePlan = Plan::where('slug', 'free')->first();
+
+            if ($freePlan) {
+                app(SubscriptionService::class)->assign($company, $freePlan);
+
+                // assign() sets plan_id on the in-memory model via update(), so
+                // the caller sees the assigned plan without a fresh fetch.
+            }
         }
 
-        $freePlan = Plan::where('slug', 'free')->first();
+        $this->detectDuplicateCompany($company);
+    }
 
-        if (! $freePlan) {
-            return;
+    /**
+     * Blueprint §25 duplicate-entity detection — detection/alerting only,
+     * wrapped separately from the plan assignment above so a bug here can
+     * never prevent a company (or its plan assignment) from being created.
+     */
+    private function detectDuplicateCompany(Company $company): void
+    {
+        try {
+            app(FraudDetectionService::class)->detectDuplicateCompanies($company);
+        } catch (Throwable $e) {
+            Log::error('CompanyObserver failed to run duplicate-company detection', [
+                'company_id' => $company->id ?? null,
+                'exception' => $e->getMessage(),
+            ]);
         }
-
-        app(SubscriptionService::class)->assign($company, $freePlan);
-
-        // assign() sets plan_id on the in-memory model via update(), so the
-        // caller sees the assigned plan without a fresh fetch.
     }
 }
