@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\CompliancePackController;
 use App\Http\Controllers\DocumentDownloadController;
 use App\Http\Controllers\OrderDocumentDownloadController;
 use App\Http\Controllers\Public\AccountController;
@@ -134,6 +135,9 @@ Route::get('/llms.txt', [SitemapController::class, 'llms'])->name('llms');
 Route::get('/documents/{document}/download', DocumentDownloadController::class)
     ->name('documents.download')
     ->middleware(['signed', 'auth']);
+
+// Auth-gated CTH Compliance Evidence Pack download (blueprint §83) — the lot's owning company or compliance.export staff only, never public.
+Route::get('/compliance-pack/{timberLot}', [CompliancePackController::class, 'download'])->middleware('auth')->name('compliance-pack.download');
 
 // Public RFQ intake (no login) + email verification.
 Route::get('/request-quote', [RfqController::class, 'create'])->name('rfq.create');
