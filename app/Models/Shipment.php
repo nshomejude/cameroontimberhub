@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 /**
  * A transport booking (gap-plan 1.5.10). Owns a digital waybill; carries no
@@ -29,6 +30,12 @@ class Shipment extends Model
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class);
+    }
+
+    /** TimberLots carried on this shipment (blueprint §10 wiring), with the m3 quantity on this leg. */
+    public function timberLots(): BelongsToMany
+    {
+        return $this->belongsToMany(TimberLot::class, 'shipment_timber_lots')->withPivot('quantity_m3');
     }
 
     /**

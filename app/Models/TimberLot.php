@@ -101,6 +101,12 @@ class TimberLot extends Model
         return $this->hasMany(\App\Models\LotEvent::class);
     }
 
+    /** Shipments carrying this lot (blueprint §10 wiring), with the m3 quantity on each leg. */
+    public function shipments(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(\App\Models\Shipment::class, 'shipment_timber_lots')->withPivot('quantity_m3');
+    }
+
     /** Transformations (blueprint §11 mass-balance ledger) that consumed this lot as an input. */
     public function inputTransformations(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
     {
