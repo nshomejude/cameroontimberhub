@@ -4,6 +4,10 @@ namespace App\Providers;
 
 use App\Models\Product;
 use App\Observers\ProductObserver;
+use App\Models\Order;
+use App\Observers\OrderObserver;
+use App\Models\CheckpointUpdate;
+use App\Observers\ShipmentObserver;
 use App\Policies\ActivityLogPolicy;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -34,6 +38,13 @@ class AppServiceProvider extends ServiceProvider
 
         $this->injectRequestContextIntoAuditLog();
         $this->registerRateLimiters();
+
+        Order::observe(OrderObserver::class);
+
+        // Shipment carries no status column of its own — its milestones are
+        // CheckpointUpdate rows recorded against it (see app/Observers/ShipmentObserver.php
+        // doc block), so the observer is registered on CheckpointUpdate.
+        CheckpointUpdate::observe(ShipmentObserver::class);
     }
 
     /** Public-intake rate limiters (spec §4.2), keyed in Redis. */
