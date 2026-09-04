@@ -41,6 +41,19 @@ class RolesAndPermissionsSeeder extends Seeder
         // from billing/financial authority below.
         'compliance.manage',
         'payments.view',
+        // Added for the Market Intelligence dashboard (blueprint §33-34):
+        // gates the Price/Demand/Supplier Performance index page.
+        'market-intelligence.view',
+        // Blueprint §25 anti-fraud detection: reviewing/dismissing/confirming
+        // FraudSignal rows. Admin/super_admin only — deliberately not granted
+        // to any of the narrower staff roles below.
+        'fraud.review',
+        // Added for the Platform Operations dashboard (blueprint §66-69):
+        // gates the North-Star KPI page. Admin/super_admin only.
+        'platform-ops.view',
+        // Added for the formal Dispute Resolution workflow (blueprint §64):
+        // gates the admin Dispute decision action. Admin/super_admin only.
+        'disputes.manage',
     ];
 
     /** Role => permission matrix (spec decision G). super_admin gets all. */
@@ -57,6 +70,14 @@ class RolesAndPermissionsSeeder extends Seeder
             // every critical system, so these newly-introduced granular
             // permissions are added here too -- nothing existing is removed.
             'compliance.manage', 'payments.view',
+            // Market Intelligence dashboard (blueprint §33-34): admin-only.
+            'market-intelligence.view',
+            // Blueprint §25 anti-fraud detection: admin-only.
+            'fraud.review',
+            // Platform Operations dashboard (blueprint §66-69): admin-only.
+            'platform-ops.view',
+            // Dispute Resolution workflow (blueprint §64): admin-only.
+            'disputes.manage',
         ],
         'verification_officer' => [
             'companies.view', 'documents.review', 'verification.review',
