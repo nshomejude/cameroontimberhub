@@ -137,29 +137,27 @@ it('still records the checkpoint even when the lot-event recording fails inside 
     Log::shouldReceive('warning')->zeroOrMoreTimes();
 
     // Simulate an internal failure inside TimberLot::recordEvent() without
-    // touching LotEvent.php or leaving any process-wide model-event hook
-    // behind (that would leak into later test files sharing this process):
-    // pre-insert a row that squats on the next auto-increment id, so the
-    // observer's own LotEvent insert collides on the primary key.
-    $nextId = (int) \Illuminate\Support\Facades\DB::table('lot_events')->max('id') + 1;
-    \Illuminate\Support\Facades\DB::table('lot_events')->insert([
-        'id' => $nextId,
-        'timber_lot_id' => $lot->getKey(),
-        'event_type' => 'harvest_recorded',
-        'occurred_at' => now(),
-        'documents' => '{}',
-        'evidence' => '{}',
-        'event_hash' => 'squatter',
-        'created_at' => now(),
-        'updated_at' => now(),
-    ]);
+    // touching LotEvent.php: a temporary `creating` listener that throws
+    // before any SQL runs, so no real Postgres error/transaction-abort is
+    // involved (two earlier approaches were unreliable here — pre-inserting
+    // a row at "MAX(id)+1" doesn't reliably collide with Postgres bigserial's
+    // independent nextval() sequence, and renaming the table via DDL inside
+    // Pest's per-test transaction leaves the transaction aborted so even the
+    // rename-back in a finally block fails).
+    \App\Models\LotEvent::creating(function () {
+        throw new \RuntimeException('Simulated lot-event recording failure for test.');
+    });
 
-    $checkpoint = CheckpointUpdate::factory()->create([
-        'trackable_type' => Shipment::class,
-        'trackable_id' => $shipment->getKey(),
-        'tracking_token' => str()->random(48),
-        'status' => TrackingCheckpointStatus::Dispatched->value,
-    ]);
+    try {
+        $checkpoint = CheckpointUpdate::factory()->create([
+            'trackable_type' => Shipment::class,
+            'trackable_id' => $shipment->getKey(),
+            'tracking_token' => str()->random(48),
+            'status' => TrackingCheckpointStatus::Dispatched->value,
+        ]);
+    } finally {
+        \Illuminate\Support\Facades\Event::forget('eloquent.creating: '.\App\Models\LotEvent::class);
+    }
 
     // The checkpoint (the "shipment status update") still succeeded despite
     // the lot-event recording failing underneath it.
