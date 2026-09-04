@@ -47,6 +47,7 @@ class User extends Authenticatable implements FilamentUser
         return match ($panel->getId()) {
             'admin' => $this->hasAnyRole([
                 'super_admin', 'admin', 'verification_officer', 'content_manager',
+                'compliance_officer', 'billing_officer',
             ]),
             'exporter' => Schema::hasTable('company_user') && $this->companies()->exists(),
             default => false,

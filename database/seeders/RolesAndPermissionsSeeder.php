@@ -35,6 +35,12 @@ class RolesAndPermissionsSeeder extends Seeder
         'users.manage',
         'audit.view',
         'certificates.manage',
+        // Added for admin governance segregation (blueprint §88): compliance
+        // authority (ComplianceRule/ComplianceCase/RegulatorySource,
+        // Inspectors/Inspections) is distinct from verification authority and
+        // from billing/financial authority below.
+        'compliance.manage',
+        'payments.view',
     ];
 
     /** Role => permission matrix (spec decision G). super_admin gets all. */
@@ -47,6 +53,10 @@ class RolesAndPermissionsSeeder extends Seeder
             'rfqs.triage', 'rfqs.route', 'inquiries.review',
             'pages.manage', 'audit.view',
             'certificates.manage',
+            // Additive (blueprint §88): admin already had de facto access to
+            // every critical system, so these newly-introduced granular
+            // permissions are added here too -- nothing existing is removed.
+            'compliance.manage', 'payments.view',
         ],
         'verification_officer' => [
             'companies.view', 'documents.review', 'verification.review',
@@ -55,6 +65,19 @@ class RolesAndPermissionsSeeder extends Seeder
         ],
         'content_manager' => [
             'companies.view', 'species.manage', 'pages.manage',
+        ],
+        // Compliance authority (blueprint §88, §89 segregation): manages
+        // regulatory sources, compliance rules/cases, inspectors and
+        // inspections. Deliberately excludes plans.manage/payments.view
+        // (billing) and users.manage (privilege escalation).
+        'compliance_officer' => [
+            'companies.view', 'compliance.manage', 'audit.view',
+        ],
+        // Financial/billing authority (blueprint §88, §89 segregation):
+        // manages subscription plans and can view payments. Deliberately
+        // excludes verification.review/badges.* and compliance.manage.
+        'billing_officer' => [
+            'plans.manage', 'payments.view', 'audit.view',
         ],
     ];
 

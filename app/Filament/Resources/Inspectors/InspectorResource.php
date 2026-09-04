@@ -29,6 +29,26 @@ class InspectorResource extends Resource
 
     protected static ?string $navigationLabel = 'Inspectors';
 
+    public static function canViewAny(): bool
+    {
+        return (bool) auth()->user()?->can('compliance.manage');
+    }
+
+    public static function canCreate(): bool
+    {
+        return (bool) auth()->user()?->can('compliance.manage');
+    }
+
+    public static function canEdit($record): bool
+    {
+        return (bool) auth()->user()?->can('compliance.manage');
+    }
+
+    public static function canDelete($record): bool
+    {
+        return (bool) auth()->user()?->can('compliance.manage');
+    }
+
     public static function form(Schema $schema): Schema
     {
         return InspectorForm::configure($schema);

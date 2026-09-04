@@ -29,9 +29,24 @@ class InspectionResource extends Resource
 
     protected static ?string $navigationLabel = 'Inspections';
 
+    public static function canViewAny(): bool
+    {
+        return (bool) auth()->user()?->can('compliance.manage');
+    }
+
     public static function canCreate(): bool
     {
         return false;
+    }
+
+    public static function canEdit($record): bool
+    {
+        return (bool) auth()->user()?->can('compliance.manage');
+    }
+
+    public static function canDelete($record): bool
+    {
+        return (bool) auth()->user()?->can('compliance.manage');
     }
 
     public static function infolist(Schema $schema): Schema

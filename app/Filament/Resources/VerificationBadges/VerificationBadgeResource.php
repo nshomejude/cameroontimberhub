@@ -2,11 +2,12 @@
 
 namespace App\Filament\Resources\VerificationBadges;
 
+use App\Actions\Verification\RequestVerificationRevocation;
 use App\Enums\BadgeStatus;
 use App\Enums\BadgeType;
 use App\Filament\Resources\VerificationBadges\Pages\ListVerificationBadges;
 use App\Models\VerificationBadge;
-use App\Services\BadgeService;
+use App\Models\VerificationRevocationRequest;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Textarea;
@@ -82,12 +83,22 @@ class VerificationBadgeResource extends Resource
             ])
             ->defaultSort('issued_at', 'desc')
             ->recordActions([
-                Action::make('revoke')
-                    ->label('Revoke')
+                // Two-person control (blueprint §89): this no longer revokes
+                // directly. It records a pending VerificationRevocationRequest;
+                // a DIFFERENT staff member must approve it (see the
+                // "Verification revocations" resource) before the company's
+                // active badges are actually revoked.
+                Action::make('requestRevocation')
+                    ->label('Request revocation')
                     ->icon('heroicon-o-x-circle')
                     ->color('danger')
                     ->requiresConfirmation()
-                    ->visible(fn (VerificationBadge $record): bool => $record->status === BadgeStatus::Active)
+                    ->modalDescription('Creates a pending revocation request. A different staff member must approve it before the badge is revoked.')
+                    ->visible(fn (VerificationBadge $record): bool => $record->status === BadgeStatus::Active
+                        && ! VerificationRevocationRequest::query()
+                            ->where('company_id', $record->company_id)
+                            ->where('status', 'pending')
+                            ->exists())
                     ->schema([
                         Textarea::make('reason')
                             ->label('Revocation reason')
@@ -95,8 +106,8 @@ class VerificationBadgeResource extends Resource
                             ->maxLength(500),
                     ])
                     ->action(function (VerificationBadge $record, array $data): void {
-                        app(BadgeService::class)->revoke($record, $data['reason'], auth()->user());
-                        Notification::make()->title('Badge revoked')->success()->send();
+                        app(RequestVerificationRevocation::class)->execute($record->company, $data['reason'], auth()->user());
+                        Notification::make()->title('Revocation requested')->body('A different staff member must approve it before it takes effect.')->success()->send();
                     }),
             ]);
     }

@@ -39,11 +39,14 @@ it('serves both panel login pages', function () {
 it('seeds the canonical RBAC roles and permissions', function () {
     $this->seed(RolesAndPermissionsSeeder::class);
 
-    expect(Permission::count())->toBe(17);
-    expect(Role::findByName('super_admin', 'web')->permissions)->toHaveCount(17);
-    expect(Role::findByName('admin', 'web')->permissions)->toHaveCount(14);
+    expect(Permission::count())->toBe(19);
+    expect(Role::findByName('super_admin', 'web')->permissions)->toHaveCount(19);
+    expect(Role::findByName('admin', 'web')->permissions)->toHaveCount(16);
     expect(Role::findByName('verification_officer', 'web')->permissions)->toHaveCount(7);
     expect(Role::findByName('content_manager', 'web')->permissions)->toHaveCount(3);
+    // Admin governance segregation of duties (blueprint §88, §89).
+    expect(Role::findByName('compliance_officer', 'web')->permissions)->toHaveCount(3);
+    expect(Role::findByName('billing_officer', 'web')->permissions)->toHaveCount(3);
 });
 
 it('gates panel access by role and company membership', function () {
