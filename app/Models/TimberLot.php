@@ -4,7 +4,9 @@ namespace App\Models;
 
 use App\Enums\LotEventType;
 use App\Enums\TimberLotStatus;
+use App\Support\GeoJsonPolygon;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -36,6 +38,29 @@ class TimberLot extends Model
             'harvest_period_start' => 'date',
             'harvest_period_end' => 'date',
         ];
+    }
+
+    /**
+     * The plot/harvest-area boundary (blueprint §12), stored as a GeoJSON
+     * Polygon in the jsonb `origin_boundary` column. Validated on write via
+     * App\Support\GeoJsonPolygon — invalid structures never reach the DB.
+     */
+    protected function originBoundary(): Attribute
+    {
+        return Attribute::make(
+            get: fn (?string $value) => $value === null ? null : json_decode($value, true),
+            set: function (mixed $value) {
+                if (is_string($value)) {
+                    $value = json_decode($value, true);
+                }
+
+                if ($value !== null && ! GeoJsonPolygon::isValid($value)) {
+                    throw new \InvalidArgumentException('origin_boundary must be a valid GeoJSON Polygon.');
+                }
+
+                return $value === null ? null : json_encode($value);
+            },
+        );
     }
 
     public function getRouteKeyName(): string

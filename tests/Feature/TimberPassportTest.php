@@ -77,3 +77,39 @@ it('never exposes precise GPS coordinates even when the lot has them set', funct
     expect($html)->not->toContain('4.123456')
         ->and($html)->not->toContain('9.987654');
 });
+
+it('renders a plot boundary summary without raw coordinates when a boundary is present', function () {
+    $company = Company::factory()->publiclyVisible()->create();
+    $lot = TimberLot::factory()->available()->for($company)->create([
+        'origin_boundary' => [
+            'type' => 'Polygon',
+            'coordinates' => [[
+                [9.712345, 4.056789],
+                [9.720000, 4.056789],
+                [9.720000, 4.060000],
+                [9.712345, 4.056789],
+            ]],
+        ],
+    ]);
+
+    $response = $this->get(route('passport.show', $lot));
+
+    $response->assertOk()
+        ->assertSee('Origin plot boundary recorded (4-point polygon)');
+
+    $html = $response->getContent();
+
+    expect($html)->not->toContain('9.712345')
+        ->and($html)->not->toContain('4.056789');
+});
+
+it('does not render a plot boundary section when no boundary is present', function () {
+    $company = Company::factory()->publiclyVisible()->create();
+    $lot = TimberLot::factory()->available()->for($company)->create([
+        'origin_boundary' => null,
+    ]);
+
+    $response = $this->get(route('passport.show', $lot));
+
+    $response->assertOk()->assertDontSee('Plot boundary');
+});

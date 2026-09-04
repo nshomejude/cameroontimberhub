@@ -2,9 +2,11 @@
 
 namespace App\Filament\Resources\Companies\Tables;
 
+use App\Actions\Company\RequestCompanySuspension;
 use App\Enums\CompanyStatus;
 use App\Enums\SupplierType;
 use App\Models\Company;
+use App\Models\CompanySuspensionRequest;
 use App\Models\Plan;
 use App\Services\CompanyStatusService;
 use App\Services\SubscriptionService;
@@ -155,11 +157,14 @@ class CompaniesTable
                 }),
 
             Action::make('suspend')
+                ->label('Request suspension')
                 ->icon('heroicon-o-pause-circle')->color('warning')->schema($reason())
-                ->visible(fn (Company $r): bool => $r->status === CompanyStatus::Verified && $canSuspend())
-                ->action(function (Company $record, array $data) use ($service, $notify): void {
-                    $service()->suspend($record, $data['reason'], auth()->user());
-                    $notify('Company suspended');
+                ->modalDescription('This creates a pending suspension request. A different staff member must approve it before the company is actually suspended.')
+                ->visible(fn (Company $r): bool => $r->status === CompanyStatus::Verified && $canSuspend()
+                    && ! CompanySuspensionRequest::where('company_id', $r->getKey())->where('status', 'pending')->exists())
+                ->action(function (Company $record, array $data) use ($notify): void {
+                    app(RequestCompanySuspension::class)->execute($record, $data['reason'], auth()->user());
+                    $notify('Suspension request created — awaiting a different staff member\'s approval');
                 }),
 
             Action::make('reinstate')

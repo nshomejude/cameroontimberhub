@@ -59,6 +59,14 @@
                                 <dd class="font-semibold text-ink dark:text-sand-100">{{ number_format((float) $lot->origin_latitude, 1) }}, {{ number_format((float) $lot->origin_longitude, 1) }}</dd>
                             </div>
                         @endif
+                        @if ($lot->origin_boundary)
+                            <div class="flex justify-between gap-4 py-2.5 text-[0.9375rem]">
+                                <dt class="text-ink-soft dark:text-[#b3ab9b]">Plot boundary</dt>
+                                <dd class="font-semibold text-ink dark:text-sand-100">
+                                    Origin plot boundary recorded ({{ count($lot->origin_boundary['coordinates'][0] ?? []) }}-point polygon)
+                                </dd>
+                            </div>
+                        @endif
                         @if ($lot->harvest_period_start || $lot->harvest_period_end)
                             <div class="flex justify-between gap-4 py-2.5 text-[0.9375rem]">
                                 <dt class="text-ink-soft dark:text-[#b3ab9b]">Harvest period</dt>
