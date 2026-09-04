@@ -105,6 +105,12 @@ class Order extends Model
         return $this->hasOne(CompanyReview::class);
     }
 
+    /** Trade Assurance Phase 1 coordination record (blueprint §28), if any. */
+    public function tradeAssuranceAgreement(): HasOne
+    {
+        return $this->hasOne(TradeAssuranceAgreement::class);
+    }
+
     /**
      * The earlier order this one repeats, when it came from a reorder request.
      *
