@@ -4,6 +4,7 @@ namespace App\Filament\Resources\VerificationRevocationRequests\Tables;
 
 use App\Actions\Verification\ApproveVerificationRevocation;
 use App\Models\VerificationRevocationRequest;
+use App\Services\TwoFactorStepUp;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
@@ -46,8 +47,45 @@ class VerificationRevocationRequestsTable
                     ->visible(fn (VerificationRevocationRequest $record): bool => $record->isPending()
                         && (int) $record->requested_by !== (int) auth()->id())
                     ->action(function (VerificationRevocationRequest $record): void {
+                        $user = auth()->user();
+                        $stepUp = app(TwoFactorStepUp::class);
+                        $request = request();
+
+                        // Blueprint §39 step-up re-auth: revoking a company's
+                        // verification badges is high-risk, so it requires a
+                        // TOTP confirmation within the last few minutes. This
+                        // is a Filament Livewire action (no route in the
+                        // middleware stack to attach RequiresRecentTwoFactor
+                        // to), so the same TwoFactorStepUp window is checked
+                        // directly here instead.
+                        if (! $user->hasTwoFactorEnabled()) {
+                            Notification::make()
+                                ->title('Two-factor authentication required')
+                                ->body('Set up two-factor authentication before approving a verification revocation.')
+                                ->danger()
+                                ->send();
+
+                            return;
+                        }
+
+                        if (! $stepUp->isRecentlyVerified($request)) {
+                            Notification::make()
+                                ->title('Re-verification required')
+                                ->body('Please re-confirm your two-factor code before approving this revocation.')
+                                ->danger()
+                                ->actions([
+                                    \Filament\Notifications\Actions\Action::make('verify')
+                                        ->label('Re-verify now')
+                                        ->url(route('two-factor.challenge.show'))
+                                        ->openUrlInNewTab(false),
+                                ])
+                                ->send();
+
+                            return;
+                        }
+
                         try {
-                            app(ApproveVerificationRevocation::class)->execute($record, auth()->user());
+                            app(ApproveVerificationRevocation::class)->execute($record, $user);
                             Notification::make()->title('Revocation approved')->success()->send();
                         } catch (ValidationException $e) {
                             Notification::make()->title('Could not approve')->body(collect($e->errors())->flatten()->implode(' '))->danger()->send();

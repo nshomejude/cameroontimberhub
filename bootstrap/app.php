@@ -5,6 +5,7 @@ use App\Http\Middleware\EnsureBuyerAccount;
 use App\Http\Middleware\EnsureDemoLoginsEnabled;
 use App\Http\Middleware\EnsureExporterOnboarded;
 use App\Http\Middleware\HandleSlugRedirects;
+use App\Http\Middleware\RequiresRecentTwoFactor;
 use App\Http\Middleware\SetLocale;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -35,6 +36,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'buyer' => EnsureBuyerAccount::class,
             'api.buyer' => EnsureApiBuyer::class,
             'demo.logins.enabled' => EnsureDemoLoginsEnabled::class,
+            'requires.recent.2fa' => RequiresRecentTwoFactor::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

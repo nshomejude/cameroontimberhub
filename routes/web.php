@@ -18,6 +18,7 @@ use App\Http\Controllers\Public\CheckpointTrackingController;
 use App\Http\Controllers\Public\CompanyController;
 use App\Http\Controllers\Public\ContactController;
 use App\Http\Controllers\Public\DirectoryController;
+use App\Http\Controllers\Public\DisputeController;
 use App\Http\Controllers\Public\DomesticMarketplaceController;
 use App\Http\Controllers\Public\FleetRegistryController;
 use App\Http\Controllers\Public\GlossaryController;
@@ -43,6 +44,7 @@ use App\Http\Controllers\Public\ShipmentWaybillController;
 use App\Http\Controllers\Public\SitemapController;
 use App\Http\Controllers\Public\SpeciesController;
 use App\Http\Controllers\Public\TimberPassportController;
+use App\Http\Controllers\Public\TradeAssuranceController;
 use App\Http\Controllers\Public\TransformationNetworkController;
 use Illuminate\Support\Facades\Route;
 
@@ -270,11 +272,39 @@ Route::middleware('guest')->group(function () {
 
 Route::post('/logout', [LoginController::class, 'destroy'])->middleware('auth')->name('logout');
 
+// TOTP-based multi-factor authentication (blueprint §39). Self-service
+// enrolment/management is available to every signed-in user; the step-up
+// re-verify challenge is used both by RequiresRecentTwoFactor-gated routes
+// and, out-of-band, by the Filament revocation-approval action.
+Route::middleware(['auth'])->prefix('security/two-factor')->name('two-factor.')->group(function () {
+    Route::get('/', [App\Http\Controllers\Auth\TwoFactorController::class, 'show'])->name('show');
+    Route::post('/enable', [App\Http\Controllers\Auth\TwoFactorController::class, 'enable'])->name('enable');
+    Route::post('/confirm', [App\Http\Controllers\Auth\TwoFactorController::class, 'confirm'])->name('confirm');
+    Route::post('/disable', [App\Http\Controllers\Auth\TwoFactorController::class, 'disable'])->name('disable');
+    Route::post('/recovery-codes', [App\Http\Controllers\Auth\TwoFactorController::class, 'regenerateRecoveryCodes'])->name('recovery-codes');
+    Route::get('/challenge', [App\Http\Controllers\Auth\TwoFactorController::class, 'showChallenge'])->name('challenge.show');
+    Route::post('/challenge', [App\Http\Controllers\Auth\TwoFactorController::class, 'challenge'])
+        ->middleware('throttle:6,1')->name('challenge.store');
+});
+
 // Company-facing fleet & driver registry (gap-plan item 1.5.12). Not under
 // `buyer`/`account` -- the audience is a company member, not a buyer.
 // FleetRegistryController scopes to the signed-in user's own company and
 // 404s when they have none.
 Route::middleware(['auth'])->get('/fleet', [FleetRegistryController::class, 'index'])->name('fleet.index');
+
+// Formal Dispute Resolution workflow (blueprint §64). Reachable by either
+// party to the order — buyer or supplier company member — so it lives
+// outside the buyer-only `/account` group. DisputeController re-derives
+// party membership from the order itself on every request.
+Route::middleware(['auth'])->prefix('orders/{order}/disputes')->name('disputes.')->group(function () {
+    Route::get('/', [DisputeController::class, 'index'])->name('index');
+    Route::post('/', [DisputeController::class, 'store'])->name('store');
+    Route::get('/{dispute}', [DisputeController::class, 'show'])->name('show');
+    Route::post('/{dispute}/evidence', [DisputeController::class, 'submitEvidence'])->name('evidence');
+    Route::post('/{dispute}/reply', [DisputeController::class, 'reply'])->name('reply');
+    Route::post('/{dispute}/appeal', [DisputeController::class, 'appeal'])->name('appeal');
+});
 
 // Buyer account area. `/dashboard` is the Filament exporter panel and `/admin`
 // the staff panel, so the buyer's own home lives at `/account`. `auth` bounces
@@ -299,6 +329,15 @@ Route::middleware(['auth', 'buyer'])->prefix('account')->name('account.')->group
     Route::get('/messages/{conversation}', [MessageController::class, 'show'])->name('messages.show');
     Route::post('/messages/{conversation}', [MessageController::class, 'store'])
         ->middleware('throttle:message-send')->name('messages.store');
+
+    // Trade Assurance Phase 1 (blueprint §28) — coordination/tracking only,
+    // never fund custody. TradeAssuranceController re-checks server-side that
+    // the signed-in user is this order's buyer account before showing or
+    // acting on anything; the route binding alone never authorises access.
+    Route::get('/orders/{order}/trade-assurance', [TradeAssuranceController::class, 'show'])
+        ->name('orders.trade-assurance');
+    Route::post('/orders/{order}/trade-assurance/{milestone}/confirm', [TradeAssuranceController::class, 'confirm'])
+        ->name('orders.trade-assurance.confirm');
 });
 
 // In-thread commerce: RFQ composer, quotation accept/decline/withdraw, and the

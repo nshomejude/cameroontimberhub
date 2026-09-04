@@ -39,6 +39,20 @@ class LoginController extends Controller
 
         $request->session()->regenerate();
 
+        $user = $request->user();
+
+        // Blueprint §39: 2FA is opt-in for company/buyer users but required
+        // for admin-panel staff. Guarded so a role/permission hiccup never
+        // locks anyone out mid-session — this only redirects the very next
+        // request after a fresh login, never terminates an existing one.
+        if (method_exists($user, 'hasAnyRole')
+            && method_exists($user, 'hasTwoFactorEnabled')
+            && $user->hasAnyRole(['super_admin', 'admin'])
+            && ! $user->hasTwoFactorEnabled()) {
+            return redirect()->route('two-factor.show')
+                ->with('status', 'Two-factor authentication is required for admin accounts. Please set it up now.');
+        }
+
         return redirect()->intended($this->redirectPathFor($request->user()));
     }
 

@@ -7,6 +7,7 @@
     "license": "MIT",
     "require": {
         "php": "^8.3",
+        "bacon/bacon-qr-code": "^3.1",
         "barryvdh/laravel-dompdf": "^3.1",
         "endroid/qr-code": "^6.0",
         "filament/filament": "*",
@@ -14,6 +15,7 @@
         "laravel/pennant": "^1.26",
         "laravel/sanctum": "^4.3",
         "laravel/tinker": "^3.0",
+        "pragmarx/google2fa-laravel": "^0.3.0",
         "predis/predis": "*",
         "spatie/laravel-activitylog": "*",
         "spatie/laravel-permission": "*",

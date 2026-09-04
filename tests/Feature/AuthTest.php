@@ -121,11 +121,29 @@ it('sends a staff user to the admin panel on login', function () {
         'password' => 'Str0ng-Passw0rd!',
     ]);
     $user->assignRole('admin');
+    $secret = $user->generateTwoFactorSecret();
+    $user->confirmTwoFactor();
 
     $this->post('/login', [
         'email' => 'staff@example.com',
         'password' => 'Str0ng-Passw0rd!',
     ])->assertRedirect('/admin');
+});
+
+// Blueprint §39: admin-panel staff must have two-factor authentication
+// configured; a login before that is done is redirected to set it up rather
+// than into /admin.
+it('sends an admin without two-factor configured to the two-factor setup screen instead of /admin', function () {
+    $user = User::factory()->create([
+        'email' => 'staff-no-2fa@example.com',
+        'password' => 'Str0ng-Passw0rd!',
+    ]);
+    $user->assignRole('admin');
+
+    $this->post('/login', [
+        'email' => 'staff-no-2fa@example.com',
+        'password' => 'Str0ng-Passw0rd!',
+    ])->assertRedirect(route('two-factor.show'));
 });
 
 it('rejects invalid credentials without starting a session', function () {
