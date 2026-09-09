@@ -9,6 +9,7 @@
         "php": "^8.3",
         "bacon/bacon-qr-code": "^3.1",
         "barryvdh/laravel-dompdf": "^3.1",
+        "dedoc/scramble": "^0.13.43",
         "endroid/qr-code": "^6.0",
         "filament/filament": "*",
         "laravel/framework": "^13.8",
