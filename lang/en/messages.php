@@ -26,6 +26,7 @@ return [
         'log_in' => 'Log In',
         'join_now' => 'Join Now',
         'account' => 'Account',
+        'log_out' => 'Sign Out',
         'search' => 'Search',
         'knowledge_centre' => 'Knowledge Centre',
         'timber_grades' => 'Timber Grades',

@@ -301,10 +301,20 @@
 
             {{-- Desktop auth actions --}}
             <div class="ml-6 hidden items-center gap-3 lg:flex">
-                <a href="{{ route('login') }}"
-                   class="rounded-lg border border-forest-700 px-5 py-2 text-sm font-semibold text-forest-700 transition hover:bg-forest-50">{{ __('messages.nav.log_in') }}</a>
-                <a href="{{ route('register') }}"
-                   class="rounded-lg bg-forest-700 px-5 py-2 text-sm font-semibold text-white transition hover:bg-forest-800">{{ __('messages.nav.join_now') }}</a>
+                @auth
+                    <a href="{{ route('account.index') }}"
+                       class="rounded-lg border border-forest-700 px-5 py-2 text-sm font-semibold text-forest-700 transition hover:bg-forest-50">{{ __('messages.nav.account') }}</a>
+                    <form method="POST" action="{{ route('logout') }}">
+                        @csrf
+                        <button type="submit"
+                                class="rounded-lg bg-forest-700 px-5 py-2 text-sm font-semibold text-white transition hover:bg-forest-800">{{ __('messages.nav.log_out') }}</button>
+                    </form>
+                @else
+                    <a href="{{ route('login') }}"
+                       class="rounded-lg border border-forest-700 px-5 py-2 text-sm font-semibold text-forest-700 transition hover:bg-forest-50">{{ __('messages.nav.log_in') }}</a>
+                    <a href="{{ route('register') }}"
+                       class="rounded-lg bg-forest-700 px-5 py-2 text-sm font-semibold text-white transition hover:bg-forest-800">{{ __('messages.nav.join_now') }}</a>
+                @endauth
             </div>
 
             {{-- Mobile actions --}}
@@ -312,7 +322,7 @@
                 <a href="{{ url('/search') }}" class="flex h-10 w-10 items-center justify-center rounded-lg text-ink" aria-label="{{ __('messages.nav.search') }}">
                     <x-heroicon-o-magnifying-glass class="h-6 w-6" />
                 </a>
-                <a href="{{ route('login') }}" class="relative flex h-10 w-10 items-center justify-center rounded-lg text-ink" aria-label="{{ __('messages.nav.account') }}">
+                <a href="{{ auth()->check() ? route('account.index') : route('login') }}" class="relative flex h-10 w-10 items-center justify-center rounded-lg text-ink" aria-label="{{ __('messages.nav.account') }}">
                     <x-heroicon-o-user class="h-6 w-6" />
                 </a>
             </div>
@@ -350,8 +360,16 @@
                     @endforeach
                 </nav>
                 <div class="space-y-2 border-t border-sand-200 p-4">
-                    <a href="{{ route('login') }}" class="block rounded-lg border border-forest-700 px-4 py-2.5 text-center text-sm font-semibold text-forest-700">{{ __('messages.nav.log_in') }}</a>
-                    <a href="{{ route('register') }}" class="block rounded-lg bg-forest-700 px-4 py-2.5 text-center text-sm font-semibold text-white">{{ __('messages.nav.join_now') }}</a>
+                    @auth
+                        <a href="{{ route('account.index') }}" class="block rounded-lg border border-forest-700 px-4 py-2.5 text-center text-sm font-semibold text-forest-700">{{ __('messages.nav.account') }}</a>
+                        <form method="POST" action="{{ route('logout') }}">
+                            @csrf
+                            <button type="submit" class="block w-full rounded-lg bg-forest-700 px-4 py-2.5 text-center text-sm font-semibold text-white">{{ __('messages.nav.log_out') }}</button>
+                        </form>
+                    @else
+                        <a href="{{ route('login') }}" class="block rounded-lg border border-forest-700 px-4 py-2.5 text-center text-sm font-semibold text-forest-700">{{ __('messages.nav.log_in') }}</a>
+                        <a href="{{ route('register') }}" class="block rounded-lg bg-forest-700 px-4 py-2.5 text-center text-sm font-semibold text-white">{{ __('messages.nav.join_now') }}</a>
+                    @endauth
                 </div>
             </div>
         </div>

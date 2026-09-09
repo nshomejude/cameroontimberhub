@@ -312,3 +312,29 @@ it('resets the password with a valid token and rejects an invalid one', function
 
     $this->assertAuthenticatedAs($user->fresh());
 });
+
+// -------------------------------------------------------------- nav header
+// Regression: found by manual QA on 2026-09-09 — the public header hardcoded
+// "Log In"/"Join Now" with no @auth/@guest check at all, so a signed-in
+// buyer browsing a public page (e.g. their own order's Trade Assurance or
+// Dispute screen) still saw guest-only links instead of "Account"/"Sign Out".
+
+it('shows Log In and Join Now in the header for a guest', function () {
+    $this->get('/')
+        ->assertOk()
+        ->assertSee(__('messages.nav.log_in'))
+        ->assertSee(__('messages.nav.join_now'))
+        ->assertDontSee(__('messages.nav.log_out'));
+});
+
+it('shows Account and Sign Out in the header for a signed-in user, not Log In / Join Now', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->get('/')
+        ->assertOk()
+        ->assertSee(__('messages.nav.account'))
+        ->assertSee(__('messages.nav.log_out'))
+        ->assertDontSee(__('messages.nav.log_in'))
+        ->assertDontSee(__('messages.nav.join_now'));
+});

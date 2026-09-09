@@ -32,6 +32,7 @@ return [
         'log_in' => 'Connexion',
         'join_now' => 'Rejoindre',
         'account' => 'Compte',
+        'log_out' => 'Se déconnecter',
         'search' => 'Rechercher',
         'knowledge_centre' => 'Centre de connaissances',
         'timber_grades' => 'Qualités de bois',
