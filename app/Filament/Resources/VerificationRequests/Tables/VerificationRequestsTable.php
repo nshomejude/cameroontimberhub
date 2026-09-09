@@ -2,9 +2,11 @@
 
 namespace App\Filament\Resources\VerificationRequests\Tables;
 
+use App\Domain\Identity\Commands\ApproveVerificationCommand;
 use App\Enums\VerificationRequestStatus;
 use App\Models\VerificationRequest;
 use App\Services\VerificationService;
+use App\Support\Bus\CommandBus;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
@@ -50,7 +52,17 @@ class VerificationRequestsTable
                     ->modalDescription('Issues the satisfied requested badges and marks the company verified.')
                     ->visible(fn (VerificationRequest $record): bool => in_array($record->status, [VerificationRequestStatus::Pending, VerificationRequestStatus::InReview], true) && static::canReview())
                     ->action(function (VerificationRequest $record): void {
-                        $result = app(VerificationService::class)->approve($record, auth()->user());
+                        // Routed via CommandBus (architecture plan, Phase 4:
+                        // Identity & Access) — App\Domain\Identity\Commands\
+                        // ApproveVerificationHandler wraps VerificationService::
+                        // approve() unchanged, so behaviour (including badge
+                        // issuance) is byte-identical to calling the service
+                        // directly; it additionally records the
+                        // `company.verified` outbox/domain event.
+                        $result = app(CommandBus::class)->dispatch(new ApproveVerificationCommand(
+                            verificationRequestId: $record->getKey(),
+                            actingUserId: auth()->id(),
+                        ));
                         $body = 'Issued: '.(implode(', ', $result['issued']) ?: 'none');
                         if ($result['skipped']) {
                             $body .= ' · Skipped: '.implode(', ', $result['skipped']);
