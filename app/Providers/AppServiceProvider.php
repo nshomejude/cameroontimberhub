@@ -93,6 +93,17 @@ class AppServiceProvider extends ServiceProvider
             Limit::perHour(60)->by('checkpoint-track-ip-hour:'.$request->ip()),
         ]);
 
+        // Field checkpoint recording (blueprint §45-46). Looser than
+        // checkpoint-track above: a legitimate driver's OfflineQueue can
+        // burst-flush several queued checkpoints at once after being
+        // offline for a while, so this budgets generously per-IP rather
+        // than per-request while still bounding abuse of a leaked waybill
+        // link.
+        RateLimiter::for('checkpoint-record', fn (Request $request) => [
+            Limit::perMinute(20)->by('checkpoint-record-ip:'.$request->ip()),
+            Limit::perHour(200)->by('checkpoint-record-ip-hour:'.$request->ip()),
+        ]);
+
         // One-click demo logins. Nobody legitimately needs more than a handful
         // a minute, and the budget blunts a script cycling demo sessions to
         // farm CSRF-valid authenticated sessions.

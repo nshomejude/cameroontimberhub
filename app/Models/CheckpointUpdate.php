@@ -27,7 +27,26 @@ class CheckpointUpdate extends Model
             'status' => TrackingCheckpointStatus::class,
             'latitude' => 'decimal:7',
             'longitude' => 'decimal:7',
+            'occurred_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Default `occurred_at` to "now" (i.e. same as `created_at`) whenever a
+     * caller doesn't set it explicitly — see the
+     * 2026_09_09_120000_add_occurred_at_to_checkpoint_updates_table
+     * migration doc for why this column exists. Keeping every pre-existing
+     * call site (factories, tests, Filament) that never mentions
+     * `occurred_at` behaving exactly as before: latest-by-occurred_at then
+     * matches latest-by-created_at for those rows.
+     */
+    protected static function booted(): void
+    {
+        static::creating(function (self $checkpoint) {
+            if ($checkpoint->occurred_at === null) {
+                $checkpoint->occurred_at = now();
+            }
+        });
     }
 
     public function trackable(): MorphTo

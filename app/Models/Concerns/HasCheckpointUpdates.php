@@ -21,8 +21,22 @@ trait HasCheckpointUpdates
         return $this->morphMany(CheckpointUpdate::class, 'trackable');
     }
 
+    /**
+     * The checkpoint that represents this trackable's real-world current
+     * state. Ordered by `occurred_at` (the client-reported time the event
+     * happened), NOT `created_at` (when the server received it) — see the
+     * 2026_09_09_120000_add_occurred_at_to_checkpoint_updates_table
+     * migration doc. This matters for offline field capture (blueprint
+     * §45-46): a driver's checkpoints can sync out of order over patchy
+     * connectivity, and ordering by receipt order rather than event order
+     * could let a stale, late-arriving "dispatched" sync stomp on an
+     * already-recorded "delivered" as the displayed current status.
+     * `occurred_at` defaults to `created_at` for any row that doesn't set it
+     * (CheckpointUpdate::booted()), so this is a no-op change in ordering
+     * for every existing caller.
+     */
     public function latestCheckpoint(): ?CheckpointUpdate
     {
-        return $this->checkpointUpdates()->latest('created_at')->first();
+        return $this->checkpointUpdates()->latest('occurred_at')->first();
     }
 }

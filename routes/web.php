@@ -25,7 +25,9 @@ use App\Http\Controllers\Public\GlossaryController;
 use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Public\InquiryController;
 use App\Http\Controllers\Public\InsightController;
+use App\Http\Controllers\Public\InspectorReportController;
 use App\Http\Controllers\Public\KnowledgeController;
+use App\Http\Controllers\Public\LogisticsCheckpointController;
 use App\Http\Controllers\Public\LogisticsDirectoryController;
 use App\Http\Controllers\Public\MadeInCameroonController;
 use App\Http\Controllers\Public\MessageController;
@@ -204,6 +206,14 @@ Route::get('/track/{token}', [CheckpointTrackingController::class, 'show'])
 Route::get('/shipments/{shipment:waybill_number}/waybill', [ShipmentWaybillController::class, 'show'])
     ->name('shipments.waybill.show');
 
+// Offline-capable field checkpoint capture for logistics/drivers (blueprint
+// §45-46). Same no-auth, waybill_number-token access pattern as the waybill
+// route directly above — a driver in the field has no account either.
+Route::get('/logistics/shipments/{shipment:waybill_number}/checkpoint', [LogisticsCheckpointController::class, 'create'])
+    ->name('logistics.checkpoints.create');
+Route::post('/logistics/shipments/{shipment:waybill_number}/checkpoint', [LogisticsCheckpointController::class, 'store'])
+    ->middleware('throttle:checkpoint-record')->name('logistics.checkpoints.store');
+
 // The staff-facing printable certificate document. Authorization is checked
 // inside the controller against the certificates.manage permission.
 Route::get('/certificates/{certificateNumber}', [CertificateVerificationController::class, 'show'])
@@ -304,6 +314,17 @@ Route::middleware(['auth'])->prefix('orders/{order}/disputes')->name('disputes.'
     Route::post('/{dispute}/evidence', [DisputeController::class, 'submitEvidence'])->name('evidence');
     Route::post('/{dispute}/reply', [DisputeController::class, 'reply'])->name('reply');
     Route::post('/{dispute}/appeal', [DisputeController::class, 'appeal'])->name('appeal');
+});
+
+// Offline-capable inspector field-capture form (blueprint §45-46). Plain
+// Blade (no Livewire) so a plain fetch/form POST can be intercepted by
+// resources/js/offline-queue.js's OfflineQueue when the inspector is
+// offline at a timber site. InspectorReportController re-derives, on every
+// request, that the signed-in user is the specific Inspector assigned to
+// this Inspection — never trusted from the route alone.
+Route::middleware(['auth'])->prefix('inspector/inspections/{inspection}')->name('inspector.inspections.')->group(function () {
+    Route::get('/report', [InspectorReportController::class, 'edit'])->name('report.edit');
+    Route::post('/report', [InspectorReportController::class, 'store'])->name('report.store');
 });
 
 // Buyer account area. `/dashboard` is the Filament exporter panel and `/admin`

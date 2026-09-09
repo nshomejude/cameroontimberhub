@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasCheckpointUpdates;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -19,6 +20,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 class Shipment extends Model
 {
     use HasFactory;
+    /**
+     * Gives this model `checkpointUpdates()`/`latestCheckpoint()` (gap-plan
+     * 1.5.11 wiring, blueprint §45-46). Shipment was always the intended
+     * first real consumer of this trait (see the trait's own doc block) —
+     * this is that follow-up, added by the offline field-capture endpoint
+     * at App\Http\Controllers\Public\LogisticsCheckpointController.
+     */
+    use HasCheckpointUpdates;
 
     protected $guarded = ['id'];
 

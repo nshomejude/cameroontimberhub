@@ -44,13 +44,14 @@ it('exposes checkpointUpdates and latestCheckpoint via the HasCheckpointUpdates 
     $company = Company::factory()->create();
     $subject = $trackable::query()->find($company->id);
 
-    CheckpointUpdate::factory()->for($subject, 'trackable')->create([
+    $first = CheckpointUpdate::factory()->for($subject, 'trackable')->create([
         'status' => TrackingCheckpointStatus::Dispatched->value,
         'created_at' => now()->subHour(),
     ]);
     $latest = CheckpointUpdate::factory()->for($subject, 'trackable')->create([
         'status' => TrackingCheckpointStatus::InTransit->value,
     ]);
+
 
     expect($subject->checkpointUpdates()->count())->toBe(2)
         ->and($subject->latestCheckpoint()->id)->toBe($latest->id);
