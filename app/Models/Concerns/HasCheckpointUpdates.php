@@ -37,6 +37,15 @@ trait HasCheckpointUpdates
      */
     public function latestCheckpoint(): ?CheckpointUpdate
     {
-        return $this->checkpointUpdates()->latest('occurred_at')->first();
+        // Secondary sort on id: two checkpoints recorded moments apart can
+        // both default `occurred_at` to "now" and land in the same
+        // second (the column has no sub-second precision), which would
+        // otherwise make ordering by occurred_at alone ambiguous between
+        // them. Breaking that tie by insertion order (id) recovers the old
+        // created_at-ordering behaviour exactly for same-second/no-explicit-
+        // occurred_at rows, while an occurred_at that genuinely differs
+        // (the offline-sync case this ordering exists for) still wins on
+        // the primary sort.
+        return $this->checkpointUpdates()->latest('occurred_at')->latest('id')->first();
     }
 }
