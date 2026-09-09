@@ -1,12 +1,14 @@
 <?php
 
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\OrderController;
 use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\QuoteController;
 use App\Http\Controllers\Api\V1\RfqController;
 use App\Http\Controllers\Api\V1\SearchController;
 use App\Http\Controllers\Api\V1\SpeciesController;
 use App\Http\Controllers\Api\V1\SupplierController;
+use App\Http\Controllers\Api\V1\TradeAssuranceController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -20,8 +22,8 @@ use Illuminate\Support\Facades\Route;
 | could bypass anti-spam, the verification gate, the state machines or the
 | authorisation rules.
 |
-| v1 is browse + RFQ + quotes. Orders beyond the award receipt, messaging,
-| documents and reorder stay on the web for now.
+| v1 is browse + RFQ + quotes + orders + Trade Assurance view/confirm.
+| Messaging, documents, receipts and reorder stay on the web for now.
 |
 */
 
@@ -86,5 +88,19 @@ Route::prefix('v1')->name('api.v1.')->middleware('throttle:api-key')->group(func
 
         Route::post('quotes/{reference}/decline', [QuoteController::class, 'decline'])
             ->middleware('throttle:api-decision')->name('quotes.decline');
+
+        // Orders + Trade Assurance (API-First plan Phase 1 §4): parity with
+        // /account/orders and /account/orders/{order}/trade-assurance. Both
+        // read through the same domain code the web uses (ListBuyerOrdersQuery
+        // via QueryBus, TradeAssuranceMilestone::confirmByBuyer()) — no second
+        // write/read path.
+        Route::get('orders', [OrderController::class, 'index'])->name('orders.index');
+        Route::get('orders/{reference}', [OrderController::class, 'show'])->name('orders.show');
+
+        Route::get('orders/{orderReference}/trade-assurance', [TradeAssuranceController::class, 'show'])
+            ->name('orders.trade-assurance.show');
+
+        Route::post('orders/{orderReference}/trade-assurance/milestones/{milestoneId}/confirm', [TradeAssuranceController::class, 'confirmMilestone'])
+            ->middleware('throttle:api-decision')->name('orders.trade-assurance.confirm');
     });
 });

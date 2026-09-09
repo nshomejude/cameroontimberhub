@@ -2,10 +2,13 @@
 
 namespace App\Filament\Exporter\Resources\Orders\Tables;
 
+use App\Domain\Trade\Commands\RecordOrderDeliveryCommand;
+use App\Domain\Trade\Commands\RecordOrderShipmentCommand;
 use App\Enums\OrderPaymentStatus;
 use App\Enums\OrderStatus;
 use App\Models\Order;
 use App\Services\OrderService;
+use App\Support\Bus\CommandBus;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Forms\Components\DatePicker;
@@ -58,8 +61,8 @@ class OrdersTable
                 ActionGroup::make([
                     static::step('confirm', 'Confirm order', 'heroicon-o-check-circle', 'success', OrderStatus::Confirmed),
                     static::step('startProduction', 'Start production', 'heroicon-o-cog-6-tooth', 'warning', OrderStatus::InProduction),
-                    static::step('ship', 'Mark shipped', 'heroicon-o-truck', 'warning', OrderStatus::Shipped),
-                    static::step('deliver', 'Mark delivered', 'heroicon-o-inbox-arrow-down', 'success', OrderStatus::Delivered),
+                    static::shipAction(),
+                    static::deliverAction(),
 
                     /*
                      * "Complete order" is deliberately NOT offered here.
@@ -161,6 +164,45 @@ class OrdersTable
             ->action(fn (Order $record) => static::run(
                 fn () => app(OrderService::class)->{$method}($record, auth()->user()),
                 $label.' — done',
+            ));
+    }
+
+    /**
+     * "Mark shipped" — routed through the CommandBus (architecture plan
+     * Task 0.1/Phase 1) instead of calling OrderService::ship() directly, so
+     * the OrderShipped domain event is recorded to the outbox in the same
+     * transaction as the state change. Byte-identical behaviour otherwise:
+     * same visibility rule, same confirmation prompt, same notification.
+     */
+    protected static function shipAction(): Action
+    {
+        return Action::make('ship')->label('Mark shipped')->icon('heroicon-o-truck')->color('warning')
+            ->requiresConfirmation()
+            ->visible(fn (Order $r): bool => static::allows($r, OrderStatus::Shipped))
+            ->action(fn (Order $record) => static::run(
+                fn () => app(CommandBus::class)->dispatch(new RecordOrderShipmentCommand(
+                    orderId: $record->getKey(),
+                    actingUserId: auth()->id(),
+                )),
+                'Mark shipped — done',
+            ));
+    }
+
+    /**
+     * "Mark delivered" — same CommandBus routing as shipAction() above, for
+     * OrderDelivered.
+     */
+    protected static function deliverAction(): Action
+    {
+        return Action::make('deliver')->label('Mark delivered')->icon('heroicon-o-inbox-arrow-down')->color('success')
+            ->requiresConfirmation()
+            ->visible(fn (Order $r): bool => static::allows($r, OrderStatus::Delivered))
+            ->action(fn (Order $record) => static::run(
+                fn () => app(CommandBus::class)->dispatch(new RecordOrderDeliveryCommand(
+                    orderId: $record->getKey(),
+                    actingUserId: auth()->id(),
+                )),
+                'Mark delivered — done',
             ));
     }
 

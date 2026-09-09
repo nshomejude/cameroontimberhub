@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\Public;
 
+use App\Domain\Trade\Commands\DeclineQuoteCommand;
 use App\Enums\QuoteStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Quote;
 use App\Models\Rfq;
 use App\Services\BuyerRfqAccess;
 use App\Services\QuoteService;
+use App\Support\Bus\CommandBus;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -105,7 +107,7 @@ class BuyerQuoteController extends Controller
     }
 
     /** POST — decline one quote. A reason is mandatory. */
-    public function decline(Request $request, Rfq $rfq, Quote $quote, QuoteService $quotes): RedirectResponse
+    public function decline(Request $request, Rfq $rfq, Quote $quote, CommandBus $commands): RedirectResponse
     {
         $this->access->authorize($request, $rfq);
         $quote = $this->scopedQuote($rfq, $quote);
@@ -115,7 +117,11 @@ class BuyerQuoteController extends Controller
         ], [], ['reason' => 'reason']);
 
         try {
-            $quotes->decline($quote, $data['reason'], $request->user());
+            $commands->dispatch(new DeclineQuoteCommand(
+                quoteId: $quote->getKey(),
+                reason: $data['reason'],
+                actingUserId: $request->user()?->getKey(),
+            ));
         } catch (RuntimeException $e) {
             throw ValidationException::withMessages(['reason' => $e->getMessage()]);
         }

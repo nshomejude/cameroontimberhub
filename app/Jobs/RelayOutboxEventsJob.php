@@ -5,6 +5,10 @@ namespace App\Jobs;
 use App\Domain\Compliance\Events\ComplianceCaseOpened;
 use App\Domain\Logistics\Events\ShipmentCheckpointRecorded;
 use App\Domain\Trade\Events\OrderAwarded;
+use App\Domain\Trade\Events\OrderDelivered;
+use App\Domain\Trade\Events\OrderShipped;
+use App\Domain\Trade\Events\QuoteDeclined;
+use App\Domain\Trade\Events\QuoteWithdrawn;
 use App\Jobs\DeliverWebhookJob;
 use App\Models\Company;
 use App\Models\Order;
@@ -45,6 +49,13 @@ class RelayOutboxEventsJob implements ShouldQueue
         'order.awarded' => OrderAwarded::class,
         'shipment.checkpoint_recorded' => ShipmentCheckpointRecorded::class,
         'compliance.case_opened' => ComplianceCaseOpened::class,
+        // Trade lifecycle Phase 1 additions (order.shipped / order.delivered):
+        'order.shipped' => OrderShipped::class,
+        'order.delivered' => OrderDelivered::class,
+        // Quote lifecycle additions (quote.declined / quote.withdrawn) — see
+        // App\Domain\Trade\Commands\{Decline,Withdraw}QuoteHandler:
+        'quote.declined' => QuoteDeclined::class,
+        'quote.withdrawn' => QuoteWithdrawn::class,
     ];
 
     private const MAX_ATTEMPTS = 5;
@@ -122,9 +133,10 @@ class RelayOutboxEventsJob implements ShouldQueue
      * DeliverWebhookJob for every active WebhookSubscription of that
      * company whose event_types includes this row's event_type.
      *
-     * None of the three event payloads carry company_id directly, so each
-     * needs its own lookup:
-     *  - order.awarded: Order::company_id (direct column on the order).
+     * None of the event payloads carry company_id directly, so each needs
+     * its own lookup:
+     *  - order.awarded / order.shipped / order.delivered: Order::company_id
+     *    (direct column on the order).
      *  - shipment.checkpoint_recorded: Shipment::order->company_id (a
      *    Shipment belongs to an Order, which carries company_id).
      *  - compliance.case_opened: the case's polymorphic owner
@@ -136,12 +148,18 @@ class RelayOutboxEventsJob implements ShouldQueue
     private function deliverWebhooksFor(OutboxEvent $row): void
     {
         $companyId = match ($row->event_type) {
-            'order.awarded' => Order::query()->find($row->payload['order_id'] ?? null)?->company_id,
+            // order.shipped / order.delivered resolve identically to
+            // order.awarded — Order::company_id is a direct column.
+            'order.awarded', 'order.shipped', 'order.delivered' => Order::query()->find($row->payload['order_id'] ?? null)?->company_id,
             'shipment.checkpoint_recorded' => Shipment::query()
                 ->with('order:id,company_id')
                 ->find($row->payload['shipment_id'] ?? null)
                 ?->order?->company_id,
             'compliance.case_opened' => $this->resolveComplianceCaseCompanyId($row->payload ?? []),
+            // quote.declined / quote.withdrawn: a Quote's owning company is
+            // the SUPPLIER who submitted it (Quote::company_id), carried
+            // directly on the event payload by {Decline,Withdraw}QuoteHandler.
+            'quote.declined', 'quote.withdrawn' => isset($row->payload['company_id']) ? (int) $row->payload['company_id'] : null,
             default => null,
         };
 

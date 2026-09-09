@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Order;
 use App\Models\Quote;
 use App\Models\Rfq;
 use App\Models\User;
@@ -54,6 +55,29 @@ class BuyerApiScope
     public function quote(User $buyer, string $reference): Quote
     {
         return $this->quotes($buyer)
+            ->where('reference_code', $reference)
+            ->firstOrFail();
+    }
+
+    /**
+     * Orders this buyer owns — via `BuyerDashboard::orders()`, the same
+     * scoping `/account/orders` (and ListBuyerOrdersQuery, which delegates to
+     * it) already uses: any order on an RFQ the buyer owns, not merely one
+     * whose own `orders.user_id` snapshot matches. That is deliberately
+     * broader than an `orders.user_id` check alone — see that method's
+     * docblock — so a guest RFQ adopted into an account after award still
+     * resolves here exactly as it does on the web account page, and `show()`
+     * never 404s an order this buyer can already see in their own list.
+     */
+    public function orders(User $buyer): Builder
+    {
+        return app(BuyerDashboard::class)->orders($buyer)->orderByDesc('created_at');
+    }
+
+    /** One of the buyer's own orders by reference code, or 404. */
+    public function order(User $buyer, string $reference): Order
+    {
+        return $this->orders($buyer)
             ->where('reference_code', $reference)
             ->firstOrFail();
     }

@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Domain\Trade\Commands\DeclineQuoteCommand;
+use App\Domain\Trade\Commands\WithdrawQuoteCommand;
 use App\Enums\CounterOfferStatus;
 use App\Enums\MessageType;
 use App\Enums\QuoteStatus;
@@ -14,6 +16,7 @@ use App\Models\Quote;
 use App\Models\QuoteCounterOffer;
 use App\Models\Rfq;
 use App\Models\User;
+use App\Support\Bus\CommandBus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -51,6 +54,7 @@ class ChatCommerceService
         private readonly MessagingService $messaging,
         private readonly IntakeService $intake,
         private readonly QuoteService $quotes,
+        private readonly CommandBus $commands,
     ) {}
 
     /* ------------------------------------------------------------- parties */
@@ -308,7 +312,11 @@ class ChatCommerceService
 
             $this->assertActionable($locked);
 
-            $declined = $this->quotes->decline($locked, $reason, $buyer);
+            $declined = $this->commands->dispatch(new DeclineQuoteCommand(
+                quoteId: $locked->getKey(),
+                reason: $reason,
+                actingUserId: $buyer->getKey(),
+            ));
 
             $this->messaging->postSystem(
                 $conversation,
@@ -330,7 +338,11 @@ class ChatCommerceService
 
             $this->assertActionable($locked);
 
-            $withdrawn = $this->quotes->withdraw($locked, $supplier, $reason);
+            $withdrawn = $this->commands->dispatch(new WithdrawQuoteCommand(
+                quoteId: $locked->getKey(),
+                reason: $reason,
+                actingUserId: $supplier->getKey(),
+            ));
 
             $this->messaging->postSystem(
                 $conversation,

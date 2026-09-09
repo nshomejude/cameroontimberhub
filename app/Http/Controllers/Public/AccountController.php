@@ -3,6 +3,9 @@
 namespace App\Http\Controllers\Public;
 
 use App\Domain\Trade\Queries\ListBuyerOrdersQuery;
+use App\Domain\Trade\Queries\ListBuyerQuotesQuery;
+use App\Domain\Trade\Queries\ListBuyerReceiptsQuery;
+use App\Domain\Trade\Queries\ListBuyerRfqsQuery;
 use App\Http\Controllers\Controller;
 use App\Services\BuyerDashboard;
 use App\Services\BuyerRfqAccess;
@@ -63,7 +66,7 @@ class AccountController extends Controller
     public function rfqs(Request $request): View
     {
         return view('public.account.rfqs', [
-            'rfqs' => $this->dashboard->rfqPage($request->user()),
+            'rfqs' => $this->queryBus->dispatch(new ListBuyerRfqsQuery($request->user()->getKey())),
             'access' => $this->access,
         ]);
     }
@@ -71,7 +74,7 @@ class AccountController extends Controller
     public function quotes(Request $request): View
     {
         return view('public.account.quotes', [
-            'quotes' => $this->dashboard->quotePage($request->user()),
+            'quotes' => $this->queryBus->dispatch(new ListBuyerQuotesQuery($request->user()->getKey())),
             'access' => $this->access,
         ]);
     }
@@ -87,7 +90,7 @@ class AccountController extends Controller
     public function receipts(Request $request): View
     {
         return view('public.account.receipts', [
-            'receipts' => $this->dashboard->receiptPage($request->user()),
+            'receipts' => $this->queryBus->dispatch(new ListBuyerReceiptsQuery($request->user()->getKey())),
             'access' => $this->access,
         ]);
     }
