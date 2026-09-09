@@ -1,14 +1,17 @@
 <?php
 
 use App\Enums\TradeAssuranceMilestoneStatus;
+use App\Enums\TrackingCheckpointStatus;
 use App\Models\Company;
 use App\Models\Order;
 use App\Models\Quote;
 use App\Models\QuoteItem;
 use App\Models\Rfq;
 use App\Models\RfqCompany;
+use App\Models\Shipment;
 use App\Models\TradeAssuranceAgreement;
 use App\Models\User;
+use App\Services\CheckpointTracker;
 use App\Services\QuoteService;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Support\Facades\Mail;
@@ -196,4 +199,72 @@ it('404s confirming a milestone when no agreement exists yet', function () {
     $this->actingAs($buyer, 'sanctum')
         ->postJson("/api/v1/orders/{$order->reference_code}/trade-assurance/milestones/1/confirm")
         ->assertNotFound();
+});
+
+/* ---------------------------------------------------- shipment tracking */
+
+it('returns an empty shipment list for an order with no shipment yet', function () {
+    $buyer = User::factory()->create();
+    $order = apiOrder($buyer);
+
+    $this->actingAs($buyer, 'sanctum')
+        ->getJson("/api/v1/orders/{$order->reference_code}/shipments")
+        ->assertOk()
+        ->assertJsonCount(0, 'data');
+});
+
+it('shows the buyer their own order shipment and checkpoint history, correctly ordered', function () {
+    $buyer = User::factory()->create();
+    $order = apiOrder($buyer);
+    $shipment = Shipment::factory()->create(['order_id' => $order->getKey()]);
+
+    // "Delivered" reaches the server first...
+    app(CheckpointTracker::class)->record($shipment, [
+        'status' => TrackingCheckpointStatus::Delivered->value,
+        'location' => 'Le Havre',
+        'latitude' => '49.4938300',
+        'longitude' => '0.1079300',
+        'occurred_at' => now(),
+    ]);
+
+    // ...then a chronologically-earlier "dispatched" syncs late, offline.
+    app(CheckpointTracker::class)->record($shipment, [
+        'status' => TrackingCheckpointStatus::Dispatched->value,
+        'location' => 'Douala Port',
+        'occurred_at' => now()->subHours(6),
+    ]);
+
+    $response = $this->actingAs($buyer, 'sanctum')
+        ->getJson("/api/v1/orders/{$order->reference_code}/shipments")
+        ->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonCount(2, 'data.0.checkpoints');
+
+    expect($response->json('data.0.waybill_number'))->toBe($shipment->waybill_number)
+        // The late-arriving-but-chronologically-earlier "dispatched" sync
+        // must not appear as the current status.
+        ->and($response->json('data.0.current_status'))->toBe('Delivered')
+        // History is ordered oldest-first by occurred_at, not insertion order.
+        ->and($response->json('data.0.checkpoints.0.status'))->toBe('Dispatched')
+        ->and($response->json('data.0.checkpoints.1.status'))->toBe('Delivered');
+
+    // No raw GPS coordinates ever leak, matching the public tracking page's
+    // disclosure allow-list.
+    expect($response->json('data.0.checkpoints.1'))->not->toHaveKeys(['latitude', 'longitude']);
+});
+
+it('404s another buyer order shipment tracking rather than confirming it exists', function () {
+    $buyer = User::factory()->create();
+    $theirs = apiOrder(User::factory()->create());
+    Shipment::factory()->create(['order_id' => $theirs->getKey()]);
+
+    $this->actingAs($buyer, 'sanctum')
+        ->getJson("/api/v1/orders/{$theirs->reference_code}/shipments")
+        ->assertNotFound();
+});
+
+it('requires buyer auth for shipment tracking', function () {
+    $order = apiOrder();
+
+    $this->getJson("/api/v1/orders/{$order->reference_code}/shipments")->assertUnauthorized();
 });

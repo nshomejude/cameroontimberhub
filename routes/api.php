@@ -97,6 +97,12 @@ Route::prefix('v1')->name('api.v1.')->middleware('throttle:api-key')->group(func
         Route::get('orders', [OrderController::class, 'index'])->name('orders.index');
         Route::get('orders/{reference}', [OrderController::class, 'show'])->name('orders.show');
 
+        // Shipment/checkpoint tracking (Logistics follow-up to Phase 1 §4):
+        // GetOrderShipmentTrackingQuery via QueryBus, scoped through the same
+        // BuyerApiScope::order() boundary as show()/trade-assurance above.
+        Route::get('orders/{reference}/shipments', [OrderController::class, 'shipmentTracking'])
+            ->name('orders.shipments');
+
         Route::get('orders/{orderReference}/trade-assurance', [TradeAssuranceController::class, 'show'])
             ->name('orders.trade-assurance.show');
 

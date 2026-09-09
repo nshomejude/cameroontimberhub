@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Domain\Logistics\Queries\GetOrderShipmentTrackingQuery;
 use App\Domain\Trade\Queries\ListBuyerOrdersQuery;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Api\V1\OrderResource;
+use App\Http\Resources\Api\V1\ShipmentTrackingResource;
 use App\Services\BuyerApiScope;
 use App\Support\Bus\QueryBus;
 use Illuminate\Http\Request;
@@ -45,5 +47,24 @@ class OrderController extends Controller
         $order->load(['items', 'tradeAssuranceAgreement']);
 
         return new OrderResource($order);
+    }
+
+    /**
+     * The order's shipment(s) plus each one's checkpoint history — a natural
+     * companion to `show()`/`trade-assurance` (blueprint §45-46 wiring
+     * exposed to the buyer app). Goes through GetOrderShipmentTrackingQuery
+     * via QueryBus, which itself enforces ownership through the same
+     * BuyerApiScope::order() boundary `show()` uses: another buyer's
+     * reference 404s here too. An order with no linked shipment yet returns
+     * an empty `data` array, not an error.
+     */
+    public function shipmentTracking(Request $request, string $reference): AnonymousResourceCollection
+    {
+        $shipments = $this->queryBus->dispatch(new GetOrderShipmentTrackingQuery(
+            userId: $request->user()->getKey(),
+            reference: $reference,
+        ));
+
+        return ShipmentTrackingResource::collection($shipments);
     }
 }
