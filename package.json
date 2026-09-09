@@ -4,12 +4,15 @@
     "type": "module",
     "scripts": {
         "build": "vite build",
-        "dev": "vite"
+        "dev": "vite",
+        "sdk:generate": "openapi-typescript storage/app/openapi.json -o sdks/typescript/api-types.ts",
+        "sdk:check-stale": "node sdks/typescript/check-stale.mjs"
     },
     "devDependencies": {
         "@tailwindcss/vite": "^4.0.0",
         "concurrently": "^9.0.1",
         "laravel-vite-plugin": "^3.1",
+        "openapi-typescript": "^7.13.0",
         "tailwindcss": "^4.0.0",
         "vite": "^8.0.0"
     }

@@ -6,6 +6,15 @@
  * route. This does not re-verify route behaviour — only that the doc tooling
  * (dedoc/scramble) stays wired up and does not silently drop coverage as new
  * v1 routes are added.
+ *
+ * Reminder for maintainers: a generated TypeScript SDK (blueprint §4 "SDKs",
+ * Phase 3+ nice-to-have) lives at sdks/typescript/api-types.ts, derived from
+ * this same spec. If you add/change an /api/v1 route in a way that changes
+ * this spec, regenerate it: see sdks/typescript/README.md
+ * (`php artisan scramble:export --path=storage/app/openapi.json` then
+ * `npm run sdk:generate`, verified with `npm run sdk:check-stale`). That
+ * check is a standalone Node script, not part of this Pest suite, because
+ * it needs the Node/npm toolchain rather than only PHP.
  */
 
 use Illuminate\Support\Facades\Route;
