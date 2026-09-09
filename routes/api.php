@@ -33,7 +33,11 @@ use Illuminate\Support\Facades\Route;
 // one is keyed by the Sanctum token id (or IP when unauthenticated), not
 // by endpoint, so it bounds a single key's total v1 traffic. See
 // App\Providers\AppServiceProvider::registerRateLimiters().
-Route::prefix('v1')->name('api.v1.')->middleware('throttle:api-key')->group(function (): void {
+//
+// RecordApiKeyUsage (API-as-a-product usage metering) rides alongside it,
+// additively — it never blocks or fails the request (see its own
+// doc block), it just increments today's usage row for the token.
+Route::prefix('v1')->name('api.v1.')->middleware(['throttle:api-key', \App\Http\Middleware\RecordApiKeyUsage::class])->group(function (): void {
 
     /* ------------------------------------------------------------- auth */
 
