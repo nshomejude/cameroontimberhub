@@ -100,6 +100,12 @@ class Order extends Model
         return $this->hasMany(OrderDocument::class)->orderBy('id');
     }
 
+    /** Formal dispute cases opened against this order (blueprint §64). */
+    public function disputes(): HasMany
+    {
+        return $this->hasMany(Dispute::class)->orderByDesc('id');
+    }
+
     public function review(): HasOne
     {
         return $this->hasOne(CompanyReview::class);
