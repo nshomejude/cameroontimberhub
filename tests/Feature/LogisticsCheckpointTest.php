@@ -2,6 +2,7 @@
 
 use App\Enums\LotEventType;
 use App\Enums\TrackingCheckpointStatus;
+use App\Jobs\RelayOutboxEventsJob;
 use App\Models\CheckpointUpdate;
 use App\Models\Company;
 use App\Models\Order;
@@ -118,6 +119,13 @@ it('fires the existing ShipmentObserver -> TimberLot event wiring for checkpoint
     ]);
 
     $response->assertCreated();
+
+    // The lot-event side effect moved from synchronous (inline in
+    // ShipmentObserver) to async via the transactional Outbox (arch plan
+    // Task 0.2) — it's queued as an outbox_events row and only actually
+    // recorded once RelayOutboxEventsJob relays it. Run one relay tick
+    // synchronously here to observe the eventual, not immediate, effect.
+    app(RelayOutboxEventsJob::class)->handle();
 
     expect(
         $lot->lotEvents()
