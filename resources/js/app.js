@@ -1,5 +1,9 @@
 // Native app-shell behaviors for the Cameroon Timber Hub PWA.
 
+// 0. Generic offline-write queue (blueprint §45-46). Exposes window.OfflineQueue
+//    for feature modules; see resources/js/offline-queue.js for the public API.
+import './offline-queue.js';
+
 // 1. Service worker (PWA install + offline).
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
