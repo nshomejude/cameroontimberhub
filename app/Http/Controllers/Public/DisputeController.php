@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers\Public;
 
+use App\Domain\Compliance\Commands\OpenDisputeCommand;
 use App\Enums\DisputeCategory;
 use App\Http\Controllers\Controller;
 use App\Models\Dispute;
 use App\Models\Order;
 use App\Services\DisputeService;
+use App\Support\Bus\CommandBus;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -25,7 +27,10 @@ use RuntimeException;
  */
 class DisputeController extends Controller
 {
-    public function __construct(private readonly DisputeService $disputes) {}
+    public function __construct(
+        private readonly DisputeService $disputes,
+        private readonly CommandBus $commandBus,
+    ) {}
 
     public function index(Request $request, Order $order): View
     {
@@ -52,12 +57,12 @@ class DisputeController extends Controller
         ]);
 
         try {
-            $dispute = $this->disputes->open(
-                $order,
-                $request->user(),
-                DisputeCategory::from($data['category']),
-                $data['description'],
-            );
+            $dispute = $this->commandBus->dispatch(new OpenDisputeCommand(
+                orderId: $order->getKey(),
+                actingUserId: $request->user()->getKey(),
+                category: DisputeCategory::from($data['category']),
+                description: $data['description'],
+            ));
         } catch (RuntimeException $e) {
             return back()->with('error', $e->getMessage());
         }

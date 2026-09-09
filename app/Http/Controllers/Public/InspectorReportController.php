@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers\Public;
 
+use App\Domain\Compliance\Commands\FinaliseInspectionCommand;
 use App\Http\Controllers\Controller;
 use App\Models\Inspection;
+use App\Support\Bus\CommandBus;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -32,6 +34,8 @@ use Throwable;
  */
 class InspectorReportController extends Controller
 {
+    public function __construct(private readonly CommandBus $commandBus) {}
+
     public function edit(Request $request, Inspection $inspection): View
     {
         $this->authorizeInspector($request, $inspection);
@@ -92,9 +96,10 @@ class InspectorReportController extends Controller
         }
 
         try {
-            $inspection->fill($data);
-            $inspection->save();
-            $inspection->finalise();
+            $this->commandBus->dispatch(new FinaliseInspectionCommand(
+                inspectionId: $inspection->getKey(),
+                data: $data,
+            ));
         } catch (RuntimeException $e) {
             return response()->json([
                 'message' => $e->getMessage(),
