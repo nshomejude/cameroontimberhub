@@ -22,6 +22,15 @@ use Throwable;
  * read-modify-write (which a plain `firstOrCreate()->increment()` pair would
  * be vulnerable to under concurrency without an explicit transaction/lock).
  *
+ * Records BEFORE calling $next(), not after: `api_key_usage_dailies` has a
+ * cascade-delete FK on `personal_access_tokens`, and some routes (notably
+ * logout) delete the current token as part of handling the request. Writing
+ * usage after $next() would try to INSERT against an already-deleted token
+ * id and fail the FK constraint — a real Postgres error that, even caught,
+ * aborts the rest of the request's DB transaction in a test context. "This
+ * key made a request" is also the more honest semantics than "this key made
+ * a request that happened to still exist afterward".
+ *
  * Never allowed to block or fail the underlying API request — wrapped in
  * try/catch and logged, exactly like this codebase's established pattern for
  * non-critical side effects (see e.g. App\Observers\CompanyDocumentObserver).
@@ -32,8 +41,6 @@ class RecordApiKeyUsage
 {
     public function handle(Request $request, Closure $next): Response
     {
-        $response = $next($request);
-
         try {
             $token = $request->user()?->currentAccessToken();
 
@@ -54,6 +61,6 @@ class RecordApiKeyUsage
             ]);
         }
 
-        return $response;
+        return $next($request);
     }
 }
