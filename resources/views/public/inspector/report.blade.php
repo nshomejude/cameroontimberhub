@@ -93,8 +93,18 @@
         </form>
     </div>
 
+    {{-- Loaded as a plain script (not `type="module" import`): Vite's
+         production build drops the `export` from this file since nothing
+         in the main app bundle imports it, keeping only the
+         `window.OfflineQueue` side-effect assignment it also sets. A
+         module-level `import { OfflineQueue } from '...'` against the
+         built asset therefore throws "does not provide an export named
+         OfflineQueue" in production (it only ever worked in local/dev
+         where Vite serves the untouched source). The global is reliable
+         in both environments, so use that instead. --}}
+    <script src="{{ Vite::asset('resources/js/offline-queue.js') }}"></script>
     <script type="module">
-        import { OfflineQueue } from '{{ Vite::asset('resources/js/offline-queue.js') }}';
+        const { OfflineQueue } = window;
 
         const form = document.getElementById('report-form');
         const flash = document.getElementById('flash');
