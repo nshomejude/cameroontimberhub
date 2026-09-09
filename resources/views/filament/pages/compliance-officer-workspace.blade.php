@@ -7,6 +7,51 @@
     @endphp
 
     <div class="space-y-6">
+        {{-- AI Compliance Assistant (blueprint §35) --}}
+        <x-filament::section>
+            <x-slot name="heading">AI compliance assistant</x-slot>
+            <x-slot name="description">Ask a question grounded in the compliance rules and regulatory sources on file. Not legal advice.</x-slot>
+
+            <div class="space-y-3">
+                <textarea
+                    wire:model="assistantQuestion"
+                    rows="2"
+                    placeholder="e.g. Does a shipment of Sapele sawn timber to France need a FLEGT license under current rules?"
+                    class="fi-input block w-full rounded-lg border-sand-200 text-sm"
+                ></textarea>
+
+                <div class="flex flex-wrap gap-3">
+                    <input wire:model="assistantCountryCode" type="text" maxlength="2" placeholder="Country code (optional, e.g. FR)" class="fi-input rounded-lg border-sand-200 text-sm" />
+                    <input wire:model="assistantProductCategory" type="text" placeholder="Product category (optional)" class="fi-input rounded-lg border-sand-200 text-sm" />
+                    <x-filament::button wire:click="askComplianceAssistant" wire:loading.attr="disabled">
+                        Ask
+                    </x-filament::button>
+                </div>
+
+                @if($assistantResult)
+                    <div class="mt-4 space-y-3 rounded-lg border border-sand-200 p-4">
+                        <p class="text-sm text-ink whitespace-pre-line">{{ $assistantResult['answer'] }}</p>
+
+                        @if(!empty($assistantResult['grounding']))
+                            <div>
+                                <p class="text-xs font-semibold text-ink-soft">Grounded on:</p>
+                                <ul class="mt-1 space-y-1">
+                                    @foreach($assistantResult['grounding'] as $row)
+                                        <li class="text-xs text-ink-soft">
+                                            <x-filament::badge color="gray">{{ $row['type'] }}</x-filament::badge>
+                                            #{{ $row['id'] }} — {{ $row['label'] }} ({{ $row['detail'] }})
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        @endif
+
+                        <p class="text-xs italic text-ink-soft">{{ $assistantResult['disclaimer'] }}</p>
+                    </div>
+                @endif
+            </div>
+        </x-filament::section>
+
         {{-- Open cases by status --}}
         <x-filament::section>
             <x-slot name="heading">Open compliance cases</x-slot>

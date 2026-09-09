@@ -7,6 +7,7 @@ use App\Models\ComplianceCase;
 use App\Models\ComplianceRule;
 use App\Models\RiskAssessment;
 use App\Models\VerificationRevocationRequest;
+use App\Services\ComplianceAssistantService;
 use BackedEnum;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
@@ -37,9 +38,55 @@ class ComplianceOfficerWorkspace extends Page
 
     protected static ?int $navigationSort = 0;
 
+    /** AI Compliance Assistant (blueprint §35) form/result state — kept on the page component so a question survives re-renders without a dedicated Livewire form object. */
+    public string $assistantQuestion = '';
+
+    public ?string $assistantCountryCode = null;
+
+    public ?string $assistantProductCategory = null;
+
+    public ?array $assistantResult = null;
+
     public static function canAccess(): bool
     {
         return (bool) auth()->user()?->can('compliance.manage');
+    }
+
+    /**
+     * Runs the grounded AI Compliance Assistant (blueprint §35) for the
+     * question currently typed into the page, and stores the result
+     * (answer, grounding rows, disclaimer) for the view to render. Gated on
+     * the same `compliance.manage` permission as the rest of this page.
+     */
+    public function askComplianceAssistant(): void
+    {
+        abort_unless(auth()->user()?->can('compliance.manage'), 403);
+
+        if (blank($this->assistantQuestion)) {
+            return;
+        }
+
+        $result = app(ComplianceAssistantService::class)->ask(
+            question: $this->assistantQuestion,
+            countryCode: filled($this->assistantCountryCode) ? $this->assistantCountryCode : null,
+            productCategory: filled($this->assistantProductCategory) ? $this->assistantProductCategory : null,
+            askedBy: auth()->user(),
+        );
+
+        // Grounding rows are Eloquent models — flatten to plain arrays so
+        // they survive Livewire's property serialization between requests.
+        $result['grounding'] = $result['grounding']->map(fn ($row) => [
+            'type' => $row instanceof ComplianceRule ? 'Compliance rule' : 'Regulatory source',
+            'id' => $row->id,
+            'label' => $row instanceof ComplianceRule
+                ? $row->regulatory_framework
+                : $row->instrument_name,
+            'detail' => $row instanceof ComplianceRule
+                ? trim(($row->country_code ?? 'any country').' · '.($row->product_category ?? 'any product'))
+                : trim($row->authority.' · '.$row->jurisdiction),
+        ])->values()->all();
+
+        $this->assistantResult = $result;
     }
 
     /** Open (not-closed) ComplianceCase rows grouped by status, worst first. */
