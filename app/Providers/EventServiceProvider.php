@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use App\Domain\Compliance\Events\ComplianceCaseOpened;
+use App\Domain\Logistics\Events\ShipmentCheckpointRecorded;
+use App\Domain\Trade\Events\OrderAwarded;
 use App\Events\BadgeIssued;
 use App\Events\BadgeRevoked;
 use App\Events\CompanyVerified;
@@ -13,6 +16,8 @@ use App\Events\RfqRoutedToCompany;
 use App\Listeners\DetectLoginAnomaly;
 use App\Listeners\NotifyExporterOfRfq;
 use App\Listeners\NotifyExporterOfVerification;
+use App\Listeners\OpenComplianceCaseOnOrderAwarded;
+use App\Listeners\RecordLotEventOnShipmentCheckpoint;
 use App\Listeners\SendBuyerRfqAcknowledgement;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
@@ -44,5 +49,18 @@ class EventServiceProvider extends ServiceProvider
         BadgeIssued::class       => [],
         BadgeRevoked::class      => [],
         PlanAssigned::class      => [],
+
+        // Outbox-relayed domain events (architecture plan, Task 0.2). These
+        // are dispatched by App\Jobs\RelayOutboxEventsJob, not synchronously
+        // in-request — the listeners below are queued (ShouldQueue).
+        OrderAwarded::class => [
+            OpenComplianceCaseOnOrderAwarded::class,
+        ],
+        ShipmentCheckpointRecorded::class => [
+            RecordLotEventOnShipmentCheckpoint::class,
+        ],
+        // No listener yet — dispatched for future consumers (webhooks,
+        // notifications), same pattern as DocumentApproved/BadgeIssued above.
+        ComplianceCaseOpened::class => [],
     ];
 }

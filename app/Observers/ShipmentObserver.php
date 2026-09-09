@@ -2,16 +2,17 @@
 
 namespace App\Observers;
 
-use App\Enums\LotEventType;
+use App\Domain\Logistics\Events\ShipmentCheckpointRecorded;
 use App\Enums\TrackingCheckpointStatus;
 use App\Models\CheckpointUpdate;
 use App\Models\Shipment;
+use App\Support\Events\RecordsOutboxEvents;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /**
- * Wires shipment milestones into each carried TimberLot's traceability
- * event ledger (blueprint §10).
+ * Wires shipment milestones into the transactional outbox (architecture
+ * plan, Task 0.2).
  *
  * `Shipment` itself carries no status/location/checkpoint columns (see
  * app/Models/Shipment.php's class doc and the shipments migration) — a
@@ -23,31 +24,28 @@ use Throwable;
  * this codebase. `CheckpointUpdate` itself is read-only for this task
  * (see task boundaries), so nothing there is touched.
  *
- * Only the two `TrackingCheckpointStatus` values with an unambiguous
- * `LotEventType` counterpart are mapped:
- *   - Dispatched -> TransportDispatched
- *   - Delivered  -> Delivered
- * InTransit/Delayed have no corresponding blueprint lot-event type and are
- * intentionally left unmapped (no-op) rather than guessed at.
+ * This records a ShipmentCheckpointRecorded outbox event for every such
+ * checkpoint (the listener decides what, if anything, to do with the
+ * status). The side effect this observer used to perform inline — mapping
+ * status to a LotEventType and recording a LotEvent on every linked
+ * TimberLot — has moved to App\Listeners\RecordLotEventOnShipmentCheckpoint,
+ * a queued listener triggered asynchronously once App\Jobs\RelayOutboxEventsJob
+ * relays this outbox row.
  *
  * Safety: every step is wrapped in try/catch. Any failure (missing
- * relation, DB error, hash-chain conflict, etc.) is logged and swallowed —
- * this must never block a checkpoint from being recorded or a shipment
- * from being tracked.
+ * relation, DB error, etc.) is logged and swallowed — this must never block
+ * a checkpoint from being recorded or a shipment from being tracked.
  */
 class ShipmentObserver
 {
-    private const STATUS_TO_LOT_EVENT = [
-        TrackingCheckpointStatus::Dispatched->value => LotEventType::TransportDispatched,
-        TrackingCheckpointStatus::Delivered->value => LotEventType::Delivered,
-    ];
+    use RecordsOutboxEvents;
 
     public function created(CheckpointUpdate $checkpointUpdate): void
     {
         try {
             $this->handle($checkpointUpdate);
         } catch (Throwable $e) {
-            Log::error('ShipmentObserver: failed to record lot events for checkpoint update', [
+            Log::error('ShipmentObserver: failed to record ShipmentCheckpointRecorded outbox event', [
                 'checkpoint_update_id' => $checkpointUpdate->id ?? null,
                 'exception' => $e->getMessage(),
             ]);
@@ -64,36 +62,11 @@ class ShipmentObserver
             ? $checkpointUpdate->status->value
             : $checkpointUpdate->status;
 
-        $lotEventType = self::STATUS_TO_LOT_EVENT[$statusValue] ?? null;
-
-        if (! $lotEventType) {
-            return;
-        }
-
-        $shipment = $checkpointUpdate->trackable;
-
-        if (! $shipment instanceof Shipment) {
-            return;
-        }
-
-        $lots = $shipment->timberLots;
-
-        if (! $lots || $lots->isEmpty()) {
-            return;
-        }
-
-        foreach ($lots as $lot) {
-            try {
-                $lot->recordEvent($lotEventType, [
-                    'location' => $checkpointUpdate->location,
-                ]);
-            } catch (Throwable $e) {
-                Log::error('ShipmentObserver: failed to record lot event for a linked lot', [
-                    'timber_lot_id' => $lot->id ?? null,
-                    'checkpoint_update_id' => $checkpointUpdate->id ?? null,
-                    'exception' => $e->getMessage(),
-                ]);
-            }
-        }
+        $this->recordOutboxEvent(new ShipmentCheckpointRecorded(
+            checkpointUpdateId: $checkpointUpdate->id,
+            shipmentId: $checkpointUpdate->trackable_id,
+            status: $statusValue,
+            location: $checkpointUpdate->location,
+        ));
     }
 }

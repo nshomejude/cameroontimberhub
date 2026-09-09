@@ -2,52 +2,43 @@
 
 namespace App\Observers;
 
-use App\Enums\ComplianceCaseStatus;
-use App\Models\ComplianceCase;
-use App\Models\ComplianceRule;
+use App\Domain\Trade\Events\OrderAwarded;
 use App\Models\Order;
+use App\Support\Events\RecordsOutboxEvents;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /**
- * Wires real Order creation into the Blueprint §15/§17 compliance system.
+ * Wires real Order creation into the transactional outbox (architecture
+ * plan, Task 0.2).
  *
- * When an Order is created, if any active ComplianceRule applies to its
- * destination country, a ComplianceCase is opened against the order
- * (status: not_assessed) for staff to work. If no rule applies, no case is
- * created — no rules means nothing to comply with yet.
+ * When an Order is created (== awarded — see App\Services\OrderService's
+ * class doc), this records an OrderAwarded domain event to the outbox
+ * inside the same DB transaction as the Order insert (OrderService::
+ * createFromQuote() wraps the whole thing in DB::transaction(), and this
+ * observer's created() callback fires while that transaction is still
+ * open). The compliance-case side effect this observer used to perform
+ * inline (evaluate ComplianceRule::applicableTo() and open a
+ * ComplianceCase) has moved to App\Listeners\OpenComplianceCaseOnOrderAwarded,
+ * a queued listener triggered asynchronously once App\Jobs\RelayOutboxEventsJob
+ * relays this outbox row.
  *
  * Deliberately never throws: this must never block an order from being
  * created, so any unexpected failure is logged and swallowed.
  */
 class OrderObserver
 {
+    use RecordsOutboxEvents;
+
     public function created(Order $order): void
     {
         try {
-            $countryCode = $this->destinationCountryCode($order);
-
-            if ($countryCode === null) {
-                return;
-            }
-
-            $hasApplicableRule = ComplianceRule::query()
-                ->applicableTo($countryCode)
-                ->exists();
-
-            if (! $hasApplicableRule) {
-                return;
-            }
-
-            ComplianceCase::query()->create([
-                'owner_type' => Order::class,
-                'owner_id' => $order->id,
-                'status' => ComplianceCaseStatus::NotAssessed,
-                'country_code' => $countryCode,
-                'opened_at' => now(),
-            ]);
+            $this->recordOutboxEvent(new OrderAwarded(
+                orderId: $order->id,
+                countryCode: $this->destinationCountryCode($order),
+            ));
         } catch (Throwable $e) {
-            Log::error('OrderObserver: failed to evaluate/create compliance case for order.', [
+            Log::error('OrderObserver: failed to record OrderAwarded outbox event for order.', [
                 'order_id' => $order->id ?? null,
                 'exception' => $e->getMessage(),
             ]);

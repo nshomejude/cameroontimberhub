@@ -2,6 +2,7 @@
 
 use App\Enums\LotEventType;
 use App\Enums\TrackingCheckpointStatus;
+use App\Jobs\RelayOutboxEventsJob;
 use App\Models\CheckpointUpdate;
 use App\Models\Company;
 use App\Models\Order;
@@ -68,6 +69,21 @@ beforeEach(function () {
     Mail::fake();
 });
 
+/**
+ * The lot-event side effect is now async (ShipmentCheckpointRecorded is
+ * recorded to the outbox by ShipmentObserver, and
+ * App\Listeners\RecordLotEventOnShipmentCheckpoint — a queued listener —
+ * records the LotEvent once the outbox relay dispatches the event).
+ * QUEUE_CONNECTION=sync in phpunit.xml means the queued listener still runs
+ * inline the moment the event is dispatched, so running the relay job's
+ * handle() synchronously right here reproduces the old request-synchronous
+ * behavior for these assertions without weakening them.
+ */
+function runOutboxRelay(): void
+{
+    app(RelayOutboxEventsJob::class)->handle();
+}
+
 it('links a shipment and a timber lot via the pivot in both directions', function () {
     $shipment = shipmentTestShipment();
     $lot = TimberLot::factory()->create();
@@ -93,6 +109,8 @@ it('records a matching LotEvent on every linked lot when a dispatched checkpoint
         'location' => 'Douala Port',
     ]);
 
+    runOutboxRelay();
+
     expect($lotOne->lotEvents()->where('event_type', LotEventType::TransportDispatched->value)->where('location', 'Douala Port')->exists())->toBeTrue()
         ->and($lotTwo->lotEvents()->where('event_type', LotEventType::TransportDispatched->value)->exists())->toBeTrue();
 });
@@ -109,6 +127,8 @@ it('records a Delivered LotEvent when a delivered checkpoint is recorded for the
         'status' => TrackingCheckpointStatus::Delivered->value,
         'location' => 'Le Havre',
     ]);
+
+    runOutboxRelay();
 
     expect($lot->lotEvents()->where('event_type', LotEventType::Delivered->value)->exists())->toBeTrue();
 });
@@ -155,6 +175,12 @@ it('still records the checkpoint even when the lot-event recording fails inside 
             'tracking_token' => str()->random(48),
             'status' => TrackingCheckpointStatus::Dispatched->value,
         ]);
+
+        // The lot-event recording itself now happens inside the queued
+        // listener triggered by the outbox relay, not inline at checkpoint
+        // creation — so the LotEvent::creating throw must still be armed
+        // while the relay runs.
+        runOutboxRelay();
     } finally {
         \Illuminate\Support\Facades\Event::forget('eloquent.creating: '.\App\Models\LotEvent::class);
     }

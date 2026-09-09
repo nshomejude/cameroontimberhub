@@ -10,6 +10,7 @@ use App\Models\QuoteItem;
 use App\Models\RegulatorySource;
 use App\Models\Rfq;
 use App\Models\RfqCompany;
+use App\Jobs\RelayOutboxEventsJob;
 use App\Observers\OrderObserver;
 use App\Services\QuoteService;
 use Database\Seeders\RolesAndPermissionsSeeder;
@@ -72,10 +73,22 @@ function wiringOrderQuote(Rfq $rfq, Company $company, float $unitPrice = 185.00)
     return $quote;
 }
 
-/** Award through the real path and return the resulting order. */
+/**
+ * Award through the real path and return the resulting order.
+ *
+ * The compliance-case side effect is now async (OrderAwarded is recorded to
+ * the outbox by OrderObserver, and App\Listeners\OpenComplianceCaseOnOrderAwarded
+ * — a queued listener — opens the case once the outbox relay dispatches the
+ * event). QUEUE_CONNECTION=sync in phpunit.xml means the queued listener
+ * still runs inline the moment the event is dispatched, so running the relay
+ * job's handle() synchronously right here reproduces the old
+ * request-synchronous behavior for these assertions without weakening them.
+ */
 function wiringAwardOrder(Quote $quote): Order
 {
     app(QuoteService::class)->accept($quote, null);
+
+    app(RelayOutboxEventsJob::class)->handle();
 
     return Order::where('quote_id', $quote->getKey())->firstOrFail();
 }
