@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers\Public;
 
+use App\Domain\Logistics\Commands\RecordCheckpointCommand;
 use App\Enums\TrackingCheckpointStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Shipment;
-use App\Services\CheckpointTracker;
+use App\Support\Bus\CommandBus;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -34,7 +35,7 @@ use Illuminate\View\View;
  */
 class LogisticsCheckpointController extends Controller
 {
-    public function __construct(private readonly CheckpointTracker $tracker) {}
+    public function __construct(private readonly CommandBus $commandBus) {}
 
     public function create(Shipment $shipment): View
     {
@@ -75,7 +76,7 @@ class LogisticsCheckpointController extends Controller
 
         $data = $validator->validated();
 
-        $checkpoint = $this->tracker->record($shipment, [
+        $checkpoint = $this->commandBus->dispatch(new RecordCheckpointCommand($shipment, [
             'status' => $data['status'],
             'location' => $data['location'] ?? null,
             'latitude' => $data['latitude'] ?? null,
@@ -83,7 +84,7 @@ class LogisticsCheckpointController extends Controller
             'notes' => $data['notes'] ?? null,
             'occurred_at' => $data['occurred_at'] ?? null,
             'recorded_by' => $request->user()?->id,
-        ]);
+        ]));
 
         return response()->json([
             'saved' => true,
