@@ -3,7 +3,9 @@
 namespace App\Services\Payments;
 
 use App\Contracts\PaymentGatewayContract;
+use App\Domain\Commerce\Commands\RecordPaymentCompletionCommand;
 use App\Models\Payment;
+use App\Support\Bus\CommandBus;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -19,6 +21,20 @@ use Stripe\Webhook;
  * hosts the actual card-entry page; this class never touches card data
  * directly. See app/Contracts/PaymentGatewayContract.php for the contract
  * and routes/payments/stripe.php for the success/cancel/webhook routes.
+ *
+ * Chosen as the ONE gateway wired through App\Domain\Commerce\Commands\
+ * RecordPaymentCompletionCommand (architecture plan Phase 4, Commerce &
+ * Billing) as the proof-of-pattern for this batch: its webhook handler has
+ * the simplest, most linear "provider confirms -> mark completed" shape of
+ * the four gateways (MtnMomoGateway, OrangeMoneyGateway and PayPalGateway
+ * each have multiple markCompleted() call sites across different
+ * polling/callback code paths), making it the lowest-risk place to prove the
+ * seam without touching business logic. The other three gateways'
+ * markCompleted() call sites are left as-is for now — rewiring all four in
+ * one pass was judged too invasive for this task's scope; each is a
+ * mechanical follow-up (swap `$payment->markCompleted(...)` for
+ * `app(CommandBus::class)->dispatch(new RecordPaymentCompletionCommand(...))`)
+ * once this pattern is proven in production.
  */
 class StripeGateway implements PaymentGatewayContract
 {
@@ -94,7 +110,12 @@ class StripeGateway implements PaymentGatewayContract
         if ($type === 'checkout.session.completed' && $object) {
             $payment = $this->findPayment($object);
 
-            $payment?->markCompleted($object->payment_intent ?? null);
+            if ($payment) {
+                app(CommandBus::class)->dispatch(new RecordPaymentCompletionCommand(
+                    paymentId: $payment->getKey(),
+                    providerReference: $object->payment_intent ?? null,
+                ));
+            }
         }
 
         if (in_array($type, ['checkout.session.expired', 'payment_intent.payment_failed'], true) && $object) {

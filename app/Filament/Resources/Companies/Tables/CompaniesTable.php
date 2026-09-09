@@ -3,13 +3,14 @@
 namespace App\Filament\Resources\Companies\Tables;
 
 use App\Actions\Company\RequestCompanySuspension;
+use App\Domain\Commerce\Commands\AssignSubscriptionCommand;
 use App\Enums\CompanyStatus;
 use App\Enums\SupplierType;
 use App\Models\Company;
 use App\Models\CompanySuspensionRequest;
 use App\Models\Plan;
 use App\Services\CompanyStatusService;
-use App\Services\SubscriptionService;
+use App\Support\Bus\CommandBus;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkAction;
@@ -109,10 +110,15 @@ class CompaniesTable
                         ])
                         ->action(function (\Illuminate\Database\Eloquent\Collection $records, array $data): void {
                             $plan = Plan::findOrFail($data['plan_id']);
-                            $service = app(SubscriptionService::class);
+                            $bus = app(CommandBus::class);
+                            $actor = auth()->user();
 
                             foreach ($records as $record) {
-                                $service->assign($record, $plan, auth()->user());
+                                $bus->dispatch(new AssignSubscriptionCommand(
+                                    companyId: $record->getKey(),
+                                    planId: $plan->getKey(),
+                                    actingUserId: $actor?->getKey(),
+                                ));
                             }
 
                             Notification::make()->title('Plan assigned to '.$records->count().' compan'.($records->count() === 1 ? 'y' : 'ies'))->success()->send();
@@ -206,7 +212,11 @@ class CompaniesTable
                         ->options(fn () => Plan::where('is_active', true)->orderBy('sort_order')->pluck('name', 'id')),
                 ])
                 ->action(function (Company $record, array $data) use ($notify): void {
-                    app(SubscriptionService::class)->assign($record, Plan::findOrFail($data['plan_id']), auth()->user());
+                    app(CommandBus::class)->dispatch(new AssignSubscriptionCommand(
+                        companyId: $record->getKey(),
+                        planId: Plan::findOrFail($data['plan_id'])->getKey(),
+                        actingUserId: auth()->user()?->getKey(),
+                    ));
                     $notify('Plan assigned');
                 }),
         ];

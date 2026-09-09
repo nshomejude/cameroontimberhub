@@ -2,9 +2,13 @@
 
 namespace App\Jobs;
 
+use App\Domain\Catalog\Events\ProductPublished;
+use App\Domain\Commerce\Events\PaymentCompleted;
+use App\Domain\Commerce\Events\SubscriptionActivated;
 use App\Domain\Compliance\Events\ComplianceCaseOpened;
 use App\Domain\Compliance\Events\DisputeOpened;
 use App\Domain\Compliance\Events\InspectionFinalised;
+use App\Domain\Identity\Events\CompanyVerified;
 use App\Domain\Logistics\Events\LotTransformationRecorded;
 use App\Domain\Logistics\Events\ShipmentCheckpointRecorded;
 use App\Domain\Trade\Events\OrderAwarded;
@@ -69,6 +73,17 @@ class RelayOutboxEventsJob implements ShouldQueue
         // Logistics & Traceability addition (mass-balance transformations) —
         // see App\Domain\Logistics\Commands\RecordLotTransformationHandler:
         'lot_transformation.recorded' => LotTransformationRecorded::class,
+        // Identity & Access addition (Phase 4) — see
+        // App\Domain\Identity\Commands\ApproveVerificationHandler:
+        'company.verified' => CompanyVerified::class,
+        // Catalog addition (Phase 4) — see App\Observers\ProductObserver /
+        // App\Domain\Catalog\Commands\PublishProductHandler:
+        'product.published' => ProductPublished::class,
+        // --- Commerce & Billing addition (Phase 4) — see App\Domain\Commerce\
+        // Commands\{AssignSubscription,RecordPaymentCompletion}Handler. Small,
+        // separate, additive block; does not touch any other entry above. ---
+        'subscription.activated' => SubscriptionActivated::class,
+        'payment.completed' => PaymentCompleted::class,
     ];
 
     private const MAX_ATTEMPTS = 5;
@@ -187,6 +202,23 @@ class RelayOutboxEventsJob implements ShouldQueue
             // below. (Logistics & Traceability addition — see
             // App\Domain\Logistics\Commands\RecordLotTransformationHandler.)
             'lot_transformation.recorded' => $this->resolveLotTransformationCompanyId($row->payload ?? []),
+            // Identity & Access addition (Phase 4): company.verified carries
+            // the verified company's id directly on the payload (a direct
+            // column on VerificationRequest, resolved by
+            // App\Domain\Identity\Commands\ApproveVerificationHandler) — no
+            // extra lookup needed.
+            'company.verified' => isset($row->payload['company_id']) ? (int) $row->payload['company_id'] : null,
+            // Catalog addition (Phase 4): product.published carries the
+            // owning company id directly on the payload (Product::company_id
+            // is a direct column) — no extra lookup needed.
+            'product.published' => isset($row->payload['company_id']) ? (int) $row->payload['company_id'] : null,
+            // --- Commerce & Billing addition (Phase 4): both new events
+            // carry the owning company id directly on the payload —
+            // Subscription::company_id and Payment::company_id are both
+            // direct columns (see App\Domain\Commerce\Events\
+            // {SubscriptionActivated,PaymentCompleted}) — no extra lookup
+            // needed. Small, separate, additive block. ---
+            'subscription.activated', 'payment.completed' => isset($row->payload['company_id']) ? (int) $row->payload['company_id'] : null,
             default => null,
         };
 
