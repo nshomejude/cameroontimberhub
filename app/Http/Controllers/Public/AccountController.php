@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers\Public;
 
+use App\Domain\Trade\Queries\ListBuyerOrdersQuery;
 use App\Http\Controllers\Controller;
 use App\Services\BuyerDashboard;
 use App\Services\BuyerRfqAccess;
+use App\Support\Bus\QueryBus;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -31,6 +33,7 @@ class AccountController extends Controller
     public function __construct(
         private readonly BuyerDashboard $dashboard,
         private readonly BuyerRfqAccess $access,
+        private readonly QueryBus $queryBus,
     ) {}
 
     public function index(Request $request): View
@@ -76,7 +79,7 @@ class AccountController extends Controller
     public function orders(Request $request): View
     {
         return view('public.account.orders', [
-            'orders' => $this->dashboard->orderPage($request->user()),
+            'orders' => $this->queryBus->dispatch(new ListBuyerOrdersQuery($request->user()->getKey())),
             'access' => $this->access,
         ]);
     }

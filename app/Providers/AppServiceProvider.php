@@ -13,6 +13,8 @@ use App\Observers\CompanyDocumentObserver;
 use App\Models\OrderDocument;
 use App\Observers\OrderDocumentObserver;
 use App\Policies\ActivityLogPolicy;
+use App\Support\Bus\CommandBus;
+use App\Support\Bus\QueryBus;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -28,7 +30,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(CommandBus::class);
+        $this->app->singleton(QueryBus::class);
     }
 
     /**
