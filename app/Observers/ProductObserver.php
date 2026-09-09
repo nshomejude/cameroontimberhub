@@ -2,12 +2,14 @@
 
 namespace App\Observers;
 
+use App\Domain\Catalog\Events\ProductPublished;
 use App\Enums\LotEventType;
 use App\Enums\ProductStatus;
 use App\Enums\TimberLotStatus;
 use App\Models\Product;
 use App\Models\TimberLot;
 use App\Services\FraudDetectionService;
+use App\Support\Events\RecordsOutboxEvents;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -27,6 +29,7 @@ use Throwable;
  */
 class ProductObserver
 {
+    use RecordsOutboxEvents;
     public function created(Product $product): void
     {
         try {
@@ -94,6 +97,19 @@ class ProductObserver
         ]);
 
         $lot->recordEvent(LotEventType::SourceRegistered);
+
+        // This is the exact moment a Product listing "goes live" (a genuine
+        // tradeable, active listing that did not already have a linked
+        // TimberLot) — formalize it as a domain event for webhook
+        // subscribers (architecture plan Phase 4, Catalog context). Recorded
+        // inside the same DB transaction as the state change above, since
+        // this Observer callback fires while the owning save's transaction
+        // (whether from CommandBus::dispatch() or Filament's default
+        // create/update lifecycle) is still open.
+        $this->recordOutboxEvent(new ProductPublished(
+            productId: $product->id,
+            companyId: $product->company_id,
+        ));
     }
 
     /**
