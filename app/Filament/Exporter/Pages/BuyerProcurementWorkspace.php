@@ -34,7 +34,7 @@ class BuyerProcurementWorkspace extends Page
 
     protected static ?string $navigationLabel = 'My Procurement';
 
-    protected static ?string $title = 'Procurement workspace';
+    protected static ?string $title = 'Procurement Workspace';
 
     protected static ?int $navigationSort = 1;
 

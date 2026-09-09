@@ -45,7 +45,7 @@ class InspectorWorkspace extends Page
 
     protected static ?string $navigationLabel = 'My Inspections';
 
-    protected static ?string $title = 'Inspector workspace';
+    protected static ?string $title = 'Inspector Workspace';
 
     protected static ?int $navigationSort = 5;
 

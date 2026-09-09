@@ -34,7 +34,7 @@ class ComplianceOfficerWorkspace extends Page
 
     protected static ?string $navigationLabel = 'Compliance Workspace';
 
-    protected static ?string $title = 'Compliance officer workspace';
+    protected static ?string $title = 'Compliance Officer Workspace';
 
     protected static ?int $navigationSort = 0;
 

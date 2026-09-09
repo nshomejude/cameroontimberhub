@@ -29,6 +29,14 @@ class AiApiKeyChangeRequestResource extends Resource
 
     protected static ?string $navigationLabel = 'AI API key changes';
 
+    // Filament derives the model/plural labels and breadcrumb title from
+    // the model class name by default (Str::title(Str::snake(...))), which
+    // doesn't know "Ai"/"Api" are acronyms — it renders "Ai Api Key Change
+    // Requests" instead of "AI API Key Change Requests". Set explicitly.
+    protected static ?string $modelLabel = 'AI API key change request';
+
+    protected static ?string $pluralModelLabel = 'AI API key change requests';
+
     public static function canViewAny(): bool
     {
         return (bool) auth()->user()?->can('ai.manage');

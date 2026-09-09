@@ -46,7 +46,9 @@
                             </div>
                         @endif
 
-                        <p class="text-xs italic text-ink-soft">{{ $assistantResult['disclaimer'] }}</p>
+                        @if (filled($assistantResult['disclaimer']))
+                            <p class="text-xs italic text-ink-soft">{{ $assistantResult['disclaimer'] }}</p>
+                        @endif
                     </div>
                 @endif
             </div>

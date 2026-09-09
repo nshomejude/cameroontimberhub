@@ -49,7 +49,9 @@ class ComplianceAssistantService
             return [
                 'answer' => 'You have asked several questions in the last minute. Please wait a moment before asking another to keep this tool available for everyone.',
                 'grounding' => collect(),
-                'disclaimer' => self::DISCLAIMER,
+                // No answer was actually generated, so the "this answer is
+                // generated from..." disclaimer would be misleading here.
+                'disclaimer' => '',
                 'rate_limited' => true,
                 'ai_ready' => true,
             ];
@@ -68,7 +70,9 @@ class ComplianceAssistantService
             return [
                 'answer' => $answer,
                 'grounding' => $grounding,
-                'disclaimer' => self::DISCLAIMER,
+                // No answer was actually generated, so the "this answer is
+                // generated from..." disclaimer would be misleading here.
+                'disclaimer' => '',
                 'rate_limited' => false,
                 'ai_ready' => false,
             ];
@@ -84,7 +88,9 @@ class ComplianceAssistantService
             return [
                 'answer' => $answer,
                 'grounding' => $grounding,
-                'disclaimer' => self::DISCLAIMER,
+                // No answer was actually generated, so the "this answer is
+                // generated from..." disclaimer would be misleading here.
+                'disclaimer' => '',
                 'rate_limited' => false,
                 'ai_ready' => true,
             ];
