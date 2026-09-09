@@ -6,6 +6,7 @@ use App\Enums\RfqStatus;
 use App\Models\Company;
 use App\Models\Rfq;
 use App\Services\LeadFlowService;
+use App\Services\RfqMatchingService;
 use App\Services\RfqTriageService;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
@@ -53,6 +54,15 @@ class RfqsTable
                     Action::make('approve')->label('Approve')->icon('heroicon-o-check-circle')->color('success')->requiresConfirmation()
                         ->visible(fn (Rfq $r): bool => in_array($r->status, [RfqStatus::New, RfqStatus::InReview], true) && static::canTriage())
                         ->action(fn (Rfq $record) => static::run(fn () => app(RfqTriageService::class)->approve($record, auth()->user()), 'RFQ approved — you can now route it')),
+
+                    Action::make('aiSuggestions')->label('AI suggestions')->icon('heroicon-o-sparkles')->color('gray')
+                        ->visible(fn (Rfq $r): bool => $r->status === RfqStatus::Approved && static::canRoute())
+                        ->modalHeading('AI-suggested supplier shortlist')
+                        ->modalContent(fn (Rfq $record) => view('filament.resources.rfqs.ai-suggestions', [
+                            'suggestions' => app(RfqMatchingService::class)->suggestSuppliers($record),
+                        ]))
+                        ->modalSubmitAction(false)
+                        ->modalCancelActionLabel('Close'),
 
                     Action::make('route')->label('Route to companies')->icon('heroicon-o-paper-airplane')->color('success')
                         ->visible(fn (Rfq $r): bool => $r->status === RfqStatus::Approved && static::canRoute())
