@@ -61,6 +61,17 @@ class CompanyDocument extends Model
         return $this->morphMany(DocumentReminderLog::class, 'document_owner');
     }
 
+    /** AI-assisted extraction attempts (blueprint §35) — review aid only, never authoritative. */
+    public function extractions(): MorphMany
+    {
+        return $this->morphMany(DocumentExtraction::class, 'subject');
+    }
+
+    public function latestExtraction(): ?DocumentExtraction
+    {
+        return $this->extractions()->latest('id')->first();
+    }
+
     public function scopePending(Builder $query): Builder
     {
         return $query->where('status', DocumentStatus::Pending->value);

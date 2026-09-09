@@ -6,6 +6,7 @@ use App\Enums\OrderDocumentKind;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 /**
  * A file attached to an order — proof of delivery or a shipping paper.
@@ -80,5 +81,11 @@ class OrderDocument extends Model
     public function isImage(): bool
     {
         return str_starts_with((string) $this->mime_type, 'image/');
+    }
+
+    /** AI-assisted extraction attempts (blueprint §35) — review aid only, never authoritative. */
+    public function extractions(): MorphMany
+    {
+        return $this->morphMany(DocumentExtraction::class, 'subject');
     }
 }

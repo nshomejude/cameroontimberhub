@@ -8,6 +8,10 @@ use App\Models\Order;
 use App\Observers\OrderObserver;
 use App\Models\CheckpointUpdate;
 use App\Observers\ShipmentObserver;
+use App\Models\CompanyDocument;
+use App\Observers\CompanyDocumentObserver;
+use App\Models\OrderDocument;
+use App\Observers\OrderDocumentObserver;
 use App\Policies\ActivityLogPolicy;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -45,6 +49,11 @@ class AppServiceProvider extends ServiceProvider
         // CheckpointUpdate rows recorded against it (see app/Observers/ShipmentObserver.php
         // doc block), so the observer is registered on CheckpointUpdate.
         CheckpointUpdate::observe(ShipmentObserver::class);
+
+        // AI-assisted document extraction (blueprint §35) — queued, never
+        // blocking the upload; see the observers' own try/catch.
+        CompanyDocument::observe(CompanyDocumentObserver::class);
+        OrderDocument::observe(OrderDocumentObserver::class);
     }
 
     /** Public-intake rate limiters (spec §4.2), keyed in Redis. */
