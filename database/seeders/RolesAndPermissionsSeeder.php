@@ -54,6 +54,11 @@ class RolesAndPermissionsSeeder extends Seeder
         // Added for the formal Dispute Resolution workflow (blueprint §64):
         // gates the admin Dispute decision action. Admin/super_admin only.
         'disputes.manage',
+        // Gates the AI provider settings + API key change request/approve
+        // resources. Admin/super_admin only — deliberately narrow, since
+        // approving a key change also requires being a different admin than
+        // the requester plus a fresh 2FA confirmation (see App\Actions\Ai).
+        'ai.manage',
     ];
 
     /** Role => permission matrix (spec decision G). super_admin gets all. */
@@ -78,6 +83,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'platform-ops.view',
             // Dispute Resolution workflow (blueprint §64): admin-only.
             'disputes.manage',
+            // AI provider settings + key-change request/approve: admin-only.
+            'ai.manage',
         ],
         'verification_officer' => [
             'companies.view', 'documents.review', 'verification.review',
