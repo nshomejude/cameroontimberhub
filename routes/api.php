@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\DisputeController;
 use App\Http\Controllers\Api\V1\OrderController;
 use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\QuoteController;
@@ -108,5 +109,21 @@ Route::prefix('v1')->name('api.v1.')->middleware('throttle:api-key')->group(func
 
         Route::post('orders/{orderReference}/trade-assurance/milestones/{milestoneId}/confirm', [TradeAssuranceController::class, 'confirmMilestone'])
             ->middleware('throttle:api-decision')->name('orders.trade-assurance.confirm');
+
+        // Dispute Resolution (blueprint §64): API counterpart of the web
+        // `orders/{order}/disputes` group. See Api\V1\DisputeController's
+        // docblock for what is/isn't covered in this first pass (evidence
+        // file upload and appeal are deferred).
+        Route::get('orders/{orderReference}/disputes', [DisputeController::class, 'index'])
+            ->name('orders.disputes.index');
+
+        Route::get('orders/{orderReference}/disputes/{dispute}', [DisputeController::class, 'show'])
+            ->name('orders.disputes.show');
+
+        Route::post('orders/{orderReference}/disputes', [DisputeController::class, 'store'])
+            ->middleware('throttle:api-decision')->name('orders.disputes.store');
+
+        Route::post('orders/{orderReference}/disputes/{dispute}/reply', [DisputeController::class, 'reply'])
+            ->middleware('throttle:api-decision')->name('orders.disputes.reply');
     });
 });
