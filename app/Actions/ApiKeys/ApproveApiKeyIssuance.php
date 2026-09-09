@@ -5,6 +5,7 @@ namespace App\Actions\ApiKeys;
 use App\Enums\CompanyUserRole;
 use App\Models\ApiKeyIssuanceRequest;
 use App\Models\ApiKeyMeta;
+use App\Models\Company;
 use App\Models\User;
 use App\Services\TwoFactorStepUp;
 use Illuminate\Http\Request;
@@ -67,7 +68,7 @@ class ApproveApiKeyIssuance
         $meta = ApiKeyMeta::create([
             'personal_access_token_id' => $newToken->accessToken->getKey(),
             'company_id' => $company->getKey(),
-            'rate_limit_tier' => 'standard',
+            'rate_limit_tier' => $this->resolveRateLimitTier($company),
             'requested_by' => $issuanceRequest->requested_by,
             'approved_by' => $approvedBy->getKey(),
         ]);
@@ -79,5 +80,19 @@ class ApproveApiKeyIssuance
         ]);
 
         return ['plain_text_token' => $newToken->plainTextToken, 'meta' => $meta];
+    }
+
+    /**
+     * API-First plan Phase 3 follow-up: derive the rate-limit tier from the
+     * requesting company's ACTIVE subscription's plan (Company::activeSubscription(),
+     * already used elsewhere for entitlement checks) rather than hardcoding
+     * 'standard'. A company with no active subscription (free/no plan) gets
+     * the lowest tier, not a silent 'standard'.
+     */
+    private function resolveRateLimitTier(Company $company): string
+    {
+        $plan = $company->activeSubscription?->plan;
+
+        return $plan?->apiRateLimitTier() ?? (string) config('api.rate_limit_tiers.default', 'basic');
     }
 }

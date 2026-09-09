@@ -51,4 +51,19 @@ class Plan extends Model
     {
         return data_get($this->features, $key, $default);
     }
+
+    /**
+     * API-First plan Phase 3 follow-up (see config/api.php doc block):
+     * the API rate-limit tier ('basic'/'standard'/'elevated') this plan
+     * maps to, used at API-key issuance time instead of a hardcoded value.
+     * Falls back to config('api.rate_limit_tiers.default') for any plan
+     * slug not explicitly mapped (e.g. non-API-relevant segments).
+     */
+    public function apiRateLimitTier(): string
+    {
+        return (string) (
+            config("api.rate_limit_tiers.by_plan_slug.{$this->slug}")
+            ?? config('api.rate_limit_tiers.default', 'basic')
+        );
+    }
 }

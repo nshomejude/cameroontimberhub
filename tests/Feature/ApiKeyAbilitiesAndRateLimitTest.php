@@ -72,9 +72,11 @@ it('enforces the per-key rate limit independently for two different keys', funct
     $keyA = issueScopedApiKey(['products:read']);
     $keyB = issueScopedApiKey(['products:read']);
 
-    // 'standard' tier is 60/minute (App\Providers\AppServiceProvider). Drive
-    // key A to its limit; key B must remain completely unaffected.
-    for ($i = 0; $i < 60; $i++) {
+    // Neither company has an active subscription, so both keys are issued
+    // at the 'basic' tier (App\Actions\ApiKeys\ApproveApiKeyIssuance falls
+    // back to 'basic' with no active Plan) — 30/minute (App\Providers\AppServiceProvider).
+    // Drive key A to its limit; key B must remain completely unaffected.
+    for ($i = 0; $i < 30; $i++) {
         forgetAuthGuardCache();
 
         $this->withHeader('Authorization', 'Bearer '.$keyA['token'])
