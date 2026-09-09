@@ -219,6 +219,40 @@ class AppServiceProvider extends ServiceProvider
             Limit::perMinute(10)->by('api-decision:'.($request->user()?->getAuthIdentifier() ?? $request->ip())),
             Limit::perHour(120)->by('api-decision-hour:'.($request->user()?->getAuthIdentifier() ?? $request->ip())),
         ]);
+
+        // Per-API-key rate limiting (API-First plan Task 0.4). Keyed by the
+        // Sanctum token's own id — NOT the user or IP — so two keys issued
+        // to the same company user each get their own independent budget,
+        // and a key survives being used from many IPs/devices without
+        // fragmenting its budget. Falls back to per-IP for unauthenticated
+        // requests (the public catalogue routes in routes/api.php).
+        //
+        // The limit itself is read from App\Models\ApiKeyMeta's
+        // `rate_limit_tier` when the token has a companion row (i.e. it was
+        // issued via the two-person ApproveApiKeyIssuance flow); tokens
+        // without one (e.g. the mobile app's user-issued tokens) get the
+        // same "standard" tier. Known Phase 0 simplification: tiers are not
+        // yet wired to the `plans`/`subscriptions` billing model — that is
+        // explicitly Phase 3 (API-First plan §4/Phase 3).
+        RateLimiter::for('api-key', function (Request $request) {
+            $token = $request->user()?->currentAccessToken();
+
+            if (! $token) {
+                return Limit::perMinute(60)->by('api-key-ip:'.$request->ip());
+            }
+
+            $tier = \App\Models\ApiKeyMeta::query()
+                ->where('personal_access_token_id', $token->getKey())
+                ->value('rate_limit_tier') ?? 'standard';
+
+            $perMinute = match ($tier) {
+                'elevated' => 300,
+                'basic' => 30,
+                default => 60, // 'standard'
+            };
+
+            return Limit::perMinute($perMinute)->by('api-key:'.$token->getKey());
+        });
     }
 
     /**

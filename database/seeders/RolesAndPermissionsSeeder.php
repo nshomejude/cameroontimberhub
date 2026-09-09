@@ -59,6 +59,12 @@ class RolesAndPermissionsSeeder extends Seeder
         // approving a key change also requires being a different admin than
         // the requester plus a fresh 2FA confirmation (see App\Actions\Ai).
         'ai.manage',
+        // Gates the `/api/v1` product API key issuance/revocation resource
+        // (blueprint: API-First plan Task 0.4). Admin/super_admin only —
+        // deliberately narrow, since approving issuance also requires being
+        // a different admin than the requester plus a fresh 2FA
+        // confirmation (see App\Actions\ApiKeys).
+        'api-keys.manage',
     ];
 
     /** Role => permission matrix (spec decision G). super_admin gets all. */
@@ -85,6 +91,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'disputes.manage',
             // AI provider settings + key-change request/approve: admin-only.
             'ai.manage',
+            // `/api/v1` product API key issuance/revocation: admin-only.
+            'api-keys.manage',
         ],
         'verification_officer' => [
             'companies.view', 'documents.review', 'verification.review',

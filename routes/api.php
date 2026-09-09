@@ -25,7 +25,12 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::prefix('v1')->name('api.v1.')->group(function (): void {
+// Per-API-key rate limiting (API-First plan Task 0.4), additive on top of
+// the existing per-endpoint `throttle:api-*` limiters above/below — this
+// one is keyed by the Sanctum token id (or IP when unauthenticated), not
+// by endpoint, so it bounds a single key's total v1 traffic. See
+// App\Providers\AppServiceProvider::registerRateLimiters().
+Route::prefix('v1')->name('api.v1.')->middleware('throttle:api-key')->group(function (): void {
 
     /* ------------------------------------------------------------- auth */
 
