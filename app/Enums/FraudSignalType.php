@@ -14,6 +14,7 @@ enum FraudSignalType: string
     case DuplicateDocument = 'duplicate_document';
     case PricingAnomaly = 'pricing_anomaly';
     case LoginAnomaly = 'login_anomaly';
+    case AiConsistencyCheck = 'ai_consistency_check';
 
     public function label(): string
     {
@@ -22,6 +23,7 @@ enum FraudSignalType: string
             self::DuplicateDocument => 'Duplicate Document',
             self::PricingAnomaly => 'Pricing Anomaly',
             self::LoginAnomaly => 'Login Anomaly',
+            self::AiConsistencyCheck => 'AI Consistency Check',
         };
     }
 }

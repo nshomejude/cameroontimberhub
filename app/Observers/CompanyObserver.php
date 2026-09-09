@@ -49,5 +49,27 @@ class CompanyObserver
                 'exception' => $e->getMessage(),
             ]);
         }
+
+        $this->detectAiConsistencyIssue($company);
+    }
+
+    /**
+     * Blueprint §25/§35 AI-assisted cross-field consistency check --
+     * detection/alerting only, wrapped in the same try/catch pattern as the
+     * duplicate-company detection above so a bug (or an AI call failure)
+     * here can never prevent a company from being created. Also entirely
+     * optional at the AiGateway level: when no provider key is configured,
+     * the checker itself returns null before any real API call is made.
+     */
+    private function detectAiConsistencyIssue(Company $company): void
+    {
+        try {
+            app(FraudDetectionService::class)->detectAiConsistencyIssue($company);
+        } catch (Throwable $e) {
+            Log::error('CompanyObserver failed to run AI consistency-check detection', [
+                'company_id' => $company->id ?? null,
+                'exception' => $e->getMessage(),
+            ]);
+        }
     }
 }

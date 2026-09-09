@@ -33,6 +33,8 @@ class FraudDetectionService
     /** How many recent login IPs are remembered per user for the new-IP heuristic. */
     public const KNOWN_IP_HISTORY_LIMIT = 10;
 
+    public function __construct(private readonly AiFraudConsistencyChecker $aiConsistencyChecker) {}
+
     /**
      * Fuzzy-matches this company's name (slug comparison, no new dependency)
      * plus same registration_number or same primary contact email/phone
@@ -205,6 +207,40 @@ class FraudDetectionService
             'signal_type' => FraudSignalType::LoginAnomaly,
             'severity' => FraudSignalSeverity::Low,
             'details' => $result + ['user_agent' => $userAgent],
+        ]);
+
+        return $result;
+    }
+
+    /**
+     * AI-assisted cross-field consistency check on company onboarding data
+     * (blueprint §25/§35). Optional/best-effort: AiFraudConsistencyChecker
+     * itself returns null (never throws) when the AI gateway is not
+     * configured or the call fails, so this never becomes a hard dependency
+     * of company creation.
+     *
+     * @return array{summary: string, severity: string, reasoning: string}|null
+     */
+    public function detectAiConsistencyIssue(Company $company): ?array
+    {
+        $result = $this->aiConsistencyChecker->check($company);
+
+        if ($result === null) {
+            return null;
+        }
+
+        $severity = match ($result['severity']) {
+            'high' => FraudSignalSeverity::High,
+            'medium' => FraudSignalSeverity::Medium,
+            default => FraudSignalSeverity::Low,
+        };
+
+        FraudSignal::create([
+            'subject_type' => Company::class,
+            'subject_id' => $company->getKey(),
+            'signal_type' => FraudSignalType::AiConsistencyCheck,
+            'severity' => $severity,
+            'details' => $result,
         ]);
 
         return $result;
