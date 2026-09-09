@@ -5,7 +5,13 @@ namespace App\Jobs;
 use App\Domain\Compliance\Events\ComplianceCaseOpened;
 use App\Domain\Logistics\Events\ShipmentCheckpointRecorded;
 use App\Domain\Trade\Events\OrderAwarded;
+use App\Jobs\DeliverWebhookJob;
+use App\Models\Company;
+use App\Models\Order;
 use App\Models\OutboxEvent;
+use App\Models\Shipment;
+use App\Models\TimberLot;
+use App\Models\WebhookSubscription;
 use App\Support\Events\DomainEvent;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -111,12 +117,64 @@ class RelayOutboxEventsJob implements ShouldQueue
     }
 
     /**
-     * Integration point for Task 0.5 (webhook delivery) — see the doc
-     * comment in relay() above. Currently a no-op: webhook_subscriptions /
-     * webhook_deliveries / DeliverWebhookJob do not exist yet.
+     * Task 0.5 (webhook delivery) integration point. Resolves the company
+     * that "owns" this outbox row's event, then dispatches a
+     * DeliverWebhookJob for every active WebhookSubscription of that
+     * company whose event_types includes this row's event_type.
+     *
+     * None of the three event payloads carry company_id directly, so each
+     * needs its own lookup:
+     *  - order.awarded: Order::company_id (direct column on the order).
+     *  - shipment.checkpoint_recorded: Shipment::order->company_id (a
+     *    Shipment belongs to an Order, which carries company_id).
+     *  - compliance.case_opened: the case's polymorphic owner
+     *    (owner_type/owner_id) — today only Company, but resolved
+     *    defensively for Order/Shipment/TimberLot too per ComplianceCase's
+     *    doc block ("Company today; TimberLot, Shipment as those need
+     *    assessment").
      */
     private function deliverWebhooksFor(OutboxEvent $row): void
     {
-        // no-op — Task 0.5 adds its dispatch call here.
+        $companyId = match ($row->event_type) {
+            'order.awarded' => Order::query()->find($row->payload['order_id'] ?? null)?->company_id,
+            'shipment.checkpoint_recorded' => Shipment::query()
+                ->with('order:id,company_id')
+                ->find($row->payload['shipment_id'] ?? null)
+                ?->order?->company_id,
+            'compliance.case_opened' => $this->resolveComplianceCaseCompanyId($row->payload ?? []),
+            default => null,
+        };
+
+        if ($companyId === null) {
+            return;
+        }
+
+        WebhookSubscription::query()
+            ->where('company_id', $companyId)
+            ->where('is_active', true)
+            ->get()
+            ->each(function (WebhookSubscription $subscription) use ($row): void {
+                if ($subscription->subscribesTo($row->event_type)) {
+                    DeliverWebhookJob::dispatch($subscription->id, $row->event_type, $row->payload ?? []);
+                }
+            });
+    }
+
+    private function resolveComplianceCaseCompanyId(array $payload): ?int
+    {
+        $ownerType = $payload['owner_type'] ?? null;
+        $ownerId = $payload['owner_id'] ?? null;
+
+        if ($ownerType === null || $ownerId === null) {
+            return null;
+        }
+
+        return match ($ownerType) {
+            Company::class => (int) $ownerId,
+            Order::class => Order::query()->find($ownerId)?->company_id,
+            Shipment::class => Shipment::query()->with('order:id,company_id')->find($ownerId)?->order?->company_id,
+            TimberLot::class => TimberLot::query()->find($ownerId)?->company_id,
+            default => null,
+        };
     }
 }
