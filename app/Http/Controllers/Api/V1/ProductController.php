@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Domain\Catalog\Queries\SearchProductCatalogueQuery;
 use App\Enums\ProductStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\ProductIndexRequest;
@@ -9,6 +10,7 @@ use App\Http\Resources\Api\V1\ProductDetailResource;
 use App\Http\Resources\Api\V1\ProductResource;
 use App\Models\Product;
 use App\Services\ProductCatalogueService;
+use App\Support\Bus\QueryBus;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 /**
@@ -22,13 +24,19 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
  */
 class ProductController extends Controller
 {
-    public function __construct(private readonly ProductCatalogueService $catalogue) {}
+    public function __construct(
+        private readonly ProductCatalogueService $catalogue,
+        private readonly QueryBus $queryBus,
+    ) {}
 
     public function index(ProductIndexRequest $request): AnonymousResourceCollection
     {
         $filters = $request->filters();
 
-        $products = $this->catalogue->search($filters, $request->perPage());
+        $products = $this->queryBus->dispatch(new SearchProductCatalogueQuery(
+            filters: $filters,
+            perPage: $request->perPage(),
+        ));
 
         return ProductResource::collection($products)->additional([
             'meta' => [

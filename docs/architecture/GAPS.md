@@ -19,14 +19,50 @@ webhook-hardening pass is already touching this area.
 
 See [Closed](#closed) below.
 
-## 3. Query coverage is asymmetric
+## 3. Query coverage is asymmetric — CLOSED (with noted exceptions)
 
-Trade, Logistics and Compliance have named `Query` classes over their heavy
-reads. **Identity & Access, Catalog and Commerce & Billing** reads still go
-straight through Eloquent from controllers/services — the "heavy reads become
-named Queries" target is only ~half met. Not urgent (those contexts have
-thinner read surfaces), but it means the CQRS seam the API depends on is not
-uniform.
+**Closed 2026-09-10.** Named `Query` classes now cover the genuinely-heavy or
+API-relevant reads in the three under-covered contexts, mirroring the Trade
+pattern (thin Query DTO, Handler delegates to the existing service/scope,
+caller dispatches via `QueryBus`):
+
+- **Catalog** — `SearchProductCatalogueQuery` (delegates to
+  `ProductCatalogueService::search`; wired into
+  `Api\V1\ProductController::index`), `ListSupplierProductsQuery` (reproduces
+  the exporter `ProductResource::getEloquentQuery` company-scope; wired there).
+- **Identity & Access** — `ListVerifiedSuppliersQuery` (delegates to
+  `SearchService::companyQuery`; wired into `Api\V1\SupplierController::index`),
+  `ListPendingVerificationsQuery` (reproduces the `PendingVerificationsWidget`
+  query closure; wired there).
+- **Commerce & Billing** — `GetCompanySubscriptionQuery` (reproduces
+  `SubscriptionStatus::getActiveSubscription`'s `subscriptions()->active()
+  ->latest()->first()`; wired there).
+
+Each wired caller produces byte-identical output; see
+`tests/Feature/Domain/QueryCoverageTest.php` and the unchanged route/page
+tests.
+
+**Deliberately left inline (not worth a Query):**
+
+- `ListCompanyPaymentsQuery` was in scope but **not built**: there is no
+  company-scoped payment-history read anywhere in the codebase today. `Payment`
+  has no `Company` `hasMany`, and every existing `Payment` read is a
+  gateway-callback lookup by `provider_reference` (`StripeGateway`,
+  `PayPalGateway`, `OrangeMoneyGateway`, `MtnMomoGateway`) or a
+  `PaymentCheckoutController::create`. A Query here would have no caller to
+  rewire and no existing scope/service to delegate to — it would be net-new
+  query logic, which the "thin seam, don't reimplement" rule forbids. Add it
+  alongside the first real billing-history view or billing API endpoint.
+- `Api\V1\ProductController::show`, `SupplierController::show`,
+  `SpeciesController::show` — single-record `where('slug', …)->firstOrFail()`
+  reads with a one-line visibility `whereHas`; no multi-condition scoping,
+  pagination or reused eager-load set worth naming.
+- `SpeciesController::index` / `SearchController` already read entirely through
+  `SpeciesDirectoryService` / `SearchService`; the service *is* the shared
+  seam. Wrapping them adds a DTO with no second caller. Revisit if/when a
+  web+API split emerges.
+- The public web catalogue/directory Livewire components were not rewired —
+  they call the same services; the API controllers were the stated target.
 
 ## 4. ~~Error envelope not standardised in code~~ — CLOSED
 

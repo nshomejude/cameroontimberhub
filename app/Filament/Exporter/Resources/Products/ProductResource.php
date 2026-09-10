@@ -7,7 +7,9 @@ use App\Filament\Exporter\Resources\Products\Pages\EditProduct;
 use App\Filament\Exporter\Resources\Products\Pages\ListProducts;
 use App\Filament\Exporter\Resources\Products\Schemas\ProductForm;
 use App\Filament\Exporter\Resources\Products\Tables\ProductsTable;
+use App\Domain\Catalog\Queries\ListSupplierProductsQuery;
 use App\Models\Product;
+use App\Support\Bus\QueryBus;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -49,13 +51,10 @@ class ProductResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        $user = auth()->user();
-
-        return parent::getEloquentQuery()->when(
-            $user,
-            fn (Builder $query) => $query->whereHas('company', fn (Builder $c) => $c->dashboardOwned($user)),
-            fn (Builder $query) => $query->whereRaw('1 = 0'),
-        );
+        // Company-scoping moved behind a named Query (architecture plan,
+        // gap 3 — Catalog read coverage). ListSupplierProductsHandler
+        // reproduces the former inline scope exactly.
+        return app(QueryBus::class)->dispatch(new ListSupplierProductsQuery(auth()->id()));
     }
 
     public static function getRecordRouteBindingEloquentQuery(): Builder

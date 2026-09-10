@@ -2,8 +2,10 @@
 
 namespace App\Filament\Exporter\Pages;
 
+use App\Domain\Commerce\Queries\GetCompanySubscriptionQuery;
 use App\Models\Company;
 use App\Models\Subscription;
+use App\Support\Bus\QueryBus;
 use BackedEnum;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
@@ -27,6 +29,10 @@ class SubscriptionStatus extends Page
 
     public function getActiveSubscription(): ?Subscription
     {
-        return $this->getCompany()?->subscriptions()->active()->latest()->first();
+        $company = $this->getCompany();
+
+        return $company
+            ? app(QueryBus::class)->dispatch(new GetCompanySubscriptionQuery($company->getKey()))
+            : null;
     }
 }

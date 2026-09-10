@@ -2,8 +2,10 @@
 
 namespace App\Filament\Widgets;
 
+use App\Domain\Identity\Queries\ListPendingVerificationsQuery;
 use App\Enums\VerificationRequestStatus;
 use App\Models\VerificationRequest;
+use App\Support\Bus\QueryBus;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget;
@@ -26,10 +28,7 @@ class PendingVerificationsWidget extends TableWidget
             ->heading('Pending verifications')
             ->description('Verification requests awaiting review')
             ->query(
-                fn (): Builder => VerificationRequest::open()
-                    ->with('company:id,legal_name,trade_name,slug,status')
-                    ->with('assignedTo:id,name')
-                    ->latest()
+                fn (): Builder => app(QueryBus::class)->dispatch(new ListPendingVerificationsQuery())
             )
             ->columns([
                 TextColumn::make('company.name')
