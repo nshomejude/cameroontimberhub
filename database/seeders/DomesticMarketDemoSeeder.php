@@ -95,7 +95,7 @@ class DomesticMarketDemoSeeder extends Seeder
             foreach ($products as [$name, $speciesSlug, $type, $price]) {
                 $species = Species::where('slug', $speciesSlug)->first();
 
-                Product::firstOrCreate(
+                $this->makeProduct(
                     ['company_id' => $company->id, 'name' => $name],
                     [
                         'species_id' => $species?->id,
@@ -322,7 +322,7 @@ class DomesticMarketDemoSeeder extends Seeder
         foreach ($data['products'] as $i => [$name, $speciesSlug, $productType, $price]) {
             $species = Species::where('slug', $speciesSlug)->first();
 
-            Product::firstOrCreate(
+            $this->makeProduct(
                 ['company_id' => $company->id, 'name' => $name],
                 [
                     'species_id' => $species?->id,
@@ -342,6 +342,30 @@ class DomesticMarketDemoSeeder extends Seeder
         }
 
         return $company;
+    }
+
+    /**
+     * Create-or-update a demo product. Seeders run under WithoutModelEvents,
+     * so Product::booted()'s slug + public_id hooks do not fire — both
+     * generated columns are assigned explicitly on first insert and never
+     * reassigned on re-run.
+     */
+    private function makeProduct(array $match, array $attributes): Product
+    {
+        $product = Product::firstOrNew($match);
+        $product->fill($attributes);
+
+        if (blank($product->slug)) {
+            $product->slug = \Illuminate\Support\Str::slug($match['name'].'-'.$match['company_id']);
+        }
+
+        if (blank($product->public_id)) {
+            $product->public_id = \App\Support\ProductIdentifier::forProduct($product);
+        }
+
+        $product->save();
+
+        return $product;
     }
 
     /** Satisfies every Company::scopePubliclyVisible() predicate, with real named species attached. */

@@ -41,19 +41,28 @@ class ProductSeeder extends Seeder
             $images = $row['images'] ?? [];
             unset($row['images']);
 
-            $product = Product::updateOrCreate(
-                ['slug' => Str::slug($row['name'])],
-                array_merge([
-                    'company_id' => $company->id,
-                    'species_id' => $speciesSlug ? $species->get($speciesSlug)?->id : null,
-                    'price_currency' => 'XAF',
-                    'price_unit' => PriceUnit::CubicMetre,
-                    'moq_unit' => PriceUnit::CubicMetre,
-                    'origin' => 'Cameroon',
-                    'certification' => 'Legal Origin Verified',
-                    'status' => ProductStatus::Active,
-                ], $row),
-            );
+            $product = Product::firstOrNew(['slug' => Str::slug($row['name'])]);
+
+            $product->fill(array_merge([
+                'company_id' => $company->id,
+                'species_id' => $speciesSlug ? $species->get($speciesSlug)?->id : null,
+                'price_currency' => 'XAF',
+                'price_unit' => PriceUnit::CubicMetre,
+                'moq_unit' => PriceUnit::CubicMetre,
+                'origin' => 'Cameroon',
+                'certification' => 'Legal Origin Verified',
+                'status' => ProductStatus::Active,
+            ], $row));
+
+            // Seeders run under WithoutModelEvents, so Product::booted()'s
+            // public_id hook does not fire — assign it explicitly on first
+            // insert, the same way this seeder passes an explicit slug. Never
+            // reassigned on re-run, so the id stays stable.
+            if (blank($product->public_id)) {
+                $product->public_id = \App\Support\ProductIdentifier::forProduct($product);
+            }
+
+            $product->save();
 
             foreach ($images as $i => $path) {
                 $product->images()->firstOrCreate(['path' => $path], ['sort_order' => $i]);

@@ -10,6 +10,7 @@ use App\Enums\ProductStatus;
 use App\Enums\ProductType;
 use App\Models\Concerns\HasSlug;
 use App\Models\Concerns\HasVerification;
+use App\Support\ProductIdentifier;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -26,6 +27,18 @@ class Product extends Model
     use HasFactory, HasSlug, HasVerification, SoftDeletes;
 
     protected $guarded = ['id'];
+
+    protected static function booted(): void
+    {
+        // Assign the public identifier (gap-plan §1.1) on create. Never
+        // reassigns — getRouteKeyName() stays `slug`; this id is only used by
+        // the QR code and the /verify/product/{publicId} route.
+        static::creating(function (Product $product): void {
+            if (blank($product->public_id)) {
+                $product->public_id = ProductIdentifier::forProduct($product);
+            }
+        });
+    }
 
     protected function casts(): array
     {

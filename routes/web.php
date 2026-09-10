@@ -35,6 +35,7 @@ use App\Http\Controllers\Public\OrderLifecycleController;
 use App\Http\Controllers\Public\PageController;
 use App\Http\Controllers\Public\PricingController;
 use App\Http\Controllers\Public\ProductController;
+use App\Http\Controllers\Public\ProductVerificationController;
 use App\Http\Controllers\Public\ProgrammaticExporterController;
 use App\Http\Controllers\Public\ReceiptVerificationController;
 use App\Http\Controllers\Public\ReorderController;
@@ -206,6 +207,13 @@ Route::get('/verify/certificate', [CertificateVerificationController::class, 'cr
 Route::get('/verify/certificate/{token}', [CertificateVerificationController::class, 'token'])
     ->where('token', '[A-Za-z0-9]{16,64}')
     ->middleware('throttle:certificate-verify')->name('certificates.verify.token');
+
+// Public product-listing verification (gap-plan 1.1). Bound explicitly by
+// public_id — Product::getRouteKeyName() stays `slug`. No collision with
+// /verify/{token} (that route requires a 16+ char alnum token) or
+// /verify/certificate (two segments).
+Route::get('/verify/product/{publicId}', [ProductVerificationController::class, 'show'])
+    ->middleware('throttle:product-verify')->name('products.verify');
 
 // Public checkpoint tracking (gap-plan 1.5.11). Open to anyone holding the
 // link; throttled like /verify and /verify/certificate above.

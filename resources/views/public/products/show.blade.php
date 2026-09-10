@@ -57,7 +57,7 @@
         ['id' => 'description', 'label' => 'Description', 'show' => filled($product->description) || $benefits->isNotEmpty()],
         ['id' => 'details', 'label' => 'Product Details', 'show' => $specRows !== []],
         ['id' => 'shipping', 'label' => 'Shipping & Delivery', 'show' => true],
-        ['id' => 'certifications', 'label' => 'Certifications', 'show' => filled($product->certification) || filled($certificates)],
+        ['id' => 'certifications', 'label' => 'Certifications', 'show' => true],
         ['id' => 'reviews', 'label' => $product->hasRating() ? 'Reviews ('.$product->reviews_count.')' : 'Reviews', 'show' => true],
     ])->filter(fn ($t) => $t['show'])->values();
 
@@ -606,6 +606,18 @@
                                     @break
 
                                 @case('certifications')
+                                    @inject('productQr', \App\Services\ProductQrCodeService::class)
+                                    <div class="mb-4 flex items-start gap-4 rounded-lg border border-sand-200 p-4">
+                                        <div class="h-20 w-20 shrink-0">{!! $productQr->svg($product) !!}</div>
+                                        <div>
+                                            <p class="text-[1.0625rem] font-semibold text-ink">Verify this listing</p>
+                                            <p class="text-[0.9375rem] text-ink-soft">Public verification page, ref {{ $product->public_id }}.</p>
+                                            <a href="{{ route('products.verify', $product->public_id) }}" class="mt-1 inline-flex items-center gap-1 text-[0.9375rem] font-semibold text-forest-700 hover:underline">
+                                                Open verification page
+                                                <x-heroicon-s-arrow-top-right-on-square class="h-4 w-4" />
+                                            </a>
+                                        </div>
+                                    </div>
                                     <ul class="space-y-3">
                                         @if ($product->certification)
                                             <li class="flex items-start gap-3 rounded-lg border border-forest-100 bg-forest-50 p-4">

@@ -111,6 +111,14 @@ class AppServiceProvider extends ServiceProvider
             Limit::perHour(60)->by('certificate-verify-ip-hour:'.$request->ip()),
         ]);
 
+        // Public product-listing verification (gap-plan 1.1), same reasoning
+        // as certificate-verify: open to anyone, budgeted per-IP against
+        // public-id grinding.
+        RateLimiter::for('product-verify', fn (Request $request) => [
+            Limit::perMinute(10)->by('product-verify-ip:'.$request->ip()),
+            Limit::perHour(60)->by('product-verify-ip-hour:'.$request->ip()),
+        ]);
+
         // Public checkpoint tracking, same reasoning as receipt-verify /
         // certificate-verify: open to anyone holding the link, so budgeted
         // per-IP against token-grinding.
