@@ -3,11 +3,14 @@
 namespace Database\Seeders;
 
 use App\Models\Company;
+use App\Models\Document;
+use App\Models\Driver;
 use App\Models\Order;
 use App\Models\Rfq;
 use App\Models\RfqCompany;
 use App\Models\Species;
 use App\Models\User;
+use App\Models\Vehicle;
 use App\Services\LeadFlowService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -177,6 +180,66 @@ class DemoLoginSeeder extends Seeder
                     $leads->createFromRouting($routing);
                 }
             });
+
+        $this->seedFleet($company);
+    }
+
+    /**
+     * A couple of vehicles and drivers so the exporter panel's Fleet
+     * resources are not empty in the demo. One document is deliberately near
+     * expiry so the derived "Expiring soon" compliance state is visible.
+     * Idempotent on the (company_id, registration_number/license_number)
+     * unique indexes.
+     */
+    private function seedFleet(Company $company): void
+    {
+        $truck = Vehicle::query()->firstOrCreate(
+            ['company_id' => $company->getKey(), 'registration_number' => 'CE-4821-A'],
+            ['type' => 'truck', 'capacity_tonnes' => 18.00, 'is_active' => true],
+        );
+
+        Vehicle::query()->firstOrCreate(
+            ['company_id' => $company->getKey(), 'registration_number' => 'LT-1907-B'],
+            ['type' => 'trailer', 'capacity_tonnes' => 32.00, 'is_active' => true],
+        );
+
+        $driver = Driver::query()->firstOrCreate(
+            ['company_id' => $company->getKey(), 'license_number' => 'CMR-DL-448120'],
+            ['name' => 'Emmanuel Fotso', 'phone' => '+237677123045', 'is_active' => true],
+        );
+
+        Driver::query()->firstOrCreate(
+            ['company_id' => $company->getKey(), 'license_number' => 'CMR-DL-771903'],
+            ['name' => 'Bernadette Ayissi', 'phone' => '+237699884210', 'is_active' => true],
+        );
+
+        if ($truck->documents()->doesntExist()) {
+            $truck->documents()->create([
+                'type' => 'insurance_certificate',
+                'original_filename' => 'ce-4821-a-insurance.pdf',
+                'disk' => 'documents',
+                'storage_path' => 'demo/fleet/ce-4821-a-insurance.pdf',
+                'mime_type' => 'application/pdf',
+                'file_size' => 1024,
+                'issuer' => 'Chanas Assurances',
+                'issued_at' => now()->subMonths(11),
+                'expires_at' => now()->addDays(21),
+            ]);
+        }
+
+        if ($driver->documents()->doesntExist()) {
+            $driver->documents()->create([
+                'type' => 'drivers_license',
+                'original_filename' => 'cmr-dl-448120.pdf',
+                'disk' => 'documents',
+                'storage_path' => 'demo/fleet/cmr-dl-448120.pdf',
+                'mime_type' => 'application/pdf',
+                'file_size' => 1024,
+                'issuer' => 'MINTRANSPORTS',
+                'issued_at' => now()->subYears(3),
+                'expires_at' => now()->addYears(2),
+            ]);
+        }
     }
 
     /* ---------------------------------------------------------------- admin */

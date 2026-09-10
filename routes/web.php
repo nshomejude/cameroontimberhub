@@ -20,7 +20,6 @@ use App\Http\Controllers\Public\ContactController;
 use App\Http\Controllers\Public\DirectoryController;
 use App\Http\Controllers\Public\DisputeController;
 use App\Http\Controllers\Public\DomesticMarketplaceController;
-use App\Http\Controllers\Public\FleetRegistryController;
 use App\Http\Controllers\Public\GlossaryController;
 use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Public\InquiryController;
@@ -297,11 +296,10 @@ Route::middleware(['auth'])->prefix('security/two-factor')->name('two-factor.')-
         ->middleware('throttle:6,1')->name('challenge.store');
 });
 
-// Company-facing fleet & driver registry (gap-plan item 1.5.12). Not under
-// `buyer`/`account` -- the audience is a company member, not a buyer.
-// FleetRegistryController scopes to the signed-in user's own company and
-// 404s when they have none.
-Route::middleware(['auth'])->get('/fleet', [FleetRegistryController::class, 'index'])->name('fleet.index');
+// Fleet & driver registry (gap-plan item 1.5.12) is managed in the exporter
+// panel — App\Filament\Exporter\Resources\Vehicles + \Drivers, company-scoped
+// like every other exporter resource. The old standalone /fleet Blade page
+// was replaced so company data lives in one consistent place.
 
 // Formal Dispute Resolution workflow (blueprint §64). Reachable by either
 // party to the order — buyer or supplier company member — so it lives

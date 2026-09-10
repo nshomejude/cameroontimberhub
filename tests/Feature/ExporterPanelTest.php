@@ -54,7 +54,7 @@ it('blocks the dashboard for a user with no company', function () {
     $this->get('/dashboard')->assertForbidden();
 });
 
-it('surfaces the Fleet Registry link in the exporter panel and it resolves', function () {
+it('lets a company member reach the fleet vehicle and driver resources', function () {
     $company = Company::factory()->publiclyVisible()->create(['profile_completion' => 100]);
     CompanyContact::factory()->create(['company_id' => $company->id]);
     CompanyGallery::create(['company_id' => $company->id, 'image_path' => 'gallery/test.jpg']);
@@ -64,7 +64,8 @@ it('surfaces the Fleet Registry link in the exporter panel and it resolves', fun
 
     $this->actingAs(exporterFor($company));
 
-    $this->get('/dashboard')->assertOk()->assertSee(route('fleet.index'));
-    // The company member is the audience for /fleet — it must not 404 for them.
-    $this->get('/fleet')->assertOk();
+    $this->get('/dashboard/vehicles')->assertOk();
+    $this->get('/dashboard/vehicles/create')->assertOk();
+    $this->get('/dashboard/drivers')->assertOk();
+    $this->get('/dashboard/drivers/create')->assertOk();
 });

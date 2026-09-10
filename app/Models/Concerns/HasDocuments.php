@@ -24,4 +24,32 @@ trait HasDocuments
     {
         return $this->documents()->verified()->get();
     }
+
+    /**
+     * A single word describing the compliance-paperwork state of this record,
+     * derived straight off the shared Document store (no bespoke expiry
+     * system): 'none' | 'expired' | 'expiring' (within 30 days) | 'ok'.
+     * Uses the already-loaded `documents` relation when present so a table
+     * column costs no extra query.
+     */
+    public function documentComplianceState(): string
+    {
+        $documents = $this->relationLoaded('documents') ? $this->documents : $this->documents()->get();
+
+        if ($documents->isEmpty()) {
+            return 'none';
+        }
+
+        if ($documents->contains(fn (Document $d): bool => $d->isExpired())) {
+            return 'expired';
+        }
+
+        $expiringSoon = $documents->contains(
+            fn (Document $d): bool => $d->expires_at !== null
+                && ! $d->isExpired()
+                && $d->expires_at->diffInDays(now()) <= 30,
+        );
+
+        return $expiringSoon ? 'expiring' : 'ok';
+    }
 }
