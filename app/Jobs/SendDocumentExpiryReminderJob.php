@@ -10,6 +10,7 @@ use App\Notifications\DocumentExpiring;
 use Carbon\CarbonInterface;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 
 class SendDocumentExpiryReminderJob implements ShouldQueue
@@ -19,6 +20,21 @@ class SendDocumentExpiryReminderJob implements ShouldQueue
     public int $tries = 3;
 
     public int $timeout = 300;
+
+    /** @return list<int> */
+    public function backoff(): array
+    {
+        return [60, 300, 900];
+    }
+
+    public function failed(?\Throwable $e): void
+    {
+        Log::channel('errors')->error('SendDocumentExpiryReminderJob failed permanently — document expiry reminders did not go out.', [
+            'job' => self::class,
+            'exception' => $e?->getMessage(),
+            'exception_class' => $e ? $e::class : null,
+        ]);
+    }
 
     public function handle(): void
     {

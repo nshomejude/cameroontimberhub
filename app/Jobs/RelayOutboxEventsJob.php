@@ -57,6 +57,21 @@ class RelayOutboxEventsJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    /**
+     * Per-row failures are absorbed inside relay() (attempts counter on the
+     * outbox row itself). $tries/backoff/failed() here cover a hard failure of
+     * the job as a whole — the initial query throwing, the DB being down — so
+     * a dead outbox relay is visible rather than silently stalling every
+     * queued listener on the platform.
+     */
+    public int $tries = 3;
+
+    /** @return list<int> */
+    public function backoff(): array
+    {
+        return [10, 30, 60];
+    }
+
     /** event_type string -> event class implementing DomainEvent::fromPayload(). */
     private const EVENT_MAP = [
         'order.awarded' => OrderAwarded::class,
@@ -304,6 +319,21 @@ class RelayOutboxEventsJob implements ShouldQueue
             ->find($lotTransformationId)
             ?->inputLots()
             ->value('company_id');
+    }
+
+    /**
+     * The relay is dispatched by the scheduler every 10 seconds; if the job
+     * itself dies (not a single row — the whole run), that must not vanish
+     * into the queue's failed_jobs table unremarked.
+     */
+    public function failed(?Throwable $e): void
+    {
+        Log::channel('errors')->error('RelayOutboxEventsJob failed permanently — the transactional outbox relay is not running.', [
+            'job' => self::class,
+            'unpublished_outbox_rows' => OutboxEvent::query()->whereNull('published_at')->count(),
+            'exception' => $e?->getMessage(),
+            'exception_class' => $e ? $e::class : null,
+        ]);
     }
 
     private function resolveComplianceCaseCompanyId(array $payload): ?int

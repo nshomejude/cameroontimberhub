@@ -10,6 +10,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 /**
@@ -25,6 +26,14 @@ use Illuminate\Support\Str;
 class DeliverWebhookJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+
+    /**
+     * Retry/backoff is fully self-managed (see RETRY_DELAY_SECONDS + the
+     * self-dispatch at the end of handle()), so the Laravel queue worker must
+     * NOT re-run this job on top of that. One worker attempt per dispatched
+     * instance; a thrown exception here is a real bug, not a transient blip.
+     */
+    public int $tries = 1;
 
     private const MAX_ATTEMPTS = 3;
 
@@ -96,5 +105,23 @@ class DeliverWebhookJob implements ShouldQueue
             $this->attempt + 1,
             $delivery->id,
         )->delay(now()->addSeconds($delaySeconds));
+    }
+
+    /**
+     * An unhandled exception (as opposed to a non-2xx response, which is
+     * handled above) — DB unavailable, a bug in WebhookDeliveryService, etc.
+     * The self-managed retry chain is broken at this point, so surface it.
+     */
+    public function failed(?\Throwable $e): void
+    {
+        Log::channel('errors')->error('DeliverWebhookJob failed permanently.', [
+            'job' => self::class,
+            'subscription_id' => $this->subscriptionId,
+            'event_type' => $this->eventType,
+            'attempt' => $this->attempt,
+            'delivery_id' => $this->deliveryId,
+            'exception' => $e?->getMessage(),
+            'exception_class' => $e ? $e::class : null,
+        ]);
     }
 }

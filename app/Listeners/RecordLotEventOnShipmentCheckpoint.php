@@ -31,16 +31,40 @@ class RecordLotEventOnShipmentCheckpoint implements ShouldQueue
         TrackingCheckpointStatus::Delivered->value => LotEventType::Delivered,
     ];
 
+    public int $tries = 3;
+
+    /** @return list<int> */
+    public function backoff(): array
+    {
+        return [30, 120, 300];
+    }
+
     public function handle(ShipmentCheckpointRecorded $event): void
     {
         try {
             $this->process($event);
         } catch (Throwable $e) {
-            Log::error('RecordLotEventOnShipmentCheckpoint: failed to record lot events for checkpoint update', [
+            Log::channel('errors')->error('RecordLotEventOnShipmentCheckpoint: failed to record lot events for checkpoint update', [
+                'listener' => self::class,
                 'checkpoint_update_id' => $event->checkpointUpdateId,
                 'exception' => $e->getMessage(),
+                'exception_class' => $e::class,
             ]);
         }
+    }
+
+    /**
+     * handle() deliberately swallows everything (a lot-ledger failure must
+     * never block the outbox relay); this is a last-resort net.
+     */
+    public function failed(ShipmentCheckpointRecorded $event, ?Throwable $e): void
+    {
+        Log::channel('errors')->error('RecordLotEventOnShipmentCheckpoint failed permanently.', [
+            'listener' => self::class,
+            'checkpoint_update_id' => $event->checkpointUpdateId,
+            'exception' => $e?->getMessage(),
+            'exception_class' => $e ? $e::class : null,
+        ]);
     }
 
     private function process(ShipmentCheckpointRecorded $event): void

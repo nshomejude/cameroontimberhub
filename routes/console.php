@@ -17,6 +17,11 @@ Schedule::command('compliance:remind-expiring')->dailyAt('07:00');
 // count + top offenders from the `errors` log channel to config('mail.ops_address').
 Schedule::command('ops:error-digest')->dailyAt('07:00')->withoutOverlapping();
 
+// Queue-health monitor (production-readiness plan Task A4): alerts on the
+// `errors` channel when failed_jobs grows or the oldest pending job / outbox
+// relay is starving. Never gates — always exits 0.
+Schedule::command('ops:queue-health')->everyFifteenMinutes()->withoutOverlapping();
+
 // Transactional outbox relay (architecture plan, Task 0.2): publishes
 // unpublished outbox_events rows by dispatching their matching domain event.
 Schedule::job(new RelayOutboxEventsJob())->everyTenSeconds()->withoutOverlapping();

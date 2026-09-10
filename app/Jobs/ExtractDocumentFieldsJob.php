@@ -28,6 +28,23 @@ class ExtractDocumentFieldsJob implements ShouldQueue
 
     public function __construct(private readonly CompanyDocument|OrderDocument $document) {}
 
+    /**
+     * $tries = 1 by design (an extraction retry storm against an upload the
+     * supplier already made is worse than a missed extraction), so this only
+     * fires on a genuinely unexpected failure that escaped handle()'s own
+     * try/catch — worth surfacing on the errors channel.
+     */
+    public function failed(?\Throwable $e): void
+    {
+        Log::channel('errors')->error('ExtractDocumentFieldsJob failed permanently.', [
+            'job' => self::class,
+            'subject_type' => $this->document::class,
+            'subject_id' => $this->document->getKey(),
+            'exception' => $e?->getMessage(),
+            'exception_class' => $e ? $e::class : null,
+        ]);
+    }
+
     public function handle(DocumentExtractionService $service): void
     {
         try {

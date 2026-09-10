@@ -31,16 +31,41 @@ class OpenComplianceCaseOnOrderAwarded implements ShouldQueue
 {
     use RecordsOutboxEvents;
 
+    public int $tries = 3;
+
+    /** @return list<int> */
+    public function backoff(): array
+    {
+        return [30, 120, 300];
+    }
+
     public function handle(OrderAwarded $event): void
     {
         try {
             $this->process($event);
         } catch (Throwable $e) {
-            Log::error('OpenComplianceCaseOnOrderAwarded: failed to evaluate/create compliance case for order.', [
+            Log::channel('errors')->error('OpenComplianceCaseOnOrderAwarded: failed to evaluate/create compliance case for order.', [
+                'listener' => self::class,
                 'order_id' => $event->orderId,
                 'exception' => $e->getMessage(),
+                'exception_class' => $e::class,
             ]);
         }
+    }
+
+    /**
+     * handle() deliberately swallows everything (a compliance-case failure
+     * must never block the outbox relay), so this is a last-resort net for a
+     * failure that somehow escapes that catch.
+     */
+    public function failed(OrderAwarded $event, ?Throwable $e): void
+    {
+        Log::channel('errors')->error('OpenComplianceCaseOnOrderAwarded failed permanently.', [
+            'listener' => self::class,
+            'order_id' => $event->orderId,
+            'exception' => $e?->getMessage(),
+            'exception_class' => $e ? $e::class : null,
+        ]);
     }
 
     private function process(OrderAwarded $event): void
