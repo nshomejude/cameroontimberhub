@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Domain\Trade\Commands\AwardQuoteCommand;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\DeclineQuoteRequest;
 use App\Http\Resources\Api\V1\OrderSummaryResource;
 use App\Http\Resources\Api\V1\QuoteResource;
 use App\Services\BuyerApiScope;
 use App\Services\QuoteService;
+use App\Support\Bus\CommandBus;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -29,6 +31,7 @@ class QuoteController extends Controller
     public function __construct(
         private readonly BuyerApiScope $scope,
         private readonly QuoteService $quotes,
+        private readonly CommandBus $commands,
     ) {}
 
     public function show(Request $request, string $reference): QuoteResource
@@ -52,7 +55,10 @@ class QuoteController extends Controller
         }
 
         try {
-            $accepted = $this->quotes->accept($quote, $buyer);
+            $accepted = $this->commands->dispatch(new AwardQuoteCommand(
+                quoteId: $quote->getKey(),
+                actingUserId: $buyer?->getKey(),
+            ));
         } catch (RuntimeException $e) {
             return $this->conflict($e->getMessage());
         }

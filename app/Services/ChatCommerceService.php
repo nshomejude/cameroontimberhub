@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Domain\Trade\Commands\AwardQuoteCommand;
 use App\Domain\Trade\Commands\DeclineQuoteCommand;
 use App\Domain\Trade\Commands\WithdrawQuoteCommand;
 use App\Enums\CounterOfferStatus;
@@ -284,8 +285,16 @@ class ChatCommerceService
             ]);
 
             // Unchanged Phase 1 path: siblings declined, RFQ closed, order and
-            // receipt created, all under the same lock.
-            $accepted = $this->quotes->accept($locked, $buyer);
+            // receipt created, all under the same lock. Routed through
+            // AwardQuoteCommand/CommandBus (mirroring declineQuotation below);
+            // the bus's DB::transaction() nests as a Postgres savepoint inside
+            // this method's outer transaction, so the row lock taken above and
+            // the ContractAcceptance written above remain one rollback boundary
+            // with the award.
+            $accepted = $this->commands->dispatch(new AwardQuoteCommand(
+                quoteId: $locked->getKey(),
+                actingUserId: $buyer->getKey(),
+            ));
 
             $card = $this->messaging->postContractAcceptance($conversation, $acceptance->setRelation('quote', $accepted));
             $acceptance->forceFill(['message_id' => $card->getKey()])->save();

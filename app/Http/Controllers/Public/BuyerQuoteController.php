@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Public;
 
+use App\Domain\Trade\Commands\AwardQuoteCommand;
 use App\Domain\Trade\Commands\DeclineQuoteCommand;
 use App\Enums\QuoteStatus;
 use App\Http\Controllers\Controller;
@@ -85,7 +86,7 @@ class BuyerQuoteController extends Controller
     }
 
     /** POST — award. Never a GET link; confirmation is a required checkbox. */
-    public function accept(Request $request, Rfq $rfq, Quote $quote, QuoteService $quotes): RedirectResponse
+    public function accept(Request $request, Rfq $rfq, Quote $quote, CommandBus $commands): RedirectResponse
     {
         $this->access->authorize($request, $rfq);
         $quote = $this->scopedQuote($rfq, $quote);
@@ -95,7 +96,10 @@ class BuyerQuoteController extends Controller
         ], [], ['confirm' => 'confirmation']);
 
         try {
-            $quotes->accept($quote, $request->user());
+            $commands->dispatch(new AwardQuoteCommand(
+                quoteId: $quote->getKey(),
+                actingUserId: $request->user()?->getKey(),
+            ));
         } catch (RuntimeException $e) {
             throw ValidationException::withMessages(['confirm' => $e->getMessage()]);
         }
