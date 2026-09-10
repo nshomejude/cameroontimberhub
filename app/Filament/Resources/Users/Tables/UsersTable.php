@@ -2,11 +2,12 @@
 
 namespace App\Filament\Resources\Users\Tables;
 
-use App\Models\User;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Filters\TernaryFilter;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class UsersTable
 {
@@ -22,12 +23,27 @@ class UsersTable
                     ->color('warning')
                     ->separator(',')
                     ->placeholder('No role'),
-                IconColumn::make('is_active')->label('Active')->boolean()->sortable(),
+                IconColumn::make('email_verified_at')
+                    ->label('Verified')
+                    ->boolean()
+                    ->getStateUsing(fn ($record): bool => $record->email_verified_at !== null)
+                    ->sortable(),
+                IconColumn::make('two_factor_confirmed_at')
+                    ->label('2FA')
+                    ->boolean()
+                    ->getStateUsing(fn ($record): bool => $record->two_factor_confirmed_at !== null),
                 TextColumn::make('last_login_at')->label('Last login')->since()->sortable()->placeholder('Never'),
                 TextColumn::make('created_at')->label('Joined')->date('d M Y')->sortable(),
             ])
             ->filters([
-                TernaryFilter::make('is_active')->label('Active'),
+                SelectFilter::make('roles')
+                    ->relationship('roles', 'name')
+                    ->multiple()
+                    ->preload()
+                    ->label('Role'),
+                Filter::make('unverified')
+                    ->label('Email not verified')
+                    ->query(fn (Builder $query): Builder => $query->whereNull('email_verified_at')),
             ])
             ->defaultSort('created_at', 'desc');
     }

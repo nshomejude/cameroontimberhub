@@ -21,6 +21,10 @@ class RfqResource extends Resource
 
     protected static ?string $navigationLabel = 'RFQ queue';
 
+    protected static ?string $modelLabel = 'RFQ';
+
+    protected static ?string $pluralModelLabel = 'RFQs';
+
     protected static ?string $recordTitleAttribute = 'reference_code';
 
     public static function canViewAny(): bool

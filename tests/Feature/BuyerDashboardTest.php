@@ -100,6 +100,30 @@ it('shows the dashboard to a signed-in buyer', function () {
         ->assertSee('Dashboard');
 });
 
+it('does not offer the buyer a Fleet Registry link that would 404', function () {
+    // /fleet aborts 404 for a user with no company, and a company member never
+    // sees the /account layout (they are redirected to /dashboard). The nav
+    // item must not be there for anyone who can reach this layout.
+    $buyer = dashBuyer();
+    dashRfq($buyer);
+
+    $this->actingAs($buyer)->get('/account')
+        ->assertOk()
+        ->assertDontSee(route('fleet.index'))
+        ->assertDontSee('Fleet Registry');
+});
+
+it('links Trade Assurance and Disputes from the buyer order detail page', function () {
+    $buyer = dashBuyer();
+    $rfq = dashRfq($buyer);
+    $order = dashAward(dashQuote($rfq));
+
+    $this->actingAs($buyer)->get("/rfq/{$rfq->getKey()}/order")
+        ->assertOk()
+        ->assertSee(route('account.orders.trade-assurance', ['order' => $order->getKey()]))
+        ->assertSee(route('disputes.index', ['order' => $order->getKey()]));
+});
+
 it('marks every account page noindex', function () {
     $buyer = dashBuyer();
     dashRfq($buyer);

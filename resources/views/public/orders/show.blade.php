@@ -284,6 +284,21 @@
                 @endif
 
                 <section class="rounded-2xl border border-sand-200 bg-white p-5 dark:border-[#2c2a24] dark:bg-[#1f1d18]">
+                    <h2 class="font-display text-[1.0625rem] font-bold text-forest-950 dark:text-sand-100">Protection &amp; resolution</h2>
+                    <p class="mt-3 text-[1.0625rem] text-ink-soft dark:text-[#8f887b]">
+                        Track Trade Assurance milestones, or open a formal dispute if something about this order needs resolving.
+                    </p>
+                    <a href="{{ route('account.orders.trade-assurance', ['order' => $order->id]) }}"
+                       class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full border border-sand-300 px-4 py-2.5 text-[1.0625rem] font-semibold text-ink transition hover:border-forest-400 dark:border-[#3a372f] dark:text-[#e4ddcf]">
+                        Trade Assurance
+                    </a>
+                    <a href="{{ route('disputes.index', ['order' => $order->id]) }}"
+                       class="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-full border border-sand-300 px-4 py-2.5 text-[1.0625rem] font-semibold text-ink transition hover:border-forest-400 dark:border-[#3a372f] dark:text-[#e4ddcf]">
+                        Disputes
+                    </a>
+                </section>
+
+                <section class="rounded-2xl border border-sand-200 bg-white p-5 dark:border-[#2c2a24] dark:bg-[#1f1d18]">
                     <h2 class="font-display text-[1.0625rem] font-bold text-forest-950 dark:text-sand-100">Next steps</h2>
                     <ol class="mt-3 list-decimal space-y-2 pl-4 text-[1.0625rem] text-ink-soft dark:text-[#8f887b]">
                         <li>The supplier reviews and confirms the order.</li>

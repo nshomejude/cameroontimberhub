@@ -53,3 +53,18 @@ it('blocks the dashboard for a user with no company', function () {
 
     $this->get('/dashboard')->assertForbidden();
 });
+
+it('surfaces the Fleet Registry link in the exporter panel and it resolves', function () {
+    $company = Company::factory()->publiclyVisible()->create(['profile_completion' => 100]);
+    CompanyContact::factory()->create(['company_id' => $company->id]);
+    CompanyGallery::create(['company_id' => $company->id, 'image_path' => 'gallery/test.jpg']);
+    CompanyDocument::factory()->create(['company_id' => $company->id]);
+    VerificationRequest::factory()->create(['company_id' => $company->id]);
+    $company->species()->attach(Species::factory()->create());
+
+    $this->actingAs(exporterFor($company));
+
+    $this->get('/dashboard')->assertOk()->assertSee(route('fleet.index'));
+    // The company member is the audience for /fleet — it must not 404 for them.
+    $this->get('/fleet')->assertOk();
+});

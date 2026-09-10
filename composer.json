@@ -45,7 +45,8 @@
             "Tests\\": "tests/"
         },
         "files": [
-            "tests/Support/order_lifecycle_helpers.php"
+            "tests/Support/order_lifecycle_helpers.php",
+            "tests/Support/staff_helper.php"
         ]
     },
     "scripts": {

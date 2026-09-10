@@ -27,6 +27,10 @@ class ApiUsageResource extends Resource
 
     protected static ?string $navigationLabel = 'API usage';
 
+    protected static ?string $modelLabel = 'API usage record';
+
+    protected static ?string $pluralModelLabel = 'API usage';
+
     protected static ?int $navigationSort = 7;
 
     public static function canViewAny(): bool

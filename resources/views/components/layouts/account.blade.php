@@ -44,7 +44,12 @@
                 ['label' => 'Quotes', 'icon' => 'tag', 'url' => route('account.quotes'), 'active' => request()->routeIs('account.quotes')],
                 ['label' => 'Orders', 'icon' => 'clipboard-document-check', 'url' => route('account.orders'), 'active' => request()->routeIs('account.orders')],
                 ['label' => 'Receipts', 'icon' => 'receipt-percent', 'url' => route('account.receipts'), 'active' => request()->routeIs('account.receipts')],
-                ['label' => 'Fleet Registry', 'icon' => 'truck', 'url' => route('fleet.index'), 'active' => request()->routeIs('fleet.index')],
+                // NB: no "Fleet Registry" here. /fleet (FleetRegistryController)
+                // is a company-member feature and aborts 404 for a user with no
+                // company — but a company member is redirected from /account to
+                // the /dashboard exporter panel and never sees this layout, so
+                // the link could only ever 404. Fleet lives in the exporter
+                // panel's own nav.
             ],
         ],
         [

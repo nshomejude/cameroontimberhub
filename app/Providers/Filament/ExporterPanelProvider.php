@@ -9,6 +9,7 @@ use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Navigation\NavigationItem;
 use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
@@ -43,6 +44,17 @@ class ExporterPanelProvider extends PanelProvider
             // surface that advertises the framework rather than the product.
             ->widgets([
                 AccountWidget::class,
+            ])
+            // Fleet & driver registry (/fleet) is a plain Blade route, not a
+            // Filament resource, but its audience is exactly this panel's
+            // users (company members). Surface it here — it is otherwise
+            // unreachable from any navigation.
+            ->navigationItems([
+                NavigationItem::make('Fleet Registry')
+                    ->url(fn (): string => route('fleet.index'))
+                    ->icon('heroicon-o-truck')
+                    ->sort(45)
+                    ->isActiveWhen(fn (): bool => request()->routeIs('fleet.index')),
             ])
             ->middleware([
                 EncryptCookies::class,
