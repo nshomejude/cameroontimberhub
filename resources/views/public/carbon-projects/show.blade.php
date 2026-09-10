@@ -54,6 +54,18 @@
                                 <dd class="font-semibold text-ink dark:text-sand-100">{{ number_format((float) $project->estimated_credits_per_year) }}</dd>
                             </div>
                         @endif
+                        @if ($project->public_id)
+                            <div class="flex justify-between gap-4 py-2.5 text-[0.9375rem]">
+                                <dt class="text-ink-soft dark:text-[#b3ab9b]">{{ __('messages.carbon_verify.registry_status') }}</dt>
+                                <dd class="font-semibold text-ink dark:text-sand-100">{{ $project->registry_status?->label() }}</dd>
+                            </div>
+                            @if ($project->registry_status?->isPubliclyVerifiable())
+                                <div class="flex justify-between gap-4 py-2.5 text-[0.9375rem]">
+                                    <dt class="text-ink-soft dark:text-[#b3ab9b]">{{ $project->public_id }}</dt>
+                                    <dd><a href="{{ route('carbon.verify', $project->public_id) }}" class="font-semibold text-forest-700 underline dark:text-forest-300">{{ __('messages.carbon_verify.verify_cta') }}</a></dd>
+                                </div>
+                            @endif
+                        @endif
                     </dl>
                 </div>
 

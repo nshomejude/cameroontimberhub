@@ -215,6 +215,11 @@ Route::get('/verify/certificate/{token}', [CertificateVerificationController::cl
 Route::get('/verify/product/{publicId}', [ProductVerificationController::class, 'show'])
     ->middleware('throttle:product-verify')->name('products.verify');
 
+// Public carbon project registry verification (§2.6). Bound by public_id
+// (`CTH-CARB-00000`); only registered/active projects resolve, others 404.
+Route::get('/verify/carbon/{publicId}', [\App\Http\Controllers\Public\CarbonProjectVerificationController::class, 'show'])
+    ->middleware('throttle:carbon-verify')->name('carbon.verify');
+
 // Public checkpoint tracking (gap-plan 1.5.11). Open to anyone holding the
 // link; throttled like /verify and /verify/certificate above.
 Route::get('/track/{token}', [CheckpointTrackingController::class, 'show'])

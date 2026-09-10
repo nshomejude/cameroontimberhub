@@ -2,6 +2,7 @@
 
 namespace App\Filament\Exporter\Resources\CarbonProjects\Tables;
 
+use App\Enums\CarbonRegistryStatus;
 use App\Enums\ProductStatus;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
@@ -15,8 +16,13 @@ class CarbonProjectsTable
         return $table
             ->columns([
                 TextColumn::make('name')->searchable(),
+                TextColumn::make('public_id')->label('Registry ID')->searchable()->placeholder('—'),
                 TextColumn::make('project_type')->badge(),
+                TextColumn::make('registry_status')
+                    ->badge()
+                    ->formatStateUsing(fn (CarbonRegistryStatus $state): string => $state->label()),
                 TextColumn::make('status')
+                    ->label('Visibility')
                     ->badge()
                     ->formatStateUsing(fn (ProductStatus $state): string => $state->label())
                     ->color(fn (ProductStatus $state): string => $state->color()),

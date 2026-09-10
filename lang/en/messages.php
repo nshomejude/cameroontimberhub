@@ -1368,7 +1368,34 @@ return [
         ],
     ],
 
+    'carbon_verify' => [
+        'title' => 'Verify carbon project — :name',
+        'description' => 'Verify a Cameroon Timber Hub carbon project registry entry.',
+        'eyebrow' => 'Carbon project registry',
+        'registry_status' => 'Registry status',
+        'project_type' => 'Project type',
+        'developer' => 'Project developer',
+        'verified' => 'Verified',
+        'region' => 'Region / location',
+        'area' => 'Area',
+        'boundary' => 'Project boundary',
+        'boundary_points' => 'GeoJSON polygon, :count boundary points',
+        'boundary_none' => 'No boundary recorded.',
+        'report_concern' => 'Something look wrong?',
+        'report_concern_link' => 'Report a concern',
+        'verify_cta' => 'Verify',
+    ],
+
     'enums' => [
+        'carbon_registry_status' => [
+            'draft' => 'Draft',
+            'submitted' => 'Submitted',
+            'under_review' => 'Under review',
+            'registered' => 'Registered',
+            'active' => 'Active',
+            'rejected' => 'Rejected',
+            'suspended' => 'Suspended',
+        ],
         'order_status' => [
             'awarded' => 'Awarded',
             'confirmed' => 'Confirmed',

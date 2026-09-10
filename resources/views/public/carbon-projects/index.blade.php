@@ -117,6 +117,10 @@
                                     @endif
                                 </dl>
 
+                                @if ($project->public_id && $project->registry_status?->isPubliclyVerifiable())
+                                    <a href="{{ route('carbon.verify', $project->public_id) }}" class="relative z-10 mt-3 inline-block font-mono text-[0.8125rem] text-forest-700 underline dark:text-forest-300">{{ $project->public_id }} · {{ __('messages.carbon_verify.verify_cta') }}</a>
+                                @endif
+
                                 <a href="{{ route('carbon-projects.show', $project) }}" class="absolute inset-0" aria-label="{{ __('messages.carbon.view_project', ['name' => $project->name]) }}"></a>
                             </article>
                         @endforeach

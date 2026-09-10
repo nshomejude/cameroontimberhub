@@ -119,6 +119,13 @@ class AppServiceProvider extends ServiceProvider
             Limit::perHour(60)->by('product-verify-ip-hour:'.$request->ip()),
         ]);
 
+        // Public carbon project registry verification (§2.6), same reasoning
+        // as certificate-verify / product-verify.
+        RateLimiter::for('carbon-verify', fn (Request $request) => [
+            Limit::perMinute(10)->by('carbon-verify-ip:'.$request->ip()),
+            Limit::perHour(60)->by('carbon-verify-ip-hour:'.$request->ip()),
+        ]);
+
         // Public checkpoint tracking, same reasoning as receipt-verify /
         // certificate-verify: open to anyone holding the link, so budgeted
         // per-IP against token-grinding.
