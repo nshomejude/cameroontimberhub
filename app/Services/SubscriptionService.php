@@ -24,10 +24,23 @@ class SubscriptionService
                 ->where('status', SubscriptionStatus::Active->value)
                 ->update(['status' => SubscriptionStatus::Cancelled->value, 'cancelled_at' => now()]);
 
+            $startsAt = now();
+            $billingPeriod = $plan->billing_period;
+            $renewsAt = match ($billingPeriod) {
+                'yearly' => $startsAt->copy()->addYear(),
+                default => $startsAt->copy()->addMonth(),
+            };
+
             $subscription = $company->subscriptions()->create([
                 'plan_id' => $plan->getKey(),
                 'status' => SubscriptionStatus::Active,
-                'starts_at' => now(),
+                'starts_at' => $startsAt,
+                // Term + price snapshot (billing engine M3): frozen at activation
+                // so a later plan price change never rewrites this subscription.
+                'billing_period' => $billingPeriod,
+                'renews_at' => $renewsAt,
+                'price_amount' => $plan->price_amount,
+                'price_currency' => $plan->price_currency,
                 'assigned_by' => $actor?->getKey(),
                 'notes' => $notes,
             ]);

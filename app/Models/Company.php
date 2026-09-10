@@ -249,10 +249,50 @@ class Company extends Model
             ->latestOfMany();
     }
 
+    /**
+     * The most recent subscription row for this company, whatever its status.
+     * `SubscriptionService::assign()` cancels any prior active sub, so the
+     * latest row is always the one that governs entitlements today.
+     */
+    public function currentSubscription(): HasOne
+    {
+        return $this->hasOne(Subscription::class)->latestOfMany();
+    }
+
+    /**
+     * The plan whose features actually apply right now (billing engine M3/M6).
+     *
+     * - No subscription row at all → the mirrored `plan` relation (legacy manual
+     *   assignment path, unchanged).
+     * - An entitled subscription (`Active`/`Trialing`, or `PastDue` still in
+     *   grace) → that subscription's plan.
+     * - A non-entitled subscription (`Cancelled`, `Expired`, or `PastDue` past
+     *   `grace_until`) → the segment's Free plan (price 0), or null when the
+     *   segment has none.
+     */
+    public function effectivePlan(): ?Plan
+    {
+        $subscription = $this->currentSubscription;
+
+        if ($subscription === null) {
+            return $this->plan;
+        }
+
+        if ($subscription->entitled()) {
+            return $subscription->plan ?? $this->plan;
+        }
+
+        $segment = $subscription->plan?->segment ?? $this->plan?->segment;
+
+        return $segment
+            ? Plan::query()->forSegment($segment)->where('price_amount', 0)->orderBy('sort_order')->first()
+            : null;
+    }
+
     /** @return array<string, mixed> */
     public function planFeatures(): array
     {
-        return (array) ($this->plan?->features ?? []);
+        return (array) ($this->effectivePlan()?->features ?? []);
     }
 
     /** Plan-based feature gate (spec: plans-as-data + manual assignment). */

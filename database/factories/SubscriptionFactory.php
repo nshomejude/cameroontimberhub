@@ -32,6 +32,22 @@ class SubscriptionFactory extends Factory
         ]);
     }
 
+    public function trialing(): static
+    {
+        return $this->state(fn () => [
+            'status' => SubscriptionStatus::Trialing,
+            'trial_ends_at' => now()->addDays(14),
+        ]);
+    }
+
+    public function pastDue(): static
+    {
+        return $this->state(fn () => [
+            'status' => SubscriptionStatus::PastDue,
+            'grace_until' => now()->addDays(7),
+        ]);
+    }
+
     public function expired(): static
     {
         return $this->state(fn () => [
