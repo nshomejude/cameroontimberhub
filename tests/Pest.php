@@ -6,6 +6,7 @@ use Tests\TestCase;
 
 uses(TestCase::class, RefreshDatabase::class)->in('Feature');
 uses(TestCase::class)->in('Unit');
+uses(TestCase::class)->in('Architecture');
 
 // ArticleBody memoises rendered markdown in a static map that outlives any one
 // test, while RefreshDatabase truncates between them. Two tests sharing

@@ -30,6 +30,25 @@ known gap (see [`GAPS.md`](GAPS.md)).
 | **Intelligence** | Aggregated, denormalised read models over everyone else's data. Market-intelligence snapshots, platform KPI / North-Star tracking, the compliance assistant, and document extraction. | `MarketIntelligenceSnapshot`, `PlatformKpiSnapshot`, `ComplianceAssistantQuery`, `DocumentExtraction` |
 | **Platform** | Cross-cutting infrastructure every context leans on. Hash-chained audit log, notifications, feature flags, the transactional outbox, webhook subscriptions and deliveries. | `OutboxEvent`, `WebhookSubscription`, `WebhookDelivery`, `ChainedActivity` (activity log), notifications, Pennant feature flags |
 
+### Enforcement
+
+`tests/Architecture/BoundedContextTest.php` (Pest `arch()` + a reflection
+sweep) makes two of the rules above structural, so CI fails on a regression:
+
+- **No cross-context `Domain` imports.** For each of the six contexts with an
+  `app/Domain/{Context}/` subtree (Trade, Logistics, Compliance, Identity,
+  Commerce, Catalog), that namespace may not `use` any other context's
+  `App\Domain\*` namespace. Shared `App\Models\*` access is **not** forbidden —
+  that matches the strangler-fig decision below. **Documented exceptions:**
+  none — every `use App\Domain\…` under `app/Domain/` currently resolves within
+  its own context.
+- **CQRS / event contracts.** `*Command` → `App\Support\Bus\Command`,
+  `*Handler` in `Commands/` → `HandlesCommand`, `*Query` →
+  `App\Support\Bus\Query`, `*Handler` in `Queries/` → `HandlesQuery`, every
+  class in `Events/` → `App\Support\Events\DomainEvent`.
+
+Run: `php artisan test tests/Architecture`.
+
 ### Models stay in `app/Models/` — deliberately
 
 New developers frequently expect `app/Domain/{Context}/Models/`. **That is not
@@ -104,12 +123,26 @@ bus throws.
 - Only genuinely expensive aggregate views (Market Intelligence, Platform
   Operations) get a real denormalised projection table, populated by
   outbox-event listeners.
-- **Target:** heavy reads become named Queries. Partially done — Trade
-  (`ListBuyerOrdersQuery`, `ListBuyerQuotesQuery`, `ListBuyerRfqsQuery`,
-  `ListBuyerReceiptsQuery`), Logistics (`GetOrderShipmentTrackingQuery`) and
-  Compliance (`ListOrderDisputesQuery`) have Query coverage; Identity, Catalog
-  and Commerce reads mostly still go straight through Eloquent. See
-  [`GAPS.md`](GAPS.md).
+- **Target:** heavy reads become named Queries. Coverage per context:
+  - **Trade** — `ListBuyerOrdersQuery`, `ListBuyerQuotesQuery`,
+    `ListBuyerRfqsQuery`, `ListBuyerReceiptsQuery`
+  - **Logistics** — `GetOrderShipmentTrackingQuery`
+  - **Compliance** — `ListOrderDisputesQuery`
+  - **Catalog** — `SearchProductCatalogueQuery` (public marketplace
+    search/filter, backs `Api\V1\ProductController::index`),
+    `ListSupplierProductsQuery` (a supplier's own company-scoped listings,
+    backs the exporter `ProductResource`)
+  - **Identity & Access** — `ListVerifiedSuppliersQuery` (public supplier
+    directory, backs `Api\V1\SupplierController::index`),
+    `ListPendingVerificationsQuery` (admin verification-review queue, backs
+    `PendingVerificationsWidget`)
+  - **Commerce & Billing** — `GetCompanySubscriptionQuery` (a company's
+    current active subscription, backs the exporter `SubscriptionStatus`
+    page)
+
+  Trivial `Model::find($id)` reads with no scoping logic are deliberately
+  left inline. See [`GAPS.md`](GAPS.md) gap 3 for the reads judged not worth
+  a Query.
 
 ---
 

@@ -15,13 +15,9 @@ not. **Fix:** derive both from one canonical source (a list constant / enum),
 or at minimum bring `EVENT_TYPES` up to 14. Deferred here because the
 webhook-hardening pass is already touching this area.
 
-## 2. No automated bounded-context boundary enforcement
+## ~~2. No automated bounded-context boundary enforcement~~ — CLOSED
 
-The 8-context ownership map in [`README.md`](README.md) §1 is convention only.
-Nothing stops a `Trade` class from importing a `Compliance` model directly.
-The blueprint anticipates "Deptrac or a simple custom Composer script … added
-per-context once it's done" — not yet added for any context. **Fix:** a
-Deptrac ruleset (or a Pest architecture test) per migrated context.
+See [Closed](#closed) below.
 
 ## 3. Query coverage is asymmetric
 
@@ -78,3 +74,26 @@ guaranteed byte-identical to what the consumer receives. A hardening pass
 (envelope + exact-bytes signing + encrypted secret + replay window) is in
 progress. Documented for consumers in
 [`../api/WEBHOOKS.md`](../api/WEBHOOKS.md) with a "subject to change" banner.
+
+---
+
+## Closed
+
+### 2. No automated bounded-context boundary enforcement — closed 2026-09-10
+
+(commit: "Close arch gap 2: enforce bounded-context boundaries via Pest arch() test")
+
+`tests/Architecture/BoundedContextTest.php` now enforces, via Pest `arch()`
+plus a reflection sweep (see [`README.md`](README.md) §1 → "Enforcement"):
+
+- no `App\Domain\{Context}` namespace may `use` another context's
+  `App\Domain\*` namespace (6 contexts: Trade, Logistics, Compliance,
+  Identity, Commerce, Catalog). Shared `App\Models\*` access stays allowed,
+  per the strangler-fig decision.
+- CQRS/event contract + naming conventions: `*Command`/`*Query` and their
+  `*Handler`s, and every `Events\*` class, implement the matching
+  `App\Support\*` interface.
+
+**No real cross-context violation existed at closure** — every existing
+`use App\Domain\…` under `app/Domain/` resolved within its own context, so the
+test is green with zero documented exceptions.
