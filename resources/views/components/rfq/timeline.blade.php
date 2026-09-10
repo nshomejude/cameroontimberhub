@@ -1,8 +1,9 @@
 @props([
     /** list<array{state:'done'|'current'|'todo', title:string, body:string, when:?string}> */
     'steps' => [],
-    'heading' => 'RFQ activity',
+    'heading' => null,
 ])
+@php $heading = $heading ?? __('messages.rfq_wizard.timeline_heading'); @endphp
 
 <section {{ $attributes->class(['rounded-2xl border border-sand-200 dark:border-[#2c2a24] bg-white dark:bg-[#1f1d18]']) }}
          aria-labelledby="rfq-timeline-heading">
@@ -45,7 +46,7 @@
                             'text-ink-soft dark:text-[#8f887b]' => $s['state'] === 'todo',
                         ])>
                             {{ $s['title'] }}
-                            <span class="sr-only">— {{ ['done' => 'completed', 'current' => 'in progress', 'todo' => 'not started'][$s['state']] }}</span>
+                            <span class="sr-only">— {{ ['done' => __('messages.rfq_wizard.state_done_sr'), 'current' => __('messages.rfq_wizard.state_current_sr'), 'todo' => __('messages.rfq_wizard.state_todo_sr')][$s['state']] }}</span>
                         </h3>
                         @if (! empty($s['when']))
                             <span class="text-[0.9375rem] text-ink-soft dark:text-[#8f887b]">{{ $s['when'] }}</span>

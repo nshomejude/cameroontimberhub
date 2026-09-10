@@ -9,38 +9,38 @@
     $approved = in_array($rfq->status, [RfqStatus::Approved, RfqStatus::Closed], true);
 
     $timeline = [
-        ['state' => 'done', 'title' => 'Request submitted', 'body' => 'Reference '.$rfq->reference_code.' was created.', 'when' => $rfq->created_at?->isoFormat('D MMM YYYY, HH:mm')],
-        ['state' => 'done', 'title' => 'Email address confirmed', 'body' => 'Your request is now actionable by our team.', 'when' => $rfq->email_verified_at?->isoFormat('D MMM YYYY, HH:mm')],
+        ['state' => 'done', 'title' => __('messages.rfq_wizard.tl_submitted_title'), 'body' => __('messages.rfq_wizard.tl_submitted_ref', ['ref' => $rfq->reference_code]), 'when' => $rfq->created_at?->isoFormat('D MMM YYYY, HH:mm')],
+        ['state' => 'done', 'title' => __('messages.rfq_wizard.tl_email_confirmed_title'), 'body' => __('messages.rfq_wizard.tl_email_confirmed_body'), 'when' => $rfq->email_verified_at?->isoFormat('D MMM YYYY, HH:mm')],
         [
             'state' => $approved ? 'done' : 'current',
-            'title' => 'Reviewed by our team',
-            'body' => $approved ? 'Your request passed review.' : 'We check every request before it reaches an exporter.',
-            'when' => $approved ? null : 'In progress',
+            'title' => __('messages.rfq_wizard.tl_reviewed_title'),
+            'body' => $approved ? __('messages.rfq_wizard.tl_reviewed_passed') : __('messages.rfq_wizard.tl_reviewed_checking'),
+            'when' => $approved ? null : __('messages.rfq_wizard.tl_in_progress'),
         ],
         [
             'state' => $routedCount > 0 ? 'done' : 'todo',
-            'title' => 'Sent to matched exporters',
+            'title' => __('messages.rfq_wizard.tl_sent_matched_title'),
             'body' => $routedCount > 0
-                ? 'Sent to '.$routedCount.' verified '.\Illuminate\Support\Str::plural('exporter', $routedCount).'. They will contact you directly.'
-                : 'Once approved, matched exporters receive your request and contact you directly.',
+                ? trans_choice('messages.rfq_wizard.tl_sent_matched_done', $routedCount, ['count' => $routedCount])
+                : __('messages.rfq_wizard.tl_sent_matched_todo'),
             'when' => null,
         ],
     ];
 @endphp
 
 <x-layouts.app
-    title="Quote request confirmed"
-    description="Your email address is confirmed and your quote request is with our team."
+    :title="__('messages.rfq_wizard.verified_title')"
+    :description="__('messages.rfq_wizard.verified_meta')"
     noindex
     :breadcrumbs="[
-        ['label' => 'Home', 'url' => route('home')],
-        ['label' => 'RFQ Center', 'url' => route('rfq.create')],
-        ['label' => 'Request confirmed', 'url' => url()->current()],
+        ['label' => __('messages.common.home'), 'url' => route('home')],
+        ['label' => __('messages.rfq_wizard.breadcrumb_rfq_center'), 'url' => route('rfq.create')],
+        ['label' => __('messages.rfq_wizard.request_confirmed_crumb'), 'url' => url()->current()],
     ]">
 
     <div class="mx-auto max-w-4xl px-4 py-10 sm:py-14">
         <x-rfq.stepper :wizard="null"
-                       :extra="['sent' => ['Confirmed', $routedCount > 0 ? 'Sent to exporters' : 'With our team']]"
+                       :extra="['sent' => [__('messages.rfq_wizard.confirmed_short'), $routedCount > 0 ? __('messages.rfq_wizard.sent_to_exporters_short') : __('messages.rfq_wizard.with_our_team_short')]]"
                        active-extra="sent" />
 
         <section aria-labelledby="rfq-outcome"
@@ -50,34 +50,33 @@
             </span>
             <h1 id="rfq-outcome" tabindex="-1"
                 class="mt-4 font-display text-2xl font-semibold text-forest-950 focus-visible:outline-none dark:text-sand-100 sm:text-3xl">
-                Your request is confirmed
+                {{ __('messages.rfq_wizard.your_request_confirmed') }}
             </h1>
             <p class="mt-2 max-w-2xl text-[1.125rem] leading-relaxed text-ink-soft dark:text-[#b3ab9b]">
-                Thank you — we've confirmed your email address. Request
-                <strong class="font-semibold text-forest-800 dark:text-forest-300">{{ $rfq->reference_code }}</strong>
+                {!! __('messages.rfq_wizard.confirmed_intro', ['ref' => '<strong class="font-semibold text-forest-800 dark:text-forest-300">'.e($rfq->reference_code).'</strong>']) !!}
                 @if ($routedCount > 0)
-                    has been sent to {{ $routedCount }} verified {{ \Illuminate\Support\Str::plural('exporter', $routedCount) }}, who will contact you directly.
+                    {{ trans_choice('messages.rfq_wizard.confirmed_sent', $routedCount, ['count' => $routedCount]) }}
                 @else
-                    is now with our team for review. Once it is approved we route it to the verified exporters best matched to it, and they contact you directly.
+                    {{ __('messages.rfq_wizard.confirmed_with_team') }}
                 @endif
-                Quote this reference in any follow-up email.
+                {{ __('messages.rfq_wizard.quote_this_reference') }}
             </p>
 
             <dl class="mt-6 grid gap-4 sm:grid-cols-3">
                 <div class="rounded-xl bg-white px-4 py-3 dark:bg-[#1f1d18]">
-                    <dt class="text-[0.875rem] uppercase tracking-wide text-ink-soft dark:text-[#8f887b]">Reference</dt>
+                    <dt class="text-[0.875rem] uppercase tracking-wide text-ink-soft dark:text-[#8f887b]">{{ __('messages.rfq_wizard.reference') }}</dt>
                     <dd class="mt-0.5 text-[1.125rem] font-bold text-forest-800 dark:text-forest-300">{{ $rfq->reference_code }}</dd>
                 </div>
                 @if ($rfq->title)
                     <div class="rounded-xl bg-white px-4 py-3 dark:bg-[#1f1d18]">
-                        <dt class="text-[0.875rem] uppercase tracking-wide text-ink-soft dark:text-[#8f887b]">Title</dt>
+                        <dt class="text-[0.875rem] uppercase tracking-wide text-ink-soft dark:text-[#8f887b]">{{ __('messages.rfq_wizard.rfq_title') }}</dt>
                         <dd class="mt-0.5 text-[1.125rem] font-semibold text-ink dark:text-[#e4ddcf]">{{ $rfq->title }}</dd>
                     </div>
                 @endif
                 <div class="rounded-xl bg-white px-4 py-3 dark:bg-[#1f1d18]">
-                    <dt class="text-[0.875rem] uppercase tracking-wide text-ink-soft dark:text-[#8f887b]">Products</dt>
+                    <dt class="text-[0.875rem] uppercase tracking-wide text-ink-soft dark:text-[#8f887b]">{{ __('messages.rfq_wizard.products_label') }}</dt>
                     <dd class="mt-0.5 text-[1.125rem] font-semibold text-ink dark:text-[#e4ddcf]">
-                        {{ trans_choice(':count product|:count products', $rfq->items->count(), ['count' => $rfq->items->count()]) }}
+                        {{ trans_choice('messages.rfq_wizard.product_count', $rfq->items->count(), ['count' => $rfq->items->count()]) }}
                     </dd>
                 </div>
             </dl>
@@ -85,7 +84,7 @@
             <div class="mt-6 flex flex-wrap gap-3">
                 <a href="{{ route('directory') }}"
                    class="inline-flex items-center gap-2 rounded-full bg-forest-700 px-6 py-3 text-[1.0625rem] font-semibold text-white transition hover:bg-forest-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500 focus-visible:ring-offset-2">
-                    Browse verified exporters <x-heroicon-m-arrow-right class="h-4 w-4" />
+                    {{ __('messages.rfq_wizard.browse_verified_exporters') }} <x-heroicon-m-arrow-right class="h-4 w-4" />
                 </a>
             </div>
         </section>
@@ -94,7 +93,7 @@
             <section aria-labelledby="rfq-items-heading"
                      class="mt-6 rounded-2xl border border-sand-200 bg-white dark:border-[#2c2a24] dark:bg-[#1f1d18]">
                 <div class="border-b border-sand-200 px-5 py-4 dark:border-[#2c2a24]">
-                    <h2 id="rfq-items-heading" class="font-display text-[1.0625rem] font-bold text-forest-950 dark:text-sand-100">What you asked for</h2>
+                    <h2 id="rfq-items-heading" class="font-display text-[1.0625rem] font-bold text-forest-950 dark:text-sand-100">{{ __('messages.rfq_wizard.what_you_asked_for') }}</h2>
                 </div>
                 <ul class="divide-y divide-sand-200 px-5 dark:divide-[#2c2a24]">
                     @foreach ($rfq->items as $item)

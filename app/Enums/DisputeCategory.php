@@ -13,13 +13,7 @@ enum DisputeCategory: string
 
     public function label(): string
     {
-        return match ($this) {
-            self::Quality => 'Quality',
-            self::Quantity => 'Quantity',
-            self::Delay => 'Delay',
-            self::Payment => 'Payment',
-            self::Other => 'Other',
-        };
+        return __('messages.enums.dispute_category.'.$this->value);
     }
 
     /** @return list<string> */

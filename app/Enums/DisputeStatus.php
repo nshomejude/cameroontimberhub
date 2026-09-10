@@ -21,15 +21,7 @@ enum DisputeStatus: string
 
     public function label(): string
     {
-        return match ($this) {
-            self::Opened => 'Opened',
-            self::EvidencePending => 'Evidence submission',
-            self::CounterpartyResponsePending => 'Counterparty response',
-            self::UnderReview => 'Under review',
-            self::Resolved => 'Resolved',
-            self::Appealed => 'Appealed',
-            self::Closed => 'Closed',
-        };
+        return __('messages.enums.dispute_status.'.$this->value);
     }
 
     public function color(): string

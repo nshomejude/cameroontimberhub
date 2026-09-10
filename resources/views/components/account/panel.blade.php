@@ -2,7 +2,7 @@
     'title' => null,
     'subtitle' => null,
     'href' => null,
-    'linkLabel' => 'View all',
+    'linkLabel' => null,
     'padded' => true,
 ])
 
@@ -16,7 +16,7 @@
                 @endif
             </div>
             @if ($href)
-                <a href="{{ $href }}" class="ml-auto shrink-0 text-[1.0625rem] font-semibold text-forest-700 transition hover:text-forest-900">{{ $linkLabel }}</a>
+                <a href="{{ $href }}" class="ml-auto shrink-0 text-[1.0625rem] font-semibold text-forest-700 transition hover:text-forest-900">{{ $linkLabel ?? __('messages.account.view_all') }}</a>
             @endif
         </div>
     @endif

@@ -20,12 +20,6 @@ enum TradeAssuranceMilestoneStatus: string
 
     public function label(): string
     {
-        return match ($this) {
-            self::Pending => 'Pending',
-            self::InProgress => 'In progress',
-            self::BuyerConfirmed => 'Buyer confirmed',
-            self::Disputed => 'Disputed',
-            self::Released => 'Released',
-        };
+        return __('messages.enums.trade_assurance_milestone_status.'.$this->value);
     }
 }

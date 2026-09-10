@@ -19,15 +19,7 @@ enum QuoteStatus: string
 
     public function label(): string
     {
-        return match ($this) {
-            self::Draft => 'Draft',
-            self::Submitted => 'Submitted',
-            self::Viewed => 'Viewed',
-            self::Accepted => 'Accepted',
-            self::Declined => 'Declined',
-            self::Withdrawn => 'Withdrawn',
-            self::Expired => 'Expired',
-        };
+        return __('messages.enums.quote_status.'.$this->value);
     }
 
     public function color(): string

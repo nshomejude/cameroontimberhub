@@ -3,10 +3,10 @@
     // mockup's "Track Shipments" tile has no backing feature, so it is replaced
     // by receipt verification, which does exist.
     $actions = [
-        ['label' => 'Post RFQ', 'icon' => 'document-plus', 'url' => route('rfq.create')],
-        ['label' => 'Browse Timber', 'icon' => 'cube', 'url' => url('/marketplace')],
-        ['label' => 'Find Suppliers', 'icon' => 'user-group', 'url' => route('directory')],
-        ['label' => 'Verify Receipt', 'icon' => 'shield-check', 'url' => route('receipts.verify')],
+        ['label' => __('messages.account.qa_post_rfq'), 'icon' => 'document-plus', 'url' => route('rfq.create')],
+        ['label' => __('messages.account.qa_browse_timber'), 'icon' => 'cube', 'url' => url('/marketplace')],
+        ['label' => __('messages.account.qa_find_suppliers'), 'icon' => 'user-group', 'url' => route('directory')],
+        ['label' => __('messages.account.qa_verify_receipt'), 'icon' => 'shield-check', 'url' => route('receipts.verify')],
     ];
 @endphp
 

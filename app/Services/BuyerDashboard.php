@@ -113,45 +113,45 @@ class BuyerDashboard
         return [
             [
                 'key' => 'active_rfqs',
-                'label' => 'Active requests',
+                'label' => __('messages.account.stat_active_requests'),
                 'value' => $activeRfqs,
-                'hint' => 'Open RFQs still collecting quotes',
+                'hint' => __('messages.account.stat_active_requests_hint'),
                 'delta' => $this->delta($this->rfqs($user), 'created_at'),
                 'url' => route('account.rfqs'),
                 'icon' => 'document-text',
             ],
             [
                 'key' => 'quotes_awaiting',
-                'label' => 'Quotes to review',
+                'label' => __('messages.account.stat_quotes_to_review'),
                 'value' => $awaiting,
-                'hint' => 'Live offers you can still accept or decline',
+                'hint' => __('messages.account.stat_quotes_to_review_hint'),
                 'delta' => $this->delta($this->quotes($user), 'submitted_at'),
                 'url' => route('account.quotes'),
                 'icon' => 'tag',
             ],
             [
                 'key' => 'active_orders',
-                'label' => 'Active orders',
+                'label' => __('messages.account.stat_active_orders'),
                 'value' => $activeOrders,
-                'hint' => 'Awarded and not yet completed or cancelled',
+                'hint' => __('messages.account.stat_active_orders_hint'),
                 'delta' => $this->delta($this->orders($user), 'awarded_at'),
                 'url' => route('account.orders'),
                 'icon' => 'clipboard-document-check',
             ],
             [
                 'key' => 'orders_in_progress',
-                'label' => 'In progress',
+                'label' => __('messages.account.stat_in_progress'),
                 'value' => $inProgress,
-                'hint' => 'Confirmed, in production or shipped',
+                'hint' => __('messages.account.stat_in_progress_hint'),
                 'delta' => null,
                 'url' => route('account.orders'),
                 'icon' => 'cube',
             ],
             [
                 'key' => 'suppliers',
-                'label' => 'Suppliers engaged',
+                'label' => __('messages.account.stat_suppliers_engaged'),
                 'value' => $suppliers,
-                'hint' => 'Distinct suppliers that have quoted for you',
+                'hint' => __('messages.account.stat_suppliers_engaged_hint'),
                 'delta' => null,
                 'url' => route('directory'),
                 'icon' => 'user-group',
@@ -188,7 +188,7 @@ class BuyerDashboard
         return [
             'direction' => $percent >= 0 ? 'up' : 'down',
             'percent' => abs($percent),
-            'period' => 'vs last month',
+            'period' => __('messages.account.stat_vs_last_month'),
         ];
     }
 
@@ -374,8 +374,11 @@ class BuyerDashboard
 
             $entries[] = [
                 'at' => $quote->submitted_at,
-                'title' => 'Quote received',
-                'detail' => 'From '.($quote->company?->name ?? 'a supplier').' on '.$quote->rfq?->reference_code,
+                'title' => __('messages.account.activity_quote_received'),
+                'detail' => __('messages.account.activity_quote_detail', [
+                    'supplier' => $quote->company?->name ?? __('messages.account.activity_a_supplier'),
+                    'ref' => $quote->rfq?->reference_code,
+                ]),
                 'url' => $quote->rfq ? route('buyer.rfq.quote', ['rfq' => $quote->rfq_id, 'quote' => $quote->getKey()]) : null,
                 'icon' => 'document-text',
                 'tone' => 'timber',
@@ -388,7 +391,7 @@ class BuyerDashboard
                 'cancelled' => $order->cancelled_at,
                 'delivered' => $order->delivered_at,
                 'shipped' => $order->shipped_at,
-                'in production' => $order->production_started_at,
+                'in_production' => $order->production_started_at,
                 'confirmed' => $order->confirmed_at,
                 'awarded' => $order->awarded_at,
             ])->filter()->sortDesc();
@@ -399,7 +402,9 @@ class BuyerDashboard
 
             $entries[] = [
                 'at' => $stamp->first(),
-                'title' => 'Order '.$stamp->keys()->first(),
+                'title' => __('messages.account.activity_order_status', [
+                    'status' => mb_strtolower(__('messages.enums.order_status.'.$stamp->keys()->first())),
+                ]),
                 'detail' => $order->reference_code.' · '.$order->supplier_name,
                 'url' => route('buyer.rfq.order', ['rfq' => $order->rfq_id]),
                 'icon' => 'clipboard-document-check',

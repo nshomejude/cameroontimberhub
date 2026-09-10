@@ -13,14 +13,7 @@ enum RfqStatus: string
 
     public function label(): string
     {
-        return match ($this) {
-            self::New => 'New',
-            self::InReview => 'In review',
-            self::Approved => 'Approved',
-            self::Rejected => 'Rejected',
-            self::Spam => 'Spam',
-            self::Closed => 'Closed',
-        };
+        return __('messages.enums.rfq_status.'.$this->value);
     }
 
     public function color(): string

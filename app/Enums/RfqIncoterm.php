@@ -12,12 +12,6 @@ enum RfqIncoterm: string
 
     public function label(): string
     {
-        return match ($this) {
-            self::EXW => 'EXW — Ex Works',
-            self::FOB => 'FOB — Free on Board',
-            self::CFR => 'CFR — Cost and Freight',
-            self::CIF => 'CIF — Cost, Insurance and Freight',
-            self::DAP => 'DAP — Delivered at Place',
-        };
+        return __('messages.enums.rfq_incoterm.'.$this->value);
     }
 }

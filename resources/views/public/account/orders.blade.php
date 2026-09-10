@@ -1,16 +1,16 @@
 <x-layouts.account
-    title="Orders"
-    heading="Orders"
-    subheading="Orders awarded from your requests. Every figure is the snapshot taken at award time.">
+    :title="__('messages.account.orders_title')"
+    :heading="__('messages.account.orders_title')"
+    :subheading="__('messages.account.orders_subheading')">
 
     @if ($orders->total() === 0)
         <x-account.blank icon="clipboard-document-check"
-            title="No orders yet"
-            body="An order is created the moment you award a quote. It freezes the agreed lines, prices and terms, and carries a verifiable receipt."
-            cta-label="Review your quotes" :cta-url="route('account.quotes')" />
+            :title="__('messages.account.no_orders_title')"
+            :body="__('messages.account.orders_empty_body')"
+            :cta-label="__('messages.account.review_your_quotes')" :cta-url="route('account.quotes')" />
     @else
         <p class="mb-3 text-[1.0625rem] text-ink-soft">
-            {{ number_format($orders->total()) }} {{ Str::plural('order', $orders->total()) }}
+            {{ trans_choice('messages.account.orders_count', $orders->total(), ['count' => number_format($orders->total())]) }}
         </p>
 
         {{-- Desktop table --}}
@@ -18,14 +18,14 @@
             <table class="w-full min-w-[52rem] text-left text-[1.0625rem]">
                 <thead>
                     <tr class="border-b border-sand-200 text-[0.875rem] uppercase tracking-wide text-ink-soft">
-                        <th scope="col" class="py-3 pl-5 pr-3 font-semibold">Order</th>
-                        <th scope="col" class="py-3 pr-3 font-semibold">Supplier</th>
-                        <th scope="col" class="py-3 pr-3 font-semibold">Order value</th>
-                        <th scope="col" class="py-3 pr-3 font-semibold">Status</th>
-                        <th scope="col" class="py-3 pr-3 font-semibold">Payment</th>
-                        <th scope="col" class="py-3 pr-3 font-semibold">Awarded</th>
-                        <th scope="col" class="py-3 pr-3 font-semibold">Receipt</th>
-                        <th scope="col" class="py-3 pr-5 font-semibold"><span class="sr-only">Reorder</span></th>
+                        <th scope="col" class="py-3 pl-5 pr-3 font-semibold">{{ __('messages.account.col_order') }}</th>
+                        <th scope="col" class="py-3 pr-3 font-semibold">{{ __('messages.account.col_supplier') }}</th>
+                        <th scope="col" class="py-3 pr-3 font-semibold">{{ __('messages.account.col_order_value') }}</th>
+                        <th scope="col" class="py-3 pr-3 font-semibold">{{ __('messages.account.col_status') }}</th>
+                        <th scope="col" class="py-3 pr-3 font-semibold">{{ __('messages.account.col_payment') }}</th>
+                        <th scope="col" class="py-3 pr-3 font-semibold">{{ __('messages.account.col_awarded') }}</th>
+                        <th scope="col" class="py-3 pr-3 font-semibold">{{ __('messages.account.col_receipt') }}</th>
+                        <th scope="col" class="py-3 pr-5 font-semibold"><span class="sr-only">{{ __('messages.account.reorder') }}</span></th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-sand-200">
@@ -61,7 +61,7 @@
                                     <a href="{{ route('account.messages.show', $order->conversation) }}"
                                        class="inline-flex items-center gap-1 rounded-lg border border-forest-700 px-2.5 py-1.5 text-[0.9375rem] font-bold text-forest-700 transition hover:bg-forest-50">
                                         <x-heroicon-o-arrow-path class="h-3.5 w-3.5" />
-                                        Reorder
+                                        {{ __('messages.account.reorder') }}
                                     </a>
                                 @endif
                             </td>
@@ -87,7 +87,7 @@
                         <span class="font-display text-lg font-bold text-forest-800">{{ $order->money($order->total_amount) }}</span>
                         @if ($order->receipt)
                             <a href="{{ $access->link(request(), 'receipt', $order->rfq) }}"
-                               class="text-[1.0625rem] font-semibold text-forest-700">View receipt</a>
+                               class="text-[1.0625rem] font-semibold text-forest-700">{{ __('messages.account.view_receipt') }}</a>
                         @else
                             <span class="text-[0.9375rem] text-ink-soft">{{ $order->payment_status->label() }}</span>
                         @endif
@@ -96,13 +96,13 @@
                         <a href="{{ route('account.messages.show', $order->conversation) }}"
                            class="mt-3 flex items-center justify-center gap-1.5 rounded-xl border border-forest-700 px-3 py-2 text-[1.0625rem] font-bold text-forest-700 transition hover:bg-forest-50">
                             <x-heroicon-o-arrow-path class="h-4 w-4" />
-                            Reorder in chat
+                            {{ __('messages.account.reorder_in_chat') }}
                         </a>
                     @endif
                 </li>
             @endforeach
         </ul>
 
-        <div class="mt-5"><x-account.pagination :paginator="$orders" noun="orders" /></div>
+        <div class="mt-5"><x-account.pagination :paginator="$orders" :noun="__('messages.account.noun_orders')" /></div>
     @endif
 </x-layouts.account>

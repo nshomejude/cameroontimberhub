@@ -19,29 +19,13 @@ enum OrderStatus: string
 
     public function label(): string
     {
-        return match ($this) {
-            self::Awarded => 'Awarded',
-            self::Confirmed => 'Confirmed',
-            self::InProduction => 'In production',
-            self::Shipped => 'Shipped',
-            self::Delivered => 'Delivered',
-            self::Completed => 'Completed',
-            self::Cancelled => 'Cancelled',
-        };
+        return __('messages.enums.order_status.'.$this->value);
     }
 
     /** What has actually happened — shown to the buyer, so it must be literal. */
     public function description(): string
     {
-        return match ($this) {
-            self::Awarded => 'You have awarded this request. The supplier has been notified and has not confirmed yet.',
-            self::Confirmed => 'The supplier has confirmed the order.',
-            self::InProduction => 'The supplier has started preparing the goods.',
-            self::Shipped => 'The supplier has recorded the goods as shipped.',
-            self::Delivered => 'Delivery has been recorded at the destination.',
-            self::Completed => 'The order is closed. Both sides consider it finished.',
-            self::Cancelled => 'This order was cancelled.',
-        };
+        return __('messages.enums.order_status_description.'.$this->value);
     }
 
     public function color(): string

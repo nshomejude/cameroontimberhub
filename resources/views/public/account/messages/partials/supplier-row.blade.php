@@ -11,7 +11,7 @@
             @endif
         </p>
         <p class="truncate text-[1.0625rem] text-ink-soft">
-            @if ($company->verified_at) Verified supplier @endif
+            @if ($company->verified_at) {{ __('messages.account.verified_supplier') }} @endif
             @if ($company->region) · {{ $company->region }} @endif
         </p>
         @if ($company->relationLoaded('species') && $company->species->isNotEmpty())
@@ -28,7 +28,7 @@
         <button type="submit"
                 class="flex items-center gap-1.5 rounded-xl bg-forest-50 px-3.5 py-2 text-[1.0625rem] font-bold text-forest-800 transition hover:bg-forest-100">
             <x-heroicon-o-chat-bubble-left-right class="h-4 w-4" />
-            Message
+            {{ __('messages.account.message') }}
         </button>
     </form>
 </li>

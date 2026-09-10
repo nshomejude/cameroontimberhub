@@ -12,12 +12,6 @@ enum PaymentStatus: string
 
     public function label(): string
     {
-        return match ($this) {
-            self::Pending => 'Pending',
-            self::Completed => 'Completed',
-            self::Failed => 'Failed',
-            self::Refunded => 'Refunded',
-            self::Cancelled => 'Cancelled',
-        };
+        return __('messages.enums.payment_status.'.$this->value);
     }
 }

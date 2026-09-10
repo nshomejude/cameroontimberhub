@@ -14,8 +14,8 @@
 
     $steps = collect(RfqWizard::STEPS)->map(fn ($meta, $slug) => [
         'slug' => $slug,
-        'label' => $meta[0],
-        'caption' => $meta[1],
+        'label' => __('messages.rfq_wizard.step_'.$slug.'_label'),
+        'caption' => __('messages.rfq_wizard.step_'.$slug.'_caption'),
     ])->values();
 
     foreach ($extra as $slug => $meta) {
@@ -27,14 +27,14 @@
         : ($current ? $steps->search(fn ($s) => $s['slug'] === $current) : $steps->count());
 @endphp
 
-<nav aria-label="Request progress" class="rounded-2xl border border-sand-200 dark:border-[#2c2a24] bg-white dark:bg-[#1f1d18] px-4 py-4 sm:px-6 sm:py-5">
+<nav aria-label="{{ __('messages.rfq_wizard.progress_aria') }}" class="rounded-2xl border border-sand-200 dark:border-[#2c2a24] bg-white dark:bg-[#1f1d18] px-4 py-4 sm:px-6 sm:py-5">
     <ol class="flex gap-2 overflow-x-auto pb-1 sm:gap-0 sm:overflow-visible">
         @foreach ($steps as $i => $s)
             @php
                 $isCurrent = $i === $currentIndex;
                 $isDone = $i < $currentIndex;
                 $reachable = ! $isCurrent && $isDone && $wizard && RfqWizard::isStep($s['slug']);
-                $state = $isCurrent ? 'Current' : ($isDone ? 'Completed' : 'Upcoming');
+                $state = $isCurrent ? __('messages.rfq_wizard.state_current') : ($isDone ? __('messages.rfq_wizard.state_completed') : __('messages.rfq_wizard.state_upcoming'));
             @endphp
             <li class="flex min-w-0 shrink-0 items-center sm:flex-1 sm:shrink" @if ($isCurrent) aria-current="step" @endif>
                 <span class="flex min-w-0 items-center gap-2.5">
@@ -55,7 +55,7 @@
                         @if ($reachable)
                             <a href="{{ route('rfq.step', ['step' => $s['slug']]) }}"
                                class="block truncate text-[1.0625rem] font-semibold text-ink hover:text-forest-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500 dark:text-[#e4ddcf] dark:hover:text-forest-300">
-                                {{ $s['label'] }}<span class="sr-only"> — {{ $state }}. Go back to this step.</span>
+                                {{ $s['label'] }}<span class="sr-only"> — {{ $state }}. {{ __('messages.rfq_wizard.go_back_to_step') }}</span>
                             </a>
                         @else
                             <span @class([
@@ -68,7 +68,7 @@
                             </span>
                         @endif
                         <span class="block truncate text-[0.875rem] text-ink-soft dark:text-[#8f887b]">
-                            {{ $isDone ? 'Completed' : $s['caption'] }}
+                            {{ $isDone ? __('messages.rfq_wizard.state_completed') : $s['caption'] }}
                         </span>
                     </span>
                 </span>

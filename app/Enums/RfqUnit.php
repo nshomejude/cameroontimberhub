@@ -17,12 +17,7 @@ enum RfqUnit: string
 
     public function label(): string
     {
-        return match ($this) {
-            self::CubicMetre => 'm³',
-            self::Ton => 'tonnes',
-            self::Piece => 'pieces',
-            self::Container => 'containers',
-        };
+        return __('messages.enums.rfq_unit.'.$this->value);
     }
 
     /** @return list<string> */

@@ -18,12 +18,12 @@
 @endphp
 
 <x-layouts.account
-    title="Dashboard"
-    :heading="'Dashboard'"
-    :subheading="'Welcome back, '.$user->name">
+    :title="__('messages.account.dashboard')"
+    :heading="__('messages.account.dashboard')"
+    :subheading="__('messages.account.welcome_back', ['name' => $user->name])">
 
     {{-- ====================== Headline stats ====================== --}}
-    <section aria-label="Overview" class="grid grid-cols-2 gap-3 lg:grid-cols-5 lg:gap-4">
+    <section aria-label="{{ __('messages.account.overview') }}" class="grid grid-cols-2 gap-3 lg:grid-cols-5 lg:gap-4">
         @foreach ($stats as $stat)
             <x-account.stat-card :stat="$stat" />
         @endforeach
@@ -36,11 +36,11 @@
 
             {{-- ---------- Awarded order value ---------- --}}
             @if ($trend)
-                <x-account.panel title="Awarded order value" subtitle="Value of orders you awarded, by month. Awarded value is not a payment record.">
+                <x-account.panel :title="__('messages.account.awarded_value_title')" :subtitle="__('messages.account.awarded_value_subtitle_trend')">
                     <p class="font-display text-2xl font-bold text-forest-950 lg:text-[1.75rem]">
                         {{ BuyerDashboard::money($trend['currency'], $trend['total']) }}
                     </p>
-                    <p class="text-[1.0625rem] text-ink-soft">Last 12 months ({{ $trend['currency'] }})</p>
+                    <p class="text-[1.0625rem] text-ink-soft">{{ __('messages.account.awarded_value_last_12', ['currency' => $trend['currency']]) }}</p>
 
                     @php
                         $max = max($trend['max'], 1);
@@ -54,7 +54,7 @@
                     @endphp
 
                     <figure class="mt-4">
-                        <figcaption class="sr-only">Awarded order value per month, in {{ $trend['currency'] }}.</figcaption>
+                        <figcaption class="sr-only">{{ __('messages.account.awarded_value_per_month_caption', ['currency' => $trend['currency']]) }}</figcaption>
                         <div class="flex gap-3">
                             <div class="flex flex-col justify-between py-0.5 text-[0.8125rem] text-ink-soft">
                                 <span>{{ BuyerDashboard::compact($trend['currency'], $trend['max']) }}</span>
@@ -63,7 +63,7 @@
                             </div>
                             <div class="min-w-0 flex-1">
                                 <svg viewBox="0 0 600 200" preserveAspectRatio="none" role="img"
-                                     class="h-40 w-full lg:h-52" aria-label="Monthly awarded order value">
+                                     class="h-40 w-full lg:h-52" aria-label="{{ __('messages.account.awarded_value_monthly_aria') }}">
                                     <defs>
                                         <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
                                             <stop offset="0%" stop-color="#15703d" stop-opacity="0.28" />
@@ -92,11 +92,11 @@
                     </figure>
                 </x-account.panel>
             @elseif ($awardedValue)
-                <x-account.panel title="Awarded order value" subtitle="Value of orders you awarded this year. Awarded value is not a payment record.">
+                <x-account.panel :title="__('messages.account.awarded_value_title')" :subtitle="__('messages.account.awarded_value_subtitle_year')">
                     <dl class="flex flex-wrap gap-x-10 gap-y-4">
                         @foreach ($awardedValue as $row)
                             <div>
-                                <dt class="text-[0.875rem] uppercase tracking-wide text-ink-soft">{{ $row['currency'] }} this year</dt>
+                                <dt class="text-[0.875rem] uppercase tracking-wide text-ink-soft">{{ __('messages.account.currency_this_year', ['currency' => $row['currency']]) }}</dt>
                                 <dd class="mt-1 font-display text-2xl font-bold text-forest-950">{{ BuyerDashboard::money($row['currency'], $row['total']) }}</dd>
                             </div>
                         @endforeach
@@ -105,13 +105,13 @@
             @endif
 
             {{-- ---------- Recent orders ---------- --}}
-            <x-account.panel title="Recent orders" :href="route('account.orders')" :padded="false">
+            <x-account.panel :title="__('messages.account.recent_orders')" :href="route('account.orders')" :padded="false">
                 @if ($recentOrders->isEmpty())
                     <div class="px-5 pb-5">
                         <x-account.blank icon="clipboard-document-check"
-                            title="No orders yet"
-                            body="Once you award a quote, the resulting order appears here with its own reference and receipt."
-                            cta-label="Review your quotes" :cta-url="route('account.quotes')" />
+                            :title="__('messages.account.no_orders_title')"
+                            :body="__('messages.account.no_orders_body')"
+                            :cta-label="__('messages.account.review_your_quotes')" :cta-url="route('account.quotes')" />
                     </div>
                 @else
                     {{-- Desktop table --}}
@@ -119,12 +119,12 @@
                         <table class="w-full min-w-[46rem] text-left text-[1.0625rem]">
                             <thead>
                                 <tr class="border-y border-sand-200 text-[0.875rem] uppercase tracking-wide text-ink-soft">
-                                    <th scope="col" class="py-2.5 pl-5 pr-3 font-semibold">Order</th>
-                                    <th scope="col" class="py-2.5 pr-3 font-semibold">Supplier</th>
-                                    <th scope="col" class="py-2.5 pr-3 font-semibold">Items</th>
-                                    <th scope="col" class="py-2.5 pr-3 font-semibold">Order value</th>
-                                    <th scope="col" class="py-2.5 pr-3 font-semibold">Status</th>
-                                    <th scope="col" class="py-2.5 pr-5 font-semibold">Awarded</th>
+                                    <th scope="col" class="py-2.5 pl-5 pr-3 font-semibold">{{ __('messages.account.col_order') }}</th>
+                                    <th scope="col" class="py-2.5 pr-3 font-semibold">{{ __('messages.account.col_supplier') }}</th>
+                                    <th scope="col" class="py-2.5 pr-3 font-semibold">{{ __('messages.account.col_items') }}</th>
+                                    <th scope="col" class="py-2.5 pr-3 font-semibold">{{ __('messages.account.col_order_value') }}</th>
+                                    <th scope="col" class="py-2.5 pr-3 font-semibold">{{ __('messages.account.col_status') }}</th>
+                                    <th scope="col" class="py-2.5 pr-5 font-semibold">{{ __('messages.account.col_awarded') }}</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-sand-200">
@@ -135,7 +135,7 @@
                                                class="font-semibold text-forest-700 transition hover:text-forest-900">{{ $order->reference_code }}</a>
                                         </td>
                                         <td class="py-3 pr-3 text-ink">{{ $order->supplier_name }}</td>
-                                        <td class="py-3 pr-3 text-ink-soft">{{ $order->items->count() }} {{ Str::plural('line', $order->items->count()) }}</td>
+                                        <td class="py-3 pr-3 text-ink-soft">{{ trans_choice('messages.account.lines', $order->items->count(), ['count' => $order->items->count()]) }}</td>
                                         <td class="py-3 pr-3 font-semibold text-ink">{{ $order->money($order->total_amount) }}</td>
                                         <td class="py-3 pr-3">
                                             <x-account.status-pill :label="$order->status->label()" :color="$order->status->color()" />
@@ -167,20 +167,20 @@
                     <div class="border-t border-sand-200 p-4 text-center">
                         <a href="{{ route('account.orders') }}"
                            class="inline-flex items-center gap-2 rounded-full border border-sand-300 px-5 py-2 text-[1.0625rem] font-semibold text-ink transition hover:border-forest-400">
-                            View all orders
+                            {{ __('messages.account.view_all_orders') }}
                         </a>
                     </div>
                 @endif
             </x-account.panel>
 
             {{-- ---------- Latest quotes ---------- --}}
-            <x-account.panel title="Latest quotes received" :href="route('account.quotes')" :padded="false">
+            <x-account.panel :title="__('messages.account.latest_quotes')" :href="route('account.quotes')" :padded="false">
                 @if ($recentQuotes->isEmpty())
                     <div class="px-5 pb-5">
                         <x-account.blank icon="tag"
-                            title="No quotes yet"
-                            body="Suppliers routed to your requests will respond here. You will be emailed as soon as the first quote lands."
-                            cta-label="See your requests" :cta-url="route('account.rfqs')" />
+                            :title="__('messages.account.no_quotes_title')"
+                            :body="__('messages.account.no_quotes_body')"
+                            :cta-label="__('messages.account.see_your_requests')" :cta-url="route('account.rfqs')" />
                     </div>
                 @else
                     <ul class="divide-y divide-sand-200 border-t border-sand-200">
@@ -189,7 +189,7 @@
                                 <a href="{{ $access->link(request(), 'quote', $quote->rfq, $quote) }}"
                                    class="flex items-center gap-3 px-5 py-3.5 transition hover:bg-sand-50">
                                     <span class="min-w-0 flex-1">
-                                        <span class="block truncate text-[1.0625rem] font-semibold text-ink">{{ $quote->company?->name ?? 'Supplier' }}</span>
+                                        <span class="block truncate text-[1.0625rem] font-semibold text-ink">{{ $quote->company?->name ?? __('messages.account.supplier_fallback') }}</span>
                                         <span class="block truncate text-[1.0625rem] text-ink-soft">
                                             {{ $quote->reference_code }} · {{ $quote->rfq?->reference_code }}
                                         </span>
@@ -213,11 +213,11 @@
 
             {{-- ---------- Orders by status ---------- --}}
             @if ($byStatus)
-                <x-account.panel title="Orders by status">
+                <x-account.panel :title="__('messages.account.orders_by_status')">
                     <div class="flex flex-wrap items-center gap-6">
                         @php $offset = 0; @endphp
                         <svg viewBox="0 0 160 160" role="img" class="h-40 w-40 shrink-0 -rotate-90"
-                             aria-label="{{ $byStatus['total'] }} orders, split by status">
+                             aria-label="{{ __('messages.account.orders_split_aria', ['count' => $byStatus['total']]) }}">
                             @foreach ($byStatus['slices'] as $slice)
                                 @php
                                     $len = $donutC * $slice['count'] / $byStatus['total'];
@@ -234,7 +234,7 @@
                         </svg>
                         <div class="min-w-0 flex-1">
                             <p class="font-display text-2xl font-bold text-forest-950">{{ $byStatus['total'] }}</p>
-                            <p class="text-[1.0625rem] text-ink-soft">Total orders</p>
+                            <p class="text-[1.0625rem] text-ink-soft">{{ __('messages.account.total_orders') }}</p>
                             <ul class="mt-3 space-y-1.5">
                                 @foreach ($byStatus['slices'] as $slice)
                                     <li class="flex items-center gap-2 text-[1.0625rem]">
@@ -250,9 +250,9 @@
             @endif
 
             {{-- ---------- Recent activity ---------- --}}
-            <x-account.panel title="Recent activity" subtitle="Derived from real timestamps on your quotes and orders.">
+            <x-account.panel :title="__('messages.account.recent_activity')" :subtitle="__('messages.account.recent_activity_subtitle')">
                 @if (empty($activity))
-                    <p class="text-[1.0625rem] text-ink-soft">Nothing has happened on your requests yet.</p>
+                    <p class="text-[1.0625rem] text-ink-soft">{{ __('messages.account.activity_empty') }}</p>
                 @else
                     <ul class="space-y-4">
                         @foreach ($activity as $entry)
@@ -281,7 +281,7 @@
 
             {{-- ---------- Suppliers ---------- --}}
             @if ($topSuppliers->isNotEmpty())
-                <x-account.panel title="Your suppliers" subtitle="Ranked by orders you have awarded them." :href="route('directory')" link-label="Browse all">
+                <x-account.panel :title="__('messages.account.your_suppliers')" :subtitle="__('messages.account.your_suppliers_subtitle')" :href="route('directory')" :link-label="__('messages.account.browse_all')">
                     <ul class="space-y-3.5">
                         @foreach ($topSuppliers as $row)
                             @continue (! $row['company'])
@@ -290,7 +290,7 @@
                                 <span class="min-w-0 flex-1">
                                     <a href="{{ route('companies.show', $row['company']->slug) }}"
                                        class="block truncate text-[1.0625rem] font-semibold text-ink transition hover:text-forest-700">{{ $row['company']->name }}</a>
-                                    <span class="block text-[0.9375rem] text-ink-soft">{{ $row['orders'] }} {{ Str::plural('order', $row['orders']) }} awarded</span>
+                                    <span class="block text-[0.9375rem] text-ink-soft">{{ trans_choice('messages.account.orders_awarded', $row['orders'], ['count' => $row['orders']]) }}</span>
                                 </span>
                                 {{-- Rating is a real company column, shown only when it is backed by ratings. --}}
                                 @if ($row['company']->rating_avg && $row['company']->rating_count)
@@ -306,7 +306,7 @@
             @endif
 
             {{-- ---------- Quick actions ---------- --}}
-            <x-account.panel title="Quick actions">
+            <x-account.panel :title="__('messages.account.quick_actions')">
                 <x-account.quick-actions />
             </x-account.panel>
         </div>

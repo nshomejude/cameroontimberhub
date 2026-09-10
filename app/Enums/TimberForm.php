@@ -16,12 +16,6 @@ enum TimberForm: string
 
     public function label(): string
     {
-        return match ($this) {
-            self::Logs    => 'Logs',
-            self::Sawn    => 'Sawn timber',
-            self::Veneer  => 'Veneer',
-            self::Plywood => 'Plywood',
-            self::Other   => 'Other',
-        };
+        return __('messages.enums.timber_form.'.$this->value);
     }
 }

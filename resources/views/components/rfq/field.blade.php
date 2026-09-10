@@ -37,9 +37,9 @@
         <label for="{{ $id }}" class="block text-[1.0625rem] font-semibold text-ink dark:text-[#e4ddcf]">
             {{ $label }}
             @if ($required)
-                <span aria-hidden="true" class="text-red-600">*</span><span class="sr-only">(required)</span>
+                <span aria-hidden="true" class="text-red-600">*</span><span class="sr-only">{{ __('messages.rfq_wizard.field_required') }}</span>
             @else
-                <span class="ml-1 font-normal text-ink-soft dark:text-[#8f887b]">(optional)</span>
+                <span class="ml-1 font-normal text-ink-soft dark:text-[#8f887b]">{{ __('messages.rfq_wizard.field_optional') }}</span>
             @endif
         </label>
     @endif

@@ -72,7 +72,12 @@
         @endif
 
         <p class="text-[1.0625rem] text-ink-soft sm:ml-auto">
-            Showing {{ $paginator->firstItem() ?? 0 }} to {{ $paginator->lastItem() ?? 0 }} of {{ number_format($paginator->total()) }} {{ $noun }}
+            {{ __('messages.account.showing_paginated', [
+                'first' => $paginator->firstItem() ?? 0,
+                'last' => $paginator->lastItem() ?? 0,
+                'total' => number_format($paginator->total()),
+                'noun' => $noun,
+            ]) }}
         </p>
     </div>
 @endif

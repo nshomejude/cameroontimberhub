@@ -8,24 +8,24 @@
     // as exactly that; there are no ratings, scores or savings estimates that
     // are not backed by a column.
     $sorts = [
-        'total' => 'Lowest total',
-        'lead_time' => 'Shortest lead time',
-        'validity' => 'Expiring soonest',
-        'newest' => 'Most recent',
+        'total' => __('messages.rfq_wizard.sort_total'),
+        'lead_time' => __('messages.rfq_wizard.sort_lead_time'),
+        'validity' => __('messages.rfq_wizard.sort_validity'),
+        'newest' => __('messages.rfq_wizard.sort_newest'),
     ];
 
     $deadline = $rfq->deadline;
 @endphp
 
 <x-layouts.app
-    :title="'Responses — '.$rfq->reference_code"
-    description="Quotes received for your request."
+    :title="__('messages.rfq_wizard.responses_title', ['ref' => $rfq->reference_code])"
+    :description="__('messages.rfq_wizard.responses_meta')"
     noindex
     :breadcrumbs="[
-        ['label' => 'Home', 'url' => route('home')],
-        ['label' => 'RFQ Center', 'url' => route('rfq.create')],
+        ['label' => __('messages.common.home'), 'url' => route('home')],
+        ['label' => __('messages.rfq_wizard.breadcrumb_rfq_center'), 'url' => route('rfq.create')],
         ['label' => $rfq->reference_code, 'url' => url()->current()],
-        ['label' => 'Responses', 'url' => url()->current()],
+        ['label' => __('messages.rfq_wizard.responses_received'), 'url' => url()->current()],
     ]">
 
     <div class="mx-auto max-w-6xl px-4 py-8 sm:py-12">
@@ -40,29 +40,29 @@
 
         <header class="rounded-2xl border border-sand-200 bg-white px-5 py-6 dark:border-[#2c2a24] dark:bg-[#1f1d18] sm:px-7">
             <p class="text-[0.875rem] font-semibold uppercase tracking-wide text-ink-soft dark:text-[#8f887b]">
-                Request {{ $rfq->reference_code }}
+{{ __('messages.rfq_wizard.request_label') }} {{ $rfq->reference_code }}
             </p>
             <h1 class="mt-1 font-display text-2xl font-semibold text-forest-950 dark:text-sand-100 sm:text-3xl">
-                {{ $rfq->title ?: 'Responses received' }}
+                {{ $rfq->title ?: __('messages.rfq_wizard.responses_heading_fallback') }}
             </h1>
 
             <dl class="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <div>
-                    <dt class="text-[0.875rem] uppercase tracking-wide text-ink-soft dark:text-[#8f887b]">Responses received</dt>
+                    <dt class="text-[0.875rem] uppercase tracking-wide text-ink-soft dark:text-[#8f887b]">{{ __('messages.rfq_wizard.responses_received') }}</dt>
                     <dd class="mt-0.5 text-[1.125rem] font-bold text-forest-800 dark:text-forest-300">{{ $quotes->count() }}</dd>
                 </div>
                 <div>
-                    <dt class="text-[0.875rem] uppercase tracking-wide text-ink-soft dark:text-[#8f887b]">Suppliers contacted</dt>
+                    <dt class="text-[0.875rem] uppercase tracking-wide text-ink-soft dark:text-[#8f887b]">{{ __('messages.rfq_wizard.suppliers_contacted') }}</dt>
                     <dd class="mt-0.5 text-[1.125rem] font-bold text-ink dark:text-[#e4ddcf]">{{ $rfq->routings()->count() }}</dd>
                 </div>
                 <div>
-                    <dt class="text-[0.875rem] uppercase tracking-wide text-ink-soft dark:text-[#8f887b]">Response deadline</dt>
+                    <dt class="text-[0.875rem] uppercase tracking-wide text-ink-soft dark:text-[#8f887b]">{{ __('messages.rfq_wizard.response_deadline_label') }}</dt>
                     <dd class="mt-0.5 text-[1.125rem] font-semibold text-ink dark:text-[#e4ddcf]">
-                        {{ $deadline?->isoFormat('D MMM YYYY') ?? 'Not set' }}
+                        {{ $deadline?->isoFormat('D MMM YYYY') ?? __('messages.rfq_wizard.not_set_label') }}
                     </dd>
                 </div>
                 <div>
-                    <dt class="text-[0.875rem] uppercase tracking-wide text-ink-soft dark:text-[#8f887b]">Request status</dt>
+                    <dt class="text-[0.875rem] uppercase tracking-wide text-ink-soft dark:text-[#8f887b]">{{ __('messages.rfq_wizard.request_status') }}</dt>
                     <dd class="mt-0.5">
                         <span class="inline-flex items-center rounded-full bg-forest-50 px-2.5 py-1 text-[0.9375rem] font-semibold text-forest-800 dark:bg-forest-950 dark:text-forest-300">
                             {{ $rfq->status->label() }}
@@ -85,11 +85,11 @@
                         @endforeach
 
                         <p class="text-[1.0625rem] text-ink-soft dark:text-[#b3ab9b]">
-                            Showing {{ trans_choice(':count quote|:count quotes', $quotes->count(), ['count' => $quotes->count()]) }}
+                            {{ trans_choice('messages.rfq_wizard.showing_quotes', $quotes->count(), ['count' => $quotes->count()]) }}
                         </p>
 
                         <div class="flex items-center gap-2">
-                            <label for="sort" class="text-[1.0625rem] font-medium text-ink-soft dark:text-[#b3ab9b]">Sort by</label>
+                            <label for="sort" class="text-[1.0625rem] font-medium text-ink-soft dark:text-[#b3ab9b]">{{ __('messages.rfq_wizard.sort_by') }}</label>
                             <select id="sort" name="sort" onchange="this.form.submit()"
                                     class="rounded-lg border border-sand-300 bg-white px-3 py-2 text-[1.0625rem] text-ink focus:border-forest-500 focus:outline-none focus:ring-1 focus:ring-forest-500 dark:border-[#3a372f] dark:bg-[#26241e] dark:text-[#e4ddcf]">
                                 @foreach ($sorts as $key => $label)
@@ -97,7 +97,7 @@
                                 @endforeach
                             </select>
                             <noscript>
-                                <button type="submit" class="rounded-lg bg-forest-700 px-3 py-2 text-[1.0625rem] font-semibold text-white">Apply</button>
+                                <button type="submit" class="rounded-lg bg-forest-700 px-3 py-2 text-[1.0625rem] font-semibold text-white">{{ __('messages.rfq_wizard.apply') }}</button>
                             </noscript>
                         </div>
                     </form>
@@ -127,7 +127,7 @@
                                             </span>
                                             @if ($isLowest)
                                                 <span class="inline-flex items-center rounded-full bg-forest-50 px-2 py-0.5 text-[0.875rem] font-semibold text-forest-800 dark:bg-forest-950 dark:text-forest-300">
-                                                    Lowest total
+                                                    {{ __('messages.rfq_wizard.lowest_total') }}
                                                 </span>
                                             @endif
                                         </div>
@@ -138,7 +138,7 @@
                                         @if ($quote->company->hasRating())
                                             <p class="mt-1 text-[1.0625rem] text-ink-soft dark:text-[#8f887b]">
                                                 {{ number_format((float) $quote->company->rating_avg, 1) }} / 5
-                                                ({{ trans_choice(':count review|:count reviews', (int) $quote->company->rating_count, ['count' => $quote->company->rating_count]) }})
+                                                ({{ trans_choice('messages.rfq_wizard.reviews', (int) $quote->company->rating_count, ['count' => $quote->company->rating_count]) }})
                                             </p>
                                         @endif
                                     </div>
@@ -149,7 +149,7 @@
                                         </p>
                                         @if ($perUnit !== null)
                                             <p class="text-[0.9375rem] text-ink-soft dark:text-[#8f887b]">
-                                                {{ $quote->currency->value }} {{ number_format($perUnit, 2) }} per {{ $singleUnit->label() }}
+                                                {{ __('messages.rfq_wizard.per_unit', ['currency' => $quote->currency->value, 'price' => number_format($perUnit, 2), 'unit' => $singleUnit->label()]) }}
                                             </p>
                                         @endif
                                     </div>
@@ -157,25 +157,25 @@
 
                                 <dl class="mt-4 grid gap-3 border-t border-sand-200 pt-4 dark:border-[#2c2a24] sm:grid-cols-4">
                                     <div>
-                                        <dt class="text-[0.875rem] uppercase tracking-wide text-ink-soft dark:text-[#8f887b]">Lead time</dt>
+                                        <dt class="text-[0.875rem] uppercase tracking-wide text-ink-soft dark:text-[#8f887b]">{{ __('messages.rfq_wizard.lead_time') }}</dt>
                                         <dd class="mt-0.5 text-[1.0625rem] font-semibold text-ink dark:text-[#e4ddcf]">
-                                            {{ $quote->lead_time_days ? $quote->lead_time_days.' days' : '—' }}
+                                            {{ $quote->lead_time_days ? __('messages.account.days', ['count' => $quote->lead_time_days]) : '—' }}
                                         </dd>
                                     </div>
                                     <div>
-                                        <dt class="text-[0.875rem] uppercase tracking-wide text-ink-soft dark:text-[#8f887b]">Valid until</dt>
+                                        <dt class="text-[0.875rem] uppercase tracking-wide text-ink-soft dark:text-[#8f887b]">{{ __('messages.rfq_wizard.valid_until') }}</dt>
                                         <dd class="mt-0.5 text-[1.0625rem] font-semibold text-ink dark:text-[#e4ddcf]">
                                             {{ $quote->valid_until?->isoFormat('D MMM YYYY') ?? '—' }}
                                         </dd>
                                     </div>
                                     <div>
-                                        <dt class="text-[0.875rem] uppercase tracking-wide text-ink-soft dark:text-[#8f887b]">Incoterm</dt>
+                                        <dt class="text-[0.875rem] uppercase tracking-wide text-ink-soft dark:text-[#8f887b]">{{ __('messages.rfq_wizard.incoterm') }}</dt>
                                         <dd class="mt-0.5 text-[1.0625rem] font-semibold text-ink dark:text-[#e4ddcf]">
                                             {{ $quote->incoterm?->value ?? '—' }}
                                         </dd>
                                     </div>
                                     <div>
-                                        <dt class="text-[0.875rem] uppercase tracking-wide text-ink-soft dark:text-[#8f887b]">Line items</dt>
+                                        <dt class="text-[0.875rem] uppercase tracking-wide text-ink-soft dark:text-[#8f887b]">{{ __('messages.rfq_wizard.line_items') }}</dt>
                                         <dd class="mt-0.5 text-[1.0625rem] font-semibold text-ink dark:text-[#e4ddcf]">{{ $quote->items->count() }}</dd>
                                     </div>
                                 </dl>
@@ -183,7 +183,7 @@
                                 <div class="mt-4">
                                     <a href="{{ $access->link(request(), 'quote', $rfq, $quote) }}"
                                        class="inline-flex items-center gap-2 rounded-full bg-forest-700 px-5 py-2.5 text-[1.0625rem] font-semibold text-white transition hover:bg-forest-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500 focus-visible:ring-offset-2">
-                                        Review quote <x-heroicon-m-arrow-right class="h-4 w-4" />
+                                        {{ __('messages.rfq_wizard.review_quote') }} <x-heroicon-m-arrow-right class="h-4 w-4" />
                                     </a>
                                 </div>
                             </li>
@@ -194,14 +194,13 @@
                         <span class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-sand-100 text-ink-soft dark:bg-[#2c2a24] dark:text-[#8f887b]">
                             <x-heroicon-o-inbox class="h-6 w-6" />
                         </span>
-                        <h2 class="mt-4 font-display text-lg font-semibold text-forest-950 dark:text-sand-100">No quotes yet</h2>
+                        <h2 class="mt-4 font-display text-lg font-semibold text-forest-950 dark:text-sand-100">{{ __('messages.rfq_wizard.no_quotes_yet') }}</h2>
                         <p class="mx-auto mt-2 max-w-md text-[1.0625rem] leading-relaxed text-ink-soft dark:text-[#b3ab9b]">
                             @if ($rfq->routings()->count() > 0)
-                                Your request has reached {{ trans_choice(':count supplier|:count suppliers', $rfq->routings()->count(), ['count' => $rfq->routings()->count()]) }}.
-                                We will email you at {{ $rfq->buyer_email }} as soon as one responds.
+                                {{ trans_choice('messages.rfq_wizard.reached_suppliers', $rfq->routings()->count(), ['count' => $rfq->routings()->count()]) }}
+                                {{ __('messages.rfq_wizard.will_email_when_responds', ['email' => $rfq->buyer_email]) }}
                             @else
-                                Your request has not been sent to suppliers yet. We review every request before routing it,
-                                and we will email you at {{ $rfq->buyer_email }} when quotes arrive.
+                                {{ __('messages.rfq_wizard.not_sent_yet', ['email' => $rfq->buyer_email]) }}
                             @endif
                         </p>
                     </div>
@@ -210,25 +209,25 @@
 
             <aside class="space-y-4">
                 <section class="rounded-2xl border border-sand-200 bg-white p-5 dark:border-[#2c2a24] dark:bg-[#1f1d18]">
-                    <h2 class="font-display text-[1.0625rem] font-bold text-forest-950 dark:text-sand-100">Request summary</h2>
+                    <h2 class="font-display text-[1.0625rem] font-bold text-forest-950 dark:text-sand-100">{{ __('messages.rfq_wizard.request_summary') }}</h2>
                     <dl class="mt-4 space-y-3 text-[1.0625rem]">
                         <div>
-                            <dt class="text-[0.875rem] uppercase tracking-wide text-ink-soft dark:text-[#8f887b]">Reference</dt>
+                            <dt class="text-[0.875rem] uppercase tracking-wide text-ink-soft dark:text-[#8f887b]">{{ __('messages.rfq_wizard.reference') }}</dt>
                             <dd class="mt-0.5 font-semibold text-ink dark:text-[#e4ddcf]">{{ $rfq->reference_code }}</dd>
                         </div>
                         @if ($rfq->project_name)
                             <div>
-                                <dt class="text-[0.875rem] uppercase tracking-wide text-ink-soft dark:text-[#8f887b]">Project</dt>
+                                <dt class="text-[0.875rem] uppercase tracking-wide text-ink-soft dark:text-[#8f887b]">{{ __('messages.rfq_wizard.project') }}</dt>
                                 <dd class="mt-0.5 font-semibold text-ink dark:text-[#e4ddcf]">{{ $rfq->project_name }}</dd>
                             </div>
                         @endif
                         <div>
-                            <dt class="text-[0.875rem] uppercase tracking-wide text-ink-soft dark:text-[#8f887b]">Submitted</dt>
+                            <dt class="text-[0.875rem] uppercase tracking-wide text-ink-soft dark:text-[#8f887b]">{{ __('messages.rfq_wizard.submitted') }}</dt>
                             <dd class="mt-0.5 font-semibold text-ink dark:text-[#e4ddcf]">{{ $rfq->created_at?->isoFormat('D MMM YYYY') }}</dd>
                         </div>
                         @if ($rfq->incoterm)
                             <div>
-                                <dt class="text-[0.875rem] uppercase tracking-wide text-ink-soft dark:text-[#8f887b]">Requested incoterm</dt>
+                                <dt class="text-[0.875rem] uppercase tracking-wide text-ink-soft dark:text-[#8f887b]">{{ __('messages.rfq_wizard.requested_incoterm') }}</dt>
                                 <dd class="mt-0.5 font-semibold text-ink dark:text-[#e4ddcf]">{{ $rfq->incoterm->value }}</dd>
                             </div>
                         @endif
@@ -237,7 +236,7 @@
 
                 @if ($rfq->items->isNotEmpty())
                     <section class="rounded-2xl border border-sand-200 bg-white p-5 dark:border-[#2c2a24] dark:bg-[#1f1d18]">
-                        <h2 class="font-display text-[1.0625rem] font-bold text-forest-950 dark:text-sand-100">What you asked for</h2>
+                        <h2 class="font-display text-[1.0625rem] font-bold text-forest-950 dark:text-sand-100">{{ __('messages.rfq_wizard.what_you_asked_for') }}</h2>
                         <ul class="mt-3 space-y-2 text-[1.0625rem] text-ink dark:text-[#e4ddcf]">
                             @foreach ($rfq->items as $item)
                                 <li>{{ $item->label() }}</li>
@@ -248,10 +247,13 @@
 
                 @if ($accepted)
                     <section class="rounded-2xl border border-forest-200 bg-forest-50 p-5 dark:border-forest-900 dark:bg-forest-950">
-                        <h2 class="font-display text-[1.0625rem] font-bold text-forest-950 dark:text-sand-100">Awarded</h2>
+                        <h2 class="font-display text-[1.0625rem] font-bold text-forest-950 dark:text-sand-100">{{ __('messages.rfq_wizard.awarded') }}</h2>
                         <p class="mt-2 text-[1.0625rem] text-forest-900 dark:text-forest-200">
-                            You accepted {{ $accepted->company->name }} at {{ $accepted->money($accepted->total_amount) }}
-                            on {{ $accepted->decided_at?->isoFormat('D MMM YYYY') }}.
+                            {{ __('messages.rfq_wizard.awarded_line', [
+                                'company' => $accepted->company->name,
+                                'amount' => $accepted->money($accepted->total_amount),
+                                'date' => $accepted->decided_at?->isoFormat('D MMM YYYY'),
+                            ]) }}
                         </p>
                     </section>
                 @endif

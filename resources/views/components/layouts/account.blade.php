@@ -28,22 +28,22 @@
 
     $groups = [
         [
-            'label' => 'Marketplace',
+            'label' => __('messages.account.group_marketplace'),
             'items' => [
-                ['label' => 'Dashboard', 'icon' => 'squares-2x2', 'url' => route('account.index'), 'active' => request()->routeIs('account.index')],
-                ['label' => 'Browse Timber', 'icon' => 'cube', 'url' => url('/marketplace'), 'active' => request()->is('marketplace*')],
-                ['label' => 'Suppliers', 'icon' => 'user-group', 'url' => route('directory'), 'active' => request()->routeIs('directory')],
-                ['label' => 'Timber Species', 'icon' => 'sparkles', 'url' => route('species.index'), 'active' => request()->routeIs('species.*')],
+                ['label' => __('messages.account.nav_dashboard'), 'icon' => 'squares-2x2', 'url' => route('account.index'), 'active' => request()->routeIs('account.index')],
+                ['label' => __('messages.account.nav_browse_timber'), 'icon' => 'cube', 'url' => url('/marketplace'), 'active' => request()->is('marketplace*')],
+                ['label' => __('messages.account.nav_suppliers'), 'icon' => 'user-group', 'url' => route('directory'), 'active' => request()->routeIs('directory')],
+                ['label' => __('messages.account.nav_timber_species'), 'icon' => 'sparkles', 'url' => route('species.index'), 'active' => request()->routeIs('species.*')],
             ],
         ],
         [
-            'label' => 'My activity',
+            'label' => __('messages.account.group_my_activity'),
             'items' => [
-                ['label' => 'Messages', 'icon' => 'chat-bubble-left-right', 'url' => route('account.messages'), 'active' => request()->routeIs('account.messages*'), 'badge' => $unreadMessages],
-                ['label' => 'RFQ Center', 'icon' => 'document-text', 'url' => route('account.rfqs'), 'active' => request()->routeIs('account.rfqs')],
-                ['label' => 'Quotes', 'icon' => 'tag', 'url' => route('account.quotes'), 'active' => request()->routeIs('account.quotes')],
-                ['label' => 'Orders', 'icon' => 'clipboard-document-check', 'url' => route('account.orders'), 'active' => request()->routeIs('account.orders')],
-                ['label' => 'Receipts', 'icon' => 'receipt-percent', 'url' => route('account.receipts'), 'active' => request()->routeIs('account.receipts')],
+                ['label' => __('messages.account.nav_messages'), 'icon' => 'chat-bubble-left-right', 'url' => route('account.messages'), 'active' => request()->routeIs('account.messages*'), 'badge' => $unreadMessages],
+                ['label' => __('messages.account.nav_rfq_center'), 'icon' => 'document-text', 'url' => route('account.rfqs'), 'active' => request()->routeIs('account.rfqs')],
+                ['label' => __('messages.account.nav_quotes'), 'icon' => 'tag', 'url' => route('account.quotes'), 'active' => request()->routeIs('account.quotes')],
+                ['label' => __('messages.account.nav_orders'), 'icon' => 'clipboard-document-check', 'url' => route('account.orders'), 'active' => request()->routeIs('account.orders')],
+                ['label' => __('messages.account.nav_receipts'), 'icon' => 'receipt-percent', 'url' => route('account.receipts'), 'active' => request()->routeIs('account.receipts')],
                 // NB: no "Fleet Registry" here. Fleet vehicles/drivers are a
                 // company-member feature, managed in the /dashboard exporter
                 // panel — a buyer (who only ever sees this layout) has no
@@ -51,10 +51,10 @@
             ],
         ],
         [
-            'label' => 'Support',
+            'label' => __('messages.account.group_support'),
             'items' => [
-                ['label' => 'Verify a receipt', 'icon' => 'shield-check', 'url' => route('receipts.verify'), 'active' => request()->routeIs('receipts.verify')],
-                ['label' => 'Help Center', 'icon' => 'question-mark-circle', 'url' => route('contact'), 'active' => request()->routeIs('contact')],
+                ['label' => __('messages.account.nav_verify_receipt'), 'icon' => 'shield-check', 'url' => route('receipts.verify'), 'active' => request()->routeIs('receipts.verify')],
+                ['label' => __('messages.account.nav_help_center'), 'icon' => 'question-mark-circle', 'url' => route('contact'), 'active' => request()->routeIs('contact')],
             ],
         ],
     ];
@@ -62,11 +62,11 @@
     // Bottom tab bar (mobile), mirroring the mockup's four-tab pattern but with
     // real destinations only.
     $tabs = [
-        ['label' => 'Dashboard', 'icon' => 'squares-2x2', 'url' => route('account.index'), 'active' => request()->routeIs('account.index')],
-        ['label' => 'Requests', 'icon' => 'document-text', 'url' => route('account.rfqs'), 'active' => request()->routeIs('account.rfqs')],
-        ['label' => 'Messages', 'icon' => 'chat-bubble-left-right', 'url' => route('account.messages'), 'active' => request()->routeIs('account.messages*'), 'badge' => $unreadMessages],
-        ['label' => 'Quotes', 'icon' => 'tag', 'url' => route('account.quotes'), 'active' => request()->routeIs('account.quotes')],
-        ['label' => 'Orders', 'icon' => 'clipboard-document-check', 'url' => route('account.orders'), 'active' => request()->routeIs('account.orders')],
+        ['label' => __('messages.account.nav_dashboard'), 'icon' => 'squares-2x2', 'url' => route('account.index'), 'active' => request()->routeIs('account.index')],
+        ['label' => __('messages.account.tab_requests'), 'icon' => 'document-text', 'url' => route('account.rfqs'), 'active' => request()->routeIs('account.rfqs')],
+        ['label' => __('messages.account.nav_messages'), 'icon' => 'chat-bubble-left-right', 'url' => route('account.messages'), 'active' => request()->routeIs('account.messages*'), 'badge' => $unreadMessages],
+        ['label' => __('messages.account.nav_quotes'), 'icon' => 'tag', 'url' => route('account.quotes'), 'active' => request()->routeIs('account.quotes')],
+        ['label' => __('messages.account.nav_orders'), 'icon' => 'clipboard-document-check', 'url' => route('account.orders'), 'active' => request()->routeIs('account.orders')],
     ];
 
     $initials = collect(explode(' ', trim((string) $user?->name)))
@@ -79,7 +79,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>{{ $title ? $title.' — '.config('app.name') : config('app.name') }}</title>
-    <meta name="description" content="{{ $description ?? 'Your buyer account.' }}">
+    <meta name="description" content="{{ $description ?? __('messages.account.your_buyer_account') }}">
     {{-- Private records: never indexed, and no canonical/OG that could leak a URL. --}}
     <meta name="robots" content="noindex, nofollow">
     <meta name="theme-color" content="#032719">
@@ -103,7 +103,7 @@
     <aside x-cloak
            :class="drawer ? 'translate-x-0' : '-translate-x-full'"
            class="fixed inset-y-0 left-0 z-50 flex w-[17rem] shrink-0 flex-col overflow-y-auto bg-[#032719] text-sand-100 transition-transform duration-200 lg:sticky lg:top-0 lg:h-screen lg:w-[15rem] lg:translate-x-0"
-           aria-label="Account navigation">
+           aria-label="{{ __('messages.account.account_navigation') }}">
 
         <div class="flex items-start gap-3 px-5 pt-5 pb-4">
             <a href="{{ route('home') }}" class="flex min-w-0 items-center gap-2.5">
@@ -115,7 +115,7 @@
             </a>
             <button type="button" @click="drawer = false"
                     class="ml-auto -mr-1 flex h-9 w-9 items-center justify-center rounded-full text-sand-300 lg:hidden"
-                    aria-label="Close menu">
+                    aria-label="{{ __('messages.account.close_menu') }}">
                 <x-heroicon-m-x-mark class="h-6 w-6" />
             </button>
         </div>
@@ -125,7 +125,7 @@
             <span class="flex h-10 w-10 items-center justify-center rounded-full bg-forest-600 text-[1.0625rem] font-bold text-white">{{ $initials }}</span>
             <span class="min-w-0">
                 <span class="block truncate text-[1.125rem] font-semibold text-white">{{ $user?->name }}</span>
-                <span class="block text-[0.9375rem] text-sand-400">Buyer account</span>
+                <span class="block text-[0.9375rem] text-sand-400">{{ __('messages.account.buyer_account') }}</span>
             </span>
         </div>
 
@@ -160,13 +160,13 @@
                         <x-heroicon-o-cube class="h-5 w-5" />
                     </span>
                     <div class="min-w-0">
-                        <p class="text-[1.0625rem] font-semibold text-white">Need bulk timber?</p>
-                        <p class="mt-1 text-[0.9375rem] leading-relaxed text-sand-300/90">Post an RFQ and get competitive quotes from verified suppliers.</p>
+                        <p class="text-[1.0625rem] font-semibold text-white">{{ __('messages.account.promo_title') }}</p>
+                        <p class="mt-1 text-[0.9375rem] leading-relaxed text-sand-300/90">{{ __('messages.account.promo_body') }}</p>
                     </div>
                 </div>
                 <a href="{{ route('rfq.create') }}"
                    class="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-white px-4 py-2.5 text-[1.0625rem] font-bold text-forest-800 transition hover:bg-sand-200">
-                    Post an RFQ <x-heroicon-m-arrow-right class="h-4 w-4" />
+                    {{ __('messages.account.promo_cta') }} <x-heroicon-m-arrow-right class="h-4 w-4" />
                 </a>
             </div>
 
@@ -175,7 +175,7 @@
                 <button type="submit"
                         class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[1.0625rem] font-medium text-sand-200/85 transition hover:bg-white/5 hover:text-white">
                     <x-heroicon-o-arrow-right-on-rectangle class="h-5 w-5 shrink-0" />
-                    Log out
+                    {{ __('messages.account.log_out') }}
                 </button>
             </form>
         </nav>
@@ -189,13 +189,13 @@
             <div class="flex min-h-14 items-center gap-3 px-4 lg:h-[72px] lg:px-6">
                 <button type="button" @click="drawer = true"
                         class="-ml-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-ink transition hover:bg-sand-100"
-                        aria-label="Open menu">
+                        aria-label="{{ __('messages.account.open_menu') }}">
                     <x-heroicon-m-bars-3 class="h-6 w-6" />
                 </button>
 
                 <div class="min-w-0 flex-1">
                     <h1 class="truncate font-display text-[1.0625rem] font-bold text-forest-950 lg:text-2xl">
-                        {{ $heading ?? $title ?? 'Dashboard' }}
+                        {{ $heading ?? $title ?? __('messages.account.dashboard') }}
                     </h1>
                     @if ($subheading)
                         <p class="hidden truncate text-[1.0625rem] text-ink-soft lg:block">{{ $subheading }}</p>
@@ -204,12 +204,12 @@
 
                 {{-- Real search: same endpoint as the public header. --}}
                 <form method="GET" action="{{ route('search') }}" class="hidden max-w-md flex-1 lg:flex">
-                    <label for="account-search" class="sr-only">Search timber species, products, suppliers</label>
+                    <label for="account-search" class="sr-only">{{ __('messages.account.search_label') }}</label>
                     <div class="flex w-full items-center rounded-xl border border-sand-300 bg-sand-50 focus-within:border-forest-500">
                         <input id="account-search" type="search" name="q" value="{{ request('q') }}"
-                               placeholder="Search timber species, products, suppliers…"
+                               placeholder="{{ __('messages.account.search_placeholder') }}"
                                class="min-w-0 flex-1 bg-transparent px-4 py-2.5 text-[1.0625rem] text-ink outline-none placeholder:text-ink-soft">
-                        <button type="submit" class="m-1 flex h-9 w-10 items-center justify-center rounded-lg bg-forest-700 text-white transition hover:bg-forest-800" aria-label="Search">
+                        <button type="submit" class="m-1 flex h-9 w-10 items-center justify-center rounded-lg bg-forest-700 text-white transition hover:bg-forest-800" aria-label="{{ __('messages.common.search') }}">
                             <x-heroicon-m-magnifying-glass class="h-4 w-4" />
                         </button>
                     </div>
@@ -218,7 +218,7 @@
                 <div class="ml-auto flex shrink-0 items-center gap-3 lg:ml-0">
                     <div class="hidden text-right lg:block">
                         <p class="text-[1.0625rem] font-semibold leading-tight text-ink">{{ $user?->name }}</p>
-                        <p class="text-[0.9375rem] text-ink-soft">Buyer</p>
+                        <p class="text-[0.9375rem] text-ink-soft">{{ __('messages.account.buyer') }}</p>
                     </div>
                     <span class="flex h-10 w-10 items-center justify-center rounded-full bg-forest-700 text-[1.0625rem] font-bold text-white">{{ $initials }}</span>
                 </div>
@@ -231,11 +231,11 @@
 
         <footer class="hidden border-t border-sand-200 bg-white px-6 py-4 text-[0.9375rem] text-ink-soft lg:block">
             <div class="flex flex-wrap items-center gap-4">
-                <span>&copy; {{ date('Y') }} {{ config('app.name') }}. All rights reserved.</span>
+                <span>{{ __('messages.account.all_rights_reserved', ['year' => date('Y'), 'app' => config('app.name')]) }}</span>
                 <span class="ml-auto flex gap-4">
-                    <a href="{{ url('/privacy') }}" class="transition hover:text-forest-700">Privacy Policy</a>
-                    <a href="{{ url('/terms') }}" class="transition hover:text-forest-700">Terms of Use</a>
-                    <a href="{{ route('contact') }}" class="transition hover:text-forest-700">Help Center</a>
+                    <a href="{{ url('/privacy') }}" class="transition hover:text-forest-700">{{ __('messages.account.privacy_policy') }}</a>
+                    <a href="{{ url('/terms') }}" class="transition hover:text-forest-700">{{ __('messages.account.terms_of_use') }}</a>
+                    <a href="{{ route('contact') }}" class="transition hover:text-forest-700">{{ __('messages.account.help_center') }}</a>
                 </span>
             </div>
         </footer>
@@ -244,7 +244,7 @@
 
 {{-- Bottom tab bar (mobile only), per the mobile mockup. --}}
 <nav class="tab-bar fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-sand-200 bg-white lg:hidden"
-     aria-label="Account sections">
+     aria-label="{{ __('messages.account.account_sections') }}">
     @foreach ($tabs as $tab)
         <a href="{{ $tab['url'] }}"
            @if ($tab['active']) aria-current="page" @endif

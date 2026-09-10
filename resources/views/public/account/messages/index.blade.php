@@ -11,14 +11,14 @@
     The account layout is noindex, so both screens are.
 --}}
 <x-layouts.account
-    :title="$conversation ? 'Messages — '.$conversation->counterpartyName(auth()->user()) : 'Messages'"
-    heading="Messages"
-    subheading="Talk to verified suppliers about products, quotes and orders.">
+    :title="$conversation ? __('messages.account.messages_title_with', ['name' => $conversation->counterpartyName(auth()->user())]) : __('messages.account.messages_title')"
+    :heading="__('messages.account.messages_title')"
+    :subheading="__('messages.account.messages_subheading')">
 
     <div class="mb-4 flex justify-end lg:hidden">
         <a href="{{ route('account.messages.create') }}"
            class="flex items-center gap-2 rounded-xl bg-forest-800 px-4 py-2.5 text-[1.0625rem] font-bold text-white transition hover:bg-forest-900">
-            <x-heroicon-m-pencil-square class="h-4 w-4" /> New
+            <x-heroicon-m-pencil-square class="h-4 w-4" /> {{ __('messages.account.messages_new') }}
         </a>
     </div>
 
@@ -29,7 +29,7 @@
             <div class="mb-4 hidden justify-end lg:flex">
                 <a href="{{ route('account.messages.create') }}"
                    class="flex items-center gap-2 rounded-xl bg-forest-800 px-4 py-2.5 text-[1.0625rem] font-bold text-white transition hover:bg-forest-900">
-                    <x-heroicon-m-pencil-square class="h-4 w-4" /> New conversation
+                    <x-heroicon-m-pencil-square class="h-4 w-4" /> {{ __('messages.account.messages_new_conversation') }}
                 </a>
             </div>
 
@@ -51,8 +51,8 @@
                 <div class="hidden h-full place-content-center rounded-2xl border border-dashed border-sand-300 bg-white p-10 text-center lg:grid">
                     <div>
                         <x-heroicon-o-chat-bubble-left-right class="mx-auto h-10 w-10 text-sand-400" />
-                        <p class="mt-3 font-display text-[1rem] font-bold text-forest-950">Select a conversation</p>
-                        <p class="mt-1 text-[1.0625rem] text-ink-soft">Or start a new one with a verified supplier.</p>
+                        <p class="mt-3 font-display text-[1rem] font-bold text-forest-950">{{ __('messages.account.messages_select') }}</p>
+                        <p class="mt-1 text-[1.0625rem] text-ink-soft">{{ __('messages.account.messages_select_body') }}</p>
                     </div>
                 </div>
             @endif
