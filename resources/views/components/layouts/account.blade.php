@@ -44,6 +44,7 @@
                 ['label' => __('messages.account.nav_quotes'), 'icon' => 'tag', 'url' => route('account.quotes'), 'active' => request()->routeIs('account.quotes')],
                 ['label' => __('messages.account.nav_orders'), 'icon' => 'clipboard-document-check', 'url' => route('account.orders'), 'active' => request()->routeIs('account.orders')],
                 ['label' => __('messages.account.nav_receipts'), 'icon' => 'receipt-percent', 'url' => route('account.receipts'), 'active' => request()->routeIs('account.receipts')],
+                ['label' => __('messages.billing.nav_billing'), 'icon' => 'credit-card', 'url' => route('billing.overview'), 'active' => request()->routeIs('billing.*')],
                 // NB: no "Fleet Registry" here. Fleet vehicles/drivers are a
                 // company-member feature, managed in the /dashboard exporter
                 // panel — a buyer (who only ever sees this layout) has no

@@ -82,13 +82,25 @@
                                     @endforeach
                                 @endif
                             </ul>
-                            @if (in_array($segment['id'], ['sell', 'buy'], true))
+                            @if ($plan->isSelfServe())
+                                {{-- Self-serve subscribe (billing engine M11). The `auth`
+                                     guard on the checkout route bounces a logged-out visitor
+                                     to login and back; a logged-in user without a company
+                                     gets the "company profile required" page. --}}
+                                <a href="{{ route('billing.checkout', $plan) }}" class="mt-6 inline-flex items-center justify-center gap-1.5 rounded-full bg-forest-700 px-4 py-2 text-[0.8125rem] font-semibold text-white transition hover:bg-forest-800">
+                                    {{ __('messages.billing.choose_plan', ['plan' => $plan->name]) }}
+                                </a>
+                            @elseif ($plan->isFree())
+                                <span class="mt-6 inline-flex items-center justify-center gap-1.5 rounded-full border border-sand-200 px-4 py-2 text-[0.8125rem] font-semibold text-ink-soft dark:border-[#2c2a24] dark:text-[#b3ab9b]">
+                                    {{ __('messages.billing.free_plan') }}
+                                </span>
+                            @elseif (in_array($segment['id'], ['sell', 'buy'], true))
                                 <a href="{{ route('register') }}" class="mt-6 inline-flex items-center justify-center gap-1.5 rounded-full bg-forest-700 px-4 py-2 text-[0.8125rem] font-semibold text-white transition hover:bg-forest-800">
                                     {{ __('messages.pricing.list_your_company') }}
                                 </a>
                             @else
                                 <a href="{{ route('contact') }}" class="mt-6 inline-flex items-center justify-center gap-1.5 rounded-full border border-forest-300 px-4 py-2 text-[0.8125rem] font-semibold text-forest-700 transition hover:bg-forest-50 dark:border-forest-700 dark:text-forest-300 dark:hover:bg-forest-950">
-                                    {{ __('messages.pricing.get_in_touch') }}
+                                    {{ __('messages.billing.contact_sales') }}
                                 </a>
                             @endif
                         </div>

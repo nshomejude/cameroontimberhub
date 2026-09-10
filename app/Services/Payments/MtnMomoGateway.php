@@ -66,6 +66,28 @@ class MtnMomoGateway implements PaymentGatewayContract
             ], 503);
         }
 
+        return match ($this->requestToPay($payment, $data['phone'])) {
+            'pending' => response()->view('payments.mtn-momo.pending', ['payment' => $payment], 200),
+            default => response()->view('payments.mtn-momo.failed', ['payment' => $payment], 502),
+        };
+    }
+
+    /**
+     * Fire the MoMo Collections "Request to Pay" push for this pending
+     * Payment against the given payer MSISDN. Returns 'pending' once MTN has
+     * accepted the request (the payer must still approve on their phone —
+     * final status arrives via handleWebhook()), or 'failed'. Callable both
+     * from submit() (the standalone phone form) and from the self-serve
+     * checkout picker via PaymentCheckoutController (billing engine M11).
+     */
+    public function requestToPay(Payment $payment, string $phone): string
+    {
+        if (! $this->isConfigured()) {
+            $payment->markFailed();
+
+            return 'failed';
+        }
+
         $config = GatewayCredentials::for(PaymentProvider::MtnMomo);
         $baseUrl = $this->baseUrl($config['environment']);
         $referenceId = (string) Str::uuid();
@@ -76,9 +98,7 @@ class MtnMomoGateway implements PaymentGatewayContract
             if (! $token) {
                 $payment->markFailed();
 
-                return response()->view('payments.mtn-momo.failed', [
-                    'payment' => $payment,
-                ], 502);
+                return 'failed';
             }
 
             $response = Http::withHeaders([
@@ -93,7 +113,7 @@ class MtnMomoGateway implements PaymentGatewayContract
                 'externalId' => (string) $payment->id,
                 'payer' => [
                     'partyIdType' => 'MSISDN',
-                    'partyId' => preg_replace('/\D+/', '', $data['phone']),
+                    'partyId' => preg_replace('/\D+/', '', $phone),
                 ],
                 'payerMessage' => "Payment for plan #{$payment->plan_id}",
                 'payeeNote' => "Payment #{$payment->id}",
@@ -110,18 +130,14 @@ class MtnMomoGateway implements PaymentGatewayContract
 
                 $payment->markFailed();
 
-                return response()->view('payments.mtn-momo.failed', [
-                    'payment' => $payment,
-                ], 502);
+                return 'failed';
             }
 
             $payment->update([
                 'provider_reference' => $referenceId,
             ]);
 
-            return response()->view('payments.mtn-momo.pending', [
-                'payment' => $payment,
-            ]);
+            return 'pending';
         } catch (\Throwable $e) {
             Log::error('MTN MoMo requesttopay exception', [
                 'payment_id' => $payment->id,
@@ -130,9 +146,7 @@ class MtnMomoGateway implements PaymentGatewayContract
 
             $payment->markFailed();
 
-            return response()->view('payments.mtn-momo.failed', [
-                'payment' => $payment,
-            ], 502);
+            return 'failed';
         }
     }
 

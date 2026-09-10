@@ -7,6 +7,7 @@ use App\Domain\Compliance\Events\ComplianceCaseOpened;
 use App\Domain\Logistics\Events\ShipmentCheckpointRecorded;
 use App\Domain\Trade\Events\OrderAwarded;
 use App\Listeners\ActivateSubscriptionOnPaymentCompleted;
+use App\Listeners\IssueReceiptOnPaymentCompleted;
 use App\Events\BadgeIssued;
 use App\Events\BadgeRevoked;
 use App\Events\CompanyVerified;
@@ -67,6 +68,9 @@ class EventServiceProvider extends ServiceProvider
         // the company's subscription. Idempotent by payment_id.
         PaymentCompleted::class => [
             ActivateSubscriptionOnPaymentCompleted::class,
+            // Billing engine M11: issue the verifiable Receipt for the charge.
+            // Idempotent by payment_id; joins the receipt hash-chain.
+            IssueReceiptOnPaymentCompleted::class,
         ],
         // No listener yet — dispatched for future consumers (webhooks,
         // notifications), same pattern as DocumentApproved/BadgeIssued above.

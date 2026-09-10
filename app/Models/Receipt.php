@@ -59,6 +59,16 @@ class Receipt extends Model
         return $this->belongsTo(Order::class);
     }
 
+    /**
+     * Billing engine M11: set on a receipt issued for a completed plan
+     * Payment (a subscription purchase), instead of an Order. Exactly one of
+     * `order_id` / `payment_id` is present — enforced by a CHECK constraint.
+     */
+    public function payment(): BelongsTo
+    {
+        return $this->belongsTo(Payment::class);
+    }
+
     public function isVoid(): bool
     {
         return $this->voided_at !== null;

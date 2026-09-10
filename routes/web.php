@@ -33,6 +33,7 @@ use App\Http\Controllers\Public\MessageController;
 use App\Http\Controllers\Public\MobileAppController;
 use App\Http\Controllers\Public\OrderLifecycleController;
 use App\Http\Controllers\Public\PageController;
+use App\Http\Controllers\Public\BillingCheckoutController;
 use App\Http\Controllers\Public\PricingController;
 use App\Http\Controllers\Public\ProductController;
 use App\Http\Controllers\Public\ProductVerificationController;
@@ -107,6 +108,18 @@ Route::post('/locale/{locale}', function (\Illuminate\Http\Request $request, str
 
 // Pricing (plans-as-data).
 Route::get('/pricing', [PricingController::class, 'index'])->name('pricing');
+
+// Self-serve subscribe flow (billing engine M11). `auth` only — suppliers,
+// exporters and buyers all buy plans; the buyer-account middleware would
+// wrongly bounce non-buyers. The POST checkout entry point lives in
+// routes/payments.php.
+Route::middleware('auth')->group(function () {
+    Route::get('/billing', [BillingCheckoutController::class, 'overview'])->name('billing.overview');
+    Route::get('/billing/checkout/{plan}', [BillingCheckoutController::class, 'show'])->name('billing.checkout');
+    Route::get('/billing/checkout/{payment}/pending', [BillingCheckoutController::class, 'pending'])->name('billing.checkout.pending');
+    Route::get('/billing/checkout/{payment}/status', [BillingCheckoutController::class, 'status'])->name('billing.checkout.status');
+    Route::get('/billing/checkout/{payment}/success', [BillingCheckoutController::class, 'success'])->name('billing.checkout.success');
+});
 
 // Buyer mobile app marketing page + "notify me at launch" capture. Static
 // segments, so declared well before the CMS `/{slug}` catch-all.
