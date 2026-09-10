@@ -67,6 +67,7 @@ class ProductController extends Controller
                 'company.species:id,slug,common_name',
                 'species',
                 'images',
+                'documents',
             ])
             ->firstOrFail();
 

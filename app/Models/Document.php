@@ -106,9 +106,20 @@ class Document extends Model
             if ($document->checksum_sha256 === null && $document->disk && $document->storage_path) {
                 $disk = Storage::disk($document->disk);
 
-                $document->checksum_sha256 = $disk->exists($document->storage_path)
-                    ? hash('sha256', (string) $disk->get($document->storage_path))
-                    : null;
+                if ($disk->exists($document->storage_path)) {
+                    $document->checksum_sha256 = hash('sha256', (string) $disk->get($document->storage_path));
+
+                    // Fill the file metadata a bare FileUpload doesn't capture
+                    // (it only writes storage_path + original_filename). Never
+                    // fabricated — only set from the real file on disk.
+                    if ($document->file_size === null) {
+                        $document->file_size = $disk->size($document->storage_path);
+                    }
+
+                    if (blank($document->mime_type)) {
+                        $document->mime_type = $disk->mimeType($document->storage_path) ?: 'application/octet-stream';
+                    }
+                }
             }
         });
     }
@@ -146,5 +157,35 @@ class Document extends Model
     public function isExpired(): bool
     {
         return $this->expires_at !== null && $this->expires_at->isPast();
+    }
+
+    /**
+     * A human label for the free-text `type` column. Known per-product
+     * document types get a friendly name; anything else is title-cased.
+     */
+    public function typeLabel(): string
+    {
+        return match ($this->type) {
+            'datasheet' => 'Product datasheet',
+            'legal_origin' => 'Proof of legal origin',
+            'fsc_pefc' => 'FSC / PEFC certificate',
+            'phytosanitary' => 'Phytosanitary certificate',
+            'other' => 'Other document',
+            default => (string) str((string) $this->type)->replace(['_', '-'], ' ')->headline(),
+        };
+    }
+
+    /**
+     * Trust state for a public listing: 'expired' | 'verified' | 'pending'.
+     * Expiry wins over verification — an expired doc is not trustworthy even
+     * once staff-verified.
+     */
+    public function publicStatus(): string
+    {
+        if ($this->isExpired()) {
+            return 'expired';
+        }
+
+        return $this->verification_status === DocumentVerificationStatus::Verified ? 'verified' : 'pending';
     }
 }

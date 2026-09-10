@@ -618,28 +618,49 @@
                                             </a>
                                         </div>
                                     </div>
-                                    <ul class="space-y-3">
-                                        @if ($product->certification)
-                                            <li class="flex items-start gap-3 rounded-lg border border-forest-100 bg-forest-50 p-4">
-                                                <x-heroicon-s-shield-check class="mt-0.5 h-5 w-5 shrink-0 text-forest-700" />
-                                                <div>
-                                                    <p class="text-[1.0625rem] font-semibold text-ink">{{ $product->certification }}</p>
-                                                    <p class="text-[1.0625rem] text-ink-soft">Recorded against this listing by the supplier.</p>
-                                                </div>
-                                            </li>
-                                        @endif
-                                        @foreach ($company?->activeBadges ?? [] as $badge)
-                                            <li class="flex items-start gap-3 rounded-lg border border-sand-200 p-4">
-                                                <x-heroicon-s-check-badge class="mt-0.5 h-5 w-5 shrink-0 text-forest-600" />
-                                                <div>
-                                                    <p class="text-[1.0625rem] font-semibold text-ink">{{ $badge->badge_type?->label() }}</p>
-                                                    @if ($badge->valid_until)
-                                                        <p class="text-[1.0625rem] text-ink-soft">Valid until {{ $badge->valid_until->format('j M Y') }}</p>
-                                                    @endif
-                                                </div>
-                                            </li>
-                                        @endforeach
-                                    </ul>
+                                    @php
+                                        // Product-owned compliance documents only — never the
+                                        // supplier's company badges. A listing stands on its own
+                                        // paperwork here.
+                                        $productDocuments = $product->documents;
+                                        $docStyle = [
+                                            'expired' => ['border' => 'border-red-200 bg-red-50', 'icon' => 'text-red-700', 'label' => 'Expired', 'chip' => 'bg-red-100 text-red-800'],
+                                            'verified' => ['border' => 'border-forest-100 bg-forest-50', 'icon' => 'text-forest-700', 'label' => 'Verified', 'chip' => 'bg-forest-100 text-forest-800'],
+                                            'pending' => ['border' => 'border-sand-200', 'icon' => 'text-ink-soft', 'label' => 'Pending review', 'chip' => 'bg-sand-100 text-ink-soft'],
+                                        ];
+                                    @endphp
+                                    @if ($productDocuments->isEmpty() && blank($product->certification))
+                                        <div class="rounded-xl border border-dashed border-sand-300 p-8 text-center">
+                                            <p class="text-[1.0625rem] text-ink-soft">This listing has no compliance documents on file yet.</p>
+                                        </div>
+                                    @else
+                                        <ul class="space-y-3">
+                                            @foreach ($productDocuments as $document)
+                                                @php($s = $docStyle[$document->publicStatus()])
+                                                <li class="flex items-start gap-3 rounded-lg border p-4 {{ $s['border'] }}">
+                                                    <x-heroicon-s-document-check class="mt-0.5 h-5 w-5 shrink-0 {{ $s['icon'] }}" />
+                                                    <div class="min-w-0">
+                                                        <div class="flex flex-wrap items-center gap-2">
+                                                            <p class="text-[1.0625rem] font-semibold text-ink">{{ $document->typeLabel() }}</p>
+                                                            <span class="rounded-full px-2 py-0.5 text-[0.8125rem] font-semibold {{ $s['chip'] }}">{{ $s['label'] }}</span>
+                                                        </div>
+                                                        <p class="text-[1.0625rem] text-ink-soft">
+                                                            {{ $document->issuer ? 'Issued by '.$document->issuer : 'Issuer not stated' }}@if ($document->expires_at) · {{ $document->isExpired() ? 'expired' : 'valid until' }} {{ $document->expires_at->format('j M Y') }}@endif
+                                                        </p>
+                                                    </div>
+                                                </li>
+                                            @endforeach
+                                            @if ($product->certification)
+                                                <li class="flex items-start gap-3 rounded-lg border border-sand-200 p-4">
+                                                    <x-heroicon-o-pencil-square class="mt-0.5 h-5 w-5 shrink-0 text-ink-soft" />
+                                                    <div>
+                                                        <p class="text-[1.0625rem] font-semibold text-ink">{{ $product->certification }}</p>
+                                                        <p class="text-[1.0625rem] text-ink-soft">Supplier-stated (unverified) — no supporting document on file.</p>
+                                                    </div>
+                                                </li>
+                                            @endif
+                                        </ul>
+                                    @endif
                                     @break
 
                                 @case('reviews')

@@ -8,6 +8,7 @@ use App\Enums\OrganisationType;
 use App\Enums\PriceUnit;
 use App\Enums\ProductStatus;
 use App\Enums\ProductType;
+use App\Models\Concerns\HasDocuments;
 use App\Models\Concerns\HasSlug;
 use App\Models\Concerns\HasVerification;
 use App\Support\ProductIdentifier;
@@ -24,7 +25,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class Product extends Model
 {
-    use HasFactory, HasSlug, HasVerification, SoftDeletes;
+    use HasDocuments, HasFactory, HasSlug, HasVerification, SoftDeletes;
 
     protected $guarded = ['id'];
 

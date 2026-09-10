@@ -72,6 +72,13 @@ class ProductResource extends Resource
         return ProductsTable::configure($table);
     }
 
+    public static function getRelations(): array
+    {
+        return [
+            RelationManagers\DocumentsRelationManager::class,
+        ];
+    }
+
     public static function getPages(): array
     {
         return [

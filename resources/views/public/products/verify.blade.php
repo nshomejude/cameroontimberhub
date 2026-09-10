@@ -44,7 +44,7 @@
                     <p class="text-[0.9375rem] font-semibold text-ink dark:text-[#e4ddcf]">Documents</p>
                     <ul class="mt-2 space-y-1 text-[0.9375rem] text-ink-soft dark:text-[#8f887b]">
                         @foreach ($documents as $document)
-                            <li>{{ $document->type?->label() ?? $document->type ?? 'Document' }} — {{ $document->isExpired() ? 'expired' : 'on file' }}</li>
+                            <li>{{ $document->typeLabel() }} — {{ ['expired' => 'expired', 'verified' => 'verified', 'pending' => 'pending review'][$document->publicStatus()] }}</li>
                         @endforeach
                         @foreach ($certificates as $certificate)
                             <li>{{ $certificate->certificate_number ?? 'Certificate' }}</li>
