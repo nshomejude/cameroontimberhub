@@ -26,7 +26,10 @@ class QuoteSubmittedMail extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'New quote for '.$this->quote->rfq->reference_code.' — '.$this->quote->company->name,
+            subject: __('notifications.quote_submitted.subject', [
+                'reference' => $this->quote->rfq->reference_code,
+                'company' => $this->quote->company->name,
+            ]),
         );
     }
 

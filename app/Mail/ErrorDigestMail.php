@@ -25,7 +25,10 @@ class ErrorDigestMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: '['.config('app.name').'] Error digest — '.$this->total.' error(s) in the last window',
+            subject: __('notifications.error_digest.subject', [
+                'app' => config('app.name'),
+                'count' => $this->total,
+            ]),
         );
     }
 

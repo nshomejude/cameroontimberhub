@@ -1,14 +1,14 @@
 @component('mail::message')
-# Confirm your request
+# {{ __('notifications.rfq_verification.heading') }}
 
-Thanks for your request **{{ $rfq->reference_code }}**. Please confirm your email so we can route it to verified Cameroonian timber exporters.
+{{ __('notifications.rfq_verification.intro', ['reference' => $rfq->reference_code]) }}
 
 @component('mail::button', ['url' => $verifyUrl])
-Confirm request
+{{ __('notifications.rfq_verification.action') }}
 @endcomponent
 
-Submitting a request does not constitute a contract. Buyers should conduct final due diligence before any transaction.
+{{ __('notifications.rfq_verification.disclaimer') }}
 
-Thanks,<br>
+{{ __('notifications.rfq_verification.salutation') }}<br>
 {{ config('app.name') }}
 @endcomponent

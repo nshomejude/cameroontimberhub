@@ -25,7 +25,7 @@ class ContactMessageMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: '[CTH Contact] '.$this->data['subject'],
+            subject: __('notifications.contact_message.subject', ['subject' => $this->data['subject']]),
             replyTo: [new Address($this->data['email'], $this->data['name'])],
         );
     }

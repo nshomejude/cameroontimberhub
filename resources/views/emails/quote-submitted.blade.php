@@ -1,25 +1,25 @@
 @component('mail::message')
-# You have a new quote
+# {{ __('notifications.quote_submitted.heading') }}
 
-**{{ $quote->company->name }}** has responded to your request **{{ $quote->rfq->reference_code }}**.
+{{ __('notifications.quote_submitted.intro', ['company' => $quote->company->name, 'reference' => $quote->rfq->reference_code]) }}
 
-- **Quote reference:** {{ $quote->reference_code }}
-- **Total:** {{ $quote->money($quote->total_amount) }}
+- **{{ __('notifications.quote_submitted.quote_reference') }}** {{ $quote->reference_code }}
+- **{{ __('notifications.quote_submitted.total') }}** {{ $quote->money($quote->total_amount) }}
 @if ($quote->lead_time_days)
-- **Lead time:** {{ $quote->lead_time_days }} days
+- **{{ __('notifications.quote_submitted.lead_time') }}** {{ __('notifications.quote_submitted.lead_time_value', ['days' => $quote->lead_time_days]) }}
 @endif
 @if ($quote->valid_until)
-- **Valid until:** {{ $quote->valid_until->isoFormat('D MMM YYYY') }}
+- **{{ __('notifications.quote_submitted.valid_until') }}** {{ $quote->valid_until->isoFormat('D MMM YYYY') }}
 @endif
 
 @component('mail::button', ['url' => $responsesUrl])
-Review your quotes
+{{ __('notifications.quote_submitted.action') }}
 @endcomponent
 
-This link is personal to your request — please do not forward it.
+{{ __('notifications.quote_submitted.personal_link') }}
 
-Receiving a quote does not constitute a contract. Buyers should conduct final due diligence before any transaction.
+{{ __('notifications.quote_submitted.disclaimer') }}
 
-Thanks,<br>
+{{ __('notifications.quote_submitted.salutation') }}<br>
 {{ config('app.name') }}
 @endcomponent

@@ -22,9 +22,9 @@ class RfqRoutedToExporter extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('New buyer lead — '.$this->rfq->reference_code)
-            ->line('A verified buyer request has been routed to your company.')
-            ->action('View in your dashboard', url('/dashboard'))
-            ->line('Reference: '.$this->rfq->reference_code);
+            ->subject(__('notifications.rfq_routed_to_exporter.subject', ['reference' => $this->rfq->reference_code]))
+            ->line(__('notifications.rfq_routed_to_exporter.line_1'))
+            ->action(__('notifications.rfq_routed_to_exporter.action'), url('/dashboard'))
+            ->line(__('notifications.rfq_routed_to_exporter.line_2', ['reference' => $this->rfq->reference_code]));
     }
 }

@@ -1,15 +1,15 @@
 @component('mail::message')
-# New contact form message
+# {{ __('notifications.contact_message.heading') }}
 
-**Name:** {{ $data['name'] }}
+**{{ __('notifications.contact_message.name') }}** {{ $data['name'] }}
 @if (filled($data['company'] ?? null))
-**Company:** {{ $data['company'] }}
+**{{ __('notifications.contact_message.company') }}** {{ $data['company'] }}
 @endif
-**Email:** {{ $data['email'] }}
+**{{ __('notifications.contact_message.email') }}** {{ $data['email'] }}
 @if (filled($data['phone'] ?? null))
-**Phone:** {{ $data['phone'] }}
+**{{ __('notifications.contact_message.phone') }}** {{ $data['phone'] }}
 @endif
-**Subject:** {{ $data['subject'] }}
+**{{ __('notifications.contact_message.subject_label') }}** {{ $data['subject'] }}
 
 ---
 
@@ -17,7 +17,7 @@
 
 ---
 
-Reply directly to this email to answer the sender.
+{{ __('notifications.contact_message.reply_hint') }}
 
 {{ config('app.name') }}
 @endcomponent

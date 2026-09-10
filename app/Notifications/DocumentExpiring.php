@@ -24,19 +24,23 @@ class DocumentExpiring extends Notification
 
     public function toMail(object $notifiable): MailMessage
     {
-        $type = $this->document->documentType?->name ?? 'compliance document';
+        $type = $this->document->documentType?->name ?? __('notifications.document_expiring.fallback_type');
         $company = $this->document->company?->name;
 
-        $mail = (new MailMessage)->subject("Compliance document expiry — {$company}");
+        $mail = (new MailMessage)->subject(__('notifications.document_expiring.subject', ['company' => $company]));
 
         if ($this->threshold === 'expired') {
-            $mail->line("Your {$type} has expired.")
-                ->line('Please upload a current document to keep your verified listing active.');
+            $mail->line(__('notifications.document_expiring.expired_line_1', ['type' => $type]))
+                ->line(__('notifications.document_expiring.expired_line_2'));
         } else {
-            $mail->line("Your {$type} expires in {$this->threshold} days (on ".optional($this->document->expiry_date)->format('d M Y').').')
-                ->line('Please renew it before it lapses to keep your verified listing.');
+            $mail->line(__('notifications.document_expiring.expiring_line_1', [
+                'type' => $type,
+                'days' => $this->threshold,
+                'date' => optional($this->document->expiry_date)->translatedFormat('d M Y'),
+            ]))
+                ->line(__('notifications.document_expiring.expiring_line_2'));
         }
 
-        return $mail->action('Manage documents', url('/dashboard'));
+        return $mail->action(__('notifications.document_expiring.action'), url('/dashboard'));
     }
 }

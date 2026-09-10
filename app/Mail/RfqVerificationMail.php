@@ -20,7 +20,7 @@ class RfqVerificationMail extends Mailable
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: 'Confirm your quote request — '.$this->rfq->reference_code);
+        return new Envelope(subject: __('notifications.rfq_verification.subject', ['reference' => $this->rfq->reference_code]));
     }
 
     public function content(): Content

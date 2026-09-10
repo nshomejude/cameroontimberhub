@@ -20,7 +20,7 @@ class InquiryVerificationMail extends Mailable
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: 'Confirm your inquiry — Cameroon Timber Hub');
+        return new Envelope(subject: __('notifications.inquiry_verification.subject'));
     }
 
     public function content(): Content

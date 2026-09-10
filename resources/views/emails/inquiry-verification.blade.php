@@ -1,14 +1,14 @@
 @component('mail::message')
-# Confirm your inquiry
+# {{ __('notifications.inquiry_verification.heading') }}
 
-Please confirm your email so your message can be delivered to the exporter.
+{{ __('notifications.inquiry_verification.intro') }}
 
 @component('mail::button', ['url' => $verifyUrl])
-Confirm inquiry
+{{ __('notifications.inquiry_verification.action') }}
 @endcomponent
 
-Buyers should conduct final due diligence before any transaction.
+{{ __('notifications.inquiry_verification.disclaimer') }}
 
-Thanks,<br>
+{{ __('notifications.inquiry_verification.salutation') }}<br>
 {{ config('app.name') }}
 @endcomponent

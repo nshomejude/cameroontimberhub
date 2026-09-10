@@ -22,10 +22,10 @@ class CompanyVerifiedNotification extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Your company has been verified — ' . $this->company->name)
-            ->line('Congratulations! ' . $this->company->name . ' has been verified by the Cameroon Timber Hub team.')
-            ->line('Your verified badge is now live on the public directory.')
-            ->action('View your dashboard', url('/dashboard'))
-            ->line('Documents reviewed by Cameroon Timber Hub based on information submitted by the company. Buyers should conduct final due diligence before any transaction.');
+            ->subject(__('notifications.company_verified.subject', ['company' => $this->company->name]))
+            ->line(__('notifications.company_verified.line_1', ['company' => $this->company->name]))
+            ->line(__('notifications.company_verified.line_2'))
+            ->action(__('notifications.company_verified.action'), url('/dashboard'))
+            ->line(__('notifications.company_verified.line_3'));
     }
 }
