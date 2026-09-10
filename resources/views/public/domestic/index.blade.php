@@ -58,12 +58,12 @@
                     </div>
 
                     <div>
-                        <p class="mb-2 text-sm font-semibold text-ink dark:text-sand-100">Product type</p>
+                        <p class="mb-2 text-sm font-semibold text-ink dark:text-sand-100">Category</p>
                         <div class="space-y-1.5">
-                            @foreach ($typeFacets as $facet)
+                            @foreach ($categoryFacets as $facet)
                                 <label class="flex items-center justify-between gap-2 text-[0.9375rem] text-ink-soft dark:text-[#b3ab9b]">
                                     <span class="flex items-center gap-2">
-                                        <input type="checkbox" name="types[]" value="{{ $facet['value'] }}" @checked(in_array($facet['value'], $filters['types'], true))
+                                        <input type="checkbox" name="categories[]" value="{{ $facet['value'] }}" @checked(in_array($facet['value'], $filters['categories'], true))
                                                class="rounded border-sand-300 text-forest-700 focus:ring-forest-500">
                                         {{ $facet['label'] }}
                                     </span>

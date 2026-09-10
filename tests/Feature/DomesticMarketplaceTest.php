@@ -2,6 +2,7 @@
 
 use App\Enums\ProductStatus;
 use App\Enums\ProductType;
+use App\Models\Category;
 use App\Models\Company;
 use App\Models\Product;
 use App\Models\Species;
@@ -52,14 +53,41 @@ it('filters by species slug', function () {
     expect($results->pluck('name')->all())->toBe([$match->name]);
 });
 
-it('filters by product type', function () {
+it('filters by form category (including a category and its children)', function () {
     $supplier = domesticSupplier();
-    $match = domesticProduct($supplier, ['product_type' => ProductType::Planks, 'name' => 'Domestic Planks']);
-    domesticProduct($supplier, ['product_type' => ProductType::Logs, 'name' => 'Round Logs']);
+    $secondary = Category::where('kind', 'form')->where('slug', 'secondary-processed')->firstOrFail();
+    $raw = Category::where('kind', 'form')->where('slug', 'raw')->firstOrFail();
+    $child = Category::create(['kind' => 'form', 'slug' => 'kd-boards', 'name' => 'KD Boards', 'parent_id' => $secondary->id]);
 
-    $results = app(DomesticMarketplaceService::class)->search(['types' => ['planks']]);
+    $match = domesticProduct($supplier, ['category_id' => $secondary->id, 'name' => 'Domestic Planks']);
+    $childMatch = domesticProduct($supplier, ['category_id' => $child->id, 'name' => 'Child KD Boards']);
+    domesticProduct($supplier, ['category_id' => $raw->id, 'name' => 'Round Logs']);
 
-    expect($results->pluck('name')->all())->toBe([$match->name]);
+    $results = app(DomesticMarketplaceService::class)->search(['categories' => ['secondary-processed']]);
+
+    expect($results->pluck('name')->sort()->values()->all())->toBe([$childMatch->name, $match->name]);
+});
+
+it('redirects legacy ?product_type= links to the category equivalent', function () {
+    $res = $this->get('/buy-cameroon-wood?product_type=sawn_timber');
+    $res->assertStatus(301);
+    expect($res->headers->get('Location'))->toContain('categories')->toContain('secondary-processed');
+
+    $keep = $this->get('/buy-cameroon-wood?types%5B0%5D=logs&region=Centre');
+    $keep->assertStatus(301);
+    expect($keep->headers->get('Location'))->toContain('raw')->toContain('region=Centre');
+});
+
+it('still resolves an old ?product_type= URL to matching listings after the redirect', function () {
+    $supplier = domesticSupplier();
+    domesticProduct($supplier, ['product_type' => ProductType::SawnTimber, 'name' => 'Legacy Sawn Match']);
+    domesticProduct($supplier, ['product_type' => ProductType::Logs, 'name' => 'Legacy Logs Miss']);
+
+    $this->followingRedirects()
+        ->get('/buy-cameroon-wood?product_type=sawn_timber')
+        ->assertOk()
+        ->assertSee('Legacy Sawn Match')
+        ->assertDontSee('Legacy Logs Miss');
 });
 
 it('filters by grade', function () {
@@ -124,15 +152,15 @@ it('computes region facets over the visible catalogue', function () {
     expect(collect($facets)->pluck('value')->all())->toContain('Centre');
 });
 
-it('computes type facets that add up to the visible catalogue and drop zero counts', function () {
+it('computes category facets that add up to the visible catalogue and drop zero counts', function () {
     $supplier = domesticSupplier();
     domesticProduct($supplier, ['product_type' => ProductType::Planks]);
     domesticProduct($supplier, ['product_type' => ProductType::Planks]);
 
-    $facets = app(DomesticMarketplaceService::class)->typeFacets([]);
-    $planks = collect($facets)->firstWhere('value', 'planks');
+    $facets = app(DomesticMarketplaceService::class)->categoryFacets([]);
+    $secondary = collect($facets)->firstWhere('value', 'secondary-processed');
 
-    expect($planks['count'])->toBeGreaterThanOrEqual(2)
+    expect($secondary['count'])->toBeGreaterThanOrEqual(2)
         ->and(collect($facets)->pluck('count')->min())->toBeGreaterThan(0);
 });
 

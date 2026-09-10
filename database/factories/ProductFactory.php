@@ -5,15 +5,38 @@ namespace Database\Factories;
 use App\Enums\PriceUnit;
 use App\Enums\ProductStatus;
 use App\Enums\ProductType;
+use App\Models\Category;
 use App\Models\Company;
 use App\Models\Product;
 use App\Models\Species;
+use App\Support\CategoryMigrationMap;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /** @extends Factory<Product> */
 class ProductFactory extends Factory
 {
     protected $model = Product::class;
+
+    /**
+     * Keep products.category_id consistent with product_type (the domestic
+     * marketplace now facets/filters on the Category tree — gap-plan 1.5.2b)
+     * unless a test set category_id explicitly.
+     */
+    public function configure(): static
+    {
+        return $this->afterMaking(function (Product $product): void {
+            if ($product->category_id !== null) {
+                return;
+            }
+
+            $type = $product->product_type instanceof ProductType ? $product->product_type->value : $product->product_type;
+            $slug = CategoryMigrationMap::MAP[$type] ?? null;
+
+            if ($slug !== null) {
+                $product->category_id = Category::query()->where('kind', 'form')->where('slug', $slug)->value('id');
+            }
+        });
+    }
 
     public function definition(): array
     {

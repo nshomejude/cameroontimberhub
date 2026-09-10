@@ -3,7 +3,7 @@
 namespace App\Services;
 
 use App\Enums\ProductStatus;
-use App\Enums\ProductType;
+use App\Models\Category;
 use App\Models\Company;
 use App\Models\Product;
 use App\Support\CameroonGeography;
@@ -15,8 +15,9 @@ use Illuminate\Support\Collection;
  * The single query behind /buy-cameroon-wood — a domestic-market search that
  * never surfaces export vocabulary. Filters entirely against what already
  * exists on Product/Company today (species, grade, dimensions, quantity,
- * treatment, region/delivery). Product type stands in for a category tree
- * until gap-plan item 1.5.1 lands; see the plan's Scope Decision.
+ * treatment, region/delivery). Product listings are faceted/filtered by the
+ * adopted `form`-kind Category tree (gap-plan 1.5.1 / 1.5.2b) via
+ * products.category_id; a selected form category also matches its children.
  *
  * Deliberately independent of ProductCatalogueService (the export-facing
  * /marketplace query) so the two modules never collide on a shared file.
@@ -80,7 +81,7 @@ class DomesticMarketplaceService
         $city = (string) ($filters['city'] ?? '');
         $grade = trim((string) ($filters['grade'] ?? ''));
         $treatment = (string) ($filters['treatment'] ?? '');
-        $types = array_values(array_intersect((array) ($filters['types'] ?? []), array_column(ProductType::cases(), 'value')));
+        $categorySlugs = array_values(array_filter((array) ($filters['categories'] ?? [])));
         $speciesIn = array_values(array_filter((array) ($filters['species'] ?? [])));
         $minQuantity = $filters['minQuantity'] ?? null;
         $maxThicknessMm = $filters['maxThicknessMm'] ?? null;
@@ -91,7 +92,7 @@ class DomesticMarketplaceService
             ->when($city !== '', fn (Builder $b) => $b->whereHas('company', fn ($c) => $c->where('city', $city)))
             ->when($grade !== '', fn (Builder $b) => $b->where('products.grade', $grade))
             ->when($treatment !== '', fn (Builder $b) => $b->where('products.moisture_content', 'ilike', "%{$treatment}%"))
-            ->when($types !== [], fn (Builder $b) => $b->whereIn('products.product_type', $types))
+            ->when($categorySlugs !== [], fn (Builder $b) => $b->whereIn('products.category_id', $this->categoryIdsForSlugs($categorySlugs)))
             ->when($speciesIn !== [], fn (Builder $b) => $b->whereHas('species', fn ($s) => $s->whereIn('species.slug', $speciesIn)))
             ->when(is_numeric($minQuantity), fn (Builder $b) => $b->where(function ($w) use ($minQuantity) {
                 $w->whereNull('products.moq_quantity')->orWhere('products.moq_quantity', '<=', $minQuantity);
@@ -99,18 +100,40 @@ class DomesticMarketplaceService
             ->when(is_numeric($maxThicknessMm), fn (Builder $b) => $b->where('products.thickness_mm', '<=', $maxThicknessMm));
     }
 
-    /** @return list<array{value: string, label: string, count: int}> */
-    public function typeFacets(array $filters): array
+    /**
+     * Resolve `form`-kind Category slugs to the set of category ids to filter
+     * on — the matched roots plus their immediate children, so picking a
+     * top-level form group also returns anything filed under its subgroups.
+     *
+     * @param  list<string>  $slugs
+     * @return list<int>
+     */
+    public function categoryIdsForSlugs(array $slugs): array
     {
-        $counts = $this->applyFilters($this->base(), array_diff_key($filters, ['types' => true]))
-            ->selectRaw('products.product_type, count(*) as aggregate')
-            ->groupBy('products.product_type')
-            ->pluck('aggregate', 'product_type');
+        $slugs = array_values(array_filter($slugs));
 
-        return collect(ProductType::cases())
-            ->map(fn (ProductType $t) => ['value' => $t->value, 'label' => $t->label(), 'count' => (int) ($counts[$t->value] ?? 0)])
+        if ($slugs === []) {
+            return [];
+        }
+
+        $rootIds = Category::query()->where('kind', 'form')->whereIn('slug', $slugs)->pluck('id');
+        $childIds = Category::query()->whereIn('parent_id', $rootIds)->pluck('id');
+
+        return $rootIds->merge($childIds)->unique()->values()->all();
+    }
+
+    /** @return list<array{value: string, label: string, count: int}> */
+    public function categoryFacets(array $filters): array
+    {
+        $counts = $this->applyFilters($this->base(), array_diff_key($filters, ['categories' => true]))
+            ->join('categories', 'categories.id', '=', 'products.category_id')
+            ->selectRaw('categories.slug, count(*) as aggregate')
+            ->groupBy('categories.slug')
+            ->pluck('aggregate', 'slug');
+
+        return Category::query()->where('kind', 'form')->orderBy('id')->get()
+            ->map(fn (Category $c) => ['value' => $c->slug, 'label' => $c->name, 'count' => (int) ($counts[$c->slug] ?? 0)])
             ->filter(fn (array $f) => $f['count'] > 0)
-            ->sortByDesc('count')
             ->values()
             ->all();
     }
