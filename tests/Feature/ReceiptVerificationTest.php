@@ -217,6 +217,7 @@ it('keeps the allow-list of disclosed facts explicit', function () {
         'order_status',
         'status',
         'is_valid',
+        'integrity_verified',
         'void_reason',
         'checked_at',
     ]);

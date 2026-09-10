@@ -92,6 +92,10 @@ class ReceiptVerifier
             'order_status' => $order->status->label(),
             'status' => $receipt->verificationStatus(),
             'is_valid' => ! $receipt->isVoid(),
+            // Tamper-evidence (Task B3): whether this receipt's frozen issued
+            // facts still match its hash in the integrity chain. A stranger is
+            // entitled to know the record was not altered after issue.
+            'integrity_verified' => $receipt->verifiesIntegrity(),
             'void_reason' => $receipt->void_reason,
             'checked_at' => now(),
         ];

@@ -163,6 +163,16 @@
                                 <dt class="text-ink-soft dark:text-[#b3ab9b]">Checked by</dt>
                                 <dd class="text-right font-medium text-ink dark:text-[#e4ddcf]">{{ $result['issuer'] }}</dd>
                             </div>
+                            <div class="flex justify-between gap-3">
+                                <dt class="text-ink-soft dark:text-[#b3ab9b]">Record integrity</dt>
+                                <dd @class([
+                                    'text-right font-medium',
+                                    'text-forest-700 dark:text-forest-300' => $result['integrity_verified'],
+                                    'text-red-700 dark:text-red-300' => ! $result['integrity_verified'],
+                                ])>
+                                    {{ $result['integrity_verified'] ? 'Integrity verified' : 'Integrity check failed' }}
+                                </dd>
+                            </div>
                         </dl>
                     </section>
 

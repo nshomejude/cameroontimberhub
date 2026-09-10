@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\RfqCurrency;
+use App\Models\Concerns\ChainsIntegrity;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -16,9 +17,23 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class Receipt extends Model
 {
+    use ChainsIntegrity;
     use HasFactory;
 
     protected $guarded = ['id'];
+
+    /**
+     * The issued facts the integrity hash chain attests to (Task B3). Void
+     * status and verification telemetry are deliberately NOT here: the
+     * receipt's issued facts are frozen, void status is separate mutable
+     * state shown alongside on the verification page.
+     *
+     * @return list<string>
+     */
+    public function integrityPayloadColumns(): array
+    {
+        return ['receipt_number', 'order_id', 'issued_at', 'amount', 'currency'];
+    }
 
     /**
      * The token is the whole security of the verification endpoint, so it never

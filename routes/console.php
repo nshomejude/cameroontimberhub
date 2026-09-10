@@ -9,6 +9,10 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
+// Receipt integrity hash-chain verification (production-readiness plan Task
+// B3): walks the chain in issue order and alerts on the first tampered row.
+Schedule::command('receipts:verify-chain')->daily();
+
 // Compliance daily maintenance.
 Schedule::command('compliance:expire-badges')->dailyAt('06:30');
 Schedule::command('compliance:remind-expiring')->dailyAt('07:00');
