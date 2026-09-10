@@ -192,7 +192,7 @@ it('validates category and description when opening a dispute', function () {
             'description' => '',
         ])
         ->assertUnprocessable()
-        ->assertJsonValidationErrors(['category', 'description']);
+        ->assertJsonValidationErrors(['category', 'description'], 'error.details');
 });
 
 it('requires buyer auth to open a dispute', function () {
@@ -250,7 +250,7 @@ it('validates the reply body', function () {
             'body' => '',
         ])
         ->assertUnprocessable()
-        ->assertJsonValidationErrors(['body']);
+        ->assertJsonValidationErrors(['body'], 'error.details');
 });
 
 it('requires buyer auth to reply to a dispute', function () {

@@ -18,6 +18,7 @@ use App\Support\Bus\QueryBus;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Context;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
@@ -263,19 +264,42 @@ class AppServiceProvider extends ServiceProvider
      */
     protected function injectRequestContextIntoAuditLog(): void
     {
-        Activity::creating(function (Activity $activity): void {
-            if ($this->app->runningInConsole()) {
+        // Bind to the *configured* activity model (App\Models\ChainedActivity),
+        // not the base Spatie class — Eloquent keys model events by concrete
+        // class, so a listener on Activity::class never fires for the subclass
+        // rows the app actually writes. Registered from boot(), so it runs
+        // before ChainedActivity::booted()'s own `creating` hook and the
+        // tamper-evident hash therefore covers the stamped properties too.
+        $activityModel = config('activitylog.activity_model') ?: Activity::class;
+
+        $activityModel::creating(function (Activity $activity): void {
+            // Request-correlation id (GAPS.md §6), set by AssignRequestId on the
+            // web/api middleware stack. Its presence is also the signal that we
+            // are inside a real HTTP request: a genuine console/queue context
+            // never runs that middleware, so it has no request id and we skip
+            // stamping request context entirely (the old `runningInConsole()`
+            // gate mis-fired under the test runner, where SAPI is CLI but the
+            // HTTP kernel — and this middleware — did run).
+            $request = $this->app['request'];
+            $requestId = $request->attributes->get('request_id') ?? Context::get('request_id');
+
+            if ($this->app->runningInConsole() && ! is_string($requestId)) {
                 return;
             }
 
-            $request = $this->app['request'];
             $properties = $activity->properties ?? collect();
 
             if ($properties instanceof Collection) {
-                $activity->properties = $properties->merge([
+                $context = [
                     'ip' => $request->ip(),
                     'user_agent' => substr((string) $request->userAgent(), 0, 500),
-                ]);
+                ];
+
+                if (is_string($requestId) && $requestId !== '') {
+                    $context['request_id'] = $requestId;
+                }
+
+                $activity->properties = $properties->merge($context);
             }
         });
     }

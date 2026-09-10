@@ -120,13 +120,13 @@ it('422s an RFQ with no items or a missing destination', function () {
 
     $this->actingAs($buyer, 'sanctum')
         ->postJson('/api/v1/rfqs', apiRfqPayload(['items' => []]))
-        ->assertStatus(422)->assertJsonValidationErrors('items');
+        ->assertStatus(422)->assertJsonValidationErrors('items', 'error.details');
 
     $payload = apiRfqPayload();
     unset($payload['destination_country_code']);
 
     $this->actingAs($buyer, 'sanctum')->postJson('/api/v1/rfqs', $payload)
-        ->assertStatus(422)->assertJsonValidationErrors('destination_country_code');
+        ->assertStatus(422)->assertJsonValidationErrors('destination_country_code', 'error.details');
 });
 
 it('throttles RFQ creation', function () {
@@ -284,7 +284,7 @@ it('422s an unknown species_slug with a mappable field key and writes nothing', 
             'items' => [['species_slug' => 'unobtainium', 'form' => 'sawn', 'quantity' => 5, 'unit' => 'm3']],
         ]))
         ->assertStatus(422)
-        ->assertJsonValidationErrors('items.0.species_slug');
+        ->assertJsonValidationErrors('items.0.species_slug', 'error.details');
 
     expect(Rfq::count())->toBe(0);
     Mail::assertNothingSent();
@@ -300,7 +300,7 @@ it('422s an unpublished species_slug just as it does an unknown one', function (
             'items' => [['species_slug' => 'secretwood', 'form' => 'sawn', 'quantity' => 5, 'unit' => 'm3']],
         ]))
         ->assertStatus(422)
-        ->assertJsonValidationErrors('items.0.species_slug');
+        ->assertJsonValidationErrors('items.0.species_slug', 'error.details');
 
     expect(Rfq::count())->toBe(0);
 });
@@ -317,8 +317,8 @@ it('reports the failing line item by index when only one of several slugs is bad
             ],
         ]))
         ->assertStatus(422)
-        ->assertJsonValidationErrors('items.1.species_slug')
-        ->assertJsonMissingValidationErrors('items.0.species_slug');
+        ->assertJsonValidationErrors('items.1.species_slug', 'error.details')
+        ->assertJsonMissingValidationErrors('items.0.species_slug', 'error.details');
 });
 
 /** Free text stays first-class: an RFQ may legitimately name timber the catalogue does not list. */
@@ -347,7 +347,7 @@ it('422s a line item that names no species at all', function () {
             'items' => [['form' => 'sawn', 'quantity' => 5, 'unit' => 'm3']],
         ]))
         ->assertStatus(422)
-        ->assertJsonValidationErrors('items.0.species_text');
+        ->assertJsonValidationErrors('items.0.species_text', 'error.details');
 });
 
 /* --------------------------------------------------------- buyer_company */
@@ -390,7 +390,7 @@ it('accepts an RFQ with no buyer_company and 422s an oversized one', function ()
     $this->actingAs($buyer, 'sanctum')
         ->postJson('/api/v1/rfqs', apiRfqPayload(['buyer_company' => str_repeat('a', 200)]))
         ->assertStatus(422)
-        ->assertJsonValidationErrors('buyer_company');
+        ->assertJsonValidationErrors('buyer_company', 'error.details');
 });
 
 /* ------------------------------------------------ resend verification */

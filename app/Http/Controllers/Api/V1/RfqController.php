@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Exceptions\Api\ApiException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\StoreRfqRequest;
 use App\Http\Resources\Api\V1\QuoteResource;
@@ -75,9 +76,11 @@ class RfqController extends Controller
         // Silent neutral rejection, exactly as the web wizard does: a tripped
         // honeypot writes no row and reveals nothing about why.
         if ($intake->honeypotTripped($request->all() + ['buyer_email' => $buyer->email])) {
-            return response()->json([
-                'message' => 'Your request could not be submitted.',
-            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+            throw new ApiException(
+                Response::HTTP_UNPROCESSABLE_ENTITY,
+                'request_rejected',
+                'Your request could not be submitted.',
+            );
         }
 
         $rfq = $intake->createRfq(

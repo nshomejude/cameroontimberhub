@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Exceptions\Api\ApiException;
+use App\Exceptions\Api\ConflictException;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Api\V1\TradeAssuranceResource;
 use App\Models\TradeAssuranceMilestone;
@@ -53,9 +55,11 @@ class TradeAssuranceController extends Controller
         $agreement = $order->tradeAssuranceAgreement()->with('milestones')->first();
 
         if (! $agreement) {
-            return response()->json([
-                'message' => 'A Trade Assurance agreement has not been set up for this order.',
-            ], Response::HTTP_NOT_FOUND);
+            throw new ApiException(
+                Response::HTTP_NOT_FOUND,
+                'not_found',
+                'A Trade Assurance agreement has not been set up for this order.',
+            );
         }
 
         /** @var TradeAssuranceMilestone|null $milestone */
@@ -68,7 +72,7 @@ class TradeAssuranceController extends Controller
         try {
             $milestone->confirmByBuyer($buyer);
         } catch (RuntimeException $e) {
-            return response()->json(['message' => $e->getMessage()], Response::HTTP_CONFLICT);
+            throw new ConflictException($e->getMessage(), 'milestone_not_actionable', $e);
         }
 
         return response()->json([

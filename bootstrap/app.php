@@ -1,5 +1,7 @@
 <?php
 
+use App\Exceptions\Api\ErrorEnvelope;
+use App\Http\Middleware\AssignRequestId;
 use App\Http\Middleware\EnsureApiBuyer;
 use App\Http\Middleware\EnsureBuyerAccount;
 use App\Http\Middleware\EnsureDemoLoginsEnabled;
@@ -23,6 +25,19 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Request-correlation id (GAPS.md §6): accept-or-generate + echo.
+        // Prepended so every downstream middleware, controller and the
+        // exception renderer sees `request_id` on the request / in Context.
+        // Safe on web — it only reads a header and sets a response header,
+        // no session or CSRF interaction. (The api/v1 group adds it too, in
+        // routes/api.php, so it also covers the throttle:api-key layer.)
+        $middleware->web(prepend: [
+            AssignRequestId::class,
+        ]);
+        $middleware->api(prepend: [
+            AssignRequestId::class,
+        ]);
+
         $middleware->web(append: [
             SetLocale::class,
             HandleSlugRedirects::class,
@@ -48,4 +63,18 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*'),
         );
+
+        // Standardised machine-readable error envelope for the JSON API
+        // (GAPS.md §4). ONE shape for every error status:
+        //   { "error": { "code", "message", "request_id", "details"? } }
+        // Shaped in exactly one place — App\Exceptions\Api\ErrorEnvelope —
+        // so controllers throw typed exceptions instead of hand-rolling
+        // `response()->json(['message' => ...], $status)` bodies.
+        $exceptions->render(function (\Throwable $e, Request $request) {
+            if (! $request->is('api/*')) {
+                return null;
+            }
+
+            return ErrorEnvelope::render($e, $request);
+        });
     })->create();

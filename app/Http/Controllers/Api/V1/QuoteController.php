@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Domain\Trade\Commands\AwardQuoteCommand;
 use App\Domain\Trade\Commands\DeclineQuoteCommand;
+use App\Exceptions\Api\ConflictException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\DeclineQuoteRequest;
 use App\Http\Resources\Api\V1\OrderSummaryResource;
@@ -13,7 +14,6 @@ use App\Services\QuoteService;
 use App\Support\Bus\CommandBus;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use RuntimeException;
 
 /**
@@ -54,7 +54,7 @@ class QuoteController extends Controller
         $quote = $this->scope->quote($buyer, $reference);
 
         if (! $quote->isActionable()) {
-            return $this->settled($quote->status->label());
+            $this->settled($quote->status->label());
         }
 
         try {
@@ -63,7 +63,7 @@ class QuoteController extends Controller
                 actingUserId: $buyer?->getKey(),
             ));
         } catch (RuntimeException $e) {
-            return $this->conflict($e->getMessage());
+            throw new ConflictException($e->getMessage(), 'quote_not_actionable', $e);
         }
 
         $accepted->load(['items', 'company', 'rfq', 'order']);
@@ -82,7 +82,7 @@ class QuoteController extends Controller
         $quote = $this->scope->quote($buyer, $reference);
 
         if (! $quote->isActionable()) {
-            return $this->settled($quote->status->label());
+            $this->settled($quote->status->label());
         }
 
         try {
@@ -92,7 +92,7 @@ class QuoteController extends Controller
                 actingUserId: $buyer?->getKey(),
             ));
         } catch (RuntimeException $e) {
-            return $this->conflict($e->getMessage());
+            throw new ConflictException($e->getMessage(), 'quote_not_actionable', $e);
         }
 
         return response()->json([
@@ -100,13 +100,17 @@ class QuoteController extends Controller
         ]);
     }
 
-    private function settled(string $status): JsonResponse
+    /**
+     * A quote that has already been settled/expired is a 409 — shaped by the
+     * central error envelope (see App\Exceptions\Api\ErrorEnvelope).
+     *
+     * @return never
+     */
+    private function settled(string $status): void
     {
-        return $this->conflict("This quote is {$status} and can no longer be actioned.");
-    }
-
-    private function conflict(string $message): JsonResponse
-    {
-        return response()->json(['message' => $message], Response::HTTP_CONFLICT);
+        throw new ConflictException(
+            "This quote is {$status} and can no longer be actioned.",
+            'quote_not_actionable',
+        );
     }
 }

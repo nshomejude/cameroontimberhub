@@ -68,7 +68,7 @@ it('rejects a duplicate email with a 422', function () {
         'name' => 'Someone Else',
         'email' => 'taken@example.com',
         'password' => 'correct-horse-battery-staple',
-    ])->assertStatus(422)->assertJsonValidationErrors('email');
+    ])->assertStatus(422)->assertJsonValidationErrors('email', 'error.details');
 });
 
 it('rejects a weak password with a 422', function () {
@@ -76,7 +76,7 @@ it('rejects a weak password with a 422', function () {
         'name' => 'Weak Password',
         'email' => 'weak@example.com',
         'password' => 'abc',
-    ])->assertStatus(422)->assertJsonValidationErrors('password');
+    ])->assertStatus(422)->assertJsonValidationErrors('password', 'error.details');
 });
 
 /* ---------------------------------------------------------------- login */
@@ -103,8 +103,8 @@ it('gives the same generic failure whether the address exists or not', function 
         'password' => 'not-the-password',
     ])->assertStatus(422);
 
-    expect($noSuchUser->json('errors'))->toBe($wrongPassword->json('errors'))
-        ->and($noSuchUser->json('message'))->toBe($wrongPassword->json('message'))
+    expect($noSuchUser->json('error.details'))->toBe($wrongPassword->json('error.details'))
+        ->and($noSuchUser->json('error.message'))->toBe($wrongPassword->json('error.message'))
         // Nothing in either body hints at which side failed.
         ->and(json_encode($noSuchUser->json()))->not->toContain('exist');
 });

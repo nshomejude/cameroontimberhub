@@ -209,7 +209,7 @@ it('422s a decline with no reason', function () {
     $this->actingAs($buyer, 'sanctum')
         ->postJson('/api/v1/quotes/'.$quotes->first()->reference_code.'/decline', ['reason' => ''])
         ->assertStatus(422)
-        ->assertJsonValidationErrors('reason');
+        ->assertJsonValidationErrors('reason', 'error.details');
 
     expect($quotes->first()->fresh()->status)->toBe(QuoteStatus::Submitted);
 });

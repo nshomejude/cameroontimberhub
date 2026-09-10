@@ -114,36 +114,46 @@ Two layers, both via Laravel's `throttle:` middleware:
 
 ## Error responses
 
-Standard HTTP status codes. Observed shapes in `App\Http\Controllers\Api\V1\*`:
-
-| Status | Meaning | Body shape |
-|---|---|---|
-| `401` | No / invalid token | `{"message": "Unauthenticated."}` (Laravel default) |
-| `403` | Token's population or abilities disallow this endpoint | `{"message": "This endpoint is for buyer accounts."}` |
-| `404` | Not found, **or** a resource owned by another buyer (deliberate — a reference-grinder learns nothing) | `{"message": "..."}` |
-| `409` | Legal-but-not-now: quote already settled/expired, illegal state-machine move (`QuoteController::accept/decline`, Trade Assurance, disputes) | `{"message": "This quote is accepted and can no longer be actioned."}` |
-| `422` | Validation failure (FormRequest) | `{"message": "...", "errors": {"<field>": ["..."]}}` |
-| `429` | Rate limited | `{"message": "Too Many Attempts."}` + `Retry-After` |
-| `500`-class business failure surfaced deliberately | e.g. `RfqController::store` risk rejection | `{"message": "Your request could not be submitted."}` |
-
-So today: **`{message}`** for everything except **`{message, errors}`** for
-422. This is consistent across the current controllers.
-
-### Proposal — one documented envelope
-
-The current state is *consistent* but *minimal* (no machine-readable `code`, no
-correlation id in the body). A future standard envelope could be:
+Standard HTTP status codes. **Every** `api/*` error — whatever threw it, a
+framework exception or a controller-thrown typed one — leaves as ONE envelope,
+shaped in a single place (`App\Exceptions\Api\ErrorEnvelope`, wired from
+`bootstrap/app.php`'s `withExceptions()->render()`):
 
 ```json
-{ "message": "human string",
-  "code": "quote_not_actionable",
-  "errors": { "field": ["..."] },
-  "request_id": "..." }
+{
+  "error": {
+    "code": "quote_not_actionable",
+    "message": "This quote is declined and can no longer be actioned.",
+    "request_id": "01J8Z9M4K7QH3RQF0P2X5N6ABC",
+    "details": { "reason": ["The reason field is required."] }
+  }
+}
 ```
 
-**Not implemented.** If adopted, `422` keeps its `errors` map; other errors
-gain `code`. No current endpoint deviates from the `{message}` / `{message,
-errors}` pair, so this is a pure addition, not a cleanup. Tracked in GAPS.md.
+- `code` — stable `snake_case` machine string. Safe to branch on; will not
+  change for a given case within `v1`.
+- `message` — human-readable, English, safe to surface. The exact strings are
+  **not** part of the contract (only `code` and the status are).
+- `request_id` — always present (see *Request correlation* below); echo it in
+  bug reports.
+- `details` — present **only on `422`**; the `{ "<field>": ["msg", …] }` map
+  Laravel validation produces (dotted keys for nested input, e.g.
+  `items.0.species_slug`).
+
+| Status | `code` | Meaning |
+|---|---|---|
+| `401` | `unauthenticated` | No / invalid / expired token |
+| `403` | `forbidden` | Token's population or abilities disallow this endpoint |
+| `404` | `not_found` | No such resource, **or** one owned by another buyer (deliberate — a reference-grinder learns nothing) |
+| `409` | per-case (`quote_not_actionable`, `dispute_not_actionable`, `milestone_not_actionable`) or `conflict` | Legal-but-not-now: quote already settled/expired, illegal state-machine move |
+| `422` | `validation_failed` (or `request_rejected` for a silent anti-spam refusal) | Validation failure — field map in `details` |
+| `429` | `rate_limited` | Rate limited — `Retry-After` + `X-RateLimit-*` headers still set |
+| `500` | `server_error` | Unhandled failure. `message` is a fixed generic string in production (`app.debug=false`) — the underlying exception message is **never** leaked |
+
+Controllers do not build error bodies. A deliberate 4xx is raised by throwing
+`App\Exceptions\Api\ApiException` (arbitrary status + code) or its
+`ConflictException` subclass (409 + optional per-case code); the renderer
+formats it. Success bodies (`{ "data": … }`) are unchanged — see below.
 
 ---
 
@@ -156,10 +166,23 @@ Page size is fixed per endpoint server-side (e.g. orders 15/page); pass `?page=N
 
 ## Request correlation
 
-**Not implemented.** There is no `X-Request-Id` accepted or emitted, and no
-request id in error bodies or logs today. Adding one (accept-or-generate, echo
-in the response header, stamp into the activity log's `properties` alongside
-the IP/UA already captured) is a proposal — see GAPS.md.
+Every response carries an `X-Request-Id` header, and every error body repeats
+it as `error.request_id`. Mechanism (`App\Http\Middleware\AssignRequestId`, on
+the `web` + `api` middleware groups and the `api/v1` route group):
+
+- If the request sends an `X-Request-Id` header **and** it is a well-formed
+  ULID (26 chars) or UUID (36 chars), that value is adopted. Anything else —
+  wrong length, junk, an attempt to inject log noise — is **ignored** and a
+  fresh ULID generated instead.
+- Otherwise a fresh ULID is generated.
+- The id is echoed as the `X-Request-Id` response header, and is stamped into
+  every activity-log row's `properties` as `request_id`, alongside the `ip` and
+  `user_agent` already captured. Console/queue-context activity has no request
+  id and is not stamped.
+
+Send your own `X-Request-Id` (a ULID or UUID) to correlate a client-side log
+line with the server's activity log and any error body; otherwise read the one
+the server returns.
 
 ## Success response shape
 

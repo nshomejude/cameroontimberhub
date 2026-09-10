@@ -61,7 +61,12 @@ use Illuminate\Support\Facades\Route;
 //           'deprecated:2027-01-01,2027-07-01,https://www.cameroontimberhub.com/api/v2'])
 //       ->group(function (): void { /* ... */ });
 
-Route::prefix('v1')->name('api.v1.')->middleware(['throttle:api-key', \App\Http\Middleware\RecordApiKeyUsage::class])->group(function (): void {
+// AssignRequestId (GAPS.md §6) is prepended so the correlation id is set
+// before throttle:api-key runs and is available to the standardized error
+// envelope for every v1 response (including a 429 from the limiter below).
+// It is also on the `web` group (see bootstrap/app.php) for admin-action
+// correlation.
+Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignRequestId::class, 'throttle:api-key', \App\Http\Middleware\RecordApiKeyUsage::class])->group(function (): void {
 
     /* ------------------------------------------------------------- auth */
 

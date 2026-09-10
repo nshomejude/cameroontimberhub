@@ -28,13 +28,20 @@ named Queries" target is only ~half met. Not urgent (those contexts have
 thinner read surfaces), but it means the CQRS seam the API depends on is not
 uniform.
 
-## 4. Error envelope not standardised in code
+## 4. ~~Error envelope not standardised in code~~ — CLOSED
 
-All current `Api/V1` controllers return `{message}` (or `{message, errors}`
+~~All current `Api/V1` controllers return `{message}` (or `{message, errors}`
 for 422) — consistent, but minimal: no machine-readable `code`, no
-`request_id`. [`../api/CONVENTIONS.md`](../api/CONVENTIONS.md) proposes a
-single documented envelope. **Not implemented.** Pure addition when adopted
-(no endpoint currently deviates).
+`request_id`.~~
+
+**Closed 2026-09-10.** Every `api/*` error now leaves as one envelope —
+`{ "error": { "code", "message", "request_id", "details"? } }` — shaped in a
+single place, `App\Exceptions\Api\ErrorEnvelope`, wired from
+`bootstrap/app.php`'s `withExceptions()->render()`. Controllers that used to
+hand-roll `response()->json(['message' => …], 409)` now throw
+`App\Exceptions\Api\ConflictException` / `ApiException`. 422 keeps its field
+map under `error.details`. See [`../api/CONVENTIONS.md`](../api/CONVENTIONS.md)
+§"Error responses".
 
 ## 5. Deprecation-header mechanism not implemented — **CLOSED**
 
@@ -50,12 +57,23 @@ group in `routes/api.php`, and the "how to sunset an endpoint" flow is in
 `docs/api/CONVENTIONS.md`. Test-covered by
 `tests/Feature/Api/DeprecationHeaderTest.php`. There is still no `/api/v2`.
 
-## 6. No request-id correlation
+## 6. ~~No request-id correlation~~ — CLOSED
 
-No `X-Request-Id` is accepted or emitted; error bodies and the activity log
-carry no correlation id (the activity log does already stamp IP + user agent
-into `properties`). Adding accept-or-generate + echo + log-stamp is a small,
-isolated improvement.
+~~No `X-Request-Id` is accepted or emitted; error bodies and the activity log
+carry no correlation id.~~
+
+**Closed 2026-09-10** (same branch as §4 — the two pair naturally).
+`App\Http\Middleware\AssignRequestId` (prepended to the `web` and `api`
+middleware groups in `bootstrap/app.php`, and on the `api/v1` route group)
+accepts an inbound `X-Request-Id` only if it is a well-formed ULID or UUID —
+anything else is ignored and a fresh ULID minted — stores it on the request
+attribute bag and in Laravel's `Context`, and echoes it as the `X-Request-Id`
+response header. It appears in every `api/*` error body as `error.request_id`
+and is stamped into the activity-log `properties` next to the existing `ip` /
+`user_agent` (the stamper was also fixed to bind to the configured
+`ChainedActivity` model, not the base `Activity` class — Eloquent keys model
+events by concrete class, so the old registration never fired).
+Test-covered by `tests/Feature/Api/RequestIdAndErrorEnvelopeTest.php`.
 
 ## 7. API-key rate-limit tiers not wired to Plans
 

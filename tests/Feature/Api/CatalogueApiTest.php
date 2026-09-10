@@ -74,8 +74,8 @@ it('filters products by species, type, region and free text', function () {
 });
 
 it('422s an unknown sort or an oversized page', function () {
-    $this->getJson('/api/v1/products?sort=cheapest-ever')->assertStatus(422)->assertJsonValidationErrors('sort');
-    $this->getJson('/api/v1/products?per_page=5000')->assertStatus(422)->assertJsonValidationErrors('per_page');
+    $this->getJson('/api/v1/products?sort=cheapest-ever')->assertStatus(422)->assertJsonValidationErrors('sort', 'error.details');
+    $this->getJson('/api/v1/products?per_page=5000')->assertStatus(422)->assertJsonValidationErrors('per_page', 'error.details');
     $this->getJson('/api/v1/products?types[]=nonsense')->assertStatus(422);
 });
 
@@ -296,7 +296,7 @@ it('switches the search bucket and 422s an unknown one', function () {
 
     $this->getJson('/api/v1/search?q=Visible&type=suppliers')->assertOk()->assertJsonPath('meta.type', 'suppliers');
     $this->getJson('/api/v1/search?q=Visible&type=species')->assertOk()->assertJsonPath('meta.type', 'species');
-    $this->getJson('/api/v1/search?q=Visible&type=orders')->assertStatus(422)->assertJsonValidationErrors('type');
+    $this->getJson('/api/v1/search?q=Visible&type=orders')->assertStatus(422)->assertJsonValidationErrors('type', 'error.details');
 });
 
 it('never leaks an internal product or company column through any listing endpoint', function () {

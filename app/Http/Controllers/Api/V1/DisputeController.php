@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Domain\Compliance\Commands\OpenDisputeCommand;
 use App\Domain\Compliance\Queries\ListOrderDisputesQuery;
 use App\Enums\DisputeCategory;
+use App\Exceptions\Api\ConflictException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\OpenDisputeRequest;
 use App\Http\Requests\Api\V1\ReplyDisputeRequest;
@@ -97,7 +98,7 @@ class DisputeController extends Controller
                 description: $request->validated('description'),
             ));
         } catch (RuntimeException $e) {
-            return response()->json(['message' => $e->getMessage()], 409);
+            throw new ConflictException($e->getMessage(), 'dispute_not_actionable', $e);
         }
 
         return response()->json([
@@ -118,7 +119,7 @@ class DisputeController extends Controller
         try {
             $this->disputes->reply($model, $request->user(), $request->validated('body'));
         } catch (RuntimeException $e) {
-            return response()->json(['message' => $e->getMessage()], 409);
+            throw new ConflictException($e->getMessage(), 'dispute_not_actionable', $e);
         }
 
         return response()->json([
