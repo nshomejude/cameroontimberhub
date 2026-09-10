@@ -97,26 +97,28 @@ Effort is engineer-days for someone who knows this codebase. **Phase 0 is a busi
 
 ### Phase 2 — Invoicing & tax (~10 days)
 - [ ] M4: `Invoice` / `InvoiceLine` / `CreditNote` models; auto-invoice on charge (immutable — guard `updating` like `ChainsIntegrity`); invoice PDF; credit-note flow.
-- [ ] M5: `tax_rules` table + `TaxCalculator`; Cameroon VAT 19.25 % as a configured default; checkout breakdown (subtotal/discount/tax/fees/total); FX capture.
+- [ ] M5: `tax_rules` table + `TaxCalculator`; **`/admin` → Tax Rules Filament resource** (`payments.manage`) — jurisdiction, rate, effective-from/until, active toggle; Cameroon TVA 19.25 % seeded but editable, non-Cameroon 0 %. No rate hard-coded anywhere. Checkout breakdown (subtotal/discount/tax/fees/total); FX capture.
 - [ ] Exporter/admin invoice list (Filament); buyer/supplier "Billing" page (invoices + receipts + payment method).
-- [ ] Tests: invoice immutability; tax applied and shown; credit note leaves the invoice unchanged.
+- [ ] Tests: invoice immutability; tax pulled from the active rule and shown; changing a rule doesn't touch a past invoice; credit note leaves the invoice unchanged.
 
 ### Phase 3 — Recurring & lifecycle (~10 days)
 - [ ] M6: **pull-model renewals** (§7.5) — `subscriptions:process-renewals` job: at `renews_at − 7d` send a re-pay link; at `renews_at` move to `past_due` + `grace_until = +7d`; during grace keep entitlements; at `grace_until` lapse to the segment Free plan and email. **Card-on-file / auto-charge** only for the USD (Stripe/PayPal) rails where the token model is clean — via `SetupIntent` / billing agreement; MoMo/Orange stay pull. Proration on upgrade (immediate) / downgrade (next cycle). **Trials** (§7.5): 14 days, no pre-auth, opt-in per plan, one per company lifetime, converts by the customer paying before the trial ends else lapses to Free. 30-day price-change notice job. `Company::hasFeature()` returns the Free-plan entitlement set while `past_due`-past-grace / `suspended`.
 - [ ] Tests: renewal paid → term extends; unpaid → grace → lapse to Free; upgrade prorates; trial paid → converts, unpaid → lapses; USD card-on-file auto-charges.
 
 ### Phase 4 — Marketplace commission (~8 days)
-- [ ] M7: `CommissionCalculator` (deterministic, plan-tiered rate from §15, capped, versioned `commission_rules`); commission line on protected-trade orders shown pre-commit; recorded on order + invoice; not charged on pre-acceptance cancel; refund treatment on the credit note.
-- [ ] Admin: commission report; per-contract override (audited).
-- [ ] Tests: rate matches plan tier; cap applied; cancel-before-acceptance → no commission; refund → commission credit.
+- [ ] M7: `CommissionCalculator` (deterministic, plan-tiered, capped) reading a **`/admin` → Commission Rules Filament resource** (`commission_rules`: segment/plan-tier, domestic %, international %, cap amount + cap %, effective-from/until, active) — the §15 table seeded but fully editable without deploy. Commission line on protected-trade orders shown pre-commit; recorded on order + invoice; not charged on pre-acceptance cancel; refund treatment on the credit note. Per-enterprise-contract override stored on the contract record (audited).
+- [ ] Admin: commission report (take-rate, GMV, by segment); the rule editor above.
+- [ ] Tests: rate matches the active rule for the plan tier; a rule edit doesn't change a past order's commission; cap applied; cancel-before-acceptance → no commission; refund → commission credit.
 
-### Phase 5 — Governance & promotions (~5 days)
-- [ ] M9: `plan_prices` with effective dates + immutable history; "reproducible total from stored inputs" reconstruction test; pricing-admin permission (`pricing.manage`), least-privilege.
-- [ ] M8: `Coupon` / `Credit` / referral credit; stacking off by default; coupons never reduce tax.
+### Phase 5 — Governance & promotions (~6 days)
+- [ ] M9: `plan_prices` with effective-from/until + immutable history; **`/admin` → the Plans Filament resource gains price-version editing** (change a price = new version row, old one retained; `effective_from` scheduling) under a dedicated `pricing.manage` permission; "reproducible total from stored inputs" reconstruction test.
+- [ ] M8: **`/admin` → Coupons Filament resource** (`Coupon` — code, type, value, applies-to segments/plans, max redemptions, validity window, stacks-with-annual flag) + `Credit` (per-company non-cash balance, admin-grantable, audited) + referral-credit rule. Stacking off by default; coupons never reduce tax.
 - [ ] M10: wire the `api` plan feature to company API-key issuance quotas.
 - [ ] `PRICING_SPEC.md §27` launch checklist — walk every item, tick or file.
 
-**Totals:** Phase 1 ≈ 12 d · Phase 2 ≈ 10 d · Phase 3 ≈ 10 d · Phase 4 ≈ 8 d · Phase 5 ≈ 5 d → **≈ 45 engineer-days (~9 weeks)** after the PayPal account is set up and the MoMo/Orange applications are in, with revenue starting at the end of Phase 1 (domestic on MoMo/Orange first, USD on PayPal in the same phase, MoMo/Orange credentials entered in `/admin` the day they're approved).
+> **Admin-configurable, no deploy (owner direction):** every commercial parameter — gateway credentials (§8), tax rules, commission rules, plan prices + versions, coupons, credits, plan activation/features — is edited in `/admin` under `payments.manage` / `pricing.manage`, never in code or a one-off seeder. Seeders only provide the launch defaults. All edits are written to the hash-chained activity log; changing a rule never mutates a historical invoice, order commission or subscription.
+
+**Totals:** Phase 1 ≈ 12 d · Phase 2 ≈ 10 d · Phase 3 ≈ 10 d · Phase 4 ≈ 8 d · Phase 5 ≈ 6 d → **≈ 46 engineer-days (~9–10 weeks)** after the PayPal account is set up and the MoMo/Orange applications are in, with revenue starting at the end of Phase 1 (domestic on MoMo/Orange first, USD on PayPal in the same phase, MoMo/Orange credentials entered in `/admin` the day they're approved).
 
 ---
 
@@ -150,8 +152,8 @@ PayPal receives USD from Cameroon with just a business account and no foreign en
 ### 7.3 VAT — **charge Cameroon TVA at 19.25 % on domestic fees; zero-rate non-Cameroon customers; make it configuration**
 Build the tax engine (Phase 2, M5) to apply **19.25 %** to subscription and service fees for customers with a Cameroon billing country, and **0 %** for customers outside Cameroon (export of services). The rate, jurisdiction and effective dates live in `tax_rules` — never hard-coded. **Action for finance/legal:** confirm CTH's TVA registration status and DGI filing obligations; if CTH is not yet required to charge, the engine ships with the Cameroon rule *inactive* and it's flipped on when registration completes — no code change.
 
-### 7.4 Commission — **not at launch; Phase 4**
-Launch on subscriptions + verification/compliance/data revenue. Marketplace commission (`§15`: 2–5 % plan-tiered, capped) needs protected-trade volume and the pre-commit disclosure UI to be worth the build and the customer friction. Phase 4, once there's GMV to take a rate on.
+### 7.4 Commission — **not at launch; Phase 4; rates managed in `/admin`**
+Launch on subscriptions + verification/compliance/data revenue. Marketplace commission (`§15`: 2–5 % plan-tiered, capped) needs protected-trade volume and the pre-commit disclosure UI to be worth the build and the customer friction. Phase 4, once there's GMV to take a rate on. When built, the rate table, caps and effective dates are a **Filament admin resource** (`commission_rules`), editable without deploy; a rule change never re-rates a past order.
 
 ### 7.5 Trials & renewals — **pull model, not push (mobile-money reality)**
 Card-on-file "charge them automatically at renewal" is clean for Stripe/PayPal but not for MTN MoMo / Orange Money (no reliable stored-mandate/recurring primitive in their standard Collections APIs). So:
@@ -180,7 +182,7 @@ Apply the `PRICING_SPEC §18` default across the catalogue. Data-only change in 
 | International Buyer Professional | $39 | $390 |
 | International Buyer Enterprise | $199 | $1,990 |
 
-Free plans: no annual. Yearly-only plans (Verified Supplier 25 k, Verified Exporter 100 k, Dealer Free): already annual. Enterprise: negotiated.
+Free plans: no annual. Yearly-only plans (Verified Supplier 25 k, Verified Exporter 100 k, Dealer Free): already annual. Enterprise: negotiated. The seeder sets these launch values; from then on every price is edited in `/admin` (Phase 5 M9 — price versions with effective dates, `pricing.manage` permission).
 
 ---
 
