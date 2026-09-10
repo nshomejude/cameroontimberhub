@@ -3,8 +3,10 @@
 namespace App\Services\Payments;
 
 use App\Contracts\PaymentGatewayContract;
+use App\Domain\Commerce\Commands\RecordPaymentCompletionCommand;
 use App\Enums\PaymentProvider;
 use App\Models\Payment;
+use App\Support\Bus\CommandBus;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -145,6 +147,12 @@ class MtnMomoGateway implements PaymentGatewayContract
      */
     public function handleWebhook(Request $request): Response
     {
+        if (! $this->isConfigured()) {
+            Log::warning('MTN MoMo webhook received while the gateway is not configured — ignoring.');
+
+            return $this->jsonResponse(['message' => 'Gateway not configured.'], 503);
+        }
+
         $referenceId = $request->input('referenceId') ?? $request->input('externalId');
         $status = $request->input('status');
 
@@ -171,7 +179,14 @@ class MtnMomoGateway implements PaymentGatewayContract
         $normalizedStatus = strtoupper((string) $status);
 
         if ($normalizedStatus === 'SUCCESSFUL') {
-            $payment->markCompleted($referenceId);
+            // Mirror StripeGateway: funnel completion through the CommandBus so
+            // Payment::markCompleted() + the PaymentCompleted outbox event
+            // happen in one transaction (billing engine M2). Idempotent
+            // downstream via SubscriptionService::activateFromPayment().
+            app(CommandBus::class)->dispatch(new RecordPaymentCompletionCommand(
+                paymentId: $payment->getKey(),
+                providerReference: $referenceId,
+            ));
         } elseif (in_array($normalizedStatus, ['FAILED', 'REJECTED', 'TIMEOUT'], true)) {
             $payment->markFailed();
         } else {

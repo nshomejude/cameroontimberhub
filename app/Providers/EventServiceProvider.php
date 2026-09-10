@@ -2,9 +2,11 @@
 
 namespace App\Providers;
 
+use App\Domain\Commerce\Events\PaymentCompleted;
 use App\Domain\Compliance\Events\ComplianceCaseOpened;
 use App\Domain\Logistics\Events\ShipmentCheckpointRecorded;
 use App\Domain\Trade\Events\OrderAwarded;
+use App\Listeners\ActivateSubscriptionOnPaymentCompleted;
 use App\Events\BadgeIssued;
 use App\Events\BadgeRevoked;
 use App\Events\CompanyVerified;
@@ -60,6 +62,11 @@ class EventServiceProvider extends ServiceProvider
         ],
         ShipmentCheckpointRecorded::class => [
             RecordLotEventOnShipmentCheckpoint::class,
+        ],
+        // Billing engine M1: a completed plan payment (any gateway) activates
+        // the company's subscription. Idempotent by payment_id.
+        PaymentCompleted::class => [
+            ActivateSubscriptionOnPaymentCompleted::class,
         ],
         // No listener yet — dispatched for future consumers (webhooks,
         // notifications), same pattern as DocumentApproved/BadgeIssued above.

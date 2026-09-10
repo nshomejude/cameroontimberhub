@@ -9,6 +9,15 @@ use App\Models\User;
 use App\Services\Payments\MtnMomoGateway;
 use Illuminate\Support\Facades\Http;
 
+function fakeMtnMomoConfig(): void
+{
+    config([
+        'payments.mtn_momo.subscription_key' => 'sub-key',
+        'payments.mtn_momo.api_user' => 'api-user',
+        'payments.mtn_momo.api_key' => 'api-key',
+    ]);
+}
+
 function mtnCompanyUser(): array
 {
     $company = Company::factory()->create();
@@ -173,6 +182,8 @@ it('marks the payment failed gracefully when the token request throws', function
 });
 
 it('marks a matching payment completed via webhook', function () {
+    fakeMtnMomoConfig();
+
     $payment = Payment::factory()->create([
         'provider' => PaymentProvider::MtnMomo,
         'status' => PaymentStatus::Pending,
@@ -191,6 +202,8 @@ it('marks a matching payment completed via webhook', function () {
 });
 
 it('marks a matching payment failed via webhook', function () {
+    fakeMtnMomoConfig();
+
     $payment = Payment::factory()->create([
         'provider' => PaymentProvider::MtnMomo,
         'status' => PaymentStatus::Pending,
@@ -209,6 +222,8 @@ it('marks a matching payment failed via webhook', function () {
 });
 
 it('does not crash and does not create data for an unknown webhook reference', function () {
+    fakeMtnMomoConfig();
+
     $response = $this->postJson(route('payments.mtn-momo.webhook'), [
         'referenceId' => 'does-not-exist',
         'status' => 'SUCCESSFUL',
@@ -220,6 +235,8 @@ it('does not crash and does not create data for an unknown webhook reference', f
 });
 
 it('returns a validation error response for a malformed webhook payload', function () {
+    fakeMtnMomoConfig();
+
     $response = $this->postJson(route('payments.mtn-momo.webhook'), [
         'foo' => 'bar',
     ]);

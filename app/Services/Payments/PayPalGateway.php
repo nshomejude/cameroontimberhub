@@ -3,9 +3,11 @@
 namespace App\Services\Payments;
 
 use App\Contracts\PaymentGatewayContract;
+use App\Domain\Commerce\Commands\RecordPaymentCompletionCommand;
 use App\Enums\PaymentProvider;
 use App\Enums\PaymentStatus;
 use App\Models\Payment;
+use App\Support\Bus\CommandBus;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -108,9 +110,16 @@ class PayPalGateway implements PaymentGatewayContract
             if ($response->successful() && ($data['status'] ?? null) === 'COMPLETED') {
                 $captureId = $data['purchase_units'][0]['payments']['captures'][0]['id'] ?? $orderId;
 
-                $payment->markCompleted($captureId);
+                // Completion goes through the CommandBus (billing engine M2) so
+                // markCompleted() + the PaymentCompleted outbox event are one
+                // transaction, regardless of whether the browser return leg or
+                // the async webhook lands first (activation is idempotent).
+                app(CommandBus::class)->dispatch(new RecordPaymentCompletionCommand(
+                    paymentId: $payment->getKey(),
+                    providerReference: $captureId,
+                ));
 
-                return response()->view('payments.paypal.success', ['payment' => $payment]);
+                return response()->view('payments.paypal.success', ['payment' => $payment->fresh()]);
             }
 
             $payment->markFailed();
@@ -134,6 +143,12 @@ class PayPalGateway implements PaymentGatewayContract
 
     public function handleWebhook(Request $request): Response
     {
+        if (! $this->isConfigured()) {
+            Log::warning('PayPal webhook received while the gateway is not configured — ignoring.');
+
+            return $this->jsonResponse(['error' => 'gateway not configured'], 503);
+        }
+
         $payload = $request->all();
 
         if (! isset($payload['event_type']) || ! isset($payload['resource'])) {
@@ -189,7 +204,10 @@ class PayPalGateway implements PaymentGatewayContract
 
         if ($eventType === 'PAYMENT.CAPTURE.COMPLETED' || $eventType === 'CHECKOUT.ORDER.APPROVED') {
             $captureId = $resource['id'] ?? $orderId;
-            $payment->markCompleted($captureId);
+            app(CommandBus::class)->dispatch(new RecordPaymentCompletionCommand(
+                paymentId: $payment->getKey(),
+                providerReference: $captureId,
+            ));
         } elseif (in_array($eventType, ['PAYMENT.CAPTURE.DENIED', 'PAYMENT.CAPTURE.DECLINED', 'CHECKOUT.ORDER.VOIDED'], true)) {
             $payment->markFailed();
         }

@@ -3,8 +3,10 @@
 namespace App\Services\Payments;
 
 use App\Contracts\PaymentGatewayContract;
+use App\Domain\Commerce\Commands\RecordPaymentCompletionCommand;
 use App\Enums\PaymentProvider;
 use App\Models\Payment;
+use App\Support\Bus\CommandBus;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -128,6 +130,12 @@ class OrangeMoneyGateway implements PaymentGatewayContract
      */
     public function handleWebhook(Request $request): Response
     {
+        if (! $this->isConfigured()) {
+            Log::warning('Orange Money webhook received while the gateway is not configured — ignoring.');
+
+            return response(['message' => 'Gateway not configured.'], 503);
+        }
+
         $payToken = $request->input('pay_token') ?? $request->input('order_id');
         $status = $request->input('status');
 
@@ -154,7 +162,13 @@ class OrangeMoneyGateway implements PaymentGatewayContract
         $normalizedStatus = strtoupper((string) $status);
 
         if ($normalizedStatus === 'SUCCESS') {
-            $payment->markCompleted($payToken);
+            // Mirror StripeGateway: completion goes through the CommandBus so
+            // markCompleted() + the PaymentCompleted outbox event are one
+            // transaction (billing engine M2).
+            app(CommandBus::class)->dispatch(new RecordPaymentCompletionCommand(
+                paymentId: $payment->getKey(),
+                providerReference: $payToken,
+            ));
         } elseif (in_array($normalizedStatus, ['FAILED', 'EXPIRED', 'CANCELLED'], true)) {
             $payment->markFailed();
         } else {

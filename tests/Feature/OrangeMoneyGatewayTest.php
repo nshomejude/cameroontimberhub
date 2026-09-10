@@ -127,6 +127,8 @@ it('marks the payment failed when the oauth token request fails', function () {
 });
 
 it('marks a matching payment completed via the notify webhook on SUCCESS', function () {
+    fakeOrangeMoneyConfig();
+
     $payment = Payment::factory()->create([
         'provider' => PaymentProvider::OrangeMoney,
         'status' => PaymentStatus::Pending,
@@ -145,6 +147,8 @@ it('marks a matching payment completed via the notify webhook on SUCCESS', funct
 });
 
 it('marks a matching payment failed via the notify webhook on FAILED', function () {
+    fakeOrangeMoneyConfig();
+
     $payment = Payment::factory()->create([
         'provider' => PaymentProvider::OrangeMoney,
         'status' => PaymentStatus::Pending,
@@ -163,6 +167,8 @@ it('marks a matching payment failed via the notify webhook on FAILED', function 
 });
 
 it('handles a webhook payload with no matching provider_reference gracefully', function () {
+    fakeOrangeMoneyConfig();
+
     $countBefore = Payment::count();
 
     $response = $this->postJson(route('payments.orange-money.notify'), [
@@ -176,6 +182,8 @@ it('handles a webhook payload with no matching provider_reference gracefully', f
 });
 
 it('handles a malformed webhook payload gracefully without crashing', function () {
+    fakeOrangeMoneyConfig();
+
     $response = $this->postJson(route('payments.orange-money.notify'), [
         'foo' => 'bar',
     ]);
