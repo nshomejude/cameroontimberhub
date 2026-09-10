@@ -49,6 +49,11 @@ use App\Http\Controllers\Public\TradeAssuranceController;
 use App\Http\Controllers\Public\TransformationNetworkController;
 use Illuminate\Support\Facades\Route;
 
+// Richer JSON readiness probe. Laravel's default `/up` (bootstrap/app.php
+// withRouting health) stays as the trivial liveness check; this adds the
+// database/cache/queue readiness detail for load balancers and uptime monitors.
+Route::get('/up/health', \App\Http\Controllers\HealthController::class)->name('health');
+
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
 // Directory & company profiles (static segments before slug routes).
