@@ -183,10 +183,16 @@ it('shows domestic filter controls and never shows export-only vocabulary', func
 it('paginates domestic results', function () {
     $supplier = domesticSupplier();
 
+    // Zero-padded names so the `name` sort is a deterministic numeric order
+    // (the default `newest` sort has no secondary key, so which product lands
+    // on which page depends on sub-millisecond insert timing).
     for ($i = 0; $i < 15; $i++) {
-        domesticProduct($supplier, ['name' => "Board {$i}"]);
+        domesticProduct($supplier, ['name' => sprintf('Board %02d', $i)]);
     }
 
-    $this->get('/buy-cameroon-wood')->assertOk()->assertSee('Board 0');
-    $this->get('/buy-cameroon-wood?page=2')->assertOk()->assertSee('Board 12');
+    // 12 per page: page 1 = Board 00..11, page 2 = Board 12..14.
+    $this->get('/buy-cameroon-wood?sort=name')->assertOk()
+        ->assertSee('Board 00')->assertSee('Board 11')->assertDontSee('Board 12');
+    $this->get('/buy-cameroon-wood?sort=name&page=2')->assertOk()
+        ->assertSee('Board 12')->assertSee('Board 14')->assertDontSee('Board 00');
 });
