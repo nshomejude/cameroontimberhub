@@ -42,7 +42,7 @@ class TradeAssuranceController extends Controller
     {
         $this->authoriseBuyer($request, $order);
 
-        if ($milestone->agreement->order_id !== $order->getKey()) {
+        if ($milestone->loadMissing('agreement')->agreement?->order_id !== $order->getKey()) {
             abort(404);
         }
 

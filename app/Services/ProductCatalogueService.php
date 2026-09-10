@@ -50,7 +50,7 @@ class ProductCatalogueService
     public function search(array $filters, int $perPage = 12): LengthAwarePaginator
     {
         return $this->query($filters)
-            ->with([Company::cardEagerLoad(), 'species:id,slug,common_name'])
+            ->with([Company::cardEagerLoad(), 'species:id,slug,common_name', 'images'])
             ->paginate($perPage)
             ->withQueryString();
     }

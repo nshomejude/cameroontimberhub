@@ -120,7 +120,7 @@ class SearchService
 
         return Product::query()
             ->active()
-            ->with([Company::cardEagerLoad(), 'species:id,slug,common_name'])
+            ->with([Company::cardEagerLoad(), 'species:id,slug,common_name', 'images'])
             ->whereHas('company', fn ($c) => $c->publiclyVisible())
             ->when($species !== '', fn ($query) => $query->whereHas('species', fn ($s) => $s->where('slug', $species)))
             ->when($type !== '', fn ($query) => $query->where('product_type', $type))

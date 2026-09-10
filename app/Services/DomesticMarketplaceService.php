@@ -47,7 +47,7 @@ class DomesticMarketplaceService
     public function search(array $filters, int $perPage = 12): LengthAwarePaginator|Collection
     {
         $query = $this->query($filters)
-            ->with([Company::cardEagerLoad(), 'species:id,slug,common_name']);
+            ->with([Company::cardEagerLoad(), 'species:id,slug,common_name', 'images']);
 
         if ($perPage <= 0) {
             return $query->get();

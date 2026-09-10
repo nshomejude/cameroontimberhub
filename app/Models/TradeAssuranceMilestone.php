@@ -57,7 +57,10 @@ class TradeAssuranceMilestone extends Model
      */
     public function confirmByBuyer(User $user): self
     {
-        $order = $this->agreement->order;
+        // Milestones are usually reached via $agreement->milestones, which
+        // leaves the inverse `agreement` relation unloaded — resolve it here
+        // rather than lazy-loading (N+1 guard is on in dev/CI).
+        $order = $this->loadMissing('agreement.order')->agreement?->order;
 
         if (! $order || $order->user_id === null || (int) $order->user_id !== (int) $user->getKey()) {
             throw new RuntimeException('Only the buyer on this order may confirm this milestone.');

@@ -23,6 +23,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Database\Eloquent\Model;
 use Spatie\Activitylog\Models\Activity;
 
 class AppServiceProvider extends ServiceProvider
@@ -41,6 +42,26 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Production-readiness Task A5: surface N+1 lazy loads everywhere.
+        // Throws only in local dev (a developer sees and fixes it on the spot);
+        // in CI and production it logs to the `errors` channel so a missed
+        // eager-load is visible for triage without failing a build or 500-ing
+        // a page. The known backlog is tracked in docs/ops/RUNBOOK.md.
+        Model::preventLazyLoading();
+        Model::handleLazyLoadingViolationUsing(function (Model $model, string $relation): void {
+            $message = sprintf('N+1: lazy-loaded [%s] on [%s].', $relation, $model::class);
+
+            if ($this->app->environment('local')) {
+                throw new \Illuminate\Database\LazyLoadingViolationException($model, $relation);
+            }
+
+            try {
+                Log::channel('errors')->warning($message);
+            } catch (\Throwable) {
+                Log::warning($message);
+            }
+        });
+
         Gate::policy(Activity::class, ActivityLogPolicy::class);
 
         Product::observe(ProductObserver::class);
