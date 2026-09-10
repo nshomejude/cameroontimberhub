@@ -9,10 +9,11 @@ use Filament\Resources\Pages\CreateRecord;
 
 /**
  * Generates the plaintext signing secret on creation and shows it exactly
- * once — the plaintext is never persisted (only its sha256 hash), the same
- * UX as an API key (see App\Filament\Resources\ApiKeyIssuanceRequests's
- * table action, which also shows a plaintext token once via a persistent
- * Notification).
+ * once. The secret is stored encrypted at rest (`secret`, via the model's
+ * `encrypted` cast) and used directly as the HMAC key — Stripe/GitHub
+ * `whsec_...` style. Same one-time-reveal UX as an API key (see
+ * App\Filament\Resources\ApiKeyIssuanceRequests's table action, which also
+ * shows a plaintext token once via a persistent Notification).
  */
 class CreateWebhookSubscription extends CreateRecord
 {
@@ -28,7 +29,7 @@ class CreateWebhookSubscription extends CreateRecord
 
         $data['company_id'] = $company->getKey();
         $data['created_by'] = auth()->id();
-        $data['secret_hash'] = WebhookSubscription::hashSecret($this->plainTextSecret);
+        $data['secret'] = $this->plainTextSecret;
 
         return $data;
     }

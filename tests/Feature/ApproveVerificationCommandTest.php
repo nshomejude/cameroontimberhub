@@ -202,7 +202,7 @@ it('dispatches a DeliverWebhookJob to a company.verified subscriber', function (
         'company_id' => $company->id,
         'url' => 'https://example.test/hook',
         'event_types' => ['company.verified'],
-        'secret_hash' => WebhookSubscription::hashSecret('secret'),
+        'secret' => 'secret',
         'is_active' => true,
     ]);
 

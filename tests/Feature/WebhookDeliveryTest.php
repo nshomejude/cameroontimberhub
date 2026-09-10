@@ -17,7 +17,9 @@ use App\Models\WebhookSubscription;
 use App\Services\Webhooks\WebhookDeliveryService;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 
 function webhookCompanyWithOwner(): Company
 {
@@ -72,43 +74,126 @@ function webhookOrderForCompany(Company $company): Order
     ]);
 }
 
-it('signs a payload with HMAC-SHA256 verifiable against a known secret', function () {
-    $company = Company::factory()->create();
-    $plainTextSecret = 'my-known-secret';
-
-    $subscription = WebhookSubscription::query()->create([
+function webhookSubscription(Company $company, string $secret = 'whsec_test', array $eventTypes = ['order.awarded']): WebhookSubscription
+{
+    return WebhookSubscription::query()->create([
         'company_id' => $company->id,
         'url' => 'https://example.test/hook',
-        'event_types' => ['order.awarded'],
-        'secret_hash' => WebhookSubscription::hashSecret($plainTextSecret),
+        'event_types' => $eventTypes,
+        'secret' => $secret,
         'is_active' => true,
     ]);
+}
 
-    $payload = ['order_id' => 1, 'country_code' => 'DE'];
+function webhookDeliveryRow(WebhookSubscription $subscription, array $payload = ['order_id' => 1]): WebhookDelivery
+{
+    return WebhookDelivery::query()->create([
+        'subscription_id' => $subscription->id,
+        'event_type' => 'order.awarded',
+        'event_id' => (string) \Illuminate\Support\Str::ulid(),
+        'payload' => $payload,
+        'attempt' => 0,
+    ]);
+}
 
+it('stores the signing secret encrypted at rest and readable as plaintext', function () {
+    $subscription = webhookSubscription(Company::factory()->create(), 'whsec_known-secret');
+
+    // Raw DB value is ciphertext, not the plaintext.
+    $raw = DB::table('webhook_subscriptions')->where('id', $subscription->id)->value('secret');
+    expect($raw)->not->toBe('whsec_known-secret');
+
+    expect($subscription->fresh()->secret)->toBe('whsec_known-secret');
+});
+
+it('sends a standard event envelope and signs the exact transmitted bytes (Stripe scheme)', function () {
+    Bus::fake();
+    Http::fake(['example.test/*' => Http::response('ok', 200)]);
+
+    $subscription = webhookSubscription(Company::factory()->create(), 'whsec_known-secret');
+
+    (new DeliverWebhookJob($subscription->id, 'order.awarded', ['order_id' => 7, 'country_code' => 'DE'], attempt: 1))
+        ->handle(app(WebhookDeliveryService::class));
+
+    $delivery = WebhookDelivery::query()->first();
+
+    Http::assertSent(function (\Illuminate\Http\Client\Request $request) use ($delivery) {
+        $raw = $request->body();
+        $envelope = json_decode($raw, true);
+
+        // Envelope shape.
+        expect($envelope)->toHaveKeys(['id', 'type', 'created', 'data'])
+            ->and($envelope['id'])->toBe('evt_'.$delivery->event_id)
+            ->and($envelope['type'])->toBe('order.awarded')
+            ->and($envelope['created'])->toBeInt()
+            ->and($envelope['data'])->toBe(['order_id' => 7, 'country_code' => 'DE']);
+
+        // Companion headers.
+        expect($request->header('X-CTH-Event')[0])->toBe('order.awarded')
+            ->and($request->header('X-CTH-Delivery')[0])->toBe('evt_'.$delivery->event_id);
+
+        // Signature verifies against "<t>.<rawBody>" with the PLAINTEXT secret.
+        $sigHeader = $request->header('X-CTH-Signature')[0];
+        expect($sigHeader)->toMatch('/^t=\d+,v1=[0-9a-f]{64}$/');
+        parse_str(str_replace(',', '&', $sigHeader), $parts);
+        $ts = $parts['t'];
+        expect($request->header('X-CTH-Timestamp')[0])->toBe((string) $ts)
+            ->and((string) $envelope['created'])->toBe((string) $ts);
+
+        $expected = hash_hmac('sha256', $ts.'.'.$raw, 'whsec_known-secret');
+
+        return hash_equals($expected, $parts['v1']);
+    });
+});
+
+it('a stale timestamp makes the signature fail verification (replay protection)', function () {
     $service = app(WebhookDeliveryService::class);
-    $signature = $service->sign($payload, $subscription);
+    $subscription = webhookSubscription(Company::factory()->create(), 'whsec_s');
+    $delivery = webhookDeliveryRow($subscription);
 
-    // The receiver independently derives the same signing key by hashing
-    // their own copy of the plaintext secret (see WebhookDeliveryService's
-    // doc block), then computes the same HMAC over the same JSON payload.
-    $expectedKey = hash('sha256', $plainTextSecret);
-    $expected = hash_hmac('sha256', json_encode($payload), $expectedKey);
+    $body = $service->encode($service->envelope($delivery, now()->getTimestamp()));
+    $freshTs = now()->getTimestamp();
+    $signature = $service->sign($freshTs, $body, 'whsec_s');
 
-    expect($signature)->toBe($expected);
+    // Consumer recomputes with a stale timestamp it pulled from the header,
+    // but here we simulate an attacker replaying with an old `t`: recompute
+    // against a 10-minute-old timestamp -> must not match, and the consumer
+    // would additionally reject `t` as outside the 5-minute tolerance.
+    $staleTs = $freshTs - 600;
+    $replayed = hash_hmac('sha256', $staleTs.'.'.$body, 'whsec_s');
+
+    expect(hash_equals($signature, $replayed))->toBeFalse()
+        ->and($freshTs - $staleTs)->toBeGreaterThan(300);
+});
+
+it('retrying the SAME delivery carries the SAME envelope id', function () {
+    Bus::fake();
+    Http::fake(['example.test/*' => Http::response('fail', 500)]);
+
+    $subscription = webhookSubscription(Company::factory()->create(), 'whsec_s');
+
+    (new DeliverWebhookJob($subscription->id, 'order.awarded', ['order_id' => 1], attempt: 1))
+        ->handle(app(WebhookDeliveryService::class));
+
+    $delivery = WebhookDelivery::query()->first();
+
+    (new DeliverWebhookJob($subscription->id, 'order.awarded', ['order_id' => 1], attempt: 2, deliveryId: $delivery->id))
+        ->handle(app(WebhookDeliveryService::class));
+
+    $ids = collect(Http::recorded())->map(function ($pair) {
+        return json_decode($pair[0]->body(), true)['id'];
+    });
+
+    expect($ids)->toHaveCount(2)
+        ->and($ids[0])->toBe('evt_'.$delivery->event_id)
+        ->and($ids[1])->toBe('evt_'.$delivery->event_id);
 });
 
 it('follows the fixed 3-attempt retry/backoff schedule and marks a delivery dead after the final failure', function () {
     Bus::fake();
 
     $company = Company::factory()->create();
-    $subscription = WebhookSubscription::query()->create([
-        'company_id' => $company->id,
-        'url' => 'https://example.test/hook',
-        'event_types' => ['order.awarded'],
-        'secret_hash' => WebhookSubscription::hashSecret('secret'),
-        'is_active' => true,
-    ]);
+    $subscription = webhookSubscription($company);
 
     Http::fake(['example.test/*' => Http::response('fail', 500)]);
 
@@ -158,13 +243,7 @@ it('marks a delivery as delivered on a 2xx response and does not retry', functio
     Http::fake(['example.test/*' => Http::response('ok', 200)]);
 
     $company = Company::factory()->create();
-    $subscription = WebhookSubscription::query()->create([
-        'company_id' => $company->id,
-        'url' => 'https://example.test/hook',
-        'event_types' => ['order.awarded'],
-        'secret_hash' => WebhookSubscription::hashSecret('secret'),
-        'is_active' => true,
-    ]);
+    $subscription = webhookSubscription($company);
 
     (new DeliverWebhookJob($subscription->id, 'order.awarded', ['order_id' => 1], attempt: 1))
         ->handle(app(WebhookDeliveryService::class));
@@ -182,13 +261,7 @@ it('dispatches a DeliverWebhookJob when an outbox event matches an active subscr
     $company = webhookCompanyWithOwner();
     $order = webhookOrderForCompany($company);
 
-    $subscription = WebhookSubscription::query()->create([
-        'company_id' => $company->id,
-        'url' => 'https://example.test/hook',
-        'event_types' => ['order.awarded'],
-        'secret_hash' => WebhookSubscription::hashSecret('secret'),
-        'is_active' => true,
-    ]);
+    $subscription = webhookSubscription($company);
 
     OutboxEvent::query()->create([
         'event_type' => 'order.awarded',
@@ -215,13 +288,7 @@ it('does not dispatch any delivery job when no subscription matches the outbox e
     $order = webhookOrderForCompany($company);
 
     // Subscription exists but for a different event type.
-    WebhookSubscription::query()->create([
-        'company_id' => $company->id,
-        'url' => 'https://example.test/hook',
-        'event_types' => ['checkpoint.recorded'],
-        'secret_hash' => WebhookSubscription::hashSecret('secret'),
-        'is_active' => true,
-    ]);
+    webhookSubscription($company, eventTypes: ['checkpoint.recorded']);
 
     OutboxEvent::query()->create([
         'event_type' => 'order.awarded',
@@ -241,16 +308,11 @@ it('admin webhook delivery log is reachable only with api-keys.manage', function
     (new RolesAndPermissionsSeeder())->run();
 
     $company = webhookCompanyWithOwner();
-    $subscription = WebhookSubscription::query()->create([
-        'company_id' => $company->id,
-        'url' => 'https://example.test/hook',
-        'event_types' => ['order.awarded'],
-        'secret_hash' => WebhookSubscription::hashSecret('secret'),
-        'is_active' => true,
-    ]);
+    $subscription = webhookSubscription($company);
     WebhookDelivery::query()->create([
         'subscription_id' => $subscription->id,
         'event_type' => 'order.awarded',
+        'event_id' => (string) \Illuminate\Support\Str::ulid(),
         'payload' => ['order_id' => 1],
         'attempt' => 1,
     ]);
@@ -269,21 +331,8 @@ it('scopes the exporter self-service webhook resource to the signed-in company o
     $companyA = webhookCompanyWithOwner();
     $companyB = webhookCompanyWithOwner();
 
-    $subscriptionA = WebhookSubscription::query()->create([
-        'company_id' => $companyA->id,
-        'url' => 'https://example.test/a',
-        'event_types' => ['order.awarded'],
-        'secret_hash' => WebhookSubscription::hashSecret('secret-a'),
-        'is_active' => true,
-    ]);
-
-    $subscriptionB = WebhookSubscription::query()->create([
-        'company_id' => $companyB->id,
-        'url' => 'https://example.test/b',
-        'event_types' => ['order.awarded'],
-        'secret_hash' => WebhookSubscription::hashSecret('secret-b'),
-        'is_active' => true,
-    ]);
+    $subscriptionA = webhookSubscription($companyA, 'whsec_a');
+    $subscriptionB = webhookSubscription($companyB, 'whsec_b');
 
     $userA = $companyA->users()->wherePivot('role', CompanyUserRole::Owner)->first();
 

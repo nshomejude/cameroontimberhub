@@ -230,7 +230,7 @@ it('dispatches a DeliverWebhookJob for an order.shipped outbox event matching an
         'company_id' => $company->id,
         'url' => 'https://example.test/hook',
         'event_types' => ['order.shipped'],
-        'secret_hash' => WebhookSubscription::hashSecret('secret'),
+        'secret' => 'secret',
         'is_active' => true,
     ]);
 
@@ -263,7 +263,7 @@ it('dispatches a DeliverWebhookJob for an order.delivered outbox event matching 
         'company_id' => $company->id,
         'url' => 'https://example.test/hook',
         'event_types' => ['order.delivered'],
-        'secret_hash' => WebhookSubscription::hashSecret('secret'),
+        'secret' => 'secret',
         'is_active' => true,
     ]);
 

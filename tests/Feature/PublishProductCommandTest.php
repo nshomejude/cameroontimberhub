@@ -120,7 +120,7 @@ test('a webhook subscription for product.published receives a delivery dispatch'
         'company_id' => $company->id,
         'url' => 'https://example.test/hook',
         'event_types' => ['product.published'],
-        'secret_hash' => WebhookSubscription::hashSecret('secret'),
+        'secret' => 'secret',
         'is_active' => true,
     ]);
 

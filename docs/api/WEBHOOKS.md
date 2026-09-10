@@ -20,50 +20,112 @@ A company subscribes from the **exporter panel → Webhook Subscriptions**
 
 ### Secret — shown once
 
-On creation CTH generates a 40-character plaintext secret and **displays it
-exactly once**. Only a SHA-256 hash of it (`secret_hash`) is stored — the same
-model as an API key's token. If you lose it, rotate the subscription; CTH
-cannot show it again.
+On creation CTH generates a plaintext secret (`whsec_` + 40 random chars) and
+**displays it exactly once**. It is stored **encrypted at rest** and is used
+directly as your HMAC signing key (Stripe/GitHub `whsec_...` model). If you
+lose it, rotate the subscription; CTH cannot show it again.
+
+---
+
+## Event envelope
+
+Every delivery body is a standard envelope (not the raw domain payload):
+
+```json
+{
+  "id": "evt_01J9Z8XABCDEF0123456789AB",
+  "type": "order.awarded",
+  "created": 1736500000,
+  "data": { "order_id": 5, "country_code": "DE" }
+}
+```
+
+- `id` — stable per delivery. All retry attempts of the same delivery carry
+  the **same** `id`; use it as your idempotency key.
+- `type` — the event type (also in the `X-CTH-Event` header).
+- `created` — unix timestamp when this attempt was signed (equals the `t` in
+  the signature header for this attempt).
+- `data` — the domain event payload (the flat field set documented per event
+  in the catalog below).
+
+Headers on every delivery:
+
+| Header | Value |
+|---|---|
+| `X-CTH-Signature` | `t=<unix>,v1=<hmac-sha256 hex>` (see below) |
+| `X-CTH-Event` | the event `type` |
+| `X-CTH-Delivery` | the envelope `id` (`evt_...`) |
+| `X-CTH-Timestamp` | the signing unix timestamp (same as `t`) |
 
 ---
 
 ## Signature verification
 
-> ⚠️ **Subject to change before GA.** A hardening pass is in progress on the
-> webhook signature scheme (a signed envelope with event id + timestamp,
-> signing over exact transmitted bytes, an encrypted rather than hashed
-> secret, and replay protection via a timestamp tolerance). The scheme below
-> is what the code does **today**; the specifics in this section will be
-> finalised by that work. Build your consumer to verify a signature, but
-> expect the exact construction to firm up.
+CTH signs the **exact bytes** it transmits. The body is JSON-encoded once with
+`JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE` and that same string is both
+signed and sent as the raw request body — so verify against the raw body you
+received, byte for byte, before any re-parsing.
 
-<!-- TODO(webhook-hardening agent): finalise this section against the shipped
-     envelope + exact-bytes + encrypted-secret + replay-protection scheme.
-     Keep the "what a consumer should do" shape; update the construction. -->
+**Scheme** (Stripe-style, replay-protected):
 
-**Current scheme** (`App\Services\Webhooks\WebhookDeliveryService::sign()`):
+- Header: `X-CTH-Signature: t=<unix timestamp>,v1=<hex>`
+- `<hex>` = `HMAC_SHA256(key = <your plaintext secret>, message = "<t>" + "." + <raw body>)`
+- The key is your plaintext `whsec_...` secret **directly** — no hashing.
 
-- Header: `X-CTH-Signature: sha256=<hex>`
-- `<hex>` = `hash_hmac('sha256', json_encode($payload), $key)`
-- `$key` is **the SHA-256 hex hash of your plaintext secret** — i.e. CTH signs
-  with the same value it stored, and you derive it by hashing your copy of the
-  secret. CTH never persists a reversible secret.
+To verify:
 
-To verify (pseudocode):
+1. Read `t` and `v1` from the `X-CTH-Signature` header.
+2. Recompute `HMAC_SHA256(secret, t + "." + rawBody)`.
+3. Constant-time compare against `v1`.
+4. Reject if `t` is more than **5 minutes** from your current time (replay
+   protection).
 
+Node.js example:
+
+```js
+const crypto = require('crypto');
+
+function verifyCthWebhook(rawBody, signatureHeader, secret, toleranceSeconds = 300) {
+  const parts = Object.fromEntries(
+    signatureHeader.split(',').map((kv) => kv.split('=')),
+  );
+  const t = Number(parts.t);
+  const v1 = parts.v1;
+
+  if (!Number.isFinite(t) || Math.abs(Date.now() / 1000 - t) > toleranceSeconds) {
+    throw new Error('Timestamp outside tolerance — possible replay');
+  }
+
+  const expected = crypto
+    .createHmac('sha256', secret)
+    .update(`${t}.${rawBody}`)
+    .digest('hex');
+
+  const ok =
+    v1.length === expected.length &&
+    crypto.timingSafeEqual(Buffer.from(v1), Buffer.from(expected));
+
+  if (!ok) throw new Error('Bad signature');
+
+  return JSON.parse(rawBody); // the envelope: { id, type, created, data }
+}
 ```
-key        = sha256_hex(your_plaintext_secret)
-expected   = hmac_sha256_hex(key, raw_request_body)
-valid      = hash_equals(expected, header.removePrefix("sha256="))
+
+PHP example:
+
+```php
+[$t, $v1] = [null, null];
+foreach (explode(',', $signatureHeader) as $kv) {
+    [$k, $val] = explode('=', $kv, 2);
+    if ($k === 't') $t = (int) $val;
+    if ($k === 'v1') $v1 = $val;
+}
+
+abort_if($t === null || abs(time() - $t) > 300, 400, 'Stale webhook');
+
+$expected = hash_hmac('sha256', $t.'.'.$rawBody, $yourPlaintextSecret);
+abort_unless(hash_equals($expected, (string) $v1), 400, 'Bad signature');
 ```
-
-Caveats with the current scheme, all addressed by the hardening pass:
-
-- The signed bytes are PHP's `json_encode()` of the payload array, not
-  guaranteed identical to the received body under all conditions — prefer
-  verifying against the exact received bytes and treat a mismatch as
-  advisory until GA.
-- No timestamp / event-id in the signed material yet, so no replay protection.
 
 ---
 
@@ -94,8 +156,9 @@ times if webhook dispatch throws.
 
 ## Event catalog
 
-14 event types. Payload fields are exactly what each event's `payload()`
-method emits (flat: IDs + a few scalars — re-fetch detail over `/api/v1`).
+14 event types. The "Payload fields" below are what each event's `payload()`
+method emits (flat: IDs + a few scalars — re-fetch detail over `/api/v1`);
+they arrive nested under the envelope's `data` key.
 "Recipient" is the company whose active subscription receives the delivery,
 as resolved by `RelayOutboxEventsJob::deliverWebhooksFor()`.
 

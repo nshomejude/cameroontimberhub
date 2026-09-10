@@ -183,7 +183,7 @@ it('dispatches a DeliverWebhookJob for an active quote.declined subscription', f
         'company_id' => $company->id,
         'url' => 'https://example.test/hook',
         'event_types' => ['quote.declined'],
-        'secret_hash' => WebhookSubscription::hashSecret('secret'),
+        'secret' => 'secret',
         'is_active' => true,
     ]);
 
@@ -213,7 +213,7 @@ it('dispatches a DeliverWebhookJob for an active quote.withdrawn subscription', 
         'company_id' => $company->id,
         'url' => 'https://example.test/hook',
         'event_types' => ['quote.withdrawn'],
-        'secret_hash' => WebhookSubscription::hashSecret('secret'),
+        'secret' => 'secret',
         'is_active' => true,
     ]);
 

@@ -215,7 +215,7 @@ it('dispatches a DeliverWebhookJob for lot_transformation.recorded to the input 
         'company_id' => $owner->id,
         'url' => 'https://example.test/hook',
         'event_types' => ['lot_transformation.recorded'],
-        'secret_hash' => WebhookSubscription::hashSecret('secret'),
+        'secret' => 'secret',
         'is_active' => true,
     ]);
 

@@ -9,10 +9,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
 /**
- * A company-owned webhook subscription (architecture plan, Task 0.5). The
- * plaintext secret is never stored — only `secret_hash` — and is shown to
- * the company exactly once, at creation time, the same UX as an API key
- * (see App\Filament\Resources\ApiKeyIssuanceRequests).
+ * A company-owned webhook subscription (architecture plan, Task 0.5).
+ *
+ * The signing secret is stored encrypted at rest in `secret` (Laravel's
+ * `encrypted` cast → Crypt::encryptString, same at-rest posture as
+ * App\Models\AiSetting) and the plaintext IS the HMAC key, Stripe/GitHub
+ * `whsec_...` style. It is shown to the company exactly once, at creation
+ * time — the same UX as an API key — and can be read back server-side only
+ * to sign an outgoing delivery.
  */
 class WebhookSubscription extends Model
 {
@@ -25,6 +29,7 @@ class WebhookSubscription extends Model
         return [
             'event_types' => 'array',
             'is_active' => 'boolean',
+            'secret' => 'encrypted',
         ];
     }
 
@@ -49,14 +54,13 @@ class WebhookSubscription extends Model
         return $this->is_active && in_array($eventType, $this->event_types ?? [], true);
     }
 
-    /** Generates a new plaintext secret and returns it; caller is responsible for storing the hash and showing the plaintext once. */
+    /**
+     * Generates a new plaintext signing secret and returns it; the caller
+     * stores it on `secret` (the `encrypted` cast handles encryption) and
+     * shows the plaintext to the company exactly once.
+     */
     public static function generatePlainTextSecret(): string
     {
-        return Str::random(40);
-    }
-
-    public static function hashSecret(string $plainTextSecret): string
-    {
-        return hash('sha256', $plainTextSecret);
+        return 'whsec_'.Str::random(40);
     }
 }

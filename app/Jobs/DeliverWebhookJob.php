@@ -10,6 +10,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Str;
 
 /**
  * Delivers one webhook event to one subscription, with a fixed 3-attempt
@@ -57,12 +58,16 @@ class DeliverWebhookJob implements ShouldQueue
             $delivery = WebhookDelivery::query()->create([
                 'subscription_id' => $subscription->id,
                 'event_type' => $this->eventType,
+                // ULID generated exactly once, here at row creation — every
+                // retry loads this same row (by deliveryId) so the delivered
+                // envelope `id` stays stable across all 3 attempts.
+                'event_id' => (string) Str::ulid(),
                 'payload' => $this->payload,
                 'attempt' => 0,
             ]);
         }
 
-        $responseCode = $service->deliver($subscription, $this->payload);
+        $responseCode = $service->deliver($subscription, $delivery);
         $succeeded = $responseCode !== null && $responseCode >= 200 && $responseCode < 300;
 
         $delivery->update([

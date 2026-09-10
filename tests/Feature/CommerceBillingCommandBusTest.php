@@ -166,7 +166,7 @@ it('dispatches webhook deliveries for subscription.activated and payment.complet
         'company_id' => $company->id,
         'url' => 'https://example.test/hook',
         'event_types' => ['subscription.activated', 'payment.completed'],
-        'secret_hash' => WebhookSubscription::hashSecret('secret'),
+        'secret' => 'secret',
         'is_active' => true,
     ]);
 

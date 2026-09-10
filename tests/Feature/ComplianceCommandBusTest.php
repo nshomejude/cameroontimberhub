@@ -176,7 +176,7 @@ it('relays dispute.opened and notifies BOTH parties webhook subscriptions', func
         'company_id' => $supplierCompany->id,
         'url' => 'https://example.test/supplier-hook',
         'event_types' => ['dispute.opened'],
-        'secret_hash' => WebhookSubscription::hashSecret('s1'),
+        'secret' => 's1',
         'is_active' => true,
     ]);
 
@@ -204,11 +204,11 @@ it('relays dispute.opened and notifies both raiser and respondent companies when
 
     WebhookSubscription::query()->create([
         'company_id' => $raiserCompany->id, 'url' => 'https://example.test/raiser',
-        'event_types' => ['dispute.opened'], 'secret_hash' => WebhookSubscription::hashSecret('a'), 'is_active' => true,
+        'event_types' => ['dispute.opened'], 'secret' => 'a', 'is_active' => true,
     ]);
     WebhookSubscription::query()->create([
         'company_id' => $respondentCompany->id, 'url' => 'https://example.test/respondent',
-        'event_types' => ['dispute.opened'], 'secret_hash' => WebhookSubscription::hashSecret('b'), 'is_active' => true,
+        'event_types' => ['dispute.opened'], 'secret' => 'b', 'is_active' => true,
     ]);
 
     OutboxEvent::query()->create([
@@ -294,7 +294,7 @@ it('relays inspection.finalised and resolves the owning company via order_id', f
         'company_id' => $order->company_id,
         'url' => 'https://example.test/inspection-hook',
         'event_types' => ['inspection.finalised'],
-        'secret_hash' => WebhookSubscription::hashSecret('secret'),
+        'secret' => 'secret',
         'is_active' => true,
     ]);
 
