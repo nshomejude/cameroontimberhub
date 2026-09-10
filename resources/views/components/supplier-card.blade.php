@@ -23,9 +23,9 @@
 
     // Only stats with a real backing value are rendered.
     $stats = collect([
-        ['label' => 'Products', 'value' => ($company->products_count ?? null) ? $company->products_count : null],
-        ['label' => 'Response Rate', 'value' => $company->response_rate_percent !== null ? $company->response_rate_percent.'%' : null],
-        ['label' => 'Experience', 'value' => $company->years_experience !== null ? $company->years_experience.' Yrs' : null],
+        ['label' => __('messages.company.products'), 'value' => ($company->products_count ?? null) ? $company->products_count : null],
+        ['label' => __('messages.company.response_rate'), 'value' => $company->response_rate_percent !== null ? $company->response_rate_percent.'%' : null],
+        ['label' => __('messages.company.experience'), 'value' => $company->years_experience !== null ? __('messages.company.years_short', ['count' => $company->years_experience]) : null],
     ])->filter(fn (array $s) => $s['value'] !== null)->values();
 
     $mobileStats = $stats->take(2);
@@ -40,7 +40,7 @@
              class="aspect-[16/9] w-full object-cover">
 
         @if ($company->is_featured && ! $compact)
-            <span class="absolute left-0 top-3 rounded-r-md bg-forest-700 py-1 pl-3 pr-3 text-[0.875rem] font-semibold text-white">Featured</span>
+            <span class="absolute left-0 top-3 rounded-r-md bg-forest-700 py-1 pl-3 pr-3 text-[0.875rem] font-semibold text-white">{{ __('messages.common.featured') }}</span>
         @endif
 
         @if ($compact && $verified)
@@ -49,7 +49,7 @@
 
         <button type="button"
                 class="absolute z-10 {{ $compact ? 'bottom-2 right-2 h-8 w-8' : 'right-3 top-3 h-8 w-8' }} flex items-center justify-center rounded-full bg-white/95 text-ink-soft shadow-sm transition hover:text-forest-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500"
-                aria-label="Save {{ $company->name }} to favourites">
+                aria-label="{{ __('messages.common.save_company_favourites', ['name' => $company->name]) }}">
             <x-heroicon-o-heart class="h-4 w-4" />
         </button>
 
@@ -99,17 +99,13 @@
         <div class="mt-auto pt-4">
             @if ($compact)
                 <span class="flex w-full items-center justify-center gap-2 rounded-lg bg-forest-50 px-3 py-2.5 text-[1.0625rem] font-semibold text-forest-800">
-                    View Profile <x-heroicon-m-arrow-right class="h-4 w-4" />
+                    {{ __('messages.common.view_profile') }} <x-heroicon-m-arrow-right class="h-4 w-4" />
                 </span>
             @else
                 <div class="flex gap-2">
-                    <span class="flex-1 rounded-lg border border-sand-300 px-3 py-2 text-center text-[1.0625rem] font-semibold text-ink transition group-hover:border-forest-600 group-hover:text-forest-800">
-                        View Profile
-                    </span>
+                    <span class="flex-1 rounded-lg border border-sand-300 px-3 py-2 text-center text-[1.0625rem] font-semibold text-ink transition group-hover:border-forest-600 group-hover:text-forest-800">{{ __('messages.common.view_profile') }}</span>
                     <a href="{{ $profileUrl }}#contact"
-                       class="relative z-10 flex-1 rounded-lg bg-forest-700 px-3 py-2 text-center text-[1.0625rem] font-semibold text-white transition hover:bg-forest-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500 focus-visible:ring-offset-2">
-                        Contact Supplier
-                    </a>
+                       class="relative z-10 flex-1 rounded-lg bg-forest-700 px-3 py-2 text-center text-[1.0625rem] font-semibold text-white transition hover:bg-forest-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500 focus-visible:ring-offset-2">{{ __('messages.common.contact_supplier') }}</a>
                 </div>
             @endif
         </div>

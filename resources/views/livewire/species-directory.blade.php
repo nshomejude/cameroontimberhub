@@ -19,7 +19,7 @@
                             aria-controls="browse-categories-panel"
                             class="flex w-full items-center gap-3 rounded-lg bg-forest-800 px-4 py-3 text-[1.0625rem] font-semibold text-white transition hover:bg-forest-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-300 focus-visible:ring-offset-2">
                         <x-heroicon-o-bars-3 class="h-5 w-5" />
-                        Browse Categories
+                        {{ __('messages.species.browse_categories') }}
                         <x-heroicon-m-chevron-down class="ml-auto h-4 w-4 transition" ::class="open && 'rotate-180'" />
                     </button>
                     <ul id="browse-categories-panel" x-show="open" x-cloak class="mt-2 space-y-0.5">
@@ -54,18 +54,18 @@
             {{-- Breadcrumb --}}
             <nav aria-label="Breadcrumb">
                 <ol class="flex items-center gap-2 text-[0.9375rem] text-ink-soft">
-                    <li><a href="{{ route('home') }}" class="rounded transition hover:text-forest-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-300">Home</a></li>
+                    <li><a href="{{ route('home') }}" class="rounded transition hover:text-forest-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-300">{{ __('messages.common.home') }}</a></li>
                     <li aria-hidden="true">/</li>
-                    <li><span aria-current="page" class="font-medium text-ink">Timber Species</span></li>
+                    <li><span aria-current="page" class="font-medium text-ink">{{ __('messages.common.timber_species') }}</span></li>
                 </ol>
             </nav>
 
             {{-- Title + stat tile + help panel --}}
             <div class="mt-3 flex items-start gap-6">
                 <div class="min-w-0 flex-1">
-                    <h1 class="text-[1.875rem] font-bold tracking-tight text-ink">Timber Species Directory</h1>
+                    <h1 class="text-[1.875rem] font-bold tracking-tight text-ink">{{ __('messages.species.directory_title') }}</h1>
                     <p class="mt-1.5 max-w-xl text-[1.0625rem] leading-relaxed text-ink-soft">
-                        Explore verified timber species available in Cameroon. Detailed information to help you make the right choice.
+                        {{ __('messages.species.directory_intro') }}
                     </p>
                 </div>
 
@@ -75,17 +75,17 @@
                     </span>
                     <div>
                         <p class="text-[1.5rem] font-bold leading-none text-ink">{{ $publishedCount }}</p>
-                        <p class="mt-1 text-[0.9375rem] text-ink-soft">Timber Species</p>
+                        <p class="mt-1 text-[0.9375rem] text-ink-soft">{{ __('messages.species.count_label') }}</p>
                     </div>
                 </div>
 
                 <div class="relative w-[20rem] shrink-0 overflow-hidden rounded-xl bg-forest-800 px-5 py-4 text-white">
                     <x-heroicon-o-lifebuoy class="pointer-events-none absolute -right-3 top-1/2 h-24 w-24 -translate-y-1/2 text-white/10" aria-hidden="true" />
-                    <p class="text-[1rem] font-bold">Need help choosing?</p>
-                    <p class="mt-1 text-[1.0625rem] text-forest-100">Talk to our timber experts</p>
+                    <p class="text-[1rem] font-bold">{{ __('messages.species.need_help_choosing') }}</p>
+                    <p class="mt-1 text-[1.0625rem] text-forest-100">{{ __('messages.species.talk_to_experts') }}</p>
                     <a href="{{ route('contact') }}"
                        class="mt-3 inline-flex rounded-lg bg-white px-4 py-2 text-[1.0625rem] font-semibold text-forest-800 transition hover:bg-forest-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-forest-800">
-                        Contact Us
+                        {{ __('messages.common.contact_us') }}
                     </a>
                 </div>
             </div>
@@ -94,15 +94,15 @@
             <div class="mt-6 flex items-center gap-3">
                 <p class="text-[1.0625rem] text-ink-soft">
                     @if ($total > 0)
-                        Showing {{ $species->firstItem() }} – {{ $species->lastItem() }} of {{ $total }} species
+                        {{ __('messages.species.showing_range', ['first' => $species->firstItem(), 'last' => $species->lastItem(), 'total' => $total]) }}
                     @else
-                        No species match these filters
+                        {{ __('messages.species.no_species_match') }}
                     @endif
                 </p>
 
                 <div class="ml-auto flex items-center gap-3">
                     <div class="inline-flex rounded-lg border border-sand-300 p-0.5" role="group" aria-label="Result layout">
-                        @foreach ([['grid', 'Grid view', 'squares-2x2'], ['list', 'List view', 'bars-3']] as [$mode, $label, $icon])
+                        @foreach ([['grid', __('messages.common.grid_view'), 'squares-2x2'], ['list', __('messages.common.list_view'), 'bars-3']] as [$mode, $label, $icon])
                             <button type="button" wire:click="setView('{{ $mode }}')"
                                     aria-pressed="{{ $view === $mode ? 'true' : 'false' }}"
                                     aria-label="{{ $label }}"
@@ -117,10 +117,10 @@
                     </div>
 
                     <div class="relative">
-                        <label for="d-sort" class="sr-only">Sort species by</label>
+                        <label for="d-sort" class="sr-only">{{ __('messages.common.sort_by', ['label' => '']) }}</label>
                         <select id="d-sort" wire:model.live="sort" class="{{ $select }}">
                             @foreach ($sortOptions as $value => $label)
-                                <option value="{{ $value }}">Sort by: {{ $label }}</option>
+                                <option value="{{ $value }}">{{ __('messages.common.sort_by', ['label' => $label]) }}</option>
                             @endforeach
                         </select>
                         <x-heroicon-m-chevron-down class="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-soft" />
@@ -146,15 +146,15 @@
                     @endif
 
                     <div class="mt-8 flex flex-col items-center gap-3 sm:flex-row">
-                        <div class="flex-1"><x-directory-pagination :paginator="$species" noun="species" /></div>
+                        <div class="flex-1"><x-directory-pagination :paginator="$species" :noun="__('messages.common.noun_species')" /></div>
                         <div class="relative flex items-center gap-2">
-                            <label for="d-per-page" class="text-[1.0625rem] text-ink-soft">Show</label>
+                            <label for="d-per-page" class="text-[1.0625rem] text-ink-soft">{{ __('messages.common.show') }}</label>
                             <select id="d-per-page" wire:model.live="perPage" class="{{ $select }}">
                                 @foreach ([12, 24, 48] as $n)
                                     <option value="{{ $n }}">{{ $n }}</option>
                                 @endforeach
                             </select>
-                            <span class="text-[1.0625rem] text-ink-soft">per page</span>
+                            <span class="text-[1.0625rem] text-ink-soft">{{ __('messages.common.per_page') }}</span>
                         </div>
                     </div>
                 @else
@@ -171,30 +171,30 @@
         <div class="px-4 pt-4">
             <nav aria-label="Breadcrumb">
                 <ol class="flex items-center gap-2 text-[1.0625rem] text-ink-soft">
-                    <li><a href="{{ route('home') }}" class="rounded transition hover:text-forest-700">Home</a></li>
+                    <li><a href="{{ route('home') }}" class="rounded transition hover:text-forest-700">{{ __('messages.common.home') }}</a></li>
                     <li aria-hidden="true">›</li>
-                    <li><span aria-current="page" class="text-ink">Timber Species</span></li>
+                    <li><span aria-current="page" class="text-ink">{{ __('messages.common.timber_species') }}</span></li>
                 </ol>
             </nav>
 
-            <h2 class="mt-2 text-[1.75rem] font-bold leading-tight tracking-tight text-ink">Timber Species Directory</h2>
+            <h2 class="mt-2 text-[1.75rem] font-bold leading-tight tracking-tight text-ink">{{ __('messages.species.directory_title') }}</h2>
             <p class="mt-2 text-[1.125rem] leading-relaxed text-ink-soft">
-                Explore our comprehensive directory of timber species sourced from Cameroon's rich forests.
+                {{ __('messages.species.directory_intro_mobile') }}
             </p>
 
             {{-- Search + filter trigger --}}
             <div class="mt-4 flex gap-3">
                 <div class="relative flex-1">
-                    <label for="m-search" class="sr-only">Search species</label>
+                    <label for="m-search" class="sr-only">{{ __('messages.common.search') }}</label>
                     <x-heroicon-o-magnifying-glass class="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-ink-soft" />
                     <input id="m-search" type="search" wire:model.live.debounce.400ms="search"
-                           placeholder="Search species..."
+                           placeholder="{{ __('messages.directory.search_species') }}"
                            class="w-full rounded-xl border border-sand-300 bg-white py-3 pl-11 pr-3 text-[1.125rem] text-ink placeholder:text-ink-soft/70 focus:border-forest-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-forest-200">
                 </div>
                 <button type="button" @click="drawer = true"
                         class="flex shrink-0 items-center gap-2 rounded-xl border border-sand-300 px-5 text-[1.125rem] font-semibold text-ink transition hover:border-forest-600 hover:text-forest-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500 focus-visible:ring-offset-2">
                     <x-heroicon-o-funnel class="h-5 w-5" />
-                    Filter
+                    {{ __('messages.common.filter') }}
                 </button>
             </div>
         </div>
@@ -208,7 +208,7 @@
                         'border-forest-700 bg-forest-50 text-forest-800' => $categories === [],
                         'border-sand-300 text-ink' => $categories !== [],
                     ])>
-                All Species
+                {{ __('messages.species.all_species') }}
             </button>
             @foreach ($categoryFacets as $facet)
                 <button type="button" wire:click="selectCategory('{{ $facet['value'] }}')"
@@ -226,13 +226,13 @@
 
         {{-- Count + sort --}}
         <div class="mt-4 flex items-center gap-3 px-4">
-            <p class="text-[1.125rem] text-ink">{{ $total }} Species Found</p>
+            <p class="text-[1.125rem] text-ink">{{ __('messages.species.species_found', ['count' => $total]) }}</p>
             <div class="relative ml-auto">
-                <label for="m-sort" class="sr-only">Sort species by</label>
+                <label for="m-sort" class="sr-only">{{ __('messages.common.sort_by', ['label' => '']) }}</label>
                 <select id="m-sort" wire:model.live="sort"
                         class="appearance-none rounded-xl border border-sand-300 bg-white py-3 pl-4 pr-10 text-[1.125rem] text-ink focus:border-forest-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-forest-200">
                     @foreach ($sortOptions as $value => $label)
-                        <option value="{{ $value }}">Sort: {{ $label }}</option>
+                        <option value="{{ $value }}">{{ __('messages.common.sort_short', ['label' => $label]) }}</option>
                     @endforeach
                 </select>
                 <x-heroicon-m-chevron-down class="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-ink-soft" />
@@ -248,7 +248,7 @@
                     @endforeach
                 </div>
                 <div class="mt-6">
-                    <x-directory-pagination :paginator="$species" noun="species" />
+                    <x-directory-pagination :paginator="$species" :noun="__('messages.common.noun_species')" />
                 </div>
             @else
                 <x-species-empty />
@@ -261,12 +261,12 @@
                 <x-heroicon-o-sparkles class="h-5 w-5" />
             </span>
             <div class="min-w-0 flex-1">
-                <p class="text-[1.125rem] font-bold text-ink">Can't find the species you need?</p>
-                <p class="mt-0.5 text-[1.0625rem] text-ink-soft">Submit a request and we'll help you source it.</p>
+                <p class="text-[1.125rem] font-bold text-ink">{{ __('messages.species.cant_find_species') }}</p>
+                <p class="mt-0.5 text-[1.0625rem] text-ink-soft">{{ __('messages.species.submit_request_help') }}</p>
             </div>
             <a href="{{ route('rfq.create') }}"
                class="shrink-0 rounded-lg bg-forest-700 px-4 py-2.5 text-[1.0625rem] font-semibold text-white transition hover:bg-forest-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500 focus-visible:ring-offset-2">
-                Request Species
+                {{ __('messages.species.request_species') }}
             </a>
         </div>
 
@@ -281,7 +281,7 @@
                  x-transition:leave-start="translate-y-0" x-transition:leave-end="translate-y-full"
                  class="absolute inset-x-0 bottom-0 flex max-h-[88vh] flex-col rounded-t-2xl bg-white shadow-2xl">
                 <div class="flex items-center justify-between border-b border-sand-200 px-5 py-3">
-                    <span class="text-[1.125rem] font-bold text-ink">Filter species</span>
+                    <span class="text-[1.125rem] font-bold text-ink">{{ __('messages.species.filter_species') }}</span>
                     <button type="button" @click="drawer = false"
                             class="flex h-9 w-9 items-center justify-center rounded-lg text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500"
                             aria-label="Close filters">

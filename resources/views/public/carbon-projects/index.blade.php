@@ -1,15 +1,14 @@
 <x-layouts.app
-    title="Carbon Projects — Cameroon carbon-developer projects"
-    description="Browse reforestation, afforestation and avoided-deforestation carbon projects listed by verified Cameroon carbon-developer companies."
+    :title="__('messages.carbon.meta_title')"
+    :description="__('messages.carbon.meta_description')"
     :breadcrumbs="$breadcrumbs">
 
     <section class="border-b border-sand-200 dark:border-[#2c2a24] bg-gradient-to-b from-forest-50 dark:from-forest-950 to-sand-50 dark:to-[#14130f]">
         <div class="mx-auto max-w-7xl px-4 py-12">
-            <p class="eyebrow">Domestic market</p>
-            <h1 class="mt-3 font-display text-4xl font-semibold text-forest-950 dark:text-sand-100 sm:text-5xl">Carbon Projects</h1>
+            <p class="eyebrow">{{ __('messages.common.domestic_market_eyebrow') }}</p>
+            <h1 class="mt-3 font-display text-4xl font-semibold text-forest-950 dark:text-sand-100 sm:text-5xl">{{ __('messages.carbon.heading') }}</h1>
             <p class="mt-3 max-w-2xl text-lg text-ink-soft dark:text-[#b3ab9b]">
-                Reforestation, afforestation and avoided-deforestation projects listed by verified
-                Cameroon carbon-developer companies.
+                {{ __('messages.carbon.intro') }}
             </p>
         </div>
     </section>
@@ -21,7 +20,7 @@
             <button type="button" @click="filtersOpen = true"
                     class="flex w-full items-center justify-center gap-2 rounded-full border border-sand-300 dark:border-[#3a352e] bg-white dark:bg-[#1f1d18] px-5 py-3 text-sm font-semibold text-ink dark:text-sand-100 lg:hidden">
                 <x-heroicon-o-adjustments-horizontal class="h-4 w-4" />
-                Filters
+                {{ __('messages.common.filters') }}
             </button>
 
             {{-- Backdrop (mobile only) --}}
@@ -33,15 +32,15 @@
                 :class="filtersOpen ? 'translate-x-0' : '-translate-x-full'"
                 class="fixed inset-y-0 left-0 z-50 w-[85%] max-w-sm overflow-y-auto bg-white pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)] shadow-xl transition-transform duration-300 ease-out dark:bg-[#1f1d18] lg:static lg:z-auto lg:col-span-1 lg:w-auto lg:max-w-none lg:translate-x-0 lg:overflow-visible lg:bg-transparent lg:p-0 lg:pt-0 lg:pb-0 lg:shadow-none lg:transition-none lg:dark:bg-transparent">
                 <div class="flex items-center justify-between border-b border-sand-200 p-4 dark:border-[#2c2a24] lg:hidden">
-                    <p class="text-base font-semibold text-ink dark:text-sand-100">Filters</p>
-                    <button type="button" @click="filtersOpen = false" class="flex h-9 w-9 items-center justify-center rounded-lg text-ink-soft" aria-label="Close filters">
+                    <p class="text-base font-semibold text-ink dark:text-sand-100">{{ __('messages.common.filters') }}</p>
+                    <button type="button" @click="filtersOpen = false" class="flex h-9 w-9 items-center justify-center rounded-lg text-ink-soft" aria-label="{{ __('messages.common.close_filters') }}">
                         <x-heroicon-o-x-mark class="h-5 w-5" />
                     </button>
                 </div>
 
                 <form method="GET" action="{{ route('carbon-projects') }}" class="space-y-6 p-4 lg:rounded-2xl lg:border lg:border-sand-200 lg:dark:border-[#2c2a24] lg:bg-white lg:dark:bg-[#1f1d18] lg:p-5">
                     <div>
-                        <p class="mb-2 text-sm font-semibold text-ink dark:text-sand-100">Project type</p>
+                        <p class="mb-2 text-sm font-semibold text-ink dark:text-sand-100">{{ __('messages.carbon.project_type') }}</p>
                         <div class="space-y-1.5">
                             @foreach ($projectTypeOptions as $value => $label)
                                 <label class="flex items-center gap-2 text-[0.9375rem] text-ink-soft dark:text-[#b3ab9b]">
@@ -54,11 +53,11 @@
                     </div>
 
                     <button type="submit" class="w-full rounded-full bg-forest-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-forest-800">
-                        Apply filters
+                        {{ __('messages.made_in_cameroon.apply_filters') }}
                     </button>
 
                     @if ($filters['project_type'] !== [])
-                        <a href="{{ route('carbon-projects') }}" class="block text-center text-sm font-medium text-ink-soft hover:text-forest-700">Clear filters</a>
+                        <a href="{{ route('carbon-projects') }}" class="block text-center text-sm font-medium text-ink-soft hover:text-forest-700">{{ __('messages.common.clear_filters') }}</a>
                     @endif
                 </form>
             </aside>
@@ -67,7 +66,7 @@
             <div x-show="filtersOpen" x-cloak class="fixed inset-x-0 bottom-0 z-50 border-t border-sand-200 bg-white p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-[0_-4px_12px_rgba(0,0,0,0.08)] dark:border-[#2c2a24] dark:bg-[#1f1d18] lg:hidden">
                 <button type="button" @click="filtersOpen = false"
                         class="w-full rounded-full bg-forest-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-forest-800">
-                    Show results
+                    {{ __('messages.common.show_results') }}
                 </button>
             </div>
 
@@ -75,7 +74,7 @@
             <div class="lg:col-span-3">
                 @if ($projects->isNotEmpty())
                     <p class="text-[0.9375rem] text-ink-soft dark:text-[#b3ab9b]" aria-live="polite">
-                        Showing {{ $projects->firstItem() }}–{{ $projects->lastItem() }} of {{ $projects->total() }} projects
+                        {{ __('messages.carbon.showing_projects', ['first' => $projects->firstItem(), 'last' => $projects->lastItem(), 'total' => $projects->total()]) }}
                     </p>
 
                     <div class="mt-5 grid grid-cols-2 gap-6 lg:grid-cols-4">
@@ -106,19 +105,19 @@
                                 <dl class="mt-3 space-y-1 text-sm text-ink-soft dark:text-[#b3ab9b]">
                                     @if ($project->area_hectares !== null)
                                         <div class="flex justify-between">
-                                            <dt>Area</dt>
+                                            <dt>{{ __('messages.carbon.area') }}</dt>
                                             <dd class="font-semibold text-ink dark:text-sand-100">{{ number_format((float) $project->area_hectares) }} ha</dd>
                                         </div>
                                     @endif
                                     @if ($project->estimated_credits_per_year !== null)
                                         <div class="flex justify-between">
-                                            <dt>Est. credits/yr</dt>
+                                            <dt>{{ __('messages.carbon.est_credits_year') }}</dt>
                                             <dd class="font-semibold text-ink dark:text-sand-100">{{ number_format((float) $project->estimated_credits_per_year) }}</dd>
                                         </div>
                                     @endif
                                 </dl>
 
-                                <a href="{{ route('carbon-projects.show', $project) }}" class="absolute inset-0" aria-label="View {{ $project->name }}"></a>
+                                <a href="{{ route('carbon-projects.show', $project) }}" class="absolute inset-0" aria-label="{{ __('messages.carbon.view_project', ['name' => $project->name]) }}"></a>
                             </article>
                         @endforeach
                     </div>
@@ -129,8 +128,8 @@
                 @else
                     <div class="rounded-2xl border border-dashed border-sand-300 dark:border-[#3a352e] p-10 text-center">
                         <x-heroicon-o-sparkles class="mx-auto h-8 w-8 text-ink-soft" />
-                        <p class="mt-3 text-[1.0625rem] font-semibold text-ink dark:text-sand-100">No carbon projects match these filters yet</p>
-                        <p class="mt-1 text-[0.9375rem] text-ink-soft dark:text-[#b3ab9b]">Try widening your filters, or check back soon as carbon-developer companies list new projects.</p>
+                        <p class="mt-3 text-[1.0625rem] font-semibold text-ink dark:text-sand-100">{{ __('messages.carbon.empty_title') }}</p>
+                        <p class="mt-1 text-[0.9375rem] text-ink-soft dark:text-[#b3ab9b]">{{ __('messages.carbon.empty_body') }}</p>
                     </div>
                 @endif
             </div>

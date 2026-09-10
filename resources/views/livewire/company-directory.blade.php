@@ -25,18 +25,18 @@
             {{-- Breadcrumb --}}
             <nav aria-label="Breadcrumb">
                 <ol class="flex items-center gap-2 text-[0.9375rem] text-ink-soft">
-                    <li><a href="{{ route('home') }}" class="rounded transition hover:text-forest-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-300">Home</a></li>
+                    <li><a href="{{ route('home') }}" class="rounded transition hover:text-forest-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-300">{{ __('messages.common.home') }}</a></li>
                     <li aria-hidden="true">/</li>
-                    <li><span aria-current="page" class="font-medium text-ink">Suppliers</span></li>
+                    <li><span aria-current="page" class="font-medium text-ink">{{ __('messages.common.suppliers') }}</span></li>
                 </ol>
             </nav>
 
             {{-- Title + stat tiles --}}
             <div class="mt-3 flex items-start gap-8">
                 <div class="min-w-0 flex-1">
-                    <h1 class="text-[1.875rem] font-bold tracking-tight text-ink">Supplier Directory</h1>
+                    <h1 class="text-[1.875rem] font-bold tracking-tight text-ink">{{ __('messages.directory.title') }}</h1>
                     <p class="mt-1.5 text-[1.0625rem] text-ink-soft">
-                        Find and connect with verified timber suppliers, exporters and manufacturers across Cameroon.
+                        {{ __('messages.directory.intro') }}
                     </p>
                 </div>
 
@@ -58,7 +58,7 @@
             {{-- Toolbar --}}
             <div class="mt-6 flex items-center gap-3">
                 <div class="inline-flex rounded-lg border border-sand-300 p-0.5" role="group" aria-label="Result layout">
-                    @foreach ([['grid', 'Grid View', 'squares-2x2'], ['list', 'List View', 'bars-3']] as [$mode, $label, $icon])
+                    @foreach ([['grid', __('messages.common.grid_view'), 'squares-2x2'], ['list', __('messages.common.list_view'), 'bars-3']] as [$mode, $label, $icon])
                         <button type="button" wire:click="setView('{{ $mode }}')"
                                 aria-pressed="{{ $view === $mode ? 'true' : 'false' }}"
                                 @class([
@@ -74,19 +74,19 @@
 
                 <div class="ml-auto flex items-center gap-3">
                     <div class="relative">
-                        <label for="d-sort" class="sr-only">Sort suppliers by</label>
+                        <label for="d-sort" class="sr-only">{{ __('messages.directory.title') }}</label>
                         <select id="d-sort" wire:model.live="sort" class="{{ $select }}">
                             @foreach ($sortOptions as $value => $label)
-                                <option value="{{ $value }}">Sort by: {{ $label }}</option>
+                                <option value="{{ $value }}">{{ __('messages.common.sort_by', ['label' => $label]) }}</option>
                             @endforeach
                         </select>
                         <x-heroicon-m-chevron-down class="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-soft" />
                     </div>
                     <div class="relative">
-                        <label for="d-per-page" class="sr-only">Results per page</label>
+                        <label for="d-per-page" class="sr-only">{{ __('messages.common.per_page') }}</label>
                         <select id="d-per-page" wire:model.live="perPage" class="{{ $select }}">
                             @foreach ([12, 24, 48] as $n)
-                                <option value="{{ $n }}">Show: {{ $n }}</option>
+                                <option value="{{ $n }}">{{ __('messages.common.show_count', ['count' => $n]) }}</option>
                             @endforeach
                         </select>
                         <x-heroicon-m-chevron-down class="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-soft" />
@@ -112,7 +112,7 @@
                     @endif
 
                     <div class="mt-8">
-                        <x-directory-pagination :paginator="$companies" noun="suppliers" />
+                        <x-directory-pagination :paginator="$companies" :noun="__('messages.common.noun_suppliers')" />
                     </div>
                 @else
                     <x-directory-empty />
@@ -126,24 +126,24 @@
     =============================================================== --}}
     <div x-data="{ drawer: false }" @close-filter-drawer.window="drawer = false" class="lg:hidden">
         <div class="px-4 pt-5">
-            <h2 class="text-[1.75rem] font-bold leading-tight tracking-tight text-ink">Supplier Directory</h2>
+            <h2 class="text-[1.75rem] font-bold leading-tight tracking-tight text-ink">{{ __('messages.directory.title') }}</h2>
             <p class="mt-2 text-[1.125rem] leading-relaxed text-ink-soft">
-                Connect with verified timber suppliers, exporters and manufacturers in Cameroon.
+                {{ __('messages.directory.intro_mobile') }}
             </p>
 
             {{-- Search + filter trigger --}}
             <div class="mt-4 flex gap-3">
                 <div class="relative flex-1">
-                    <label for="m-search" class="sr-only">Search suppliers</label>
+                    <label for="m-search" class="sr-only">{{ __('messages.common.search') }}</label>
                     <x-heroicon-o-magnifying-glass class="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-ink-soft" />
                     <input id="m-search" type="search" wire:model.live.debounce.400ms="search"
-                           placeholder="Search suppliers, company name..."
+                           placeholder="{{ __('messages.directory.search_suppliers_mobile') }}"
                            class="w-full rounded-xl border border-sand-300 bg-white py-3 pl-11 pr-3 text-[1.125rem] text-ink placeholder:text-ink-soft/70 focus:border-forest-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-forest-200">
                 </div>
                 <button type="button" @click="drawer = true"
                         class="flex shrink-0 items-center gap-2 rounded-xl bg-forest-800 px-5 text-[1.125rem] font-semibold text-white transition hover:bg-forest-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500 focus-visible:ring-offset-2">
                     <x-heroicon-o-adjustments-horizontal class="h-5 w-5" />
-                    Filters
+                    {{ __('messages.common.filters') }}
                 </button>
             </div>
         </div>
@@ -158,7 +158,7 @@
                         'border-sand-300 text-ink' => $types !== [],
                     ])>
                 <x-heroicon-o-adjustments-horizontal class="h-5 w-5" />
-                All Suppliers
+                {{ __('messages.directory.all_suppliers') }}
             </button>
             @foreach ($typeFacets as $facet)
                 <button type="button" wire:click="selectType('{{ $facet['value'] }}')"
@@ -176,13 +176,13 @@
 
         {{-- Count + sort --}}
         <div class="mt-4 flex items-center gap-3 px-4">
-            <p class="text-[1.125rem] text-ink">{{ $total }} {{ Str::plural('Supplier', $total) }} Found</p>
+            <p class="text-[1.125rem] text-ink">{{ __('messages.directory.suppliers_found', ['count' => $total]) }}</p>
             <div class="relative ml-auto">
-                <label for="m-sort" class="sr-only">Sort suppliers by</label>
+                <label for="m-sort" class="sr-only">{{ __('messages.common.sort_by', ['label' => '']) }}</label>
                 <select id="m-sort" wire:model.live="sort"
                         class="appearance-none rounded-xl border border-sand-300 bg-white py-3 pl-4 pr-10 text-[1.125rem] text-ink focus:border-forest-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-forest-200">
                     @foreach ($sortOptions as $value => $label)
-                        <option value="{{ $value }}">Sort: {{ $label }}</option>
+                        <option value="{{ $value }}">{{ __('messages.common.sort_short', ['label' => $label]) }}</option>
                     @endforeach
                 </select>
                 <x-heroicon-m-chevron-down class="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-ink-soft" />
@@ -198,7 +198,7 @@
                     @endforeach
                 </div>
                 <div class="mt-6">
-                    <x-directory-pagination :paginator="$companies" noun="suppliers" />
+                    <x-directory-pagination :paginator="$companies" :noun="__('messages.common.noun_suppliers')" />
                 </div>
             @else
                 <x-directory-empty />
@@ -216,7 +216,7 @@
                  x-transition:leave-start="translate-y-0" x-transition:leave-end="translate-y-full"
                  class="absolute inset-x-0 bottom-0 flex max-h-[88vh] flex-col rounded-t-2xl bg-white shadow-2xl">
                 <div class="flex items-center justify-between border-b border-sand-200 px-5 py-3">
-                    <span class="text-[1.125rem] font-bold text-ink">Filter suppliers</span>
+                    <span class="text-[1.125rem] font-bold text-ink">{{ __('messages.directory.filter_suppliers') }}</span>
                     <button type="button" @click="drawer = false"
                             class="flex h-9 w-9 items-center justify-center rounded-lg text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500"
                             aria-label="Close filters">

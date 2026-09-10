@@ -8,10 +8,10 @@
     // List view surfaces the technical record that the grid card has no room
     // for — all of it read straight off the species row.
     $facts = collect([
-        ['label' => 'Density', 'value' => $species->densityRange()],
-        ['label' => 'Durability', 'value' => $species->durability_class],
-        ['label' => 'Janka', 'value' => $species->janka_hardness ? number_format($species->janka_hardness).' N' : null],
-        ['label' => 'Family', 'value' => $species->family],
+        ['label' => __('messages.species.density_air_dry'), 'value' => $species->densityRange()],
+        ['label' => __('messages.species.durability_class'), 'value' => $species->durability_class],
+        ['label' => __('messages.species.janka_hardness'), 'value' => $species->janka_hardness ? number_format($species->janka_hardness).' N' : null],
+        ['label' => __('messages.species.botanical_family'), 'value' => $species->family],
     ])->filter(fn (array $f): bool => filled($f['value']))->values();
 
     $uses = collect($species->typical_uses ?? [])->take(4);
@@ -33,9 +33,9 @@
         @endif
 
         @if ($species->isPremium())
-            <span class="absolute bottom-2 left-2 rounded-md bg-forest-800 px-2 py-1 text-[0.875rem] font-semibold text-white">Premium</span>
+            <span class="absolute bottom-2 left-2 rounded-md bg-forest-800 px-2 py-1 text-[0.875rem] font-semibold text-white">{{ __('messages.common.premium') }}</span>
         @elseif ($species->is_promoted)
-            <span class="absolute bottom-2 left-2 rounded-md bg-white/95 px-2 py-1 text-[0.875rem] font-semibold text-forest-800">Promoted</span>
+            <span class="absolute bottom-2 left-2 rounded-md bg-white/95 px-2 py-1 text-[0.875rem] font-semibold text-forest-800">{{ __('messages.common.promoted') }}</span>
         @endif
     </div>
 
@@ -60,7 +60,7 @@
 
             <button type="button"
                     class="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-sand-300 text-ink-soft transition hover:text-forest-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500"
-                    aria-label="Save {{ $species->common_name }} to favourites">
+                    aria-label="{{ __('messages.common.save_company_favourites', ['name' => $species->common_name]) }}">
                 <x-heroicon-o-heart class="h-4 w-4" />
             </button>
         </div>
@@ -91,14 +91,14 @@
         <div class="mt-4 flex flex-wrap items-center gap-3">
             <p class="text-[1.0625rem] text-ink-soft">
                 @if ($productCount > 0)
-                    <span class="font-bold text-ink">{{ $productCount }}</span> {{ Str::plural('Product', $productCount) }} listed
+                    {{ __('messages.species.products_listed', ['count' => $productCount]) }}
                 @else
-                    No listings yet
+                    {{ __('messages.species.no_listings_yet') }}
                 @endif
             </p>
             <a href="{{ $url }}"
                class="relative z-10 ml-auto rounded-lg bg-forest-700 px-4 py-2 text-[1.0625rem] font-semibold text-white transition hover:bg-forest-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500 focus-visible:ring-offset-2">
-                View Details
+                {{ __('messages.common.view_details') }}
             </a>
         </div>
     </div>

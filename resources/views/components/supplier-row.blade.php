@@ -15,10 +15,10 @@
     $location = collect([$company->city, $company->region ? $company->region.' Region' : null])->filter()->implode(', ');
 
     $stats = collect([
-        ['label' => 'Products', 'value' => ($company->products_count ?? null) ? $company->products_count : null],
-        ['label' => 'Response Rate', 'value' => $company->response_rate_percent !== null ? $company->response_rate_percent.'%' : null],
-        ['label' => 'Experience', 'value' => $company->years_experience !== null ? $company->years_experience.' Yrs' : null],
-        ['label' => 'Markets', 'value' => $company->relationLoaded('exportMarkets') && $company->exportMarkets->isNotEmpty() ? $company->exportMarkets->count() : null],
+        ['label' => __('messages.company.products'), 'value' => ($company->products_count ?? null) ? $company->products_count : null],
+        ['label' => __('messages.company.response_rate'), 'value' => $company->response_rate_percent !== null ? $company->response_rate_percent.'%' : null],
+        ['label' => __('messages.company.experience'), 'value' => $company->years_experience !== null ? __('messages.company.years_short', ['count' => $company->years_experience]) : null],
+        ['label' => __('messages.company.markets'), 'value' => $company->relationLoaded('exportMarkets') && $company->exportMarkets->isNotEmpty() ? $company->exportMarkets->count() : null],
     ])->filter(fn (array $s) => $s['value'] !== null)->values();
 @endphp
 
@@ -33,7 +33,7 @@
         <img src="{{ $company->logoUrl() }}" alt="" loading="lazy" width="136" height="136"
              class="absolute -bottom-3 left-3 h-12 w-12 rounded-full bg-white object-cover ring-4 ring-white">
         @if ($company->is_featured)
-            <span class="absolute left-0 top-2 rounded-r-md bg-forest-700 px-2 py-0.5 text-[0.8125rem] font-semibold text-white">Featured</span>
+            <span class="absolute left-0 top-2 rounded-r-md bg-forest-700 px-2 py-0.5 text-[0.8125rem] font-semibold text-white">{{ __('messages.common.featured') }}</span>
         @endif
     </div>
 
@@ -45,7 +45,7 @@
                         {{ $company->name }}
                     </a>
                     @if ($verified)
-                        <span class="inline-flex items-center rounded-full bg-forest-700 px-2 py-0.5 text-[0.8125rem] font-semibold text-white">Verified</span>
+                        <span class="inline-flex items-center rounded-full bg-forest-700 px-2 py-0.5 text-[0.8125rem] font-semibold text-white">{{ __('messages.common.verified') }}</span>
                     @endif
                     @if ($company->supplier_type)
                         <span class="inline-flex items-center rounded-full bg-sand-200 px-2 py-0.5 text-[0.8125rem] font-semibold text-ink-soft">{{ $company->supplier_type->label() }}</span>
@@ -62,7 +62,7 @@
 
             <button type="button"
                     class="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-sand-300 text-ink-soft transition hover:text-forest-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500"
-                    aria-label="Save {{ $company->name }} to favourites">
+                    aria-label="{{ __('messages.common.save_company_favourites', ['name' => $company->name]) }}">
                 <x-heroicon-o-heart class="h-4 w-4" />
             </button>
         </div>
@@ -92,9 +92,7 @@
             @endif
 
             <a href="{{ $profileUrl }}#contact"
-               class="relative z-10 ml-auto rounded-lg bg-forest-700 px-4 py-2 text-[1.0625rem] font-semibold text-white transition hover:bg-forest-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500 focus-visible:ring-offset-2">
-                Contact Supplier
-            </a>
+               class="relative z-10 ml-auto rounded-lg bg-forest-700 px-4 py-2 text-[1.0625rem] font-semibold text-white transition hover:bg-forest-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500 focus-visible:ring-offset-2">{{ __('messages.common.contact_supplier') }}</a>
         </div>
     </div>
 </article>

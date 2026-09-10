@@ -38,14 +38,14 @@
 
         <button type="button"
                 class="absolute right-2.5 top-2.5 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/95 text-ink-soft shadow-sm transition hover:text-forest-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500"
-                aria-label="Save {{ $species->common_name }} to favourites">
+                aria-label="{{ __('messages.common.save_company_favourites', ['name' => $species->common_name]) }}">
             <x-heroicon-o-heart class="h-4 w-4" />
         </button>
 
         @if ($species->isPremium())
-            <span class="absolute bottom-2.5 left-2.5 rounded-md bg-forest-800 px-2 py-1 text-[0.875rem] font-semibold text-white">Premium</span>
+            <span class="absolute bottom-2.5 left-2.5 rounded-md bg-forest-800 px-2 py-1 text-[0.875rem] font-semibold text-white">{{ __('messages.common.premium') }}</span>
         @elseif ($species->is_promoted)
-            <span class="absolute bottom-2.5 left-2.5 rounded-md bg-white/95 px-2 py-1 text-[0.875rem] font-semibold text-forest-800">Promoted</span>
+            <span class="absolute bottom-2.5 left-2.5 rounded-md bg-white/95 px-2 py-1 text-[0.875rem] font-semibold text-forest-800">{{ __('messages.common.promoted') }}</span>
         @endif
 
         @if ($species->is_cites_listed)
@@ -86,15 +86,15 @@
         <div class="mt-auto flex items-center gap-2 border-t border-sand-200 pt-3 {{ $compact ? 'mt-3' : 'mt-4' }}">
             <p class="text-[0.9375rem] text-ink-soft">
                 @if ($productCount > 0)
-                    <span class="font-bold text-ink">{{ $productCount }}</span> {{ Str::plural('Product', $productCount) }}
+                    <span class="font-bold text-ink">{{ $productCount }}</span> {{ $productCount === 1 ? __('messages.species.product') : __('messages.species.products') }}
                 @elseif ($species->densityRange())
                     {{ $species->densityRange() }}
                 @else
-                    Catalogue entry
+                    {{ __('messages.species.catalogue_entry') }}
                 @endif
             </p>
             <span class="ml-auto inline-flex items-center gap-1 text-[0.9375rem] font-semibold text-forest-700">
-                View Details <x-heroicon-m-arrow-right class="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
+                {{ __('messages.common.view_details') }} <x-heroicon-m-arrow-right class="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
             </span>
         </div>
     </div>

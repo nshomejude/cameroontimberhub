@@ -1,9 +1,10 @@
 @props([
     'paginator',
-    'noun' => 'results',
+    'noun' => null,
 ])
 
 @php
+    $noun ??= __('messages.common.noun_results');
     $current = $paginator->currentPage();
     $last = $paginator->lastPage();
 
@@ -32,7 +33,7 @@
             <nav class="flex flex-wrap items-center justify-center gap-2 sm:mx-auto" aria-label="Pagination">
                 <button type="button" wire:click="previousPage" @disabled($paginator->onFirstPage())
                         class="{{ $btn }} border-sand-300 text-ink-soft hover:border-forest-600 hover:text-forest-700 disabled:cursor-not-allowed disabled:opacity-40"
-                        aria-label="Previous page">
+                        aria-label="{{ __('messages.common.previous_page') }}">
                     <x-heroicon-m-chevron-left class="h-4 w-4" />
                 </button>
 
@@ -54,14 +55,14 @@
 
                 <button type="button" wire:click="nextPage" @disabled(! $paginator->hasMorePages())
                         class="{{ $btn }} border-sand-300 text-ink-soft hover:border-forest-600 hover:text-forest-700 disabled:cursor-not-allowed disabled:opacity-40"
-                        aria-label="Next page">
+                        aria-label="{{ __('messages.common.next_page') }}">
                     <x-heroicon-m-chevron-right class="h-4 w-4" />
                 </button>
             </nav>
         @endif
 
         <p class="text-[1.0625rem] text-ink-soft sm:ml-auto">
-            Showing {{ $paginator->firstItem() ?? 0 }} to {{ $paginator->lastItem() ?? 0 }} of {{ $paginator->total() }} {{ $noun }}
+            {{ __('messages.common.showing_paginated', ['first' => $paginator->firstItem() ?? 0, 'last' => $paginator->lastItem() ?? 0, 'total' => $paginator->total(), 'noun' => $noun]) }}
         </p>
     </div>
 @endif

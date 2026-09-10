@@ -66,12 +66,12 @@
                         <x-heroicon-s-map-pin class="h-5 w-5" />
                     </span>
                     <div class="min-w-0">
-                        <p class="text-[1.0625rem] text-sand-200/85">Our head quarters</p>
+                        <p class="text-[1.0625rem] text-sand-200/85">{{ __('messages.contact.our_head_quarters') }}</p>
                         <p class="mt-0.5 text-[1.25rem] font-bold leading-tight text-white">
-                            {{ $details['address']['locality'] }}, Cameroon
+                            {{ __('messages.contact.hq_locality', ['locality' => $details['address']['locality']]) }}
                         </p>
                         <p class="mt-2 text-[1.0625rem] leading-relaxed text-sand-200/85">
-                            {{ $d['hq_note'] ?? 'The economic capital of Cameroon, and our home.' }}
+                            {{ $d['hq_note'] ?? __('messages.contact.hq_note') }}
                         </p>
                     </div>
                 </div>
@@ -106,7 +106,7 @@
 
             {{-- ---------- Get in touch ---------- --}}
             <section aria-labelledby="details-heading">
-                <h2 id="details-heading" class="text-[1.4rem] font-bold tracking-tight text-ink">Get in Touch</h2>
+                <h2 id="details-heading" class="text-[1.4rem] font-bold tracking-tight text-ink">{{ __('messages.contact.get_in_touch') }}</h2>
                 <span class="mt-3 block h-[3px] w-10 rounded-full bg-timber-500" aria-hidden="true"></span>
 
                 @if ($blurb = ($d['details_blurb'] ?? null))
@@ -134,7 +134,7 @@
                                 <x-heroicon-o-phone class="h-5 w-5" />
                             </span>
                             <div class="min-w-0">
-                                <dt class="text-[1.0625rem] font-bold text-ink">Phone</dt>
+                                <dt class="text-[1.0625rem] font-bold text-ink">{{ __('messages.contact.phone') }}</dt>
                                 <dd class="mt-1 text-[1.0625rem] leading-relaxed text-ink-soft">
                                     @foreach ($details['phones'] as $phone)
                                         <a class="block transition hover:text-forest-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest-700"
@@ -151,7 +151,7 @@
                                 <x-heroicon-o-envelope class="h-5 w-5" />
                             </span>
                             <div class="min-w-0">
-                                <dt class="text-[1.0625rem] font-bold text-ink">Email</dt>
+                                <dt class="text-[1.0625rem] font-bold text-ink">{{ __('messages.contact.email') }}</dt>
                                 <dd class="mt-1 break-words text-[1.0625rem] leading-relaxed text-ink-soft">
                                     @foreach ($details['emails'] as $email)
                                         <a class="block transition hover:text-forest-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest-700"
@@ -168,7 +168,7 @@
                                 <x-heroicon-o-globe-alt class="h-5 w-5" />
                             </span>
                             <div class="min-w-0">
-                                <dt class="text-[1.0625rem] font-bold text-ink">Website</dt>
+                                <dt class="text-[1.0625rem] font-bold text-ink">{{ __('messages.contact.website') }}</dt>
                                 <dd class="mt-1 break-words text-[1.0625rem] leading-relaxed text-ink-soft">{{ $details['website'] }}</dd>
                             </div>
                         </div>
@@ -178,9 +178,9 @@
 
             {{-- ---------- Send us a message ---------- --}}
             <section aria-labelledby="form-heading">
-                <h2 id="form-heading" class="text-[1.4rem] font-bold tracking-tight text-ink">Send Us a Message</h2>
+                <h2 id="form-heading" class="text-[1.4rem] font-bold tracking-tight text-ink">{{ __('messages.contact.send_us_a_message') }}</h2>
                 <span class="mt-3 block h-[3px] w-10 rounded-full bg-timber-500" aria-hidden="true"></span>
-                <p class="mt-5 text-[1.0625rem] text-ink-soft">Fill out the form below and we'll get back to you.</p>
+                <p class="mt-5 text-[1.0625rem] text-ink-soft">{{ __('messages.contact.form_intro') }}</p>
 
                 {{-- Success (announced to assistive tech, and focused on load) --}}
                 <div role="status" aria-live="polite" class="empty:hidden">
@@ -189,7 +189,7 @@
                              class="mt-6 flex items-start gap-3 rounded-xl border border-forest-200 bg-forest-50 p-4">
                             <x-heroicon-s-check-circle class="mt-0.5 h-5 w-5 shrink-0 text-forest-700" aria-hidden="true" />
                             <p class="text-[1.0625rem] font-medium text-forest-800">
-                                Message sent — thank you. Our team will be in touch within 24 business hours.
+                                {{ __('messages.contact.message_sent') }}
                             </p>
                         </div>
                     @endif
@@ -198,7 +198,7 @@
                 @if ($errors->any())
                     <div class="mt-6 rounded-xl border border-red-200 bg-red-50 p-4" role="alert">
                         <p class="text-[1.0625rem] font-semibold text-red-800">
-                            Your message wasn't sent. Please correct {{ $errors->count() === 1 ? 'the field' : 'the fields' }} highlighted below.
+                            {{ $errors->count() === 1 ? __('messages.contact.submit_error_one') : __('messages.contact.submit_error_many') }}
                         </p>
                     </div>
                 @endif
@@ -208,7 +208,7 @@
 
                     {{-- Honeypot + minimum-time guard (AntiSpamService) --}}
                     <div class="hidden" aria-hidden="true">
-                        <label for="website">Leave this field empty</label>
+                        <label for="website">{{ __('messages.contact.leave_field_empty') }}</label>
                         <input id="website" type="text" name="website" tabindex="-1" autocomplete="off" value="">
                     </div>
                     <input type="hidden" name="form_rendered_at" value="{{ now()->timestamp }}">
@@ -220,10 +220,10 @@
 
                     <div class="grid gap-4 sm:grid-cols-2">
                         @foreach ([
-                            ['name', 'Full Name', 'text', 'Full Name', true, 'name'],
-                            ['company', 'Company Name', 'text', 'Company Name', false, 'organization'],
-                            ['email', 'Email Address', 'email', 'Email Address', true, 'email'],
-                            ['phone', 'Phone Number', 'tel', 'Phone Number', false, 'tel'],
+                            ['name', __('messages.contact.label_full_name'), 'text', __('messages.contact.label_full_name'), true, 'name'],
+                            ['company', __('messages.contact.label_company_name'), 'text', __('messages.contact.label_company_name'), false, 'organization'],
+                            ['email', __('messages.contact.label_email'), 'email', __('messages.contact.label_email'), true, 'email'],
+                            ['phone', __('messages.contact.label_phone'), 'tel', __('messages.contact.label_phone'), false, 'tel'],
                         ] as [$field, $label, $type, $placeholder, $required, $autocomplete])
                             <div>
                                 <label for="contact-{{ $field }}" class="block text-[1.0625rem] font-medium text-ink">
@@ -245,7 +245,7 @@
 
                     <div>
                         <label for="contact-category" class="block text-[1.0625rem] font-medium text-ink">
-                            What is this about?<span class="text-red-600" aria-hidden="true"> *</span>
+                            {{ __('messages.contact.label_category') }}<span class="text-red-600" aria-hidden="true"> *</span>
                         </label>
                         <select id="contact-category" name="category" required
                                 @if ($firstError === 'category') autofocus @endif
@@ -255,7 +255,7 @@
                                 <option value="{{ $value }}" @selected(old('category') === $value)>{{ $label }}</option>
                             @endforeach
                         </select>
-                        <p class="mt-1.5 text-[0.9375rem] text-ink-soft">Choose "Dispute or complaint" to raise an issue with another user or with the Platform.</p>
+                        <p class="mt-1.5 text-[0.9375rem] text-ink-soft">{{ __('messages.contact.category_hint') }}</p>
                         @error('category')
                             <p id="contact-category-error" class="mt-1.5 text-[0.9375rem] font-medium text-red-700">{{ $message }}</p>
                         @enderror
@@ -263,10 +263,10 @@
 
                     <div>
                         <label for="contact-subject" class="block text-[1.0625rem] font-medium text-ink">
-                            Subject<span class="text-red-600" aria-hidden="true"> *</span>
+                            {{ __('messages.contact.label_subject') }}<span class="text-red-600" aria-hidden="true"> *</span>
                         </label>
                         <input id="contact-subject" name="subject" type="text" value="{{ old('subject') }}"
-                               placeholder="Subject" required
+                               placeholder="{{ __('messages.contact.label_subject') }}" required
                                @if ($firstError === 'subject') autofocus @endif
                                @error('subject') aria-invalid="true" aria-describedby="contact-subject-error" @enderror
                                class="mt-1.5 @error('subject') {{ $input.' '.$inputError }} @else {{ $input }} @enderror">
@@ -277,9 +277,9 @@
 
                     <div>
                         <label for="contact-message" class="block text-[1.0625rem] font-medium text-ink">
-                            Your Message<span class="text-red-600" aria-hidden="true"> *</span>
+                            {{ __('messages.contact.label_message') }}<span class="text-red-600" aria-hidden="true"> *</span>
                         </label>
-                        <textarea id="contact-message" name="message" rows="6" placeholder="Your Message" required
+                        <textarea id="contact-message" name="message" rows="6" placeholder="{{ __('messages.contact.label_message') }}" required
                                   @if ($firstError === 'message') autofocus @endif
                                   aria-describedby="@error('message') contact-message-error @else contact-message-hint @enderror"
                                   @error('message') aria-invalid="true" @enderror
@@ -287,7 +287,7 @@
                         @error('message')
                             <p id="contact-message-error" class="mt-1.5 text-[0.9375rem] font-medium text-red-700">{{ $message }}</p>
                         @else
-                            <p id="contact-message-hint" class="mt-1.5 text-[0.9375rem] text-ink-soft">At least 20 characters, so we can route your request to the right team.</p>
+                            <p id="contact-message-hint" class="mt-1.5 text-[0.9375rem] text-ink-soft">{{ __('messages.contact.message_hint') }}</p>
                         @enderror
                     </div>
 
@@ -299,7 +299,7 @@
                                    @error('consent') aria-invalid="true" aria-describedby="contact-consent-error" @enderror
                                    class="mt-0.5 h-4 w-4 shrink-0 rounded border-sand-300 text-forest-700 focus:ring-forest-600">
                             <label for="contact-consent" class="text-[1.0625rem] leading-relaxed text-ink-soft">
-                                I agree that {{ config('app.name') }} may use this information to respond to my message.
+                                {{ __('messages.contact.consent_prefix') }} {{ __('messages.contact.consent_label', ['app' => config('app.name')]) }}
                             </label>
                         </div>
                         @error('consent')
@@ -309,14 +309,14 @@
 
                     <button type="submit"
                             class="inline-flex w-full items-center justify-center gap-2.5 rounded-lg bg-forest-800 px-7 py-3.5 text-[1.125rem] font-semibold text-white transition hover:bg-forest-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest-700">
-                        <x-heroicon-o-paper-airplane class="h-5 w-5" aria-hidden="true" /> Send Message
+                        <x-heroicon-o-paper-airplane class="h-5 w-5" aria-hidden="true" /> {{ __('messages.contact.send_message') }}
                     </button>
                 </form>
             </section>
 
             {{-- ---------- Find us + office hours ---------- --}}
             <section aria-labelledby="find-us-heading">
-                <h2 id="find-us-heading" class="text-[1.4rem] font-bold tracking-tight text-ink">Find Us</h2>
+                <h2 id="find-us-heading" class="text-[1.4rem] font-bold tracking-tight text-ink">{{ __('messages.contact.find_us') }}</h2>
                 <span class="mt-3 block h-[3px] w-10 rounded-full bg-timber-500" aria-hidden="true"></span>
 
                 {{-- Deliberately not an embedded third-party map: an iframe would
@@ -328,7 +328,7 @@
                             <x-heroicon-s-map-pin class="h-5 w-5" />
                         </span>
                         <div class="min-w-0">
-                            <p class="text-[1.125rem] font-bold text-white">{{ $details['organisation'] }} HQ</p>
+                            <p class="text-[1.125rem] font-bold text-white">{{ __('messages.contact.hq_suffix', ['organisation' => $details['organisation']]) }}</p>
                             <p class="mt-1 text-[1.0625rem] leading-relaxed text-sand-200/85">
                                 {{ $details['address']['lines'][0] ?? $details['address']['locality'] }}
                             </p>
@@ -336,13 +336,13 @@
                     </div>
                     <a href="{{ $mapUrl }}" target="_blank" rel="noopener noreferrer"
                        class="flex items-center justify-between gap-3 px-5 py-4 text-[1.0625rem] font-semibold text-forest-700 transition hover:bg-sand-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest-700">
-                        <span>Open in maps<span class="sr-only"> (opens in a new tab)</span></span>
+                        <span>{{ __('messages.contact.open_in_maps') }}<span class="sr-only">{{ __('messages.contact.opens_new_tab') }}</span></span>
                         <x-heroicon-m-arrow-top-right-on-square class="h-4 w-4" aria-hidden="true" />
                     </a>
                 </div>
 
                 @if (! empty($details['hours']))
-                    <h3 class="mt-9 text-[1.15rem] font-bold tracking-tight text-ink">Office Hours</h3>
+                    <h3 class="mt-9 text-[1.15rem] font-bold tracking-tight text-ink">{{ __('messages.contact.office_hours') }}</h3>
                     <span class="mt-3 block h-[3px] w-10 rounded-full bg-timber-500" aria-hidden="true"></span>
 
                     <div class="mt-5 flex items-start gap-4">
@@ -365,7 +365,7 @@
                 @endif
 
                 @if (! empty(array_filter($details['social'] ?? [])))
-                    <h3 class="mt-9 text-[1.0625rem] font-bold uppercase tracking-wider text-ink">Follow us</h3>
+                    <h3 class="mt-9 text-[1.0625rem] font-bold uppercase tracking-wider text-ink">{{ __('messages.contact.follow_us') }}</h3>
                     <ul class="mt-3 flex flex-wrap gap-2">
                         @foreach (array_filter($details['social']) as $network => $url)
                             <li>
@@ -402,11 +402,11 @@
             <div class="flex shrink-0 flex-col gap-3 sm:flex-row lg:gap-4">
                 <a href="{{ route('register') }}"
                    class="inline-flex items-center justify-center gap-2.5 rounded-lg bg-forest-700 px-7 py-3.5 text-[1.125rem] font-semibold text-white transition hover:bg-forest-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
-                    <x-heroicon-o-user-plus class="h-5 w-5" aria-hidden="true" /> Join as Supplier
+                    <x-heroicon-o-user-plus class="h-5 w-5" aria-hidden="true" /> {{ __('messages.about.join_as_supplier') }}
                 </a>
                 <a href="{{ route('marketplace') }}"
                    class="inline-flex items-center justify-center gap-2.5 rounded-lg border border-white/60 px-7 py-3.5 text-[1.125rem] font-semibold text-white transition hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
-                    <x-heroicon-o-shopping-cart class="h-5 w-5" aria-hidden="true" /> Explore Marketplace
+                    <x-heroicon-o-shopping-cart class="h-5 w-5" aria-hidden="true" /> {{ __('messages.about.explore_marketplace') }}
                 </a>
             </div>
         </div>

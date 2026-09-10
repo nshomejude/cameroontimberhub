@@ -35,31 +35,31 @@
     <div class="flex-1 space-y-6 overflow-y-auto px-5 py-5">
 
         <div class="flex items-center justify-between">
-            <h2 class="text-[1.125rem] font-bold text-ink">Filters</h2>
+            <h2 class="text-[1.125rem] font-bold text-ink">{{ __('messages.common.filters') }}</h2>
             <button type="button" wire:click="resetFilters"
                     class="rounded text-[1.0625rem] font-semibold text-forest-700 transition hover:text-forest-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-300">
-                Clear All
+                {{ __('messages.common.clear_all') }}
             </button>
         </div>
 
         {{-- Search supplier --}}
         <div>
-            <label for="{{ $fid('search') }}" class="{{ $sectionTitle }}">Search Supplier</label>
+            <label for="{{ $fid('search') }}" class="{{ $sectionTitle }}">{{ __('messages.directory.search_supplier') }}</label>
             <div class="relative mt-2.5">
                 <input id="{{ $fid('search') }}" type="search" wire:model.live.debounce.400ms="search"
-                       placeholder="Search by company name..." class="{{ $facetSearch }}">
+                       placeholder="{{ __('messages.directory.search_by_company_name') }}" class="{{ $facetSearch }}">
                 <x-heroicon-o-magnifying-glass class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-soft" />
             </div>
         </div>
 
         {{-- Supplier type --}}
         <fieldset>
-            <legend class="{{ $sectionTitle }}">Supplier Type</legend>
+            <legend class="{{ $sectionTitle }}">{{ __('messages.directory.supplier_type') }}</legend>
             <div class="mt-2.5">
                 <label class="{{ $row }}" for="{{ $fid('type-all') }}">
                     <input id="{{ $fid('type-all') }}" type="checkbox" class="{{ $box }}"
                            @checked(empty($types)) wire:click="selectType('')">
-                    <span class="flex-1">All Suppliers</span>
+                    <span class="flex-1">{{ __('messages.directory.all_suppliers') }}</span>
                 </label>
                 @foreach ($typeFacets as $facet)
                     <label class="{{ $row }}" for="{{ $fid('type-'.$facet['value']) }}">
@@ -76,11 +76,11 @@
         @php($visibleSpecs = collect($specFacets)->filter(fn ($f) => $matches($f, $specQuery))->values())
         @if ($visibleSpecs->isNotEmpty() || $specQuery !== '')
             <fieldset x-data="{ expanded: false }">
-                <legend class="{{ $sectionTitle }}">Products / Specialization</legend>
+                <legend class="{{ $sectionTitle }}">{{ __('messages.directory.products_specialization') }}</legend>
                 <div class="relative mt-2.5">
-                    <label class="sr-only" for="{{ $fid('spec-q') }}">Search products or services</label>
+                    <label class="sr-only" for="{{ $fid('spec-q') }}">{{ __('messages.directory.products_specialization') }}</label>
                     <input id="{{ $fid('spec-q') }}" type="search" wire:model.live.debounce.300ms="specQuery"
-                           placeholder="Search products or services..." class="{{ $facetSearch }}">
+                           placeholder="{{ __('messages.directory.search_products_services') }}" class="{{ $facetSearch }}">
                     <x-heroicon-o-magnifying-glass class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-soft" />
                 </div>
                 <div class="mt-2">
@@ -97,7 +97,7 @@
                 @if ($visibleSpecs->count() > $facetLimit)
                     <button type="button" @click="expanded = !expanded" :aria-expanded="expanded ? 'true' : 'false'"
                             class="mt-1 inline-flex items-center gap-1 rounded text-[1.0625rem] font-medium text-forest-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-300">
-                        <span x-text="expanded ? 'Show less' : 'Show more'">Show more</span>
+                        <span x-text="expanded ? @js(__('messages.common.show_less')) : @js(__('messages.common.show_more'))">{{ __('messages.common.show_more') }}</span>
                         <x-heroicon-m-chevron-down class="h-4 w-4 transition" ::class="expanded && 'rotate-180'" />
                     </button>
                 @endif
@@ -108,11 +108,11 @@
         @php($visibleSpecies = collect($speciesFacets)->filter(fn ($f) => $matches($f, $speciesQuery))->values())
         @if ($visibleSpecies->isNotEmpty() || $speciesQuery !== '')
             <fieldset x-data="{ expanded: false }">
-                <legend class="{{ $sectionTitle }}">Wood Species</legend>
+                <legend class="{{ $sectionTitle }}">{{ __('messages.directory.wood_species') }}</legend>
                 <div class="relative mt-2.5">
-                    <label class="sr-only" for="{{ $fid('species-q') }}">Search species</label>
+                    <label class="sr-only" for="{{ $fid('species-q') }}">{{ __('messages.directory.wood_species') }}</label>
                     <input id="{{ $fid('species-q') }}" type="search" wire:model.live.debounce.300ms="speciesQuery"
-                           placeholder="Search species..." class="{{ $facetSearch }}">
+                           placeholder="{{ __('messages.directory.search_species') }}" class="{{ $facetSearch }}">
                     <x-heroicon-o-magnifying-glass class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-soft" />
                 </div>
                 <div class="mt-2">
@@ -129,7 +129,7 @@
                 @if ($visibleSpecies->count() > $facetLimit)
                     <button type="button" @click="expanded = !expanded" :aria-expanded="expanded ? 'true' : 'false'"
                             class="mt-1 inline-flex items-center gap-1 rounded text-[1.0625rem] font-medium text-forest-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-300">
-                        <span x-text="expanded ? 'Show less' : 'Show more'">Show more</span>
+                        <span x-text="expanded ? @js(__('messages.common.show_less')) : @js(__('messages.common.show_more'))">{{ __('messages.common.show_more') }}</span>
                         <x-heroicon-m-chevron-down class="h-4 w-4 transition" ::class="expanded && 'rotate-180'" />
                     </button>
                 @endif
@@ -139,10 +139,10 @@
         {{-- Collapsed sections --}}
         <div class="divide-y divide-sand-200 border-t border-sand-200">
             @if ($regions->isNotEmpty())
-                <x-directory-accordion title="Location" :id="$fid('acc-location')">
+                <x-directory-accordion :title="__('messages.directory.location')" :id="$fid('acc-location')">
                     <label class="{{ $row }}" for="{{ $fid('region-any') }}">
                         <input id="{{ $fid('region-any') }}" type="radio" value="" wire:model.live="region" class="{{ $radio }}">
-                        <span class="flex-1">All regions</span>
+                        <span class="flex-1">{{ __('messages.directory.all_regions') }}</span>
                     </label>
                     @foreach ($regions as $r)
                         <label class="{{ $row }}" for="{{ $fid('region-'.Str::slug($r['value'])) }}">
@@ -156,7 +156,7 @@
             @endif
 
             @if ($certFacets)
-                <x-directory-accordion title="Certification" :id="$fid('acc-cert')">
+                <x-directory-accordion :title="__('messages.directory.certification')" :id="$fid('acc-cert')">
                     @foreach ($certFacets as $facet)
                         <label class="{{ $row }}" for="{{ $fid('cert-'.$facet['value']) }}">
                             <input id="{{ $fid('cert-'.$facet['value']) }}" type="checkbox" class="{{ $box }}"
@@ -169,10 +169,10 @@
             @endif
 
             @if ($experienceFacets)
-                <x-directory-accordion title="Experience" :id="$fid('acc-exp')">
+                <x-directory-accordion :title="__('messages.directory.experience')" :id="$fid('acc-exp')">
                     <label class="{{ $row }}" for="{{ $fid('years-0') }}">
                         <input id="{{ $fid('years-0') }}" type="radio" value="0" wire:model.live="minYears" class="{{ $radio }}">
-                        <span class="flex-1">Any experience</span>
+                        <span class="flex-1">{{ __('messages.directory.any_experience') }}</span>
                     </label>
                     @foreach ($experienceFacets as $facet)
                         <label class="{{ $row }}" for="{{ $fid('years-'.$facet['value']) }}">
@@ -194,7 +194,7 @@
             <button type="button" @click="$dispatch('close-filter-drawer')"
                     class="flex w-full items-center justify-center gap-2 rounded-lg bg-forest-700 px-5 py-3 text-[1.0625rem] font-semibold text-white transition hover:bg-forest-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-300 focus-visible:ring-offset-2">
                 <x-heroicon-o-funnel class="h-4 w-4" />
-                Apply Filters
+                {{ __('messages.common.apply_filters') }}
             </button>
         </div>
     @endif

@@ -103,7 +103,10 @@
     <meta name="ICBM" content="4.0511, 9.7679">
 
     <meta name="author" content="{{ config('app.name') }}">
+    {{-- Locale is session-driven (not URL-driven) here, so every hreflang
+         alternate points at the same canonical URL. --}}
     <link rel="alternate" hreflang="en" href="{{ url()->current() }}">
+    <link rel="alternate" hreflang="fr" href="{{ url()->current() }}">
     <link rel="alternate" hreflang="x-default" href="{{ url()->current() }}">
     <link rel="sitemap" type="application/xml" href="{{ url('/sitemap.xml') }}">
 
@@ -186,7 +189,7 @@
     <div class="hidden bg-bark-800 text-white lg:block">
         <div class="mx-auto flex h-9 max-w-[1400px] items-center gap-6 px-6 text-[11px]">
             <ul class="flex items-center gap-5">
-                @foreach (['Verified Suppliers', 'Secure B2B Transactions', 'Quality Assurance', 'Export Documentation', 'Global Buyer Network'] as $item)
+                @foreach ([__('messages.utility.verified_suppliers'), __('messages.utility.secure_transactions'), __('messages.utility.quality_assurance'), __('messages.utility.export_documentation'), __('messages.utility.global_buyer_network')] as $item)
                     <li class="flex items-center gap-1.5">
                         <x-heroicon-s-check-badge class="h-3.5 w-3.5 text-forest-300" />
                         <span>{{ $item }}</span>
@@ -370,6 +373,18 @@
                         <a href="{{ route('login') }}" class="block rounded-lg border border-forest-700 px-4 py-2.5 text-center text-sm font-semibold text-forest-700">{{ __('messages.nav.log_in') }}</a>
                         <a href="{{ route('register') }}" class="block rounded-lg bg-forest-700 px-4 py-2.5 text-center text-sm font-semibold text-white">{{ __('messages.nav.join_now') }}</a>
                     @endauth
+                    <div class="flex items-center gap-1 pt-1">
+                        @foreach (['en' => __('messages.locale.english'), 'fr' => __('messages.locale.french')] as $code => $label)
+                            <form method="POST" action="{{ route('locale.set', $code) }}" class="flex-1">
+                                @csrf
+                                <button type="submit" @class([
+                                    'w-full rounded-lg border px-3 py-2 text-center text-sm font-semibold transition',
+                                    'border-forest-700 bg-forest-50 text-forest-700' => app()->getLocale() === $code,
+                                    'border-sand-200 text-ink' => app()->getLocale() !== $code,
+                                ])>{{ strtoupper($code) }}</button>
+                            </form>
+                        @endforeach
+                    </div>
                 </div>
             </div>
         </div>

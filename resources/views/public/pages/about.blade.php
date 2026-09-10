@@ -57,11 +57,11 @@
             <div class="mt-7 flex flex-wrap items-center gap-3">
                 <a href="{{ route('register') }}"
                    class="inline-flex items-center gap-2.5 rounded-lg bg-forest-700 px-7 py-3.5 text-[1.125rem] font-semibold text-white transition hover:bg-forest-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
-                    <x-heroicon-o-user-plus class="h-5 w-5" /> Join as Supplier
+                    <x-heroicon-o-user-plus class="h-5 w-5" /> {{ __('messages.about.join_as_supplier') }}
                 </a>
                 <a href="{{ route('marketplace') }}"
                    class="inline-flex items-center gap-2.5 rounded-lg border border-white/50 px-7 py-3.5 text-[1.125rem] font-semibold text-white transition hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
-                    <x-heroicon-o-shopping-cart class="h-5 w-5" /> Explore Marketplace
+                    <x-heroicon-o-shopping-cart class="h-5 w-5" /> {{ __('messages.about.explore_marketplace') }}
                 </a>
             </div>
         </div>
@@ -132,7 +132,7 @@
                      supports them — see PageController::platformStats(). --}}
                 @if (! empty($stats))
                     <aside class="self-start rounded-2xl bg-sand-100 p-6 ring-1 ring-sand-200" aria-labelledby="about-numbers">
-                        <h2 id="about-numbers" class="sr-only">Cameroon Timber Hub in numbers</h2>
+                        <h2 id="about-numbers" class="sr-only">{{ __('messages.about.in_numbers') }}</h2>
                         <dl class="grid grid-cols-2 gap-x-5 gap-y-7">
                             @foreach ($stats as $stat)
                                 <div class="flex items-start gap-3">
@@ -145,7 +145,7 @@
                             @endforeach
                         </dl>
                         <p class="mt-6 text-[0.875rem] leading-relaxed text-ink-soft/80">
-                            Counted live from published records on this platform.
+                            {{ __('messages.about.counted_live') }}
                         </p>
                     </aside>
                 @endif
@@ -159,9 +159,9 @@
     @if ($blocks)
         <section class="bg-sand-50" aria-labelledby="story-heading">
             <div class="mx-auto max-w-[46rem] px-5 py-10 lg:px-8 lg:py-14">
-                <p class="eyebrow">{{ $d['story_eyebrow'] ?? 'Our story' }}</p>
+                <p class="eyebrow">{{ $d['story_eyebrow'] ?? __('messages.about.our_story') }}</p>
                 <h2 id="story-heading" class="mt-2 text-[1.6rem] font-bold tracking-tight text-ink lg:text-[1.75rem]">
-                    {{ $d['story_title'] ?? 'How Cameroon Timber Hub works' }}
+                    {{ $d['story_title'] ?? __('messages.about.story_title') }}
                 </h2>
                 <span class="mt-3 block h-[3px] w-10 rounded-full bg-forest-700" aria-hidden="true"></span>
 
@@ -210,11 +210,11 @@
             <div class="flex shrink-0 flex-col gap-3 sm:flex-row sm:justify-center lg:gap-4">
                 <a href="{{ route('rfq.create') }}"
                    class="inline-flex items-center justify-center gap-2.5 rounded-lg border border-white/60 px-7 py-3.5 text-[1.125rem] font-semibold text-white transition hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
-                    <x-heroicon-o-document-text class="h-5 w-5" /> I’m a Buyer
+                    <x-heroicon-o-document-text class="h-5 w-5" /> {{ __('messages.about.im_a_buyer') }}
                 </a>
                 <a href="{{ route('register') }}"
                    class="inline-flex items-center justify-center gap-2.5 rounded-lg bg-timber-500 px-7 py-3.5 text-[1.125rem] font-semibold text-white transition hover:bg-timber-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
-                    <x-heroicon-o-user-plus class="h-5 w-5" /> I’m a Supplier
+                    <x-heroicon-o-user-plus class="h-5 w-5" /> {{ __('messages.about.im_a_supplier') }}
                 </a>
             </div>
         </div>
