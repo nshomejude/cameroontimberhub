@@ -18,7 +18,7 @@
 
 <x-layouts.app
     :title="$species->common_name . ' timber from Cameroon'"
-    :description="$species->meta_description ?: Str::limit(strip_tags($species->description ?? ('Verified Cameroon exporters of ' . $species->common_name)), 160)"
+    :description="$species->meta_description ?: \App\Models\Species::wordSafeExcerpt(strip_tags($species->description ?? ('Verified Cameroon exporters of ' . $species->common_name)), \App\Models\Species::META_DESCRIPTION_LIMIT)"
     :breadcrumbs="[
         ['label' => __('messages.common.home'), 'url' => route('home')],
         ['label' => __('messages.common.timber_species'), 'url' => route('species.index')],

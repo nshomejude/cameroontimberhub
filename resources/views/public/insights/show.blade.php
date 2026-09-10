@@ -9,6 +9,7 @@
     :title="$article->meta_title ?: $article->title"
     :description="$article->meta_description ?: Str::limit(strip_tags((string) $article->excerpt), 160)"
     :image="$hero"
+    type="article"
     :breadcrumbs="$breadcrumbs"
     :schema="$schema">
 

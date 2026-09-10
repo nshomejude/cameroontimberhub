@@ -1,5 +1,6 @@
 <x-layouts.app
     :title="__('messages.company.portfolio_title', ['name' => $company->name])"
+    type="profile"
     :description="__('messages.company.portfolio_intro')">
 
     <section class="border-b border-sand-200 dark:border-[#2c2a24] bg-gradient-to-b from-forest-50 dark:from-forest-950 to-sand-50 dark:to-[#14130f]">

@@ -72,6 +72,7 @@
     :title="$product->meta_title ?: $product->name"
     :description="$product->meta_description ?: Str::limit(strip_tags((string) $product->description), 160)"
     :image="$product->primaryImageUrl()"
+    type="product"
     :breadcrumbs="$breadcrumbs"
     :schema="$schema">
 

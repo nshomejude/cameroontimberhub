@@ -48,7 +48,7 @@ it('renders a species meta description that does not truncate mid-word, even for
     $rendered = html_entity_decode($matches[1]);
 
     expect($rendered)->not->toBe($legacyStoredValue);
-    expect(mb_strlen($rendered))->toBeLessThanOrEqual(303);
+    expect(mb_strlen($rendered))->toBeLessThanOrEqual(160);
     expect($rendered)->toEndWith('...');
 
     // No trailing fragment: the character right before "..." must not be
@@ -128,15 +128,68 @@ it('defaults og:type to website but lets a page opt into a different type', func
     $view->assertSee('<meta property="og:type" content="article">', false);
 });
 
+it('sets og:type per page type: product pages, article pages and supplier pages', function () {
+    $product = \App\Models\Product::factory()->active()->for(Company::factory()->publiclyVisible())->create();
+    $this->get(route('products.show', $product->slug))
+        ->assertOk()
+        ->assertSee('<meta property="og:type" content="product">', false);
+
+    $article = \App\Models\Article::factory()->create(['published_at' => now()->subDay()]);
+    $this->get(route('insights.show', $article->slug))
+        ->assertOk()
+        ->assertSee('<meta property="og:type" content="article">', false);
+
+    $company = Company::factory()->publiclyVisible()->create();
+    $this->get(route('companies.show', $company->slug))
+        ->assertOk()
+        ->assertSee('<meta property="og:type" content="profile">', false);
+});
+
+it('caps the species meta-description accessor at a proper snippet length on a word boundary', function () {
+    $long = str_repeat('durable tropical hardwood exported from Cameroon to global buyers ', 8);
+    $species = Species::factory()->make(['meta_description' => $long]);
+
+    expect(mb_strlen($species->meta_description))->toBeLessThanOrEqual(160);
+    expect(rtrim($species->meta_description, '.'))->not->toEndWith('hardwo');
+});
+
+it('omits a placeholder website URL and fake phone from company Organization JSON-LD', function () {
+    $company = Company::factory()->publiclyVisible()->create([
+        'legal_name' => 'Placeholder Site Co',
+        'email' => 'hi@realsite.cm',
+        'website_url' => 'https://placeholder-sawmill.example',
+        'phone' => '+000000000',
+    ]);
+
+    $response = $this->get(route('companies.show', $company->slug))->assertOk();
+    $schema = companyOrganizationSchema($response->getContent());
+
+    expect(json_encode($schema))->not->toContain('.example');
+    expect($schema['telephone'] ?? null)->toBeNull();
+});
+
 it('has exactly one h1 on the homepage, species directory, marketplace, supplier directory and product pages', function () {
     Species::factory()->create();
     Company::factory()->publiclyVisible()->create();
+
+    $species = Species::factory()->create();
+    $company = Company::factory()->publiclyVisible()->create();
+    $product = \App\Models\Product::factory()->active()->for(Company::factory()->publiclyVisible())->create();
+    $article = \App\Models\Article::factory()->create(['published_at' => now()->subDay()]);
 
     foreach ([
         route('home'),
         route('species.index'),
         route('directory'),
         route('marketplace'),
+        route('species.show', $species->slug),
+        route('companies.show', $company->slug),
+        route('products.show', $product->slug),
+        route('insights.show', $article->slug),
+        route('insights.index'),
+        route('glossary.index'),
+        route('domestic.marketplace'),
+        route('knowledge.index'),
     ] as $url) {
         $html = $this->get($url)->assertOk()->getContent();
         expect(substr_count($html, '<h1'))->toBe(1, "Expected exactly one <h1> on {$url}");

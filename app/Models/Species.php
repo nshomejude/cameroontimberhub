@@ -108,16 +108,21 @@ class Species extends Model
     /**
      * `meta_description` is stored pre-truncated (see SpeciesSeeder), but
      * older/legacy rows may still hold a raw value cut mid-word by a plain
-     * character-count limit. Re-truncating on read at a word boundary makes
-     * every species page's rendered <meta name="description"> correct
-     * regardless of how the stored value was produced.
+     * character-count limit — and older rows were cut at ~300 chars, far past
+     * the ~155 a search snippet actually shows. Re-truncating on read at a
+     * word boundary and a proper meta length makes every species page's
+     * rendered <meta name="description"> correct regardless of how the stored
+     * value was produced.
      */
     protected function metaDescription(): Attribute
     {
         return Attribute::make(
-            get: fn (?string $value) => $value === null ? null : static::wordSafeExcerpt($value, 300),
+            get: fn (?string $value) => $value === null ? null : static::wordSafeExcerpt($value, self::META_DESCRIPTION_LIMIT),
         );
     }
+
+    /** Target length for a search-result snippet — the excerpt lands at or below this. */
+    public const META_DESCRIPTION_LIMIT = 155;
 
     /**
      * Truncate to at most $limit characters without cutting a word in half.

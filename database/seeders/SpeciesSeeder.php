@@ -69,7 +69,7 @@ class SpeciesSeeder extends Seeder
     /** @param array<string, mixed> $row */
     private function metaDescription(array $row): string
     {
-        return str(strip_tags((string) $row['description']))->limit(300)->value();
+        return Species::wordSafeExcerpt(strip_tags((string) $row['description']), Species::META_DESCRIPTION_LIMIT);
     }
 
     /**

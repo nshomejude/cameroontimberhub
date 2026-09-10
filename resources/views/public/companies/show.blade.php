@@ -128,6 +128,7 @@
     :title="$company->meta_title ?: $company->name.' — verified Cameroon timber supplier'"
     :description="$company->meta_description ?: Str::limit(strip_tags((string) $company->description), 160)"
     :image="$company->coverUrl()"
+    type="profile"
     :breadcrumbs="$breadcrumbs"
     :schema="$schema">
 

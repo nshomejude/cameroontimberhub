@@ -152,12 +152,12 @@ class CompanyController extends Controller
             'description' => Str::limit(strip_tags((string) $company->description), 300),
             'address' => count($address) > 1 ? $address : null,
             'email' => $this->realEmail($company->email),
-            'telephone' => $company->phone,
+            'telephone' => $this->realPhone($company->phone),
             'foundingDate' => $company->year_founded ? (string) $company->year_founded : null,
             'numberOfEmployees' => $company->employee_count,
             'areaServed' => $company->exportMarkets->pluck('country_code')->filter()->values()->all() ?: null,
             'knowsLanguage' => is_array($company->languages) && $company->languages !== [] ? $company->languages : null,
-            'sameAs' => $company->socialLinks->pluck('url')->filter()->values()->all() ?: null,
+            'sameAs' => $company->socialLinks->pluck('url')->filter(fn ($u) => $this->realUrl($u) !== null)->values()->all() ?: null,
             'hasCredential' => $badges->map(fn ($b) => $b->badge_type?->label())->filter()->values()->all() ?: null,
         ], fn ($v) => $v !== null && $v !== []);
 
@@ -165,7 +165,7 @@ class CompanyController extends Controller
             $schema['logo'] = $company->logoUrl();
         }
 
-        if ($company->website_url) {
+        if ($this->realUrl($company->website_url) !== null) {
             $schema['sameAs'] = array_values(array_unique(array_merge($schema['sameAs'] ?? [], [$company->website_url])));
         }
 
@@ -204,16 +204,51 @@ class CompanyController extends Controller
             return $email;
         }
 
-        $domain = strtolower(Str::afterLast($email, '@'));
+        return $this->isPlaceholderHost(Str::afterLast($email, '@')) ? null : $email;
+    }
 
-        if ($domain === 'example.com' || $domain === 'example.net' || $domain === 'example.org') {
+    /**
+     * Same guard for a website / social URL — a `https://acme.example`
+     * placeholder must not reach `url` / `sameAs` in the schema.
+     */
+    private function realUrl(?string $url): ?string
+    {
+        if (! $url) {
             return null;
         }
 
-        if (Str::endsWith($domain, '.example') || $domain === 'test' || Str::endsWith($domain, '.test') || Str::endsWith($domain, '.invalid')) {
+        $host = parse_url($url, PHP_URL_HOST) ?: $url;
+
+        return $this->isPlaceholderHost($host) ? null : $url;
+    }
+
+    /**
+     * Drop an obviously-fake phone number (all-zero, 123456789, +1234567890
+     * and the like) so it is never published beside a "Verified Exporter"
+     * credential claim.
+     */
+    private function realPhone(?string $phone): ?string
+    {
+        if (! $phone) {
             return null;
         }
 
-        return $email;
+        $digits = preg_replace('/\D+/', '', $phone);
+
+        if (strlen($digits) < 6 || preg_match('/^0+$/', $digits) || str_contains($digits, '123456789')) {
+            return null;
+        }
+
+        return $phone;
+    }
+
+    /** RFC 2606 / RFC 6761 reserved placeholder hosts. */
+    private function isPlaceholderHost(string $host): bool
+    {
+        $host = strtolower(trim(rtrim($host, '.')));
+        $host = Str::startsWith($host, 'www.') ? Str::after($host, 'www.') : $host;
+
+        return in_array($host, ['example.com', 'example.net', 'example.org', 'example', 'test', 'localhost', 'invalid'], true)
+            || Str::endsWith($host, ['.example', '.test', '.invalid', '.localhost']);
     }
 }
