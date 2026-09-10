@@ -12,13 +12,21 @@ use Filament\Support\Icons\Heroicon;
 
 class SubscriptionStatus extends Page
 {
+
+    public static function getNavigationLabel(): string
+    {
+        return __('messages.filament.pages.subscription_nav');
+    }
+
+    public function getTitle(): string
+    {
+        return __('messages.filament.pages.subscription_title');
+    }
     protected string $view = 'filament.exporter.pages.subscription-status';
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCreditCard;
 
-    protected static ?string $navigationLabel = 'Subscription';
 
-    protected static ?string $title = 'Subscription & plan';
 
     protected static ?int $navigationSort = 20;
 

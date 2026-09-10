@@ -13,17 +13,33 @@ use Spatie\Activitylog\Models\Activity;
 
 class ActivityLogResource extends Resource
 {
+
+    public static function getNavigationLabel(): string
+    {
+        return __('messages.filament.nav.audit_log');
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('messages.filament.groups.system');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('messages.filament.model.activity_one');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('messages.filament.model.activity_many');
+    }
     protected static ?string $model = Activity::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClipboardDocumentList;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'System';
 
-    protected static ?string $navigationLabel = 'Audit log';
 
-    protected static ?string $modelLabel = 'activity';
 
-    protected static ?string $pluralModelLabel = 'Activity log';
 
     public static function canViewAny(): bool
     {

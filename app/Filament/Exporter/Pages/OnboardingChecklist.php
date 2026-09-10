@@ -10,13 +10,21 @@ use BackedEnum;
 
 class OnboardingChecklist extends Page
 {
+
+    public static function getNavigationLabel(): string
+    {
+        return __('messages.filament.pages.onboarding_nav');
+    }
+
+    public function getTitle(): string
+    {
+        return __('messages.filament.pages.onboarding_title');
+    }
     protected string $view = 'filament.exporter.pages.onboarding-checklist';
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClipboardDocumentCheck;
 
-    protected static ?string $navigationLabel = 'Onboarding';
 
-    protected static ?string $title = 'Onboarding checklist';
 
     protected static ?int $navigationSort = 10;
 

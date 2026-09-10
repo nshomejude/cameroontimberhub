@@ -28,13 +28,21 @@ use Illuminate\Support\Collection;
  */
 class BuyerProcurementWorkspace extends Page
 {
+
+    public static function getNavigationLabel(): string
+    {
+        return __('messages.filament.pages.my_procurement_nav');
+    }
+
+    public function getTitle(): string
+    {
+        return __('messages.filament.pages.procurement_workspace_title');
+    }
     protected string $view = 'filament.exporter.pages.buyer-procurement-workspace';
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedShoppingCart;
 
-    protected static ?string $navigationLabel = 'My Procurement';
 
-    protected static ?string $title = 'Procurement Workspace';
 
     protected static ?int $navigationSort = 1;
 

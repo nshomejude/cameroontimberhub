@@ -16,11 +16,20 @@ use Filament\Tables\Table;
 
 class ComplianceRuleResource extends Resource
 {
+
+    public static function getNavigationLabel(): string
+    {
+        return __('messages.filament.nav.compliance_rules');
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('messages.filament.groups.compliance');
+    }
     protected static ?string $model = ComplianceRule::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedScale;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Compliance';
 
     protected static ?string $recordTitleAttribute = 'regulatory_framework';
 

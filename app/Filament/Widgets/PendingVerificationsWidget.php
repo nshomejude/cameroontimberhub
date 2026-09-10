@@ -25,14 +25,14 @@ class PendingVerificationsWidget extends TableWidget
     public function table(Table $table): Table
     {
         return $table
-            ->heading('Pending verifications')
-            ->description('Verification requests awaiting review')
+            ->heading(__('messages.filament.widgets.pending_verifications_heading'))
+            ->description(__('messages.filament.widgets.pending_verifications_desc'))
             ->query(
                 fn (): Builder => app(QueryBus::class)->dispatch(new ListPendingVerificationsQuery())
             )
             ->columns([
                 TextColumn::make('company.name')
-                    ->label('Company')
+                    ->label(__('messages.filament.widgets.company'))
                     ->searchable(query: fn (Builder $q, string $s) => $q->whereHas('company', fn ($c) => $c->where('legal_name', 'ilike', "%{$s}%")))
                     ->url(fn (VerificationRequest $r) => $r->company
                         ? \App\Filament\Resources\VerificationRequests\VerificationRequestResource::getUrl('edit', ['record' => $r])
@@ -40,8 +40,8 @@ class PendingVerificationsWidget extends TableWidget
                 TextColumn::make('status')
                     ->badge()
                     ->formatStateUsing(fn (VerificationRequestStatus $state): string => match ($state) {
-                        VerificationRequestStatus::Pending  => 'Pending',
-                        VerificationRequestStatus::InReview => 'In review',
+                        VerificationRequestStatus::Pending  => __('messages.filament.widgets.status_pending'),
+                        VerificationRequestStatus::InReview => __('messages.filament.widgets.status_in_review'),
                         default                             => $state->value,
                     })
                     ->color(fn (VerificationRequestStatus $state): string => match ($state) {
@@ -49,8 +49,8 @@ class PendingVerificationsWidget extends TableWidget
                         VerificationRequestStatus::InReview => 'info',
                         default                             => 'gray',
                     }),
-                TextColumn::make('assignedTo.name')->label('Assigned to')->placeholder('Unassigned'),
-                TextColumn::make('created_at')->label('Submitted')->date('d M Y')->sortable(),
+                TextColumn::make('assignedTo.name')->label(__('messages.filament.widgets.assigned_to'))->placeholder(__('messages.filament.widgets.unassigned')),
+                TextColumn::make('created_at')->label(__('messages.filament.widgets.submitted'))->date('d M Y')->sortable(),
             ])
             ->defaultSort('created_at', 'asc')
             ->paginated([5, 10]);

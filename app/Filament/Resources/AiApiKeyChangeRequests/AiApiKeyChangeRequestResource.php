@@ -21,21 +21,37 @@ use Filament\Tables\Table;
  */
 class AiApiKeyChangeRequestResource extends Resource
 {
+
+    public static function getNavigationLabel(): string
+    {
+        return __('messages.filament.nav.ai_api_key_changes');
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('messages.filament.groups.platform');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('messages.filament.model.ai_api_key_change_one');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('messages.filament.model.ai_api_key_change_many');
+    }
     protected static ?string $model = AiApiKeyChangeRequest::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedKey;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Platform';
 
-    protected static ?string $navigationLabel = 'AI API key changes';
 
     // Filament derives the model/plural labels and breadcrumb title from
     // the model class name by default (Str::title(Str::snake(...))), which
     // doesn't know "Ai"/"Api" are acronyms — it renders "Ai Api Key Change
     // Requests" instead of "AI API Key Change Requests". Set explicitly.
-    protected static ?string $modelLabel = 'AI API key change request';
 
-    protected static ?string $pluralModelLabel = 'AI API key change requests';
 
     public static function canViewAny(): bool
     {

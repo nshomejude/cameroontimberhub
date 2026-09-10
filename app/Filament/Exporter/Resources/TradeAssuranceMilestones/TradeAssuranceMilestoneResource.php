@@ -23,15 +23,27 @@ use Illuminate\Database\Eloquent\Builder;
  */
 class TradeAssuranceMilestoneResource extends Resource
 {
+
+    public static function getNavigationLabel(): string
+    {
+        return __('messages.filament.xnav.trade_assurance');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('messages.filament.model.trade_assurance_milestone_one');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('messages.filament.model.trade_assurance_milestone_many');
+    }
     protected static ?string $model = TradeAssuranceMilestone::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedShieldCheck;
 
-    protected static ?string $navigationLabel = 'Trade Assurance';
 
-    protected static ?string $modelLabel = 'trade assurance milestone';
 
-    protected static ?string $pluralModelLabel = 'Trade Assurance';
 
     protected static ?int $navigationSort = 7;
 

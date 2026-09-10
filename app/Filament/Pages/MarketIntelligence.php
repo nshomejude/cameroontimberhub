@@ -16,13 +16,21 @@ use Illuminate\Support\Collection;
  */
 class MarketIntelligence extends Page
 {
+
+    public static function getNavigationLabel(): string
+    {
+        return __('messages.filament.pages.market_intelligence');
+    }
+
+    public function getTitle(): string
+    {
+        return __('messages.filament.pages.market_intelligence');
+    }
     protected string $view = 'filament.pages.market-intelligence';
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedChartBar;
 
-    protected static ?string $navigationLabel = 'Market Intelligence';
 
-    protected static ?string $title = 'Market Intelligence';
 
     protected static ?int $navigationSort = 5;
 

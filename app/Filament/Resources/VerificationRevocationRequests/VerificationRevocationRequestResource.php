@@ -19,13 +19,21 @@ use Filament\Tables\Table;
  */
 class VerificationRevocationRequestResource extends Resource
 {
+
+    public static function getNavigationLabel(): string
+    {
+        return __('messages.filament.nav.verification_revocations');
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('messages.filament.groups.compliance');
+    }
     protected static ?string $model = VerificationRevocationRequest::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedShieldExclamation;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Compliance';
 
-    protected static ?string $navigationLabel = 'Verification revocations';
 
     protected static ?int $navigationSort = 3;
 

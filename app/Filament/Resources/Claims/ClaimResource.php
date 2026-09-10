@@ -16,13 +16,21 @@ use Filament\Tables\Table;
 
 class ClaimResource extends Resource
 {
+
+    public static function getNavigationLabel(): string
+    {
+        return __('messages.filament.nav.claims_register');
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('messages.filament.groups.content');
+    }
     protected static ?string $model = Claim::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedShieldCheck;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Content';
 
-    protected static ?string $navigationLabel = 'Claims Register';
 
     protected static ?string $recordTitleAttribute = 'claim_text';
 

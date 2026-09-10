@@ -17,13 +17,21 @@ use Filament\Tables\Table;
  */
 class QuoteResource extends Resource
 {
+
+    public static function getNavigationLabel(): string
+    {
+        return __('messages.filament.nav.quotes');
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('messages.filament.groups.leads');
+    }
     protected static ?string $model = Quote::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentCurrencyDollar;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Leads';
 
-    protected static ?string $navigationLabel = 'Quotes';
 
     protected static ?string $recordTitleAttribute = 'reference_code';
 

@@ -19,13 +19,21 @@ use Filament\Tables\Table;
  */
 class CompanySuspensionRequestResource extends Resource
 {
+
+    public static function getNavigationLabel(): string
+    {
+        return __('messages.filament.nav.company_suspensions');
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('messages.filament.groups.compliance');
+    }
     protected static ?string $model = CompanySuspensionRequest::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedPauseCircle;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Compliance';
 
-    protected static ?string $navigationLabel = 'Company suspensions';
 
     protected static ?int $navigationSort = 4;
 

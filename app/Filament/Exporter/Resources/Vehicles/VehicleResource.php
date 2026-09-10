@@ -23,11 +23,15 @@ use Illuminate\Database\Eloquent\Builder;
  */
 class VehicleResource extends Resource
 {
+
+    public static function getNavigationLabel(): string
+    {
+        return __('messages.filament.xnav.fleet_vehicles');
+    }
     protected static ?string $model = Vehicle::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedTruck;
 
-    protected static ?string $navigationLabel = 'Fleet vehicles';
 
     protected static ?string $recordTitleAttribute = 'registration_number';
 

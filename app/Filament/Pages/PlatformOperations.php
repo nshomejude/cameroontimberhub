@@ -19,13 +19,21 @@ use Illuminate\Support\Collection;
  */
 class PlatformOperations extends Page
 {
+
+    public static function getNavigationLabel(): string
+    {
+        return __('messages.filament.pages.platform_operations');
+    }
+
+    public function getTitle(): string
+    {
+        return __('messages.filament.pages.platform_operations');
+    }
     protected string $view = 'filament.pages.platform-operations';
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedPresentationChartLine;
 
-    protected static ?string $navigationLabel = 'Platform Operations';
 
-    protected static ?string $title = 'Platform Operations';
 
     protected static ?int $navigationSort = 4;
 

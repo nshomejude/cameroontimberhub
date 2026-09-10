@@ -16,15 +16,23 @@ use Filament\Tables\Table;
 
 class GlossaryTermResource extends Resource
 {
+
+    public static function getNavigationLabel(): string
+    {
+        return __('messages.filament.nav.glossary_terms');
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('messages.filament.groups.content');
+    }
     protected static ?string $model = GlossaryTerm::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBookOpen;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Content';
 
     protected static ?string $recordTitleAttribute = 'term';
 
-    protected static ?string $navigationLabel = 'Glossary terms';
 
     protected static ?int $navigationSort = 2;
 

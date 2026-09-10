@@ -20,17 +20,33 @@ use Filament\Tables\Table;
  */
 class ApiKeyUsageResource extends Resource
 {
+
+    public static function getNavigationLabel(): string
+    {
+        return __('messages.filament.nav.api_key_usage');
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('messages.filament.groups.platform');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('messages.filament.model.api_key_usage_one');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('messages.filament.model.api_key_usage_many');
+    }
     protected static ?string $model = ApiKeyMeta::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedChartBar;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Platform';
 
-    protected static ?string $navigationLabel = 'API key usage';
 
-    protected static ?string $modelLabel = 'API key usage';
 
-    protected static ?string $pluralModelLabel = 'API key usage';
 
     public static function canViewAny(): bool
     {

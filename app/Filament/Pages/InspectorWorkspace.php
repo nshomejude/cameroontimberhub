@@ -37,15 +37,27 @@ use Illuminate\Support\Collection;
  */
 class InspectorWorkspace extends Page
 {
+
+    public static function getNavigationLabel(): string
+    {
+        return __('messages.filament.pages.my_inspections_nav');
+    }
+
+    public function getTitle(): string
+    {
+        return __('messages.filament.pages.inspector_workspace_title');
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('messages.filament.groups.compliance');
+    }
     protected string $view = 'filament.pages.inspector-workspace';
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClipboardDocumentList;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Compliance';
 
-    protected static ?string $navigationLabel = 'My Inspections';
 
-    protected static ?string $title = 'Inspector Workspace';
 
     protected static ?int $navigationSort = 5;
 

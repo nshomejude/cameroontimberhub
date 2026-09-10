@@ -21,17 +21,33 @@ use Filament\Tables\Table;
  */
 class WebhookDeliveryResource extends Resource
 {
+
+    public static function getNavigationLabel(): string
+    {
+        return __('messages.filament.nav.webhook_deliveries');
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('messages.filament.groups.platform');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('messages.filament.model.webhook_delivery_one');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('messages.filament.model.webhook_delivery_many');
+    }
     protected static ?string $model = WebhookDelivery::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBoltSlash;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Platform';
 
-    protected static ?string $navigationLabel = 'Webhook deliveries';
 
-    protected static ?string $modelLabel = 'Webhook delivery';
 
-    protected static ?string $pluralModelLabel = 'Webhook deliveries';
 
     public static function canViewAny(): bool
     {

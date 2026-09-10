@@ -22,13 +22,21 @@ use Filament\Tables\Table;
  */
 class LotTransformationResource extends Resource
 {
+
+    public static function getNavigationLabel(): string
+    {
+        return __('messages.filament.nav.lot_transformations');
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('messages.filament.groups.catalogue');
+    }
     protected static ?string $model = LotTransformation::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArrowsRightLeft;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Catalogue';
 
-    protected static ?string $navigationLabel = 'Lot Transformations';
 
     protected static ?int $navigationSort = 2;
 

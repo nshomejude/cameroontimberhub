@@ -16,15 +16,23 @@ use Filament\Tables\Table;
 
 class ArticleResource extends Resource
 {
+
+    public static function getNavigationLabel(): string
+    {
+        return __('messages.filament.nav.insights_articles');
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('messages.filament.groups.content');
+    }
     protected static ?string $model = Article::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedNewspaper;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Content';
 
     protected static ?string $recordTitleAttribute = 'title';
 
-    protected static ?string $navigationLabel = 'Insights articles';
 
     protected static ?int $navigationSort = 1;
 

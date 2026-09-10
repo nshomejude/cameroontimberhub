@@ -18,11 +18,20 @@ use Filament\Tables\Table;
  */
 class DisputeResource extends Resource
 {
+
+    public static function getNavigationLabel(): string
+    {
+        return __('messages.filament.nav.disputes');
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('messages.filament.groups.trust_safety');
+    }
     protected static ?string $model = Dispute::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedScale;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Trust & Safety';
 
     protected static ?string $recordTitleAttribute = 'id';
 

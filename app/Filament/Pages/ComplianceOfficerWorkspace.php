@@ -26,15 +26,27 @@ use Illuminate\Support\Collection;
  */
 class ComplianceOfficerWorkspace extends Page
 {
+
+    public static function getNavigationLabel(): string
+    {
+        return __('messages.filament.pages.compliance_workspace_nav');
+    }
+
+    public function getTitle(): string
+    {
+        return __('messages.filament.pages.compliance_workspace_title');
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('messages.filament.groups.compliance');
+    }
     protected string $view = 'filament.pages.compliance-officer-workspace';
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedShieldCheck;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Compliance';
 
-    protected static ?string $navigationLabel = 'Compliance Workspace';
 
-    protected static ?string $title = 'Compliance Officer Workspace';
 
     protected static ?int $navigationSort = 0;
 

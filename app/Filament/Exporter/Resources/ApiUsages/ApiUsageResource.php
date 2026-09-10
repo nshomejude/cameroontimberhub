@@ -21,15 +21,27 @@ use Illuminate\Database\Eloquent\Builder;
  */
 class ApiUsageResource extends Resource
 {
+
+    public static function getNavigationLabel(): string
+    {
+        return __('messages.filament.xnav.api_usage');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('messages.filament.model.api_usage_one');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('messages.filament.model.api_usage_many');
+    }
     protected static ?string $model = ApiKeyMeta::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedChartBar;
 
-    protected static ?string $navigationLabel = 'API usage';
 
-    protected static ?string $modelLabel = 'API usage record';
 
-    protected static ?string $pluralModelLabel = 'API usage';
 
     protected static ?int $navigationSort = 7;
 

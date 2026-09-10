@@ -16,11 +16,20 @@ use Filament\Tables\Table;
 
 class RegulatorySourceResource extends Resource
 {
+
+    public static function getNavigationLabel(): string
+    {
+        return __('messages.filament.nav.regulatory_sources');
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('messages.filament.groups.compliance');
+    }
     protected static ?string $model = RegulatorySource::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBookOpen;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Compliance';
 
     protected static ?string $recordTitleAttribute = 'instrument_name';
 

@@ -19,11 +19,15 @@ use Illuminate\Database\Eloquent\Builder;
  */
 class OrderResource extends Resource
 {
+
+    public static function getNavigationLabel(): string
+    {
+        return __('messages.filament.xnav.orders');
+    }
     protected static ?string $model = Order::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClipboardDocumentCheck;
 
-    protected static ?string $navigationLabel = 'Orders';
 
     protected static ?string $recordTitleAttribute = 'reference_code';
 

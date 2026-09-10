@@ -31,13 +31,26 @@ use Illuminate\Database\Eloquent\Builder;
  */
 class InspectionRequestResource extends Resource
 {
+
+    public static function getNavigationLabel(): string
+    {
+        return __('messages.filament.xnav.inspection_requests');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('messages.filament.model.inspection_request_one');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('messages.filament.model.inspection_request_many');
+    }
     protected static ?string $model = Inspection::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClipboardDocumentCheck;
 
-    protected static ?string $navigationLabel = 'Inspection Requests';
 
-    protected static ?string $modelLabel = 'inspection request';
 
     protected static ?int $navigationSort = 6;
 

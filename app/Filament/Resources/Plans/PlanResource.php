@@ -16,11 +16,20 @@ use Filament\Tables\Table;
 
 class PlanResource extends Resource
 {
+
+    public static function getNavigationLabel(): string
+    {
+        return __('messages.filament.nav.plans');
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('messages.filament.groups.billing');
+    }
     protected static ?string $model = Plan::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCurrencyDollar;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Billing';
 
     protected static ?string $recordTitleAttribute = 'name';
 

@@ -18,16 +18,16 @@ class PlatformOverview extends StatsOverviewWidget
     protected function getStats(): array
     {
         return [
-            Stat::make('Verified companies', Company::where('status', 'verified')->count())
-                ->description('Live in the directory')
+            Stat::make(__('messages.filament.widgets.verified_companies'), Company::where('status', 'verified')->count())
+                ->description(__('messages.filament.widgets.verified_companies_desc'))
                 ->color('success'),
-            Stat::make('Pending companies', Company::where('status', 'pending')->count())
-                ->description('Awaiting review')
+            Stat::make(__('messages.filament.widgets.pending_companies'), Company::where('status', 'pending')->count())
+                ->description(__('messages.filament.widgets.pending_companies_desc'))
                 ->color('warning'),
-            Stat::make('Open verifications', VerificationRequest::open()->count())
-                ->description('In the verification queue'),
-            Stat::make('RFQs to triage', Rfq::verified()->where('status', 'new')->count())
-                ->description('New verified requests')
+            Stat::make(__('messages.filament.widgets.open_verifications'), VerificationRequest::open()->count())
+                ->description(__('messages.filament.widgets.open_verifications_desc')),
+            Stat::make(__('messages.filament.widgets.rfqs_to_triage'), Rfq::verified()->where('status', 'new')->count())
+                ->description(__('messages.filament.widgets.rfqs_to_triage_desc'))
                 ->color('warning'),
         ];
     }

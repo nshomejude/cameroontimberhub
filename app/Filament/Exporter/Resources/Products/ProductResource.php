@@ -19,11 +19,15 @@ use Illuminate\Database\Eloquent\Builder;
 
 class ProductResource extends Resource
 {
+
+    public static function getNavigationLabel(): string
+    {
+        return __('messages.filament.xnav.products');
+    }
     protected static ?string $model = Product::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCube;
 
-    protected static ?string $navigationLabel = 'Products';
 
     protected static ?string $recordTitleAttribute = 'name';
 

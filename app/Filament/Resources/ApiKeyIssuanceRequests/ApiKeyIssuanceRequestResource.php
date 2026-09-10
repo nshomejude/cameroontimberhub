@@ -22,17 +22,33 @@ use Filament\Tables\Table;
  */
 class ApiKeyIssuanceRequestResource extends Resource
 {
+
+    public static function getNavigationLabel(): string
+    {
+        return __('messages.filament.nav.api_key_requests');
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('messages.filament.groups.platform');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('messages.filament.model.api_key_issuance_one');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('messages.filament.model.api_key_issuance_many');
+    }
     protected static ?string $model = ApiKeyIssuanceRequest::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedKey;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Platform';
 
-    protected static ?string $navigationLabel = 'API key requests';
 
-    protected static ?string $modelLabel = 'API key issuance request';
 
-    protected static ?string $pluralModelLabel = 'API key issuance requests';
 
     public static function canViewAny(): bool
     {

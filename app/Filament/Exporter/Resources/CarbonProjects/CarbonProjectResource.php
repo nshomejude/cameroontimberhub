@@ -26,11 +26,15 @@ use Illuminate\Database\Eloquent\Builder;
  */
 class CarbonProjectResource extends Resource
 {
+
+    public static function getNavigationLabel(): string
+    {
+        return __('messages.filament.xnav.carbon_projects');
+    }
     protected static ?string $model = CarbonProject::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedGlobeAlt;
 
-    protected static ?string $navigationLabel = 'Carbon Projects';
 
     protected static ?string $recordTitleAttribute = 'name';
 

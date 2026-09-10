@@ -21,11 +21,11 @@ class VerificationStatusWidget extends StatsOverviewWidget
         }
 
         $statusLabel = match ($company->status->value) {
-            'verified'  => 'Verified',
-            'pending'   => 'Under review',
-            'draft'     => 'Draft — not submitted',
-            'suspended' => 'Suspended',
-            'rejected'  => 'Rejected',
+            'verified'  => __('messages.filament.widgets.status_verified'),
+            'pending'   => __('messages.filament.widgets.status_under_review'),
+            'draft'     => __('messages.filament.widgets.status_draft'),
+            'suspended' => __('messages.filament.widgets.status_suspended'),
+            'rejected'  => __('messages.filament.widgets.status_rejected'),
             default     => ucfirst($company->status->value),
         };
 
@@ -41,9 +41,9 @@ class VerificationStatusWidget extends StatsOverviewWidget
         $completion   = $company->profile_completion ?? 0;
 
         return [
-            Stat::make('Company status', $statusLabel)->color($statusColor),
-            Stat::make('Active badges', $activeBadges)->color($activeBadges > 0 ? 'success' : 'gray'),
-            Stat::make('Profile completion', $completion . '%')
+            Stat::make(__('messages.filament.widgets.company_status'), $statusLabel)->color($statusColor),
+            Stat::make(__('messages.filament.widgets.active_badges'), $activeBadges)->color($activeBadges > 0 ? 'success' : 'gray'),
+            Stat::make(__('messages.filament.widgets.profile_completion'), $completion . '%')
                 ->color($completion >= 80 ? 'success' : ($completion >= 40 ? 'warning' : 'danger')),
         ];
     }

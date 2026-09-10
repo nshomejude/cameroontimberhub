@@ -12,13 +12,21 @@ use Filament\Tables\Table;
 
 class InquiryResource extends Resource
 {
+
+    public static function getNavigationLabel(): string
+    {
+        return __('messages.filament.nav.inquiries');
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('messages.filament.groups.leads');
+    }
     protected static ?string $model = CompanyInquiry::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedEnvelopeOpen;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Leads';
 
-    protected static ?string $navigationLabel = 'Inquiries';
 
     protected static ?string $recordTitleAttribute = 'name';
 

@@ -27,11 +27,15 @@ use Illuminate\Database\Eloquent\Builder;
  */
 class CapacityResource extends Resource
 {
+
+    public static function getNavigationLabel(): string
+    {
+        return __('messages.filament.xnav.capacity');
+    }
     protected static ?string $model = Capacity::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedTruck;
 
-    protected static ?string $navigationLabel = 'Capacity';
 
     protected static ?string $recordTitleAttribute = 'capability';
 

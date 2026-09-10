@@ -23,11 +23,15 @@ use Illuminate\Database\Eloquent\Builder;
  */
 class DriverResource extends Resource
 {
+
+    public static function getNavigationLabel(): string
+    {
+        return __('messages.filament.xnav.fleet_drivers');
+    }
     protected static ?string $model = Driver::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedIdentification;
 
-    protected static ?string $navigationLabel = 'Fleet drivers';
 
     protected static ?string $recordTitleAttribute = 'name';
 

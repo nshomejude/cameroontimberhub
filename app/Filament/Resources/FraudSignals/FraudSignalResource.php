@@ -19,11 +19,20 @@ use Filament\Tables\Table;
  */
 class FraudSignalResource extends Resource
 {
+
+    public static function getNavigationLabel(): string
+    {
+        return __('messages.filament.nav.fraud_signals');
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('messages.filament.groups.compliance');
+    }
     protected static ?string $model = FraudSignal::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedShieldExclamation;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Compliance';
 
     protected static ?string $recordTitleAttribute = 'id';
 

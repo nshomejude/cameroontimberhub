@@ -24,15 +24,15 @@ class RfqTriageWidget extends TableWidget
     public function table(Table $table): Table
     {
         return $table
-            ->heading('RFQs to triage')
-            ->description('Email-verified requests awaiting admin action')
+            ->heading(__('messages.filament.widgets.rfq_triage_heading'))
+            ->description(__('messages.filament.widgets.rfq_triage_desc'))
             ->query(
                 fn (): Builder => Rfq::verified()
                     ->whereIn('status', [RfqStatus::New->value, RfqStatus::InReview->value])
                     ->latest()
             )
             ->columns([
-                TextColumn::make('reference_code')->label('Ref')->searchable()->copyable(),
+                TextColumn::make('reference_code')->label(__('messages.filament.widgets.ref'))->searchable()->copyable(),
                 TextColumn::make('buyer_name')
                     ->description(fn (Rfq $r): string => implode(' · ', array_filter([$r->buyer_company, $r->buyer_country_code])))
                     ->searchable(),
@@ -41,14 +41,14 @@ class RfqTriageWidget extends TableWidget
                     ->formatStateUsing(fn (RfqStatus $state): string => $state->label())
                     ->color(fn (RfqStatus $state): string => $state->color()),
                 TextColumn::make('spam_score')
-                    ->label('Spam')
+                    ->label(__('messages.filament.widgets.spam'))
                     ->badge()
                     ->color(fn (int $state): string => $state >= 70 ? 'danger' : ($state >= 30 ? 'warning' : 'gray')),
-                TextColumn::make('created_at')->label('Received')->since()->sortable(),
+                TextColumn::make('created_at')->label(__('messages.filament.widgets.received'))->since()->sortable(),
             ])
             ->filters([
                 SelectFilter::make('status')
-                    ->options([RfqStatus::New->value => 'New', RfqStatus::InReview->value => 'In review']),
+                    ->options([RfqStatus::New->value => __('messages.filament.widgets.status_new'), RfqStatus::InReview->value => __('messages.filament.widgets.status_in_review')]),
             ])
             ->defaultSort('created_at', 'asc')
             ->paginated([5, 10])

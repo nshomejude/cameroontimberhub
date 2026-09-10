@@ -23,11 +23,15 @@ use Illuminate\Database\Eloquent\Builder;
  */
 class WebhookSubscriptionResource extends Resource
 {
+
+    public static function getNavigationLabel(): string
+    {
+        return __('messages.filament.xnav.webhooks');
+    }
     protected static ?string $model = WebhookSubscription::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBolt;
 
-    protected static ?string $navigationLabel = 'Webhooks';
 
     protected static ?int $navigationSort = 6;
 

@@ -26,14 +26,14 @@ class LeadSummaryWidget extends StatsOverviewWidget
         $won      = (clone $leads)->where('status', LeadStatus::Won->value)->count();
 
         return [
-            Stat::make('New leads', $newCount)
-                ->description('Awaiting your response')
+            Stat::make(__('messages.filament.widgets.new_leads'), $newCount)
+                ->description(__('messages.filament.widgets.new_leads_desc'))
                 ->color($newCount > 0 ? 'warning' : 'gray'),
-            Stat::make('Contacted', $contacted)
-                ->description('In progress')
+            Stat::make(__('messages.filament.widgets.contacted'), $contacted)
+                ->description(__('messages.filament.widgets.contacted_desc'))
                 ->color('info'),
-            Stat::make('Won', $won)
-                ->description('Successful leads')
+            Stat::make(__('messages.filament.widgets.won'), $won)
+                ->description(__('messages.filament.widgets.won_desc'))
                 ->color('success'),
         ];
     }

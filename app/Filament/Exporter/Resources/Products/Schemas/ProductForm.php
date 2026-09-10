@@ -60,113 +60,122 @@ class ProductForm
     {
         return $schema
             ->components([
-                Section::make('Core')
+                Section::make(__('messages.filament.product.section_core'))
                     ->columns(2)
                     ->schema([
-                        TextInput::make('name')->required()->maxLength(200),
+                        TextInput::make('name')->label(__('messages.filament.product.name'))->required()->maxLength(200),
                         Select::make('product_type')
+                            ->label(__('messages.filament.product.product_type'))
                             ->options(ProductType::options())
                             ->native(false)
                             ->live()
-                            ->helperText(fn ($state): ?string => $state ? ProductType::tryFrom($state)?->description() : 'The processing form this listing is traded in.')
+                            ->helperText(fn ($state): ?string => $state ? ProductType::tryFrom($state)?->description() : __('messages.filament.product.product_type_help_default'))
                             ->required(),
                         Select::make('species_id')
                             ->relationship('species', 'common_name')
                             ->searchable()->preload()
-                            ->label('Species')
+                            ->label(__('messages.filament.product.species'))
                             ->required(fn (Get $get): bool => $get('product_type') !== ProductType::Charcoal->value)
                             ->visible(fn (Get $get): bool => $get('product_type') !== ProductType::Charcoal->value),
                         TextInput::make('grade')
+                            ->label(__('messages.filament.product.grade'))
                             ->maxLength(120)
                             ->visible(fn (Get $get): bool => $get('product_type') !== ProductType::Charcoal->value),
                         TextInput::make('tagline')
+                            ->label(__('messages.filament.product.tagline'))
                             ->maxLength(160)
                             ->columnSpanFull()
-                            ->helperText('Short strapline under the title on mobile, e.g. "Premium African Hardwood – Export Quality". Leave blank to omit the line.'),
-                        Textarea::make('description')->rows(5)->columnSpanFull(),
+                            ->helperText(__('messages.filament.product.tagline_help')),
+                        Textarea::make('description')->label(__('messages.filament.product.description'))->rows(5)->columnSpanFull(),
                     ]),
 
-                Section::make('Pricing & quantity')
+                Section::make(__('messages.filament.product.section_pricing'))
                     ->columns(3)
                     ->schema([
-                        TextInput::make('price_amount')->numeric()->label('Price'),
-                        TextInput::make('price_currency')->maxLength(3)->default('XAF'),
-                        Select::make('price_unit')->options(PriceUnit::options())->default('m3'),
-                        TextInput::make('moq_quantity')->numeric()->label('Minimum order'),
-                        Select::make('moq_unit')->options(PriceUnit::options())->default('m3'),
+                        TextInput::make('price_amount')->numeric()->label(__('messages.filament.product.price')),
+                        TextInput::make('price_currency')->label(__('messages.filament.product.price_currency'))->maxLength(3)->default('XAF'),
+                        Select::make('price_unit')->label(__('messages.filament.product.price_unit'))->options(PriceUnit::options())->default('m3'),
+                        TextInput::make('moq_quantity')->numeric()->label(__('messages.filament.product.minimum_order')),
+                        Select::make('moq_unit')->label(__('messages.filament.product.moq_unit'))->options(PriceUnit::options())->default('m3'),
                     ]),
 
-                Section::make('Dimensions & properties')
+                Section::make(__('messages.filament.product.section_dimensions'))
                     ->columns(3)
                     ->visible(fn (Get $get): bool => in_array($get('product_type'), [
                         ...self::dimensionalTypes(),
                         ...self::finishedTypes(),
                     ], true))
                     ->schema([
-                        TextInput::make('thickness_mm')->numeric()->label('Thickness (mm)'),
-                        TextInput::make('width_min_mm')->numeric()->label('Min width (mm)'),
-                        TextInput::make('width_max_mm')->numeric()->label('Max width (mm)'),
-                        TextInput::make('length_min_m')->numeric()->label('Min length (m)'),
-                        TextInput::make('length_max_m')->numeric()->label('Max length (m)'),
+                        TextInput::make('thickness_mm')->numeric()->label(__('messages.filament.product.thickness_mm')),
+                        TextInput::make('width_min_mm')->numeric()->label(__('messages.filament.product.width_min_mm')),
+                        TextInput::make('width_max_mm')->numeric()->label(__('messages.filament.product.width_max_mm')),
+                        TextInput::make('length_min_m')->numeric()->label(__('messages.filament.product.length_min_m')),
+                        TextInput::make('length_max_m')->numeric()->label(__('messages.filament.product.length_max_m')),
                         TextInput::make('moisture_content')
+                            ->label(__('messages.filament.product.moisture_content'))
                             ->maxLength(60)
                             ->visible(fn (Get $get): bool => in_array($get('product_type'), self::dimensionalTypes(), true)),
-                        TextInput::make('origin')->maxLength(120)->default('Cameroon'),
-                        TextInput::make('certification')->maxLength(150),
+                        TextInput::make('origin')->label(__('messages.filament.product.origin'))->maxLength(120)->default('Cameroon'),
+                        TextInput::make('certification')->label(__('messages.filament.product.certification'))->maxLength(150),
                     ]),
 
-                Section::make('Charcoal & biomass details')
+                Section::make(__('messages.filament.product.section_charcoal'))
                     ->columns(2)
                     ->visible(fn (Get $get): bool => $get('product_type') === ProductType::Charcoal->value)
                     ->schema([
-                        TextInput::make('origin')->maxLength(120)->default('Cameroon'),
-                        TextInput::make('certification')->maxLength(150),
+                        TextInput::make('origin')->label(__('messages.filament.product.origin'))->maxLength(120)->default('Cameroon'),
+                        TextInput::make('certification')->label(__('messages.filament.product.certification'))->maxLength(150),
                     ]),
 
-                Section::make('Content')
+                Section::make(__('messages.filament.product.section_content'))
                     ->schema([
                         KeyValue::make('specifications')
-                            ->keyLabel('Property')->valueLabel('Value')
-                            ->helperText('e.g. botanical_name, density, packaging, delivery.')
+                            ->keyLabel(__('messages.filament.product.specifications_key'))->valueLabel(__('messages.filament.product.specifications_value'))
+                            ->helperText(__('messages.filament.product.specifications_help'))
                             ->columnSpanFull(),
-                        TagsInput::make('key_benefits')->placeholder('Add a benefit')->columnSpanFull(),
+                        TagsInput::make('key_benefits')->placeholder(__('messages.filament.product.key_benefits_placeholder'))->columnSpanFull(),
                         TextInput::make('materials_used')
+                            ->label(__('messages.filament.product.materials_used'))
                             ->maxLength(255)
-                            ->helperText('e.g. Solid oak, reclaimed teak, bamboo composite')
+                            ->helperText(__('messages.filament.product.materials_used_help'))
                             ->visible(fn (Get $get): bool => in_array($get('product_type'), self::finishedTypes(), true)),
                         TextInput::make('finish')
+                            ->label(__('messages.filament.product.finish'))
                             ->maxLength(120)
-                            ->helperText('e.g. Matte lacquer, oiled, powder-coated')
+                            ->helperText(__('messages.filament.product.finish_help'))
                             ->visible(fn (Get $get): bool => in_array($get('product_type'), self::finishedTypes(), true)),
                         TextInput::make('dimensions_description')
+                            ->label(__('messages.filament.product.dimensions_description'))
                             ->maxLength(255)
-                            ->helperText('e.g. 80cm W x 45cm D x 90cm H')
+                            ->helperText(__('messages.filament.product.dimensions_description_help'))
                             ->visible(fn (Get $get): bool => in_array($get('product_type'), self::finishedTypes(), true)),
                         KeyValue::make('custom_attributes')
-                            ->label('Additional attributes')
-                            ->keyLabel('Attribute')->valueLabel('Value')
-                            ->helperText('Add any extra details buyers should know — materials, finish, style, etc.')
+                            ->label(__('messages.filament.product.custom_attributes'))
+                            ->keyLabel(__('messages.filament.product.custom_attributes_key'))->valueLabel(__('messages.filament.product.custom_attributes_value'))
+                            ->helperText(__('messages.filament.product.custom_attributes_help'))
                             ->visible(fn (Get $get): bool => in_array($get('product_type'), self::finishedTypes(), true))
                             ->columnSpanFull(),
                     ]),
 
-                Section::make('Media')
-                    ->description('The first image is the primary listing photo.')
+                Section::make(__('messages.filament.product.section_media'))
+                    ->description(__('messages.filament.product.media_desc'))
                     ->schema([
                         FileUpload::make('primary_image_path')
+                            ->label(__('messages.filament.product.primary_image'))
                             ->image()->imageEditor()
                             ->disk('public')->directory('products')
                             ->columnSpanFull(),
                     ]),
 
-                Section::make('Publication')
+                Section::make(__('messages.filament.product.section_publication'))
                     ->columns(2)
                     ->schema([
                         Select::make('status')
+                            ->label(__('messages.filament.product.status'))
                             ->options(ProductStatus::options())
                             ->default(ProductStatus::Draft->value)
                             ->required()
-                            ->helperText('Save as Draft to preview before this listing becomes publicly visible.'),
+                            ->helperText(__('messages.filament.product.status_help')),
                     ]),
             ]);
     }

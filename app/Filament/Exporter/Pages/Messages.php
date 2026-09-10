@@ -22,13 +22,21 @@ use Filament\Support\Icons\Heroicon;
  */
 class Messages extends Page
 {
+
+    public static function getNavigationLabel(): string
+    {
+        return __('messages.filament.pages.messages');
+    }
+
+    public function getTitle(): string
+    {
+        return __('messages.filament.pages.messages');
+    }
     protected string $view = 'filament.exporter.pages.messages';
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedChatBubbleLeftRight;
 
-    protected static ?string $navigationLabel = 'Messages';
 
-    protected static ?string $title = 'Messages';
 
     protected static ?int $navigationSort = 20;
 

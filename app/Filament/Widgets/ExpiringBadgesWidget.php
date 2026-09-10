@@ -23,8 +23,8 @@ class ExpiringBadgesWidget extends TableWidget
     public function table(Table $table): Table
     {
         return $table
-            ->heading('Badges expiring within 30 days')
-            ->description('Active badges approaching their valid_until date')
+            ->heading(__('messages.filament.widgets.expiring_badges_heading'))
+            ->description(__('messages.filament.widgets.expiring_badges_desc'))
             ->query(
                 fn (): Builder => VerificationBadge::query()
                     ->where('status', BadgeStatus::Active->value)
@@ -36,17 +36,17 @@ class ExpiringBadgesWidget extends TableWidget
             )
             ->columns([
                 TextColumn::make('company.name')
-                    ->label('Company')
+                    ->label(__('messages.filament.widgets.company'))
                     ->url(fn (VerificationBadge $b) => $b->company
                         ? \App\Filament\Resources\Companies\CompanyResource::getUrl('edit', ['record' => $b->company])
                         : null),
                 TextColumn::make('badge_type')
-                    ->label('Badge')
+                    ->label(__('messages.filament.widgets.badge'))
                     ->badge()
                     ->formatStateUsing(fn ($state): string => is_object($state) ? ucwords(str_replace('_', ' ', $state->value)) : (string) $state),
-                TextColumn::make('valid_until')->label('Expires')->date('d M Y')
+                TextColumn::make('valid_until')->label(__('messages.filament.widgets.expires'))->date('d M Y')
                     ->color(fn (VerificationBadge $b): string => $b->valid_until->diffInDays() <= 7 ? 'danger' : 'warning'),
-                TextColumn::make('issued_at')->label('Issued')->date('d M Y'),
+                TextColumn::make('issued_at')->label(__('messages.filament.widgets.issued'))->date('d M Y'),
             ])
             ->paginated([5, 10]);
     }

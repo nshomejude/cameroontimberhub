@@ -16,11 +16,15 @@ use Illuminate\Database\Eloquent\Builder;
 
 class LeadResource extends Resource
 {
+
+    public static function getNavigationLabel(): string
+    {
+        return __('messages.filament.xnav.leads');
+    }
     protected static ?string $model = Lead::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedInboxArrowDown;
 
-    protected static ?string $navigationLabel = 'Leads';
 
     protected static ?int $navigationSort = 3;
 

@@ -13,17 +13,33 @@ use Illuminate\Database\Eloquent\Builder;
 
 class RfqResource extends Resource
 {
+
+    public static function getNavigationLabel(): string
+    {
+        return __('messages.filament.nav.rfq_queue');
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('messages.filament.groups.leads');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('messages.filament.model.rfq_one');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('messages.filament.model.rfq_many');
+    }
     protected static ?string $model = Rfq::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedInboxArrowDown;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Leads';
 
-    protected static ?string $navigationLabel = 'RFQ queue';
 
-    protected static ?string $modelLabel = 'RFQ';
 
-    protected static ?string $pluralModelLabel = 'RFQs';
 
     protected static ?string $recordTitleAttribute = 'reference_code';
 

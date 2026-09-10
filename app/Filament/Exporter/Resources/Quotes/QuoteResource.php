@@ -18,11 +18,15 @@ use Illuminate\Database\Eloquent\Builder;
 
 class QuoteResource extends Resource
 {
+
+    public static function getNavigationLabel(): string
+    {
+        return __('messages.filament.xnav.quotes');
+    }
     protected static ?string $model = Quote::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentCurrencyDollar;
 
-    protected static ?string $navigationLabel = 'Quotes';
 
     protected static ?string $recordTitleAttribute = 'reference_code';
 
