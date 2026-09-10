@@ -132,9 +132,12 @@ it('hides rating and every zero/null stat rather than rendering an empty one', f
         ->not->toContain('0 reviews')
         ->not->toContain('Overall rating')
         ->not->toContain('Total reviews')
-        ->not->toContain('On-time delivery')
         ->not->toContain('Orders completed')
-        ->not->toContain('Rated 0');
+        ->not->toContain('Rated 0')
+        // A null percentage metric now reads as "Not enough history yet",
+        // never a fabricated "0%".
+        ->not->toContain('0%')
+        ->toContain('Not enough history yet');
 });
 
 it('renders the rating only when real rating data exists', function () {

@@ -491,6 +491,8 @@ return [
         'portfolio_check_back' => "Revenez bientôt — cette page affichera les travaux réalisés au fur et à mesure.",
         'materials' => 'Matériaux :',
         'completed' => 'Réalisé :',
+        'metric_insufficient' => 'Historique insuffisant',
+        'reputation_as_of' => 'Chiffres de réputation au :date',
     ],
 
     'made_in_cameroon' => [

@@ -26,6 +26,10 @@ Schedule::command('ops:error-digest')->dailyAt('07:00')->withoutOverlapping();
 // relay is starving. Never gates — always exits 0.
 Schedule::command('ops:queue-health')->everyFifteenMinutes()->withoutOverlapping();
 
+// Reputation recompute (production-readiness plan Task C1): rebuilds every
+// trading company's reputation figures from real order / RFQ / dispute rows.
+Schedule::command('reputation:recompute')->dailyAt('03:00');
+
 // Transactional outbox relay (architecture plan, Task 0.2): publishes
 // unpublished outbox_events rows by dispatching their matching domain event.
 Schedule::job(new RelayOutboxEventsJob())->everyTenSeconds()->withoutOverlapping();

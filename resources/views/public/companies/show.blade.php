@@ -47,8 +47,8 @@
         ['icon' => 'star', 'label' => 'Overall rating', 'value' => $company->hasRating() ? rtrim(rtrim(number_format((float) $company->rating_avg, 1), '0'), '.').'/5' : null],
         ['icon' => 'chat-bubble-left-right', 'label' => 'Total reviews', 'value' => $company->hasRating() ? number_format((int) $company->rating_count) : null],
         ['icon' => 'clock', 'label' => 'Response time', 'value' => $company->responseTimeLabel()],
-        ['icon' => 'inbox-arrow-down', 'label' => 'Response rate', 'value' => $company->response_rate_percent !== null ? $company->response_rate_percent.'%' : null],
-        ['icon' => 'truck', 'label' => 'On-time delivery (self-reported)', 'value' => $company->on_time_delivery_percent !== null ? $company->on_time_delivery_percent.'%' : null],
+        ['icon' => 'inbox-arrow-down', 'label' => 'Response rate', 'value' => $company->response_rate_percent !== null ? $company->response_rate_percent.'%' : __('messages.company.metric_insufficient')],
+        ['icon' => 'truck', 'label' => 'On-time delivery', 'value' => $company->on_time_delivery_percent !== null ? $company->on_time_delivery_percent.'%' : __('messages.company.metric_insufficient')],
         ['icon' => 'clipboard-document-check', 'label' => 'Orders completed', 'value' => $company->orders_completed ? number_format($company->orders_completed) : null],
     ])->filter(fn ($r) => filled($r['value']))->values();
 
@@ -396,6 +396,11 @@
                                                         </div>
                                                     @endforeach
                                                 </dl>
+                                                @if ($company->reputation_recomputed_at)
+                                                    <p class="mt-3 text-[0.8125rem] text-ink-soft">
+                                                        {{ __('messages.company.reputation_as_of', ['date' => $company->reputation_recomputed_at->isoFormat('D MMM YYYY')]) }}
+                                                    </p>
+                                                @endif
                                             </section>
                                         @endif
 

@@ -87,6 +87,8 @@ class Company extends Model
             'annual_capacity_m3' => 'decimal:2',
             'annual_harvest_capacity_m3' => 'decimal:2',
             'on_time_delivery_percent' => 'integer',
+            'reputation_recomputed_at' => 'datetime',
+            'disputes_count' => 'integer',
             'delivery_days_min' => 'integer',
             'delivery_days_max' => 'integer',
             'latitude' => 'decimal:6',

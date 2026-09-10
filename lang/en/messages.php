@@ -485,6 +485,8 @@ return [
         'portfolio_check_back' => "Check back soon — this page will show completed work as it's added.",
         'materials' => 'Materials:',
         'completed' => 'Completed:',
+        'metric_insufficient' => 'Not enough history yet',
+        'reputation_as_of' => 'Reputation figures as of :date',
     ],
 
     'made_in_cameroon' => [
