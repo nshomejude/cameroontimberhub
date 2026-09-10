@@ -73,6 +73,18 @@ return [
             'replace_placeholders' => true,
         ],
 
+        // Dedicated sink for unhandled exceptions (production-readiness plan
+        // Task A2). bootstrap/app.php's withExceptions() reports every
+        // uncaught Throwable here in addition to the default stack, giving
+        // `ops:error-digest` a clean, error-only file to summarise.
+        'errors' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/errors.log'),
+            'level' => 'error',
+            'days' => 30,
+            'replace_placeholders' => true,
+        ],
+
         'slack' => [
             'driver' => 'slack',
             'url' => env('LOG_SLACK_WEBHOOK_URL'),

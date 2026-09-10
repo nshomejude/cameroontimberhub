@@ -60,6 +60,33 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // Mirror every unhandled exception into the dedicated `errors` log
+        // channel (production-readiness plan Task A2) so `ops:error-digest`
+        // has an error-only file to summarise. Additive — the default stack
+        // logging still runs. Wrapped in its own try/catch so a logging
+        // failure can never mask or recurse on the original exception.
+        $exceptions->report(function (\Throwable $e): void {
+            try {
+                $request = request();
+
+                \Illuminate\Support\Facades\Log::channel('errors')->error(
+                    $e::class.': '.$e->getMessage(),
+                    [
+                        'exception' => $e::class,
+                        'path' => $request?->path(),
+                        'method' => $request?->method(),
+                        'user_id' => optional($request?->user())->getAuthIdentifier(),
+                        'file' => $e->getFile().':'.$e->getLine(),
+                        'trace' => collect(explode("\n", $e->getTraceAsString()))
+                            ->take(8)
+                            ->implode("\n"),
+                    ],
+                );
+            } catch (\Throwable) {
+                // Swallow — never let error reporting throw.
+            }
+        });
+
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*'),
         );

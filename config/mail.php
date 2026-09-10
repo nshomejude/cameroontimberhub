@@ -117,6 +117,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Operations Address
+    |--------------------------------------------------------------------------
+    |
+    | Internal ops/on-call mailbox for automated operational reports such as
+    | the daily error digest (ops:error-digest). Falls back to the global
+    | "from" address when unset.
+    |
+    */
+
+    'ops_address' => env('MAIL_OPS_ADDRESS', env('MAIL_FROM_ADDRESS', 'hello@example.com')),
+
+    /*
+    |--------------------------------------------------------------------------
     | Markdown Mail Settings
     |--------------------------------------------------------------------------
     |

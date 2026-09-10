@@ -13,6 +13,10 @@ Artisan::command('inspire', function () {
 Schedule::command('compliance:expire-badges')->dailyAt('06:30');
 Schedule::command('compliance:remind-expiring')->dailyAt('07:00');
 
+// Daily operational error digest (production-readiness plan Task A2): emails a
+// count + top offenders from the `errors` log channel to config('mail.ops_address').
+Schedule::command('ops:error-digest')->dailyAt('07:00')->withoutOverlapping();
+
 // Transactional outbox relay (architecture plan, Task 0.2): publishes
 // unpublished outbox_events rows by dispatching their matching domain event.
 Schedule::job(new RelayOutboxEventsJob())->everyTenSeconds()->withoutOverlapping();
