@@ -3,6 +3,7 @@
 namespace App\Services\Payments;
 
 use App\Contracts\PaymentGatewayContract;
+use App\Enums\PaymentProvider;
 use App\Enums\PaymentStatus;
 use App\Models\Payment;
 use Illuminate\Http\RedirectResponse;
@@ -22,7 +23,13 @@ class PayPalGateway implements PaymentGatewayContract
 {
     public function isConfigured(): bool
     {
-        return filled(config('payments.paypal.client_id')) && filled(config('payments.paypal.client_secret'));
+        return GatewayCredentials::isConfigured(PaymentProvider::PayPal);
+    }
+
+    /** @return array<string, mixed> */
+    private function cfg(): array
+    {
+        return GatewayCredentials::for(PaymentProvider::PayPal);
     }
 
     public function initiate(Payment $payment): RedirectResponse|Response
@@ -133,7 +140,7 @@ class PayPalGateway implements PaymentGatewayContract
             return $this->jsonResponse(['error' => 'invalid payload'], 400);
         }
 
-        $webhookId = config('payments.paypal.webhook_id');
+        $webhookId = $this->cfg()['webhook_id'] ?? null;
 
         if (! filled($webhookId)) {
             return $this->jsonResponse(['error' => 'webhook not configured'], 400);
@@ -197,15 +204,17 @@ class PayPalGateway implements PaymentGatewayContract
 
     private function baseUrl(): string
     {
-        return config('payments.paypal.environment') === 'live'
+        return ($this->cfg()['environment'] ?? 'sandbox') === 'live'
             ? 'https://api-m.paypal.com'
             : 'https://api-m.sandbox.paypal.com';
     }
 
     private function getAccessToken(): string
     {
+        $cfg = $this->cfg();
+
         $response = Http::asForm()
-            ->withBasicAuth(config('payments.paypal.client_id'), config('payments.paypal.client_secret'))
+            ->withBasicAuth($cfg['client_id'] ?? '', $cfg['client_secret'] ?? '')
             ->post($this->baseUrl().'/v1/oauth2/token', ['grant_type' => 'client_credentials']);
 
         if ($response->failed() || ! $response->json('access_token')) {

@@ -1193,6 +1193,8 @@ return [
         'nav' => [
             'audit_log' => "Journal d'audit",
             'ai_api_key_changes' => 'Changements de clé API IA',
+            'payment_settings' => 'Paramètres de paiement',
+            'payment_credential_changes' => 'Changements d’identifiants de paiement',
             'api_key_requests' => 'Demandes de clé API',
             'api_key_usage' => 'Utilisation des clés API',
             'insights_articles' => 'Articles Analyses',
@@ -1246,6 +1248,10 @@ return [
             'activity_many' => "Journal d'activité",
             'ai_api_key_change_one' => 'demande de changement de clé API IA',
             'ai_api_key_change_many' => 'demandes de changement de clé API IA',
+            'payment_setting_one' => 'paramètre de paiement',
+            'payment_setting_many' => 'Paramètres de paiement',
+            'payment_credential_change_one' => 'demande de changement d’identifiants de paiement',
+            'payment_credential_change_many' => 'demandes de changement d’identifiants de paiement',
             'api_key_issuance_one' => 'demande d\'émission de clé API',
             'api_key_issuance_many' => 'demandes d\'émission de clé API',
             'api_key_usage_one' => 'utilisation de clé API',
@@ -1393,6 +1399,13 @@ return [
     ],
 
     'enums' => [
+        'subscription_status' => [
+            'active' => 'Actif',
+            'trialing' => 'Période d\'essai',
+            'past_due' => 'En souffrance',
+            'expired' => 'Expiré',
+            'cancelled' => 'Annulé',
+        ],
         'carbon_registry_status' => [
             'draft' => 'Brouillon',
             'submitted' => 'Soumis',

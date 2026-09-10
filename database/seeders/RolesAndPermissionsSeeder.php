@@ -41,6 +41,12 @@ class RolesAndPermissionsSeeder extends Seeder
         // from billing/financial authority below.
         'compliance.manage',
         'payments.view',
+        // Gates the admin PaymentSettings + payment-credential change
+        // request/approve resources (billing engine M12). super_admin +
+        // finance_officer only — deliberately narrow, since approving a
+        // live-credential change also requires being a different admin than
+        // the requester plus a fresh 2FA confirmation (App\Actions\Payments).
+        'payments.manage',
         // Added for the Market Intelligence dashboard (blueprint §33-34):
         // gates the Price/Demand/Supplier Performance index page.
         'market-intelligence.view',
@@ -115,10 +121,16 @@ class RolesAndPermissionsSeeder extends Seeder
         'billing_officer' => [
             'plans.manage', 'payments.view', 'audit.view',
         ],
+        // Payment/gateway-credential authority (billing engine plan §7.6):
+        // holds payments.manage so it can propose/approve gateway credential
+        // changes. billing.refund / pricing.manage arrive in later phases.
+        'finance_officer' => [
+            'payments.manage',
+        ],
     ];
 
     /** Seedable-but-unused-in-MVP platform roles (no permissions yet). */
-    public const FUTURE_ROLES = ['sales_officer', 'finance_officer', 'support_officer'];
+    public const FUTURE_ROLES = ['sales_officer', 'support_officer'];
 
     /**
      * Account-capability roles (brief §3.1) -- what a USER account can DO on

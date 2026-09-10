@@ -1187,6 +1187,8 @@ return [
         'nav' => [
             'audit_log' => 'Audit log',
             'ai_api_key_changes' => 'AI API key changes',
+            'payment_settings' => 'Payment settings',
+            'payment_credential_changes' => 'Payment credential changes',
             'api_key_requests' => 'API key requests',
             'api_key_usage' => 'API key usage',
             'insights_articles' => 'Insights articles',
@@ -1240,6 +1242,10 @@ return [
             'activity_many' => 'Activity log',
             'ai_api_key_change_one' => 'AI API key change request',
             'ai_api_key_change_many' => 'AI API key change requests',
+            'payment_setting_one' => 'payment setting',
+            'payment_setting_many' => 'Payment settings',
+            'payment_credential_change_one' => 'payment credential change request',
+            'payment_credential_change_many' => 'payment credential change requests',
             'api_key_issuance_one' => 'API key issuance request',
             'api_key_issuance_many' => 'API key issuance requests',
             'api_key_usage_one' => 'API key usage',
@@ -1387,6 +1393,13 @@ return [
     ],
 
     'enums' => [
+        'subscription_status' => [
+            'active' => 'Active',
+            'trialing' => 'Trialing',
+            'past_due' => 'Past due',
+            'expired' => 'Expired',
+            'cancelled' => 'Cancelled',
+        ],
         'carbon_registry_status' => [
             'draft' => 'Draft',
             'submitted' => 'Submitted',

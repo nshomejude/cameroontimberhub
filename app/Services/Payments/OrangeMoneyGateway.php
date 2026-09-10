@@ -3,6 +3,7 @@
 namespace App\Services\Payments;
 
 use App\Contracts\PaymentGatewayContract;
+use App\Enums\PaymentProvider;
 use App\Models\Payment;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -36,11 +37,7 @@ class OrangeMoneyGateway implements PaymentGatewayContract
 {
     public function isConfigured(): bool
     {
-        $config = config('payments.orange_money');
-
-        return filled($config['client_id'] ?? null)
-            && filled($config['client_secret'] ?? null)
-            && filled($config['merchant_key'] ?? null);
+        return GatewayCredentials::isConfigured(PaymentProvider::OrangeMoney);
     }
 
     public function initiate(Payment $payment): RedirectResponse|Response
@@ -51,7 +48,7 @@ class OrangeMoneyGateway implements PaymentGatewayContract
             ], 503);
         }
 
-        $config = config('payments.orange_money');
+        $config = GatewayCredentials::for(PaymentProvider::OrangeMoney);
         $baseUrl = $this->baseUrl($config['environment']);
 
         try {

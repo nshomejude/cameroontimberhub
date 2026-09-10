@@ -4,6 +4,7 @@ namespace App\Services\Payments;
 
 use App\Contracts\PaymentGatewayContract;
 use App\Domain\Commerce\Commands\RecordPaymentCompletionCommand;
+use App\Enums\PaymentProvider;
 use App\Models\Payment;
 use App\Support\Bus\CommandBus;
 use Illuminate\Http\RedirectResponse;
@@ -40,7 +41,7 @@ class StripeGateway implements PaymentGatewayContract
 {
     public function isConfigured(): bool
     {
-        return filled(config('payments.stripe.secret_key'));
+        return GatewayCredentials::isConfigured(PaymentProvider::Stripe);
     }
 
     public function initiate(Payment $payment): RedirectResponse|Response
@@ -49,9 +50,10 @@ class StripeGateway implements PaymentGatewayContract
             return response()->view('payments.not-configured', ['provider' => 'Stripe'], 503);
         }
 
-        $client = new StripeClient(config('payments.stripe.secret_key'));
+        $cfg = GatewayCredentials::for(PaymentProvider::Stripe);
+        $client = new StripeClient($cfg['secret_key'] ?? null);
 
-        $currency = strtolower($payment->currency ?? config('payments.stripe.currency'));
+        $currency = strtolower($payment->currency ?? ($cfg['currency'] ?? 'usd'));
 
         try {
             $session = $client->checkout->sessions->create([
@@ -92,7 +94,7 @@ class StripeGateway implements PaymentGatewayContract
 
     public function handleWebhook(Request $request): Response
     {
-        $webhookSecret = config('payments.stripe.webhook_secret');
+        $webhookSecret = GatewayCredentials::for(PaymentProvider::Stripe)['webhook_secret'] ?? null;
 
         try {
             $event = Webhook::constructEvent(

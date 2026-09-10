@@ -3,6 +3,7 @@
 namespace App\Services\Payments;
 
 use App\Contracts\PaymentGatewayContract;
+use App\Enums\PaymentProvider;
 use App\Models\Payment;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -31,11 +32,7 @@ class MtnMomoGateway implements PaymentGatewayContract
 {
     public function isConfigured(): bool
     {
-        $config = config('payments.mtn_momo');
-
-        return filled($config['subscription_key'] ?? null)
-            && filled($config['api_user'] ?? null)
-            && filled($config['api_key'] ?? null);
+        return GatewayCredentials::isConfigured(PaymentProvider::MtnMomo);
     }
 
     public function initiate(Payment $payment): RedirectResponse|Response
@@ -67,7 +64,7 @@ class MtnMomoGateway implements PaymentGatewayContract
             ], 503);
         }
 
-        $config = config('payments.mtn_momo');
+        $config = GatewayCredentials::for(PaymentProvider::MtnMomo);
         $baseUrl = $this->baseUrl($config['environment']);
         $referenceId = (string) Str::uuid();
 
