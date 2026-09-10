@@ -1,13 +1,70 @@
 # Cameroon Timber Hub — Gap Plan
 
 **Source of truth:** `CTH_Claude_Code_Build_Brief.md` · **Current state:** [`docs/AUDIT.md`](AUDIT.md)
-**Date:** 2026-08-27
+**Date:** 2026-08-27 · **Status re-scan:** 2026-09-10 (addendum below)
 
 220 brief items assessed: 62 BUILT, 55 PARTIAL, 10 STUB, 93 MISSING. This plan covers
 every non-BUILT item, grouped by the brief's own phases.
 
 Effort is in **engineer-days** for a developer who knows this codebase. They are
 estimates for sequencing, not commitments.
+
+---
+
+## 2026-09-10 status re-scan
+
+Codebase walked against every open item below. The main structural gaps in
+Phase 0–1 are now **closed**; the remaining work is concentrated in Phase 2
+(sponsorship, live GPS tracking, carbon lifecycle, price intelligence) and
+Phase 3, most of which is gated on business/legal decisions, not engineering.
+
+### Closed since 2026-08-27
+
+| Item | Evidence in the codebase |
+|---|---|
+| **0.8** Certificate Digital Core | `Certificate` + `CertificateAllocation` models, `CertificateSigningService` (Ed25519), `CertificateQrCodeService`, `CertificateVerifier`, `certificates` + `certificate_allocations` migrations, public `GET /verify/certificate/{token}`, staff `GET /certificates/{number}`. KMS/HSM upgrade still deferred (0.8c). |
+| **1.4** Supplier self-service products | `app/Filament/Exporter/Resources/Products/*` — company-scoped list + create/edit, publish/unpublish action, verified live as the demo supplier. |
+| **1.5** RFQ type + matching engine | `RfqType` enum (Export/DomesticManufacturing/Transport), `rfqs.type` column, `RfqMatchingService` (AI-assisted advisory ranking over the deterministic `RfqTriageService::route()` candidate query on species / verification / leads-entitlement). |
+| **1.6** `Payment` table | `payments` table + `Payment` model (`2026_08_30_100040`). *Verify the six scalar columns on `orders` are now deprecated / read-through.* |
+| **1.7** `Shipment` entity | `shipments` table + `Shipment` model, `ShipmentService`, digital waybill (`ShipmentWaybillQrCodeService`, `GET /shipments/{waybill}/waybill`), `shipment_timber_lots` link table. |
+| **1.8** Order status + disputes | `Dispute` / `DisputeEvidence` / `DisputeMessage` models, `DisputeCategory` / `DisputeStatus` enums, `DisputeService`, admin `Disputes` resource, public `orders/{order}/disputes` group **and** `/api/v1` dispute endpoints. |
+| **1.5.3** Transformation Network | `TransformationNetworkController` + directory + "Find a Processor / Manufacturer" entry points. |
+| **1.5.12** Fleet & driver registry | Upgraded 2026-09-10 to full CRUD: exporter-panel `Vehicles` + `Drivers` resources, company-scoped, compliance-doc status via `HasDocuments::documentComplianceState()`. The old read-only `/fleet` Blade page was removed. |
+| **P.2** `CertificateVerifier` + manual adapter | `app/Services/CertificateVerifier.php` with honest `unverified` / `manually_verified` / `expired` states. |
+| **§ traceability** (not numbered in this plan) | `TimberLot` (jsonb `origin_boundary` GeoJSON polygon, validated on write), `LotTransformation` / `LotEvent`, public `GET /passport/{timberLot}`, `GET /compliance-pack/{timberLot}`. |
+| **§25 / §28 / §35 / §39 / §45–46 / §64 / §66–69** | Anti-fraud (`FraudSignal`, `RiskAssessment`, `SuspiciousEvent`), Trade Assurance (`TradeAssuranceAgreement` / `TradeAssuranceMilestone`), AI RFQ matching, TOTP 2FA + step-up (`two_factor_*` on users, `security/two-factor/*` routes), offline PWA field capture (`window.OfflineQueue`, checkpoint + inspector report pages), Dispute Resolution, Platform Operations + North-Star KPI dashboards (`PlatformKpiService`, `PlatformKpiSnapshot`), Market Intelligence (`MarketIntelligenceService`, `MarketIntelligenceSnapshot`), AI compliance assistant (`ComplianceAssistantQuery`, `AiSetting`, two-person + 2FA gated key rotation). |
+| **API-first / event-driven / DDD / CQRS** | `CommandBus` / `QueryBus`, transactional Outbox (`outbox_events`, `RelayOutboxEventsJob`), 14 typed domain events, webhook subscriptions with Stripe-grade signing, `/api/v1` + OpenAPI (`/docs/api`) + TS SDK, `app/Domain/{8 contexts}/`, `docs/architecture/GAPS.md` = **0 open**. |
+
+### i18n (1.9) — PARTIAL
+
+Infrastructure done: `SetLocale` middleware, `POST /locale/{locale}`, `lang/fr/messages.php` (329 lines, natural marketplace French). **Coverage is thin** — only ~7 Blade views use `__()`; the bulk of the public + panel UI is still hard-coded English. This is string-extraction grind, not a design problem.
+
+### Still MISSING / not started
+
+| Item | Note |
+|---|---|
+| **0.1b** | Polymorphic `Document` consumer migration — `CompanyDocument` / `OrderDocument` still separate tables/models. The new fleet resources use `HasDocuments` directly, widening the split. |
+| **0.4c** | Mobile-API RFQ consent — blocked on the mobile client sending a consent flag. |
+| **0.6 / 0.6b** | `Organisation.type` migration — blocked on 0.7 introducing a role/capability model for `exporter`/`trader`. |
+| **0.7b** | Feature-gate the 5 dormant account roles (`processor`, `artisan`, `carbon_developer`, `carbon_buyer`, `logistics_partner`). |
+| **0.8b** | Certificate physical-production layer — business decision (tier + print supplier). |
+| **0.9b** | Commercial/billing engine for non-supplier segments — payment-provider decision. |
+| **1.1** | Product ID + QR + public `/verify/product/{id}` — certificate QR exists, but there is no product-specific verification page or `CTH-CMR-…` product id scheme. |
+| **1.2** | Integrity hash-chain on **receipts** — `receipts` still has no `hash` / `prev_hash` column (the `activity_log` and `certificates` chains do not cover receipts). |
+| **1.3** | Per-product documents — `Product` has `HasVerification` but not `HasDocuments`; datasheet / phytosanitary / FSC / PEFC per-product upload-with-status is not built (the page now shows real `certificates` alongside the free-text `certification`, a partial improvement). |
+| **1.10** | Reputation metrics — `response_rate_percent` / `on_time_delivery_percent` / `orders_completed` columns exist but no job recomputes them from real order/dispute history. |
+| **1.11** | Notifications — only 3 notification classes (`CompanyVerified`, `DocumentExpiring`, `RfqRoutedToExporter`); no in-app/email fan-out on quote or order lifecycle events beyond the webhook/outbox layer. |
+| **1.12** | Unified search covers products / suppliers / species; processors and carbon projects are not in it. |
+| **1.13** | Structured price capture — no `PriceObservation` / `ReferencePriceSource` model or table exists. Blocks all of §8.1. |
+| **1.5.2b** | Wire `/buy-cameroon-wood` to the Category tree (still on the interim `product_type` facet). |
+| **2.1** | Live GPS tracking (Traccar/OwnTracks, geofences, `Position`) — nothing; `BROADCAST_CONNECTION=log`, no broadcasting driver. |
+| **2.2–2.5, 2.8** | Forest Sponsorship (application → committee → funding agreements → tranches → repayment waterfall → field monitoring → benefit-sharing) — no models, gated on COSUMAF/CEMAC counsel. |
+| **2.6 / 2.7** | Carbon: `CarbonProject` model + public directory exist (profile only); GeoJSON boundary, status machine, `CTH-CARB-…` id + QR + public page, and the whole credit lifecycle (registered/validated/verified/issued/available/sold/retired) are not built. |
+| **2.9 / 2.10** | Residue exchange, equipment marketplace, finance directory, growth-pathway levels, escrow/milestone payments. |
+| **2.11 + Phase 3** | Price intelligence (reference prices, bands, landed-cost estimator, indices, alerts, data product), route risk maps, fleet/safety reports, insurance directory, Academy, warehousing, public-chain anchoring. |
+| **P.1 / P.3 / P.4** | PEFC API — apply for access (business), then build the adapter + surface it. `P.2` manual adapter is done. |
+
+**Bottom line:** the Phase 1 acceptance journey (supplier → KYC → verified → publish with docs → RFQ → quote → order → payment record → export docs → receipt with verifiable QR) is essentially closed, plus a large slice of Phase 1.5 and several Phase-2-adjacent pillars (Trade Assurance, traceability, market intelligence, dispute resolution). What's left is (a) i18n string coverage, (b) a handful of small Phase-1 finishers (1.1, 1.2, 1.3, 1.10, 1.13), and (c) Phase 2/3 proper — most of which is waiting on business/legal calls (payments, sponsorship, PEFC access), not engineering readiness.
 
 ---
 
