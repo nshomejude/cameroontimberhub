@@ -2,25 +2,32 @@
 
 namespace App\Filament\Exporter\Resources\WebhookSubscriptions\Schemas;
 
+use App\Jobs\RelayOutboxEventsJob;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Support\Str;
 
 class WebhookSubscriptionForm
 {
     /**
-     * Kept in sync by hand with App\Jobs\RelayOutboxEventsJob::EVENT_MAP —
-     * the only event types the outbox relay will ever dispatch a delivery
-     * for, so this is deliberately the same fixed list rather than a
-     * free-text field.
+     * The subscribable event types, derived from the single canonical
+     * registry (App\Jobs\RelayOutboxEventsJob::EVENT_MAP) — never a
+     * hand-maintained second copy that could drift. Labels are generated
+     * from the event_type string ("order.awarded" -> "Order awarded").
+     *
+     * @return array<string, string>
      */
-    public const EVENT_TYPES = [
-        'order.awarded' => 'Order awarded',
-        'checkpoint.recorded' => 'Shipment checkpoint recorded',
-        'compliance_case.opened' => 'Compliance case opened',
-    ];
+    public static function eventTypeOptions(): array
+    {
+        return collect(RelayOutboxEventsJob::subscribableEventTypes())
+            ->mapWithKeys(fn (string $type): array => [
+                $type => Str::of($type)->replace(['.', '_'], ' ')->ucfirst()->toString(),
+            ])
+            ->all();
+    }
 
     public static function configure(Schema $schema): Schema
     {
@@ -44,7 +51,7 @@ class WebhookSubscriptionForm
                     ->schema([
                         CheckboxList::make('event_types')
                             ->label('Subscribed events')
-                            ->options(self::EVENT_TYPES)
+                            ->options(self::eventTypeOptions())
                             ->required()
                             ->columns(1),
                     ]),

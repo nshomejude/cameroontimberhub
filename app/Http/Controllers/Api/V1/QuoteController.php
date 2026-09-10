@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Domain\Trade\Commands\AwardQuoteCommand;
+use App\Domain\Trade\Commands\DeclineQuoteCommand;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\DeclineQuoteRequest;
 use App\Http\Resources\Api\V1\OrderSummaryResource;
@@ -18,13 +19,15 @@ use RuntimeException;
 /**
  * Buyer decisions on quotes.
  *
- * Both decisions go through QuoteService, so the API inherits the whole state
- * machine unchanged: accept() locks the rows, declines every sibling quote,
- * closes the RFQ and mints the order inside one transaction; decline() demands
- * a reason and refuses illegal moves. An already-settled or expired quote
- * throws there and lands here as a 409 — the guard is the service's, not a
- * second copy of it, and the partial unique index on accepted quotes backs it
- * up in the database if two requests ever race past PHP.
+ * Both decisions go through the CommandBus (AwardQuoteCommand /
+ * DeclineQuoteCommand), whose handlers are thin seams over QuoteService — so
+ * the API inherits the whole state machine unchanged: accept() locks the
+ * rows, declines every sibling quote, closes the RFQ and mints the order
+ * inside one transaction; decline() demands a reason and refuses illegal
+ * moves. An already-settled or expired quote throws there and lands here as a
+ * 409 — the guard is the service's, not a second copy of it, and the partial
+ * unique index on accepted quotes backs it up in the database if two
+ * requests ever race past PHP.
  */
 class QuoteController extends Controller
 {
@@ -83,7 +86,11 @@ class QuoteController extends Controller
         }
 
         try {
-            $declined = $this->quotes->decline($quote, $request->validated()['reason'], $buyer);
+            $declined = $this->commands->dispatch(new DeclineQuoteCommand(
+                quoteId: $quote->getKey(),
+                reason: $request->validated()['reason'],
+                actingUserId: $buyer?->getKey(),
+            ));
         } catch (RuntimeException $e) {
             return $this->conflict($e->getMessage());
         }

@@ -40,9 +40,13 @@ use Throwable;
  * Laravel/domain event so its queued listeners run, then marks the row
  * published. Scheduled every 10 seconds in routes/console.php.
  *
- * `event_type` string -> event class mapping is a plain match/array (below,
- * EVENT_MAP) — no config file, since these three events are the entire
- * mapping today and it is trivial to extend when more are formalized.
+ * `event_type` string -> event class mapping is a plain array (below,
+ * EVENT_MAP) — no config file. It is the single canonical registry of every
+ * event type the platform emits; anything that needs the list of valid
+ * event types (e.g. the webhook-subscription form) derives it from
+ * subscribableEventTypes() rather than keeping a second hand-maintained
+ * copy. To add an event: add one EVENT_MAP entry, one owning-company arm in
+ * deliverWebhooksFor(), and one row in docs/api/WEBHOOKS.md's catalog.
  *
  * Never throws uncaught: a per-row failure increments that row's `attempts`
  * and leaves it unpublished for the next run to retry, up to MAX_ATTEMPTS,
@@ -87,6 +91,19 @@ class RelayOutboxEventsJob implements ShouldQueue
     ];
 
     private const MAX_ATTEMPTS = 5;
+
+    /**
+     * The canonical list of every event type the platform emits — the keys
+     * of EVENT_MAP. Anything that needs "the valid event types" (the webhook
+     * subscription form, docs tooling, tests) reads this instead of keeping
+     * its own copy that could drift.
+     *
+     * @return list<string>
+     */
+    public static function subscribableEventTypes(): array
+    {
+        return array_keys(self::EVENT_MAP);
+    }
 
     private const BATCH_SIZE = 200;
 

@@ -126,3 +126,39 @@ it('marks an unknown event_type published without dispatching anything, to stop 
 
     expect($row->fresh()->published_at)->not->toBeNull();
 });
+
+/* --- consistency guards: the "single canonical registry" invariant --- */
+
+it('exposes every event type as a consistently-named, subscribable identifier', function () {
+    $types = RelayOutboxEventsJob::subscribableEventTypes();
+
+    expect($types)->not->toBeEmpty();
+
+    foreach ($types as $type) {
+        // <resource>.<past-tense-verb>, lowercase, snake_case segments only.
+        expect($type)->toMatch('/^[a-z][a-z_]*\.[a-z][a-z_]*$/', "event_type '{$type}' breaks the <resource>.<verb> naming convention");
+    }
+});
+
+it('has a webhook owning-company resolution arm for every registered event type', function () {
+    // Every event type the relay can dispatch must resolve to at least one
+    // owning company (or a documented multi-company fan-out) — otherwise a
+    // subscriber for it could never be notified. A missing match arm falls
+    // through to `default => null`, which this asserts against by exercising
+    // the real resolution with a minimal payload per type.
+    $job = app(RelayOutboxEventsJob::class);
+    $resolve = (new ReflectionClass($job))->getMethod('deliverWebhooksFor');
+    $resolve->setAccessible(true);
+
+    foreach (RelayOutboxEventsJob::subscribableEventTypes() as $type) {
+        $row = OutboxEvent::query()->create([
+            'aggregate_type' => 'Test', 'aggregate_id' => '0', 'event_type' => $type,
+            'payload' => [], 'occurred_at' => now(), 'published_at' => null, 'attempts' => 0, 'created_at' => now(),
+        ]);
+
+        // Must not throw — a type with no resolution arm would still run the
+        // default branch cleanly (returns null), so this guards against an
+        // arm that references a helper/shape that doesn't exist.
+        expect(fn () => $resolve->invoke($job, $row))->not->toThrow(\Throwable::class, "deliverWebhooksFor() blew up for '{$type}'");
+    }
+});

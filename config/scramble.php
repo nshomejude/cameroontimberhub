@@ -10,8 +10,11 @@
  * validation rules — exactly the shape Scramble infers from with zero or
  * near-zero annotations (route signature + FormRequest rules + return
  * type). Trying it against this codebase produced a complete, accurate v1
- * spec (all 15 routes, correct request/response shapes, bearer auth
- * detected from `auth:sanctum`) without restructuring any controller.
+ * spec (every `api/v1` route, correct request/response shapes, bearer auth
+ * detected from `auth:sanctum`) without restructuring any controller. The
+ * route count grows as contexts expose more of `/api/v1` — OpenApiDocsTest
+ * asserts documented-path count >= registered-route count so coverage
+ * cannot silently regress.
  * l5-swagger would have required hand-written `@OA\*` annotations on every
  * action and kept them in sync by hand going forward — strictly more
  * maintenance for the same result here, so it was not needed.
