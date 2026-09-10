@@ -6,6 +6,16 @@
  * tiers wired to the real `plans`/`subscriptions` billing model instead of
  * a hardcoded 'standard' default.
  *
+ * Both the issuance path (App\Actions\ApiKeys\ApproveApiKeyIssuance) and the
+ * runtime `throttle:api-key` limiter (App\Providers\AppServiceProvider) resolve
+ * a token's tier with the same precedence:
+ *   1. the owning company's CURRENT active plan's Plan::apiRateLimitTier()
+ *      (company via ApiKeyMeta, active plan via Company::activeSubscription);
+ *   2. the explicit ApiKeyMeta.rate_limit_tier when there is no resolvable
+ *      plan (manually-tiered partner keys);
+ *   3. the 'default' below;
+ *   4. unauthenticated requests are keyed per-IP at 60/min, outside this map.
+ *
  * `plans.slug` is the existing identifying field on App\Models\Plan (see
  * database/seeders/PlanSeeder.php) — reused here rather than inventing a
  * new concept. A simple config map (not a new `plans` column, and not a

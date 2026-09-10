@@ -86,9 +86,7 @@ HTTP-date in UTC.
   `api-keys.manage`.
 - **Scoped abilities** — Sanctum abilities, e.g. `products:read`,
   `rfqs:write`. A request succeeds only for abilities its token holds.
-- **Per-key rate limits tied to Plan tier** — see below. *(Tier→Plan wiring is
-  a target; today all keys resolve a `standard`/`ApiKeyMeta.rate_limit_tier`
-  value, not a Plan. See GAPS.md.)*
+- **Per-key rate limits tied to Plan tier** — see below.
 
 ---
 
@@ -102,9 +100,21 @@ Two layers, both via Laravel's `throttle:` middleware:
   120/hour per user.
 - **Per-API-key** (`throttle:api-key`, applied to the whole `v1` group) — keyed
   by the Sanctum **token id** (falls back to IP when unauthenticated), so two
-  keys for the same user get independent budgets. Limit by
-  `ApiKeyMeta.rate_limit_tier`: `basic` 30/min, `standard` 60/min, `elevated`
-  300/min; unauthenticated 60/min/IP.
+  keys for the same user get independent budgets. Tier per minute: `basic`
+  30/min, `standard` 60/min, `elevated` 300/min; unauthenticated 60/min/IP.
+  The tier is **resolved** with this precedence (identical at key issuance and
+  at runtime):
+  1. the owning company's current active plan's tier
+     (`Plan::apiRateLimitTier()` via `config('api.rate_limit_tiers')`), the
+     company resolved from the token's `ApiKeyMeta` and the plan from
+     `Company::activeSubscription`;
+  2. the explicit `ApiKeyMeta.rate_limit_tier` when the token has a companion
+     row but no resolvable plan (e.g. a partner key with no subscription);
+  3. `config('api.rate_limit_tiers.default')` (`basic`) otherwise;
+  4. unauthenticated requests: 60/min/IP, outside the tier map.
+  Runtime resolution is fully defensive — any error (missing subscription,
+  null relation) falls through to the config default, never throwing inside
+  the limiter.
 
 **Rate-limit headers** (added by Laravel's throttle middleware):
 `X-RateLimit-Limit`, `X-RateLimit-Remaining`; on a `429`, additionally

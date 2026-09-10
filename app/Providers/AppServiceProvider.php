@@ -20,6 +20,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Context;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Spatie\Activitylog\Models\Activity;
@@ -228,13 +229,22 @@ class AppServiceProvider extends ServiceProvider
         // fragmenting its budget. Falls back to per-IP for unauthenticated
         // requests (the public catalogue routes in routes/api.php).
         //
-        // The limit itself is read from App\Models\ApiKeyMeta's
-        // `rate_limit_tier` when the token has a companion row (i.e. it was
-        // issued via the two-person ApproveApiKeyIssuance flow); tokens
-        // without one (e.g. the mobile app's user-issued tokens) get the
-        // same "standard" tier. Known Phase 0 simplification: tiers are not
-        // yet wired to the `plans`/`subscriptions` billing model — that is
-        // explicitly Phase 3 (API-First plan §4/Phase 3).
+        // Tier RESOLUTION precedence (GAPS.md §7 — Plan→tier wiring at runtime):
+        //   1. the owning company's CURRENT active plan's apiRateLimitTier()
+        //      (company resolved via the token's ApiKeyMeta; active plan via
+        //      Company::activeSubscription — the same seam ApproveApiKeyIssuance
+        //      uses at issuance time, so runtime and issuance never diverge);
+        //   2. the explicit ApiKeyMeta.rate_limit_tier when the token has a
+        //      companion row but no resolvable plan (manually-tiered partner
+        //      keys with no subscription keep working);
+        //   3. config('api.rate_limit_tiers.default') otherwise;
+        //   4. unauthenticated (no token) — unchanged, 60/min/IP.
+        // The tier→per-minute mapping below is unchanged. Resolution is wrapped
+        // in a try/catch: an exception thrown inside a limiter closure 500s
+        // every API request, so any error falls through to the config default
+        // with a Log::warning. No caching: Laravel resolves a named limiter's
+        // Limit once per request, so this adds at most one indexed lookup +
+        // one eager-load per request.
         RateLimiter::for('api-key', function (Request $request) {
             $token = $request->user()?->currentAccessToken();
 
@@ -242,18 +252,50 @@ class AppServiceProvider extends ServiceProvider
                 return Limit::perMinute(60)->by('api-key-ip:'.$request->ip());
             }
 
-            $tier = \App\Models\ApiKeyMeta::query()
-                ->where('personal_access_token_id', $token->getKey())
-                ->value('rate_limit_tier') ?? 'standard';
+            $tier = $this->resolveApiKeyRateLimitTier((int) $token->getKey());
 
-            $perMinute = match ($tier) {
-                'elevated' => 300,
-                'basic' => 30,
-                default => 60, // 'standard'
-            };
-
-            return Limit::perMinute($perMinute)->by('api-key:'.$token->getKey());
+            return Limit::perMinute($this->apiKeyTierToPerMinute($tier))->by('api-key:'.$token->getKey());
         });
+    }
+
+    /**
+     * Resolve the rate-limit tier for a Sanctum token id, per GAPS.md §7
+     * precedence. Never throws — any failure logs and returns the config
+     * default tier.
+     */
+    private function resolveApiKeyRateLimitTier(int $tokenId): string
+    {
+        $default = (string) config('api.rate_limit_tiers.default', 'basic');
+
+        try {
+            $meta = \App\Models\ApiKeyMeta::query()
+                ->where('personal_access_token_id', $tokenId)
+                ->first(['company_id', 'rate_limit_tier']);
+
+            $planTier = $meta?->company?->activeSubscription?->plan?->apiRateLimitTier();
+
+            $tier = $planTier
+                ?? ($meta?->rate_limit_tier)
+                ?? $default;
+        } catch (\Throwable $e) {
+            Log::warning('api-key rate-limit tier resolution failed; using config default', [
+                'token_id' => $tokenId,
+                'exception' => $e->getMessage(),
+            ]);
+
+            $tier = $default;
+        }
+
+        return (string) $tier;
+    }
+
+    private function apiKeyTierToPerMinute(string $tier): int
+    {
+        return match ($tier) {
+            'elevated' => 300,
+            'basic' => 30,
+            default => 60,
+        };
     }
 
     /**
