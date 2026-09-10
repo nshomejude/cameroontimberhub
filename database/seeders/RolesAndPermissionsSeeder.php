@@ -134,13 +134,21 @@ class RolesAndPermissionsSeeder extends Seeder
      * Processor directory, Carbon Project, Logistics/telematics).
      */
     public const ACCOUNT_ROLES = [
-        'buyer',
-        'supplier',
-        'processor',
-        'artisan',
-        'carbon_developer',
-        'carbon_buyer',
-        'logistics_partner',
+        'buyer',      // wired: EnsureBuyerAccount gates /account.
+        'supplier',   // wired: auto-assigned on company ownership.
+        'processor',  // gate at a processor self-service surface; today only the
+                      // read-only /transformation-network directory exists (keyed
+                      // on OrganisationType, not the account role) — nothing to gate.
+        'artisan',    // gate at artisan self-service; today only the read-only
+                      // /companies/{slug}/portfolio page exists (keyed on
+                      // OrganisationType::Artisan) — nothing to gate yet.
+        'carbon_developer', // wired: complements the OrganisationType::CarbonDeveloper
+                            // gate on the exporter CarbonProjectResource; full role
+                            // gate lands with the Batch F carbon registry.
+        'carbon_buyer',     // gate once carbon-credit purchasing/retirement exists
+                            // (blueprint §2.7) — no surface today.
+        'logistics_partner', // wired: gates the exporter Vehicle/Driver fleet
+                             // resources (OR an OrganisationType::Logistics company).
     ];
 
     public function run(): void

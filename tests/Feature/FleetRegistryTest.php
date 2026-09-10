@@ -28,6 +28,9 @@ function fleetMember(Company $company): User
 {
     $user = User::factory()->create();
     $user->companies()->attach($company, ['role' => 'owner', 'is_primary' => true]);
+    // Fleet CRUD is gated to the `logistics_partner` account role or an
+    // OrganisationType::Logistics company (gap-plan 0.7b).
+    $user->assignRole('logistics_partner');
 
     return $user;
 }

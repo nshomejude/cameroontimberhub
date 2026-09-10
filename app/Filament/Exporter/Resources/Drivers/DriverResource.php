@@ -7,6 +7,7 @@ use App\Filament\Exporter\Resources\Drivers\Pages\EditDriver;
 use App\Filament\Exporter\Resources\Drivers\Pages\ListDrivers;
 use App\Filament\Exporter\Resources\Drivers\Schemas\DriverForm;
 use App\Filament\Exporter\Resources\Drivers\Tables\DriversTable;
+use App\Enums\OrganisationType;
 use App\Models\Driver;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -37,24 +38,46 @@ class DriverResource extends Resource
 
     protected static ?int $navigationSort = 47;
 
+    /**
+     * Fleet management is for companies that actually run a fleet: those of
+     * OrganisationType::Logistics, or a member holding the `logistics_partner`
+     * account role (brief §3.1 — e.g. a supplier that also operates its own
+     * trucks). A plain company member of a non-logistics company does not get
+     * fleet CRUD (gap-plan item 0.7b).
+     */
+    protected static function currentUserManagesFleet(): bool
+    {
+        $user = auth()->user();
+
+        if ($user === null) {
+            return false;
+        }
+
+        if ($user->hasRole('logistics_partner')) {
+            return true;
+        }
+
+        return $user->companies()->where('type', OrganisationType::Logistics->value)->exists();
+    }
+
     public static function canViewAny(): bool
     {
-        return (bool) auth()->user()?->companies()->exists();
+        return static::currentUserManagesFleet();
     }
 
     public static function canCreate(): bool
     {
-        return (bool) auth()->user()?->companies()->exists();
+        return static::currentUserManagesFleet();
     }
 
     public static function canEdit($record): bool
     {
-        return (bool) auth()->user()?->companies()->exists();
+        return static::currentUserManagesFleet();
     }
 
     public static function canDelete($record): bool
     {
-        return (bool) auth()->user()?->companies()->exists();
+        return static::currentUserManagesFleet();
     }
 
     public static function getEloquentQuery(): Builder

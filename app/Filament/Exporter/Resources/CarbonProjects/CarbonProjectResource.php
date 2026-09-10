@@ -44,7 +44,14 @@ class CarbonProjectResource extends Resource
     {
         $company = auth()->user()?->companies()->first();
 
-        return $company !== null && $company->type === OrganisationType::CarbonDeveloper;
+        if ($company !== null && $company->type === OrganisationType::CarbonDeveloper) {
+            return true;
+        }
+
+        // Complementary account-role gate (gap-plan 0.7b): a user explicitly
+        // holding `carbon_developer` also qualifies, ahead of the Batch F
+        // carbon-registry build that will make this the primary signal.
+        return (bool) auth()->user()?->hasRole('carbon_developer');
     }
 
     public static function canViewAny(): bool

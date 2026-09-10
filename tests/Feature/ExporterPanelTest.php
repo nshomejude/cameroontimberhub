@@ -54,8 +54,13 @@ it('blocks the dashboard for a user with no company', function () {
     $this->get('/dashboard')->assertForbidden();
 });
 
-it('lets a company member reach the fleet vehicle and driver resources', function () {
-    $company = Company::factory()->publiclyVisible()->create(['profile_completion' => 100]);
+it('lets a logistics company member reach the fleet vehicle and driver resources', function () {
+    // Fleet CRUD is gated to OrganisationType::Logistics companies or the
+    // `logistics_partner` account role (gap-plan 0.7b).
+    $company = Company::factory()->publiclyVisible()->create([
+        'profile_completion' => 100,
+        'type' => \App\Enums\OrganisationType::Logistics,
+    ]);
     CompanyContact::factory()->create(['company_id' => $company->id]);
     CompanyGallery::create(['company_id' => $company->id, 'image_path' => 'gallery/test.jpg']);
     CompanyDocument::factory()->create(['company_id' => $company->id]);
