@@ -145,6 +145,24 @@
                         </div>
                     @endif
 
+                    @if (! empty($details['whatsapp']) && ($waDigits = preg_replace('/\D+/', '', $details['whatsapp'])))
+                        <div class="flex items-start gap-4 py-5">
+                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-forest-900 text-forest-200" aria-hidden="true">
+                                <x-heroicon-o-chat-bubble-oval-left class="h-5 w-5" />
+                            </span>
+                            <div class="min-w-0">
+                                <dt class="text-[1.0625rem] font-bold text-ink">{{ __('messages.contact.whatsapp') }}</dt>
+                                <dd class="mt-1 text-[1.0625rem] leading-relaxed text-ink-soft">
+                                    <a class="inline-flex items-center gap-1.5 transition hover:text-forest-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest-700"
+                                       href="https://wa.me/{{ $waDigits }}" target="_blank" rel="noopener noreferrer">
+                                        {{ $details['whatsapp'] }}
+                                        <span class="text-[0.9375rem] text-ink-soft/70">{{ __('messages.contact.chat_on_whatsapp') }}</span>
+                                    </a>
+                                </dd>
+                            </div>
+                        </div>
+                    @endif
+
                     @if (! empty($details['emails']))
                         <div class="flex items-start gap-4 py-5">
                             <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-forest-900 text-forest-200" aria-hidden="true">

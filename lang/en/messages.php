@@ -629,6 +629,8 @@ return [
         'consent_prefix' => 'I agree that',
         'send_message' => 'Send Message',
         'phone' => 'Phone',
+        'whatsapp' => 'WhatsApp',
+        'chat_on_whatsapp' => 'Chat on WhatsApp',
         'email' => 'Email',
         'website' => 'Website',
         'hq_suffix' => ':organisation HQ',

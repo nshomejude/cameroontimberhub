@@ -39,7 +39,7 @@
                     <div class="text-[1.0625rem] leading-relaxed text-ink-soft dark:text-[#8f887b]">
                         <p class="font-semibold text-ink dark:text-[#e4ddcf]">{{ config('app.name') }}</p>
                         <p>Marketplace for verified timber trade</p>
-                        <p>Douala, Littoral Region, Cameroon</p>
+                        @foreach (config('contact.address.lines') as $line)<p>{{ $line }}</p>@endforeach
                         @if ($phone = config('contact.phones.0'))<p>{{ $phone }}</p>@endif
                         @if ($email = config('contact.emails.0'))<p>{{ $email }}</p>@endif
                     </div>

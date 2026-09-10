@@ -25,9 +25,9 @@ return [
     'address' => [
         'label' => env('CONTACT_ADDRESS_LABEL', 'Head Quarters'),
         'lines' => array_values(array_filter([
-            env('CONTACT_ADDRESS_LINE1', 'Bonanjo, Akwa, Douala'),
-            env('CONTACT_ADDRESS_LINE2', 'Douala, Littoral Region, Cameroon'),
-            env('CONTACT_ADDRESS_LINE3', 'P.O. Box 12545 Douala'),
+            env('CONTACT_ADDRESS_LINE1', 'Bonamoussadi, Douala'),
+            env('CONTACT_ADDRESS_LINE2', 'Littoral Region, Cameroon'),
+            env('CONTACT_ADDRESS_LINE3', ''),
         ])),
         'locality' => env('CONTACT_ADDRESS_LOCALITY', 'Douala'),
         'region' => env('CONTACT_ADDRESS_REGION', 'Littoral'),
@@ -35,24 +35,29 @@ return [
         'country' => env('CONTACT_ADDRESS_COUNTRY', 'CM'),
     ],
 
-    // Approximate coordinates of the Bonanjo/Akwa business district. Used only
-    // to build an outbound maps link — no third-party map is embedded.
+    // Approximate coordinates of the Bonamoussadi neighbourhood, northern
+    // Douala. Used only to build an outbound maps link — no third-party map is
+    // embedded.
     'geo' => [
-        'latitude' => (float) env('CONTACT_GEO_LAT', 4.0511),
-        'longitude' => (float) env('CONTACT_GEO_LNG', 9.7679),
+        'latitude' => (float) env('CONTACT_GEO_LAT', 4.0928),
+        'longitude' => (float) env('CONTACT_GEO_LNG', 9.7437),
     ],
 
     'phones' => array_values(array_filter([
-        env('CONTACT_PHONE_1', '+237 6 95 84 27 26'),
-        env('CONTACT_PHONE_2', '+237 6 70 11 22 33'),
+        env('CONTACT_PHONE_1', '+237 6 70 41 62 38'),
+        env('CONTACT_PHONE_2', ''),
     ])),
+
+    // Rendered as a "Chat on WhatsApp" link on /contact. Digits only are used
+    // to build the wa.me URL; the displayed value keeps its formatting.
+    'whatsapp' => env('CONTACT_WHATSAPP', '+237 6 70 41 62 38'),
 
     'emails' => array_values(array_filter([
-        env('CONTACT_EMAIL_GENERAL', 'info@cameroontimberhub.africa'),
-        env('CONTACT_EMAIL_PARTNERSHIPS', 'partnerships@cameroontimberhub.africa'),
+        env('CONTACT_EMAIL_GENERAL', 'info@cameroontimberhub.com'),
+        env('CONTACT_EMAIL_PARTNERSHIPS', 'partnerships@cameroontimberhub.com'),
     ])),
 
-    'website' => env('CONTACT_WEBSITE', 'www.cameroontimberhub.africa'),
+    'website' => env('CONTACT_WEBSITE', 'www.cameroontimberhub.com'),
 
     'hours' => [
         ['days' => 'Monday – Friday', 'time' => '08:00 AM – 05:00 PM (GMT +1)'],
