@@ -9,6 +9,7 @@ use App\Http\Middleware\AnnounceDeprecation;
 use App\Http\Middleware\EnsureExporterOnboarded;
 use App\Http\Middleware\HandleSlugRedirects;
 use App\Http\Middleware\RequiresRecentTwoFactor;
+use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetLocale;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -41,6 +42,16 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             SetLocale::class,
             HandleSlugRedirects::class,
+            // Baseline browser security headers (production-readiness Task A3):
+            // re-asserts the nginx X-* set in-app, adds HSTS (HTTPS only),
+            // Content-Security-Policy-Report-Only and Permissions-Policy.
+            SecurityHeaders::class,
+        ]);
+
+        // CSP violation reports are token-less browser beacons — exempt the
+        // collector route from CSRF (Task A3).
+        $middleware->validateCsrfTokens(except: [
+            'csp-report',
         ]);
 
         // Already-authenticated visitors hitting /login or /register go home;

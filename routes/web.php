@@ -54,6 +54,14 @@ use Illuminate\Support\Facades\Route;
 // database/cache/queue readiness detail for load balancers and uptime monitors.
 Route::get('/up/health', \App\Http\Controllers\HealthController::class)->name('health');
 
+// Content-Security-Policy violation collector (production-readiness Task A3).
+// Unauthenticated and CSRF-exempt (see bootstrap/app.php validateCsrfTokens) —
+// a CSP report is a token-less browser beacon. Logs to the `errors` channel and
+// never 500s on a malformed body. Rate-limited generously (browsers batch).
+Route::post('/csp-report', \App\Http\Controllers\CspReportController::class)
+    ->middleware('throttle:csp-report')
+    ->name('csp.report');
+
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
 // Directory & company profiles (static segments before slug routes).
@@ -94,7 +102,7 @@ Route::post('/locale/{locale}', function (\Illuminate\Http\Request $request, str
     $request->session()->put('locale', $locale);
 
     return back();
-})->name('locale.set');
+})->middleware('throttle:session-write')->name('locale.set');
 
 // Pricing (plans-as-data).
 Route::get('/pricing', [PricingController::class, 'index'])->name('pricing');
@@ -160,8 +168,8 @@ Route::post('/request-quote/step/{step}', [RfqController::class, 'storeStep'])
     ->middleware('throttle:rfq-step')->name('rfq.step.store');
 
 // Session-backed RFQ shortlist ("Add to RFQ List" on a product page).
-Route::post('/rfq-list/{slug}', [RfqListController::class, 'store'])->name('rfq-list.store');
-Route::delete('/rfq-list/{slug}', [RfqListController::class, 'destroy'])->name('rfq-list.destroy');
+Route::post('/rfq-list/{slug}', [RfqListController::class, 'store'])->middleware('throttle:session-write')->name('rfq-list.store');
+Route::delete('/rfq-list/{slug}', [RfqListController::class, 'destroy'])->middleware('throttle:session-write')->name('rfq-list.destroy');
 Route::get('/rfq/{rfq}/verify', [RfqController::class, 'verify'])->middleware('signed')->name('rfq.verify');
 
 // Buyer-facing quote responses. Deliberately NOT behind `auth` or `signed`

@@ -119,6 +119,18 @@ class AppServiceProvider extends ServiceProvider
 
         RateLimiter::for('inquiry-submit', fn (Request $request) => Limit::perHour(8)->by('inquiry-ip:'.$request->ip()));
 
+        // Content-Security-Policy violation beacons (Task A3). Unauthenticated
+        // by necessity; browsers batch and can burst several reports per page
+        // load, so the budget is deliberately generous — it exists only to cap
+        // a flood, not to shape legitimate traffic.
+        RateLimiter::for('csp-report', fn (Request $request) => Limit::perMinute(60)->by('csp-report-ip:'.$request->ip()));
+
+        // Session-only public writes (locale switch, RFQ shortlist add/remove).
+        // These mutate the visitor's own session and nothing else, so they were
+        // previously unthrottled; this generous per-IP cap just blunts a scripted
+        // flood without ever getting in a real visitor's way.
+        RateLimiter::for('session-write', fn (Request $request) => Limit::perMinute(60)->by('session-write-ip:'.$request->ip()));
+
         // "Notify me when the mobile app ships". One address is all anyone
         // needs; the short burst allowance just covers a typo and a re-submit.
         RateLimiter::for('app-notify', fn (Request $request) => [
