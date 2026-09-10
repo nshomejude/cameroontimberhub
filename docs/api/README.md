@@ -1,5 +1,11 @@
 # API documentation (`/api/v1`)
 
+**See also:** [`CONVENTIONS.md`](CONVENTIONS.md) (versioning, auth, error
+shapes, rate limits), [`WEBHOOKS.md`](WEBHOOKS.md) (webhook event catalog),
+[`../architecture/README.md`](../architecture/README.md) (bounded contexts,
+CQRS, event backbone), [`../architecture/GAPS.md`](../architecture/GAPS.md).
+
+
 The OpenAPI 3.1 spec for the buyer JSON API (`routes/api.php`, `v1` group) is
 generated automatically from code — no hand-written YAML/JSON to maintain.
 
