@@ -32,12 +32,10 @@ function crReviews(): CompanyReviewService
 }
 
 /**
- * olScene() from OrderChatLifecycleTest, driven all the way to a completed
- * order — the only state in which a review is possible.
- *
- * Pest loads every feature file into one process, so olScene()/olAdvanceTo()
- * are already defined; reusing them keeps the two suites describing the same
- * world rather than two subtly different ones.
+ * olScene() (from tests/Support/order_lifecycle_helpers.php), driven all the
+ * way to a completed order — the only state in which a review is possible.
+ * Sharing the helper keeps the two suites describing the same world rather
+ * than two subtly different ones.
  *
  * @return array{0: Conversation, 1: User, 2: Company, 3: User, 4: Order}
  */

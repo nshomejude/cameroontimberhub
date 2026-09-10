@@ -43,7 +43,10 @@
     "autoload-dev": {
         "psr-4": {
             "Tests\\": "tests/"
-        }
+        },
+        "files": [
+            "tests/Support/order_lifecycle_helpers.php"
+        ]
     },
     "scripts": {
         "setup": [
