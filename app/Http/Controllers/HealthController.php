@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 /**
  * Liveness + readiness probe. Public and unauthenticated by design — it is a
@@ -18,9 +19,13 @@ class HealthController extends Controller
         $checks = [
             'database' => $this->safe(fn () => DB::connection()->getPdo() !== null),
             'cache' => $this->safe(function (): bool {
-                Cache::put('health:ping', 1, 5);
+                // Round-trip a unique token. Loose match on purpose: some
+                // cache drivers (redis via predis) return scalars as strings,
+                // so a strict === would report a healthy cache as down.
+                $token = Str::random(16);
+                Cache::put('health:ping', $token, 5);
 
-                return Cache::get('health:ping') === 1;
+                return (string) Cache::get('health:ping') === $token;
             }),
             'queue' => $this->safe(fn () => DB::table('jobs')->count() < 10_000), // backlog guard
         ];
