@@ -56,8 +56,8 @@ class RelayOutboxEventsJob implements ShouldQueue
     /** event_type string -> event class implementing DomainEvent::fromPayload(). */
     private const EVENT_MAP = [
         'order.awarded' => OrderAwarded::class,
-        'shipment.checkpoint_recorded' => ShipmentCheckpointRecorded::class,
-        'compliance.case_opened' => ComplianceCaseOpened::class,
+        'checkpoint.recorded' => ShipmentCheckpointRecorded::class,
+        'compliance_case.opened' => ComplianceCaseOpened::class,
         // Trade lifecycle Phase 1 additions (order.shipped / order.delivered):
         'order.shipped' => OrderShipped::class,
         'order.delivered' => OrderDelivered::class,
@@ -165,9 +165,9 @@ class RelayOutboxEventsJob implements ShouldQueue
      * its own lookup:
      *  - order.awarded / order.shipped / order.delivered: Order::company_id
      *    (direct column on the order).
-     *  - shipment.checkpoint_recorded: Shipment::order->company_id (a
+     *  - checkpoint.recorded: Shipment::order->company_id (a
      *    Shipment belongs to an Order, which carries company_id).
-     *  - compliance.case_opened: the case's polymorphic owner
+     *  - compliance_case.opened: the case's polymorphic owner
      *    (owner_type/owner_id) — today only Company, but resolved
      *    defensively for Order/Shipment/TimberLot too per ComplianceCase's
      *    doc block ("Company today; TimberLot, Shipment as those need
@@ -179,18 +179,18 @@ class RelayOutboxEventsJob implements ShouldQueue
             // order.shipped / order.delivered resolve identically to
             // order.awarded — Order::company_id is a direct column.
             'order.awarded', 'order.shipped', 'order.delivered' => Order::query()->find($row->payload['order_id'] ?? null)?->company_id,
-            'shipment.checkpoint_recorded' => Shipment::query()
+            'checkpoint.recorded' => Shipment::query()
                 ->with('order:id,company_id')
                 ->find($row->payload['shipment_id'] ?? null)
                 ?->order?->company_id,
-            'compliance.case_opened' => $this->resolveComplianceCaseCompanyId($row->payload ?? []),
+            'compliance_case.opened' => $this->resolveComplianceCaseCompanyId($row->payload ?? []),
             // quote.declined / quote.withdrawn: a Quote's owning company is
             // the SUPPLIER who submitted it (Quote::company_id), carried
             // directly on the event payload by {Decline,Withdraw}QuoteHandler.
             'quote.declined', 'quote.withdrawn' => isset($row->payload['company_id']) ? (int) $row->payload['company_id'] : null,
             // inspection.finalised: resolved via whichever of
             // timber_lot_id/order_id is set on the payload -> owning
-            // company, mirroring compliance.case_opened's owner resolution.
+            // company, mirroring compliance_case.opened's owner resolution.
             // See resolveInspectionCompanyId() below. (Compliance & Trust
             // additions — see App\Domain\Compliance\Commands\
             // FinaliseInspectionHandler.)

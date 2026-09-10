@@ -45,7 +45,7 @@ class ShipmentCheckpointRecorded implements DomainEvent
 
     public function eventType(): string
     {
-        return 'shipment.checkpoint_recorded';
+        return 'checkpoint.recorded';
     }
 
     public function payload(): array

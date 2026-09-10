@@ -107,7 +107,7 @@ it('RecordCheckpointCommand still records exactly one ShipmentCheckpointRecorded
 
     expect(
         OutboxEvent::query()
-            ->where('event_type', 'shipment.checkpoint_recorded')
+            ->where('event_type', 'checkpoint.recorded')
             ->where('aggregate_id', (string) $shipment->id)
             ->count()
     )->toBe(1);

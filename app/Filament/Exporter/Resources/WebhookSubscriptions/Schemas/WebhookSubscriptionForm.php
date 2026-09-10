@@ -18,8 +18,8 @@ class WebhookSubscriptionForm
      */
     public const EVENT_TYPES = [
         'order.awarded' => 'Order awarded',
-        'shipment.checkpoint_recorded' => 'Shipment checkpoint recorded',
-        'compliance.case_opened' => 'Compliance case opened',
+        'checkpoint.recorded' => 'Shipment checkpoint recorded',
+        'compliance_case.opened' => 'Compliance case opened',
     ];
 
     public static function configure(Schema $schema): Schema

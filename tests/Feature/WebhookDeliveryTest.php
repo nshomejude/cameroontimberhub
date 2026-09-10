@@ -218,7 +218,7 @@ it('does not dispatch any delivery job when no subscription matches the outbox e
     WebhookSubscription::query()->create([
         'company_id' => $company->id,
         'url' => 'https://example.test/hook',
-        'event_types' => ['shipment.checkpoint_recorded'],
+        'event_types' => ['checkpoint.recorded'],
         'secret_hash' => WebhookSubscription::hashSecret('secret'),
         'is_active' => true,
     ]);

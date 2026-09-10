@@ -47,7 +47,7 @@ class ComplianceCaseOpened implements DomainEvent
 
     public function eventType(): string
     {
-        return 'compliance.case_opened';
+        return 'compliance_case.opened';
     }
 
     public function payload(): array

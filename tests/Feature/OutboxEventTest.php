@@ -78,13 +78,13 @@ it('relays each of the three formalized event types to its own class', function 
     Event::fake([OrderAwarded::class, ShipmentCheckpointRecorded::class, ComplianceCaseOpened::class]);
 
     OutboxEvent::query()->create([
-        'aggregate_type' => 'Shipment', 'aggregate_id' => '1', 'event_type' => 'shipment.checkpoint_recorded',
+        'aggregate_type' => 'Shipment', 'aggregate_id' => '1', 'event_type' => 'checkpoint.recorded',
         'payload' => ['checkpoint_update_id' => 1, 'shipment_id' => 1, 'status' => 'dispatched', 'location' => 'Douala Port'],
         'occurred_at' => now(), 'published_at' => null, 'attempts' => 0, 'created_at' => now(),
     ]);
 
     OutboxEvent::query()->create([
-        'aggregate_type' => 'ComplianceCase', 'aggregate_id' => '1', 'event_type' => 'compliance.case_opened',
+        'aggregate_type' => 'ComplianceCase', 'aggregate_id' => '1', 'event_type' => 'compliance_case.opened',
         'payload' => ['compliance_case_id' => 1, 'owner_type' => 'App\\Models\\Order', 'owner_id' => 1, 'country_code' => 'DE'],
         'occurred_at' => now(), 'published_at' => null, 'attempts' => 0, 'created_at' => now(),
     ]);
