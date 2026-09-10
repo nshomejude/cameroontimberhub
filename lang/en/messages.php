@@ -322,6 +322,9 @@ return [
         'change_plan' => 'Change plan',
         'past_receipts' => 'Receipts',
         'no_receipts' => 'No receipts yet.',
+        'tax_subtotal' => 'Subtotal',
+        'tax_line' => ':label (:rate%)',
+        'tax_total' => 'Total',
     ],
 
     'marketplace' => [
@@ -1226,6 +1229,7 @@ return [
             'audit_log' => 'Audit log',
             'ai_api_key_changes' => 'AI API key changes',
             'payment_settings' => 'Payment settings',
+            'tax_rules' => 'Tax rules',
             'payment_credential_changes' => 'Payment credential changes',
             'api_key_requests' => 'API key requests',
             'api_key_usage' => 'API key usage',
@@ -1282,6 +1286,8 @@ return [
             'ai_api_key_change_many' => 'AI API key change requests',
             'payment_setting_one' => 'payment setting',
             'payment_setting_many' => 'Payment settings',
+            'tax_rule_one' => 'tax rule',
+            'tax_rule_many' => 'Tax rules',
             'payment_credential_change_one' => 'payment credential change request',
             'payment_credential_change_many' => 'payment credential change requests',
             'api_key_issuance_one' => 'API key issuance request',

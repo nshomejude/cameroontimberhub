@@ -328,6 +328,9 @@ return [
         'change_plan' => 'Changer d\'offre',
         'past_receipts' => 'Reçus',
         'no_receipts' => 'Aucun reçu pour le moment.',
+        'tax_subtotal' => 'Sous-total',
+        'tax_line' => ':label (:rate %)',
+        'tax_total' => 'Total',
     ],
 
     'marketplace' => [
@@ -1232,6 +1235,7 @@ return [
             'audit_log' => "Journal d'audit",
             'ai_api_key_changes' => 'Changements de clé API IA',
             'payment_settings' => 'Paramètres de paiement',
+            'tax_rules' => 'Règles de taxe',
             'payment_credential_changes' => 'Changements d’identifiants de paiement',
             'api_key_requests' => 'Demandes de clé API',
             'api_key_usage' => 'Utilisation des clés API',
@@ -1288,6 +1292,8 @@ return [
             'ai_api_key_change_many' => 'demandes de changement de clé API IA',
             'payment_setting_one' => 'paramètre de paiement',
             'payment_setting_many' => 'Paramètres de paiement',
+            'tax_rule_one' => 'règle de taxe',
+            'tax_rule_many' => 'Règles de taxe',
             'payment_credential_change_one' => 'demande de changement d’identifiants de paiement',
             'payment_credential_change_many' => 'demandes de changement d’identifiants de paiement',
             'api_key_issuance_one' => 'demande d\'émission de clé API',

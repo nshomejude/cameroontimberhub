@@ -47,11 +47,23 @@ class BillingCheckoutController extends Controller
             ])
             ->values();
 
+        // Billing engine M5: subtotal / tax / total breakdown for this plan
+        // in the buyer's tax jurisdiction. Ships as a pure display concern —
+        // when no active tax_rules row matches (the launch default) the
+        // breakdown carries a null rule_id and the view shows only the total.
+        $breakdown = app(\App\Services\Tax\TaxCalculator::class)->breakdown(
+            $plan->price_amount,
+            $plan->price_currency,
+            $company->country_code ?: 'CM',
+            $plan->segment,
+        );
+
         return view('public.billing.checkout', [
             'plan' => $plan,
             'company' => $company,
             'providers' => $providers,
             'anyConfigured' => $providers->contains('configured', true),
+            'breakdown' => $breakdown,
         ]);
     }
 

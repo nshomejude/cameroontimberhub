@@ -7,10 +7,28 @@
         <div class="mt-5 rounded-2xl border border-sand-200 bg-white p-5 dark:border-[#2c2a24] dark:bg-[#1f1d18]">
             <p class="font-display text-lg font-semibold text-forest-900 dark:text-sand-100">{{ $plan->name }}</p>
             <p class="mt-1 text-[0.8125rem] text-ink-soft dark:text-[#b3ab9b]">{{ $plan->description }}</p>
-            <p class="mt-3">
-                <span class="font-display text-2xl font-semibold text-forest-950 dark:text-sand-100">{{ number_format((float) $plan->price_amount) }}</span>
-                <span class="text-[0.8125rem] text-ink-soft dark:text-[#b3ab9b]">{{ $plan->price_currency }} / {{ $plan->billing_period }}</span>
-            </p>
+            @php($taxed = ($breakdown['rule_id'] ?? null) !== null)
+            @if ($taxed)
+                <dl class="mt-3 space-y-1 text-[0.875rem]">
+                    <div class="flex justify-between text-ink-soft dark:text-[#b3ab9b]">
+                        <dt>{{ __('messages.billing.tax_subtotal') }}</dt>
+                        <dd>{{ number_format((float) $breakdown['subtotal']) }} {{ $plan->price_currency }}</dd>
+                    </div>
+                    <div class="flex justify-between text-ink-soft dark:text-[#b3ab9b]">
+                        <dt>{{ __('messages.billing.tax_line', ['label' => $breakdown['tax_label'], 'rate' => rtrim(rtrim(number_format(((float) $breakdown['tax_rate']) * 100, 2), '0'), '.')]) }}</dt>
+                        <dd>{{ number_format((float) $breakdown['tax_amount']) }} {{ $plan->price_currency }}</dd>
+                    </div>
+                    <div class="flex justify-between border-t border-sand-200 pt-1 font-semibold text-forest-950 dark:border-[#2c2a24] dark:text-sand-100">
+                        <dt>{{ __('messages.billing.tax_total') }}</dt>
+                        <dd>{{ number_format((float) $breakdown['total']) }} {{ $plan->price_currency }} / {{ $plan->billing_period }}</dd>
+                    </div>
+                </dl>
+            @else
+                <p class="mt-3">
+                    <span class="font-display text-2xl font-semibold text-forest-950 dark:text-sand-100">{{ number_format((float) ($breakdown['total'] ?? $plan->price_amount)) }}</span>
+                    <span class="text-[0.8125rem] text-ink-soft dark:text-[#b3ab9b]">{{ $plan->price_currency }} / {{ $plan->billing_period }}</span>
+                </p>
+            @endif
         </div>
 
         @if (! $anyConfigured)

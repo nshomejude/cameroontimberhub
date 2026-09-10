@@ -47,6 +47,12 @@ class RolesAndPermissionsSeeder extends Seeder
         // live-credential change also requires being a different admin than
         // the requester plus a fresh 2FA confirmation (App\Actions\Payments).
         'payments.manage',
+        // Gates the admin Tax Rules resource (billing engine M5, plan §7.3
+        // / §124 "admin-configurable, no deploy"). Tax configuration is
+        // financial authority, so this is granted alongside payments.manage
+        // (super_admin + finance_officer only) and deliberately NOT to the
+        // broader `admin` role — consistent with payments.manage.
+        'pricing.manage',
         // Added for the Market Intelligence dashboard (blueprint §33-34):
         // gates the Price/Demand/Supplier Performance index page.
         'market-intelligence.view',
@@ -126,6 +132,7 @@ class RolesAndPermissionsSeeder extends Seeder
         // changes. billing.refund / pricing.manage arrive in later phases.
         'finance_officer' => [
             'payments.manage',
+            'pricing.manage',
         ],
     ];
 

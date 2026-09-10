@@ -54,13 +54,31 @@ class PaymentCheckoutController extends Controller
             ]);
         }
 
+        // Billing engine M5: apply tax ONLY when an active tax_rules row
+        // matches the buyer's jurisdiction/segment. At launch the Cameroon
+        // TVA rule ships inactive, so this resolves to no rule, `amount`
+        // stays exactly `$plan->price_amount` and no `tax` metadata is
+        // written — existing behaviour and tests are untouched. When finance
+        // activates the rule, `amount` becomes subtotal+tax and the full
+        // breakdown is persisted to `metadata['tax']` for the receipt/M4.
+        $breakdown = app(\App\Services\Tax\TaxCalculator::class)->breakdown(
+            $plan->price_amount,
+            $plan->price_currency,
+            $company->country_code ?: 'CM',
+            $plan->segment,
+        );
+        $taxable = $breakdown['rule_id'] !== null;
+
         $payment = Payment::create([
             'company_id' => $company->id,
             'plan_id' => $plan->id,
             'provider' => $provider,
-            'amount' => $plan->price_amount,
+            'amount' => $taxable ? $breakdown['total'] : $plan->price_amount,
             'currency' => $plan->price_currency,
-            'metadata' => array_filter(['msisdn' => $data['msisdn'] ?? null]),
+            'metadata' => array_filter([
+                'msisdn' => $data['msisdn'] ?? null,
+                'tax' => $taxable ? $breakdown : null,
+            ]),
         ]);
 
         // MTN MoMo is a poll model: fire the push here and hand the browser a
