@@ -3,6 +3,7 @@
 use App\Http\Middleware\EnsureApiBuyer;
 use App\Http\Middleware\EnsureBuyerAccount;
 use App\Http\Middleware\EnsureDemoLoginsEnabled;
+use App\Http\Middleware\AnnounceDeprecation;
 use App\Http\Middleware\EnsureExporterOnboarded;
 use App\Http\Middleware\HandleSlugRedirects;
 use App\Http\Middleware\RequiresRecentTwoFactor;
@@ -37,6 +38,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'api.buyer' => EnsureApiBuyer::class,
             'demo.logins.enabled' => EnsureDemoLoginsEnabled::class,
             'requires.recent.2fa' => RequiresRecentTwoFactor::class,
+            // Emits RFC 8594 Deprecation/Sunset/Link signalling on a route or
+            // group. Not applied to any route today — see routes/api.php and
+            // docs/api/CONVENTIONS.md for the "how to sunset an endpoint" flow.
+            'deprecated' => AnnounceDeprecation::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

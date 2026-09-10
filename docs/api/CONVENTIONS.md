@@ -18,17 +18,45 @@ marked as such.
   changes and are **not** allowed in v1.
 - A breaking change ships as **`/api/v2`**, running alongside v1.
 
-### Deprecation policy — *proposal, pending sign-off*
+### Deprecation policy
 
-When v2 ships, v1 (or an individual v1 endpoint) enters deprecation:
+**Policy (unchanged, still the stated figure):** minimum **6 months' notice**
+between the first `Sunset` header and actual removal of a v1 endpoint or of
+v1 as a whole. Nothing is deprecated today.
 
-- Responses carry `Deprecation: true` (or an RFC-9745 `@`-prefixed timestamp)
-  and a `Sunset: <HTTP-date>` header marking the earliest removal date.
-- A `Link` header with `rel="deprecation"` points at the migration note.
-- **Minimum notice: 6 months** between the first `Sunset` header and actual
-  removal. *(Proposed figure — needs product sign-off.)*
-- **Not implemented in code today** — there is no deprecation-header
-  middleware. See [`../architecture/GAPS.md`](../architecture/GAPS.md).
+**Mechanism (available):** the `deprecated` middleware alias
+(`App\Http\Middleware\AnnounceDeprecation`, registered in `bootstrap/app.php`)
+emits RFC 8594 / draft-ietf-httpapi-deprecation-header signalling on any route
+or group it is applied to. It is **not applied to any route** — see the
+commented example block above the `v1` group in `routes/api.php`.
+
+Declared as:
+
+```php
+->middleware('deprecated:<deprecation-date>,<sunset-date>,<successor-url>,<note>')
+```
+
+All four params optional, parsed defensively (a missing/malformed part never
+500s — it degrades). Headers emitted on the response:
+
+| Header | Value | When |
+|---|---|---|
+| `Deprecation` | IMF-fixdate, e.g. `Fri, 01 Jan 2027 00:00:00 GMT` | always; `true` if the date is missing/unparseable |
+| `Sunset` | IMF-fixdate | when a parseable sunset date is given |
+| `Link` | `<successor-url>; rel="successor-version"` | when a successor URL is given |
+| `Warning` | `299 - "<note>"` | when a note is given |
+
+Dates accept anything Carbon parses (e.g. `2027-01-01`); output is always
+HTTP-date in UTC.
+
+**How to sunset an endpoint:**
+
+1. Ship the replacement (`/api/v2/...`) alongside v1.
+2. Add the middleware to the v1 route/group with the deprecation date (today),
+   a sunset date **≥ 6 months out**, and the v2 successor URL, e.g.
+   `->middleware('deprecated:2027-01-01,2027-07-01,https://www.cameroontimberhub.com/api/v2/products/{slug},Use /api/v2/products/{slug}')`.
+3. Announce in the API changelog / migration note; notify key holders.
+4. After the sunset date has passed, remove the route and the middleware.
 
 ---
 

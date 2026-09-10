@@ -40,11 +40,19 @@ for 422) — consistent, but minimal: no machine-readable `code`, no
 single documented envelope. **Not implemented.** Pure addition when adopted
 (no endpoint currently deviates).
 
-## 5. Deprecation-header mechanism not implemented
+## 5. Deprecation-header mechanism not implemented — **CLOSED**
 
-`/api/v1` is additive-only and a 6-month `Deprecation`/`Sunset` notice policy
-is proposed, but there is **no middleware** that emits those headers, and no
-`/api/v2`. Needs building before the first v1 breaking change is contemplated.
+~~`/api/v1` is additive-only and a 6-month `Deprecation`/`Sunset` notice policy
+is proposed, but there is **no middleware** that emits those headers.~~
+
+**Closed:** `App\Http\Middleware\AnnounceDeprecation` (alias `deprecated`,
+registered in `bootstrap/app.php`) emits RFC 8594 `Deprecation` / `Sunset` /
+`Link rel="successor-version"` / `Warning` headers on any route or group it is
+applied to, parsing its params defensively. Nothing is deprecated today, so it
+is applied to no route; a commented example declaration sits above the `v1`
+group in `routes/api.php`, and the "how to sunset an endpoint" flow is in
+`docs/api/CONVENTIONS.md`. Test-covered by
+`tests/Feature/Api/DeprecationHeaderTest.php`. There is still no `/api/v2`.
 
 ## 6. No request-id correlation
 

@@ -37,6 +37,30 @@ use Illuminate\Support\Facades\Route;
 // RecordApiKeyUsage (API-as-a-product usage metering) rides alongside it,
 // additively — it never blocks or fails the request (see its own
 // doc block), it just increments today's usage row for the token.
+// --------------------------------------------------------------------------
+// Deprecation signalling (GAPS.md gap 5 — mechanism now available)
+// --------------------------------------------------------------------------
+// `/api/v1` is additive-only; NOTHING is deprecated today. When the first v1
+// endpoint (or all of v1) must be sunset, declare the `deprecated` middleware
+// on that route/group. It emits RFC 8594 headers: `Deprecation: <HTTP-date>`,
+// `Sunset: <HTTP-date>`, `Link: <successor>; rel="successor-version"` and an
+// optional `Warning: 299 - "..."`. Params:
+//   deprecated:<deprecation-date>,<sunset-date>,<successor-url>,<note>
+// all optional, parsed defensively. See docs/api/CONVENTIONS.md.
+//
+// EXAMPLE — a single endpoint superseded by a v2 equivalent (commented out):
+//
+//   Route::get('products/{slug}', [ProductController::class, 'show'])
+//       ->middleware('deprecated:2027-01-01,2027-07-01,https://www.cameroontimberhub.com/api/v2/products/{slug},Use /api/v2/products/{slug}')
+//       ->name('products.show');
+//
+// EXAMPLE — the whole v1 group after v2 ships (commented out):
+//
+//   Route::prefix('v1')->name('api.v1.')
+//       ->middleware(['throttle:api-key', \App\Http\Middleware\RecordApiKeyUsage::class,
+//           'deprecated:2027-01-01,2027-07-01,https://www.cameroontimberhub.com/api/v2'])
+//       ->group(function (): void { /* ... */ });
+
 Route::prefix('v1')->name('api.v1.')->middleware(['throttle:api-key', \App\Http\Middleware\RecordApiKeyUsage::class])->group(function (): void {
 
     /* ------------------------------------------------------------- auth */
