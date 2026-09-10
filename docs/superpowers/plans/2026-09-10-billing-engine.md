@@ -1,9 +1,9 @@
 # Billing Engine — Proposal & Phased Plan
 
 > Companion to `docs/PRICING_SPEC.md` (the commercial source of truth) and `docs/GAP_PLAN.md` item 0.9b.
-> **Date:** 2026-09-10 · **Status:** proposal, awaiting owner decisions (§7)
+> **Date:** 2026-09-10 · **Status:** proposal with recommended decisions (§7 — proposed, owner to confirm/adjust). Ready to execute via `superpowers:subagent-driven-development` once Phase 0 is underway.
 
-**Bottom line:** the billing engine is **~65% built**. The payment gateways, plan catalogue, subscription model, entitlement engine and the payment→outbox event chain already exist. What's missing is (a) two merchant-account applications, and (b) roughly **9–10 engineer-weeks** of work — phased so that *domestic subscriptions can go live ~2 weeks after the merchant accounts clear*.
+**Bottom line:** the billing engine is **~65% built**. The payment gateways (incl. MTN MoMo + Orange Money), plan catalogue, subscription model, entitlement engine and the payment→outbox event chain already exist. Remaining: (a) two merchant-account applications + a PayPal Business account [Phase 0, business], (b) ~**45 engineer-days / 9 weeks** of work — phased so **domestic subscriptions on MoMo/Orange Money and USD plans on PayPal go live at the end of Phase 1 (~2.5 weeks)**. Gateway API credentials are entered and rotated in `/admin` (two-person + 2FA, like the AI keys) — §8.
 
 ---
 
@@ -55,6 +55,7 @@ Principles that constrain the build (all from `PRICING_SPEC.md`): prices visible
 | M9 | **Price governance.** `plan_prices` (or `price_versions`) with `effective_from` / `effective_until`, immutable history; "reproducible totals from stored inputs"; pricing-admin RBAC (least privilege). | §23, §27 |
 | M10 | **Wire the `api` plan feature** to the now-existing company-authenticated API-key issuance flow (gap-plan 0.9d — the two-person + 2FA issuance flow shipped in the architecture batch, so the surface finally exists). | §22 |
 | M11 | **Pricing page → checkout.** The `/pricing` page (`PricingController`, informational today) gets a "Choose plan → pick payment method (MoMo / Orange Money / card) → pay" flow for the segments that launch. Enterprise stays "Talk to us". | §24 |
+| M12 | **Admin-panel-managed gateway credentials.** Per owner direction, MTN MoMo / Orange Money (and later Stripe/PayPal) API credentials are entered and rotated in `/admin`, not just `.env`. Mirror the existing `AiSetting` + `AiApiKeyChangeRequest` pattern exactly: a `PaymentSetting` model (one row per provider — `subscription_key` / `api_user` / `api_key` etc. `Crypt::encryptString`-encrypted at rest, an `is_live` toggle, `environment`), `config/payments.php` resolves **DB first, `env()` fallback**, and changing a *live* credential is a two-person + fresh-2FA action (`RequestPaymentCredentialChange` / `ApprovePaymentCredentialChange`, different approver, one-time invite token, `TwoFactorStepUp::isRecentlyVerified()`). Credentials never rendered back after save; shown once. | §23, §20 |
 
 ---
 
@@ -70,7 +71,7 @@ Stripe/PayPal alone do not serve the domestic (XAF) majority. The rails that mat
 | **PayPal** | international USD fallback | ✅ `PayPalGateway` | PayPal Business account (receivable from Cameroon). Lower priority — a fallback, not the primary USD rail. |
 | **Bank transfer / offline** | enterprise, institutions, anyone who can't self-serve | ✅ `SubscriptionService::assign()` + a contract record | Admin confirms receipt, assigns the plan, attaches the signed commercial record. No engineering. |
 
-**Recommendation:** launch domestic first on **MTN MoMo + Orange Money**; bring USD (Stripe or a merchant-of-record) online for exporters/international buyers once the entity question (§7.1) is resolved. PayPal as a fast USD fallback in the meantime.
+**Recommendation (adopted in §7.1–7.2):** launch **all XAF segments on MTN MoMo + Orange Money** and **all USD segments on PayPal Business**, together, in Phase 1. Enterprise stays on bank transfer + manual assignment. A cleaner USD rail (Stripe / merchant-of-record) is a later add, not a launch dependency. Credentials for every provider are managed in `/admin` (§8), so a provider goes live the moment its keys are approved — no deploy.
 
 ---
 
@@ -78,20 +79,20 @@ Stripe/PayPal alone do not serve the domestic (XAF) majority. The rails that mat
 
 Effort is engineer-days for someone who knows this codebase. **Phase 0 is a business action and can start today.**
 
-### Phase 0 — Merchant accounts (business, 0 eng, blocks Phase 1 go-live)
-- [ ] Apply for MTN MoMo Collections (Cameroon) — KYB, settlement bank account
-- [ ] Apply for Orange Money Web Payment (Cameroon)
-- [ ] Decide the USD entity/MoR question (§7.1)
-- [ ] Confirm VAT position (§7.3) with finance/legal
-- [ ] Choose which segments launch first (§7.2)
+### Phase 0 — Business actions (0 eng, blocks Phase 1 go-live)
+- [ ] Apply for **MTN MoMo Collections** (Cameroon) — KYB, settlement bank account (owner supplies the production credentials into `/admin` once approved — see M12)
+- [ ] Apply for **Orange Money Web Payment** (Cameroon)
+- [ ] Set up a **PayPal Business** account (USD receivable from Cameroon) — the launch USD rail per §7.1
+- [ ] Have an accountant confirm CTH's **TVA** registration / DGI position per §7.3 (engine assumes 19.25 % applies and is switchable — do not block Phase 1 on this)
 
-### Phase 1 — "Plans you can actually buy" (~10 days) → **domestic subscriptions go live**
+### Phase 1 — "Plans you can actually buy" (~12 days) → **domestic subscriptions go live**
+- [ ] **M12: admin-panel gateway credentials.** `PaymentSetting` model (per-provider, `Crypt`-encrypted keys, `environment`, `is_live`); `config/payments.php` resolves DB-first then `env()`; `RequestPaymentCredentialChange` / `ApprovePaymentCredentialChange` two-person + fresh-2FA actions + one-time invite token (copy `app/Actions/Ai/`); Filament `PaymentSettings` resource under a new `payments.manage` permission. Do this first — it's how credentials get in.
 - [ ] M1: `ActivateSubscriptionOnPaymentCompleted` listener — a completed plan `Payment` → `SubscriptionService::activateFromPayment($payment)` (new method: sets term from `plan.billing_period`, `renews_at`, snapshots price, links `payment_id`). Idempotent by `payment_id`.
 - [ ] M2: rewire MTN / Orange / PayPal `handleWebhook()` to dispatch `RecordPaymentCompletionCommand` (mirror `StripeGateway`).
 - [ ] M3: additive `subscriptions` migration — `billing_period`, `renews_at`, `trial_ends_at`, `grace_until`, `payment_id`, `provider_reference`, `price_amount`, `price_currency`.
-- [ ] M11: `/pricing` → checkout flow for the launch segments. Plan card → payment-method picker (MoMo / Orange Money / card if USD) → `POST /payments/checkout/{plan}` → gateway. Success page + a `Receipt` (reuse `ChainsIntegrity`).
-- [ ] Renewal-reminder email 7 days before `renews_at` with a re-pay link (no card-on-file yet — manual re-pay in Phase 1).
-- [ ] Tests: full loop per gateway in sandbox; idempotent double-webhook; unconfigured-gateway refusal; entitlement flips on activation.
+- [ ] M11: `/pricing` → checkout flow for the launch segments (§7.2: `sell`, `buy`, `deal`, `verify-comply` on MoMo/Orange; `export`, `buy-international` on PayPal). Plan card → payment-method picker → `POST /payments/checkout/{plan}` → gateway. Success page + a `Receipt` (reuse `ChainsIntegrity`).
+- [ ] Renewal-reminder email 7 days before `renews_at` with a re-pay link. On non-payment by `renews_at` + grace, the subscription lapses to the segment's Free plan (no pre-auth charge — see §7.5 for why the trial/renewal model is pull-not-push in a mobile-money market).
+- [ ] Tests: full loop per gateway in sandbox; idempotent double-webhook; unconfigured-gateway refusal; entitlement flips on activation; a live-credential change requires a second approver + 2FA.
 - [ ] Deploy domestic (MoMo + OM). USD when Phase 0's entity clears.
 
 ### Phase 2 — Invoicing & tax (~10 days)
@@ -101,8 +102,8 @@ Effort is engineer-days for someone who knows this codebase. **Phase 0 is a busi
 - [ ] Tests: invoice immutability; tax applied and shown; credit note leaves the invoice unchanged.
 
 ### Phase 3 — Recurring & lifecycle (~10 days)
-- [ ] M6: token/card on file (Stripe `SetupIntent`); scheduled `subscriptions:charge-renewals` job; dunning state machine (`active → past_due → suspended → restored`) + email sequence; proration; trials; 30-day price-change notice job; grace-period entitlement behaviour (`Company::hasFeature()` respects `suspended`).
-- [ ] Tests: renewal charge succeeds → term extends; fails → grace → suspend → restore; upgrade prorates; trial converts.
+- [ ] M6: **pull-model renewals** (§7.5) — `subscriptions:process-renewals` job: at `renews_at − 7d` send a re-pay link; at `renews_at` move to `past_due` + `grace_until = +7d`; during grace keep entitlements; at `grace_until` lapse to the segment Free plan and email. **Card-on-file / auto-charge** only for the USD (Stripe/PayPal) rails where the token model is clean — via `SetupIntent` / billing agreement; MoMo/Orange stay pull. Proration on upgrade (immediate) / downgrade (next cycle). **Trials** (§7.5): 14 days, no pre-auth, opt-in per plan, one per company lifetime, converts by the customer paying before the trial ends else lapses to Free. 30-day price-change notice job. `Company::hasFeature()` returns the Free-plan entitlement set while `past_due`-past-grace / `suspended`.
+- [ ] Tests: renewal paid → term extends; unpaid → grace → lapse to Free; upgrade prorates; trial paid → converts, unpaid → lapses; USD card-on-file auto-charges.
 
 ### Phase 4 — Marketplace commission (~8 days)
 - [ ] M7: `CommissionCalculator` (deterministic, plan-tiered rate from §15, capped, versioned `commission_rules`); commission line on protected-trade orders shown pre-commit; recorded on order + invoice; not charged on pre-acceptance cancel; refund treatment on the credit note.
@@ -115,26 +116,81 @@ Effort is engineer-days for someone who knows this codebase. **Phase 0 is a busi
 - [ ] M10: wire the `api` plan feature to company API-key issuance quotas.
 - [ ] `PRICING_SPEC.md §27` launch checklist — walk every item, tick or file.
 
-**Totals:** Phase 1 ≈ 10 d · Phase 2 ≈ 10 d · Phase 3 ≈ 10 d · Phase 4 ≈ 8 d · Phase 5 ≈ 5 d → **≈ 43 engineer-days (~9 weeks)** after merchant accounts land, with revenue starting at the end of Phase 1.
+**Totals:** Phase 1 ≈ 12 d · Phase 2 ≈ 10 d · Phase 3 ≈ 10 d · Phase 4 ≈ 8 d · Phase 5 ≈ 5 d → **≈ 45 engineer-days (~9 weeks)** after the PayPal account is set up and the MoMo/Orange applications are in, with revenue starting at the end of Phase 1 (domestic on MoMo/Orange first, USD on PayPal in the same phase, MoMo/Orange credentials entered in `/admin` the day they're approved).
 
 ---
 
 ## 6. Risks
 
-- **MoMo/OM onboarding timeline** is the critical path and outside engineering control — start Phase 0 immediately.
-- **USD without a Stripe entity** — if a merchant-of-record (Paddle) is chosen, it changes the checkout integration for USD plans (their hosted checkout, their tax handling) — decide before Phase 1 touches USD.
+- **MoMo/Orange onboarding timeline** is the critical path and outside engineering control — get the applications in on day one. Engineering can build against the sandbox and go live by swapping credentials in `/admin` (M12), so the code is not blocked.
+- **USD via PayPal only at launch** (§7.1) means PayPal's fees and dispute process apply to exporter/international plans; a cleaner USD rail (Stripe, or a merchant-of-record for tax) is a later add, not a launch blocker.
 - **Escrow language** — marketing/UI must never say "escrow" or "we hold your funds" for protected trades unless the safeguarding licence exists (`PRICING_SPEC §15`). Commission ≠ escrow.
-- **VAT** — if CTH must charge and remit Cameroon VAT on subscriptions, that's a Phase 2 dependency and a finance/registration task.
+- **TVA** — the engine assumes Cameroon VAT (19.25 %) applies to domestic subscriptions and is config-switchable; whether CTH is registered and must remit is a DGI/accountant question (§7.3), not a code blocker.
 - **Double-charge / webhook replay** — every activation and invoice must be idempotent by `payment_id` / provider reference (the gateways already keep a stable `provider_reference`; enforce it end-to-end).
+- **Mobile-money UX** — MoMo/Orange are push-prompt-then-webhook, not synchronous. The checkout success page must say "check your phone and approve" and poll / wait for the webhook; the subscription activates on the webhook, never on the redirect.
 
 ---
 
-## 7. Decisions needed from the owner (before Phase 1)
+## 7. Decisions — proposed (confirm or adjust)
 
-1. **USD acceptance:** Stripe via a supported-country entity, Stripe Atlas, or a merchant-of-record (Paddle/Lemon Squeezy)? Or launch USD on PayPal only and add the rest later?
-2. **Launch segments:** which plans are buyable at launch? *Recommendation:* domestic supplier (`sell`) + domestic buyer (`buy`) on MoMo/OM; exporters + international buyers once USD is settled; verification/compliance products next; enterprise stays manual.
-3. **VAT:** does CTH charge Cameroon VAT (19.25 %) on subscriptions today? Registered? (finance/legal)
-4. **Commission at launch or later?** *Recommendation:* subscriptions-only first; commission is Phase 4 once protected-trade volume justifies it.
-5. **Trials:** offer a 14-day trial? On which plans?
-6. **Refund / credit-note authority:** which role can issue one (`billing.refund` permission)?
-7. **Annual pricing:** the seeded plans are mostly monthly — confirm the annual price for each (spec default: 10 months' price for 12 months) so the catalogue is complete per `§27`.
+### 7.1 USD acceptance — **PayPal Business at launch; Stripe or a merchant-of-record later**
+PayPal receives USD from Cameroon with just a business account and no foreign entity, so exporter (`export`) and international-buyer (`buy-international`) plans can go live in Phase 1 alongside the domestic rails. `PayPalGateway` is already coded. Revisit a cleaner USD rail — Stripe via a group entity / Stripe Atlas, or Paddle / Lemon Squeezy as a merchant-of-record that also handles international sales tax — once USD volume justifies the setup. Not a launch blocker.
+
+### 7.2 Launch segments — **all XAF segments + USD via PayPal, from Phase 1**
+| Segment | Plans | Rail | Phase 1? |
+|---|---|---|---|
+| Domestic supplier (`sell`) | Free / Professional 50 k / Enterprise 250 k XAF | MoMo, Orange Money | ✅ |
+| Domestic buyer (`buy`) | Buyer Free / Plus 5 k / Business 15 k / Corporate 50 k XAF | MoMo, Orange Money | ✅ |
+| Dealer (`deal`) | Free / Pro 10 k / Network 30 k XAF | MoMo, Orange Money | ✅ |
+| Verify & comply (`verify-comply`) | Verified Supplier 25 k/yr, Verified Exporter 100 k/yr, Compliance Pro 30 k/mo XAF | MoMo, Orange Money | ✅ (sold like a subscription; verification review stays evidence-based & separate) |
+| Exporter (`export`) | Professional $29 / Business $79 / Enterprise $249 /mo | PayPal | ✅ |
+| International buyer (`buy-international`) | Free / Professional $39 / Enterprise $199 /mo | PayPal | ✅ |
+| Enterprise / institutional | negotiated | bank transfer + admin `assign()` + contract record | manual, always |
+
+### 7.3 VAT — **charge Cameroon TVA at 19.25 % on domestic fees; zero-rate non-Cameroon customers; make it configuration**
+Build the tax engine (Phase 2, M5) to apply **19.25 %** to subscription and service fees for customers with a Cameroon billing country, and **0 %** for customers outside Cameroon (export of services). The rate, jurisdiction and effective dates live in `tax_rules` — never hard-coded. **Action for finance/legal:** confirm CTH's TVA registration status and DGI filing obligations; if CTH is not yet required to charge, the engine ships with the Cameroon rule *inactive* and it's flipped on when registration completes — no code change.
+
+### 7.4 Commission — **not at launch; Phase 4**
+Launch on subscriptions + verification/compliance/data revenue. Marketplace commission (`§15`: 2–5 % plan-tiered, capped) needs protected-trade volume and the pre-commit disclosure UI to be worth the build and the customer friction. Phase 4, once there's GMV to take a rate on.
+
+### 7.5 Trials & renewals — **pull model, not push (mobile-money reality)**
+Card-on-file "charge them automatically at renewal" is clean for Stripe/PayPal but not for MTN MoMo / Orange Money (no reliable stored-mandate/recurring primitive in their standard Collections APIs). So:
+- **Trial:** 14 days, **opt-in per plan** (Professional, Buyer Plus, Business Buyer, Dealer Pro, exporter plans — *not* Free, verification products, or enterprise), **one per company lifetime**, **no pre-authorisation**. The company gets full plan entitlements for 14 days; converts when they pay before the trial ends; otherwise lapses to that segment's Free plan. No surprise charge.
+- **Renewal:** at `renews_at − 7 days` a re-pay reminder; at `renews_at` the sub goes `past_due` with a 7-day grace (entitlements retained); at end of grace it lapses to Free. For the **USD rails only**, offer optional card-on-file / billing agreement so those customers *can* auto-renew.
+
+### 7.6 Refund / credit-note authority — **`billing.refund`, super_admin + a new `finance_officer` role, two-person over a threshold**
+New permission `billing.refund` and a new staff role `finance_officer` (holds `billing.refund` + `pricing.manage` + read on invoices). Every refund / credit note requires a written reason and is written to the hash-chained activity log. Refunds/credits **above 100,000 XAF or $200** require a **second approver** — reuse the two-person pattern (`RequestRefund` / `ApproveRefund`, different approver, fresh 2FA) already used for AI keys and API-key issuance.
+
+### 7.7 Annual pricing — **annual = 10 × monthly (16.7 % off) for every plan with a monthly price**
+Apply the `PRICING_SPEC §18` default across the catalogue. Data-only change in `PlanSeeder` / the plan catalogue — no code. Resulting annual list prices:
+
+| Plan | Monthly | **Annual (10×)** |
+|---|---|---|
+| Supplier Professional | 50,000 XAF | 500,000 XAF |
+| Supplier Enterprise | 250,000 XAF | 2,500,000 XAF |
+| Buyer Plus | 5,000 XAF | 50,000 XAF |
+| Business Buyer | 15,000 XAF | 150,000 XAF |
+| Corporate Buyer | 50,000 XAF | 500,000 XAF |
+| Dealer Pro | 10,000 XAF | 100,000 XAF |
+| Dealer Network | 30,000 XAF | 300,000 XAF |
+| Compliance Professional | 30,000 XAF | 300,000 XAF |
+| Exporter Professional | $29 | $290 |
+| Exporter Business | $79 | $790 |
+| Exporter Enterprise | $249 | $2,490 |
+| International Buyer Professional | $39 | $390 |
+| International Buyer Enterprise | $199 | $1,990 |
+
+Free plans: no annual. Yearly-only plans (Verified Supplier 25 k, Verified Exporter 100 k, Dealer Free): already annual. Enterprise: negotiated.
+
+---
+
+## 8. Credentials in the admin panel (owner direction)
+
+MTN MoMo and Orange Money API credentials are entered and rotated in `/admin` (M12), exactly like the AI provider keys today:
+
+- `PaymentSetting` — one row per provider; `subscription_key` / `api_user` / `api_key` / `client_id` / `client_secret` / `merchant_key` all `Crypt::encryptString`-encrypted at rest; `environment` (`sandbox` | `production`); `is_live` toggle.
+- `config/payments.php` resolves **DB first, `env()` fallback** — so nothing breaks for local/dev, and production credentials never sit in a file.
+- Changing a **live** credential is a two-person + fresh-2FA action: admin A submits the new value (a one-time invite token is shown once), admin B enters that token + a fresh TOTP code to apply it. Same `app/Actions/Ai/RequestAiApiKeyChange` / `ApproveAiApiKeyChange` shape.
+- Credentials are never rendered back after save. The Filament page shows only "set / not set" + last-changed + who.
+- Gated on a new `payments.manage` permission (super_admin + `finance_officer`).
+- The gateway `isConfigured()` checks now read the `PaymentSetting` row, so a provider goes live the moment its credentials are approved — no deploy.
