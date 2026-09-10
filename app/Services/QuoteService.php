@@ -164,6 +164,18 @@ class QuoteService
             new QuoteSubmittedMail($quote->fresh(['items', 'company', 'rfq']), $this->buyerResponsesUrl($quote->rfq)),
         );
 
+        // docs/PRICE_DATA_STANDARD.md §5 — `quoted` price signal. No domain
+        // event exists for quote submission; the collector is defensive and
+        // wrapped here too so it can never block a submit.
+        try {
+            app(\App\Listeners\RecordQuotedPriceObservations::class)->record($quote);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::channel('errors')->error('QuoteService::submit: price observation collector threw.', [
+                'quote_id' => $quote->getKey(),
+                'exception' => $e->getMessage(),
+            ]);
+        }
+
         return $quote;
     }
 

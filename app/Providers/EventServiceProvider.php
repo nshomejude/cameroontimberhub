@@ -17,6 +17,7 @@ use App\Listeners\DetectLoginAnomaly;
 use App\Listeners\NotifyExporterOfRfq;
 use App\Listeners\NotifyExporterOfVerification;
 use App\Listeners\OpenComplianceCaseOnOrderAwarded;
+use App\Listeners\RecordTransactedPriceObservations;
 use App\Listeners\RecordLotEventOnShipmentCheckpoint;
 use App\Listeners\SendBuyerRfqAcknowledgement;
 use Illuminate\Auth\Events\Login;
@@ -55,6 +56,7 @@ class EventServiceProvider extends ServiceProvider
         // in-request — the listeners below are queued (ShouldQueue).
         OrderAwarded::class => [
             OpenComplianceCaseOnOrderAwarded::class,
+            RecordTransactedPriceObservations::class,
         ],
         ShipmentCheckpointRecorded::class => [
             RecordLotEventOnShipmentCheckpoint::class,
