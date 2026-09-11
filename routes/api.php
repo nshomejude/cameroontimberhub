@@ -1,10 +1,12 @@
 <?php
 
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\CompanyDocumentController;
 use App\Http\Controllers\Api\V1\ConversationController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\DisputeController;
 use App\Http\Controllers\Api\V1\OrderController;
+use App\Http\Controllers\Api\V1\OrderDocumentController;
 use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\QuoteController;
 use App\Http\Controllers\Api\V1\RfqController;
@@ -198,5 +200,33 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
 
         Route::post('orders/{orderReference}/disputes/{dispute}/reply', [DisputeController::class, 'reply'])
             ->middleware('throttle:api-decision')->name('orders.disputes.reply');
+
+        // Order documents (proof of delivery, invoice, packing list, ...):
+        // stays inside this same buyer-only `orders/{orderReference}/...`
+        // family, scoped through the exact BuyerApiScope::order() boundary
+        // every other route in this group uses. See
+        // OrderDocumentController's docblock for why this deliberately does
+        // NOT widen order access to suppliers in this task.
+        Route::get('orders/{orderReference}/documents', [OrderDocumentController::class, 'index'])
+            ->name('orders.documents.index');
+
+        Route::get('orders/{orderReference}/documents/{document}/download', [OrderDocumentController::class, 'download'])
+            ->name('orders.documents.download');
+    });
+
+    /* ----------------------------------------------- supplier (authenticated) */
+
+    Route::middleware(['auth:sanctum', 'api.supplier'])->group(function (): void {
+        // A supplier's own company's compliance documents (blueprint's
+        // compliance-document flow, API-exposed for the mobile app). See
+        // CompanyDocumentController's docblock.
+        Route::get('company/documents', [CompanyDocumentController::class, 'index'])
+            ->name('company.documents.index');
+
+        Route::post('company/documents', [CompanyDocumentController::class, 'store'])
+            ->middleware('throttle:api-rfq')->name('company.documents.store');
+
+        Route::get('company/documents/{document}/download', [CompanyDocumentController::class, 'download'])
+            ->name('company.documents.download');
     });
 });

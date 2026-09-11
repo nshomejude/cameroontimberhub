@@ -374,6 +374,27 @@ Order lifecycle is in `status` / `status_label` plus the timestamp fields (`awar
 
 Evidence file upload and appeal are **not** in v1 — deferred to a later release (or handled on web for now).
 
+### Documents
+
+Two independent families — don't confuse them:
+
+**A supplier's own company compliance documents** (verification/legal-origin/etc — `CompanyDocument`). Gated by `api.supplier` (any signed-in user who belongs to at least one company); a buyer hitting these gets `403`.
+
+| Method | Path | Auth | Purpose |
+|---|---|---|---|
+| GET | `/company/documents` | 🔑 supplier | The caller's company's documents (`CompanyDocumentResource`). Empty company → `{ "data": [] }`, `200`. |
+| POST | `/company/documents` | 🔑 supplier | Upload one. Multipart body: `type` (a real, active `document_types.key` — e.g. `business_registration`, `export_permit`; see `DocumentTypeSeeder`), `file`. PDF/JPG/PNG only, 10 MB max — the same limits the Filament upload form enforces. Rate-limited (`throttle:api-rfq`, the same write budget RFQ submission uses — there was no dedicated upload bucket, and this is a low-frequency write). → `201`. |
+| GET | `/company/documents/{id}/download` | 🔑 supplier | Streams the file. `404` for a document that isn't the caller's company's. |
+
+**An order's documents** (proof of delivery, invoice, packing list, ... — `OrderDocument`), visible to both order participants on the web, but **only exposed here to the order's buyer** — this route sits inside the same buyer-only `orders/{orderReference}/...` family as Trade Assurance/Disputes above, scoped through the identical `BuyerApiScope::order()` boundary. A supplier's own view of their orders' documents is a separate, larger follow-up (needs its own supplier-scoped orders listing) — not covered in this pass.
+
+| Method | Path | Auth | Purpose |
+|---|---|---|---|
+| GET | `/orders/{orderReference}/documents` | 🔑 buyer | That order's documents (`OrderDocumentResource`). No documents → `{ "data": [] }`, `200`. |
+| GET | `/orders/{orderReference}/documents/{id}/download` | 🔑 buyer | Streams the file. `404` for another buyer's order, or a document that isn't on this order. |
+
+**Download mechanism — both families stream the bytes directly through this authenticated API response**, rather than handing back a link to the web's signed `documents.download` / `order-documents.download` routes. Those web routes sit behind session (`auth`) middleware on top of their signed-URL check, and a Sanctum-token-only mobile client never carries a web session — a signed link to them would just redirect to a login page the app can't complete. `download_url` in both resources points back at these same `/api/v1/...` endpoints (still useful as a stable, bookmarkable reference), and both controllers call straight into the existing `DocumentService`/`OrderDocumentService` — the same storage/streaming/access-logging code the web uses, so there is no second download path.
+
 ### Messaging — plain buyer<->supplier chat
 
 | Method | Path | Auth | Purpose |
@@ -480,6 +501,52 @@ Request: `{ "body": "Can you confirm the delivery port?" }`
   }
 }
 ```
+
+### `GET /api/v1/company/documents`
+
+```json
+{
+  "data": [
+    {
+      "id": 5,
+      "type": "export_permit",
+      "label": "Export permit",
+      "status": "approved",
+      "status_label": "Approved",
+      "original_filename": "export-permit-2026.pdf",
+      "file_size": 284112,
+      "issue_date": "2026-01-10",
+      "expiry_date": "2027-01-10",
+      "is_expired": false,
+      "uploaded_at": "2026-01-12T08:03:11+00:00",
+      "reviewed_at": "2026-01-14T10:00:00+00:00",
+      "download_url": "https://www.cameroontimberhub.com/api/v1/company/documents/5/download"
+    }
+  ]
+}
+```
+
+A company with no documents yet: `{ "data": [] }`, `200`.
+
+### `GET /api/v1/orders/ORD-2026-001/documents`
+
+```json
+{
+  "data": [
+    {
+      "id": 21,
+      "kind": "bill_of_lading",
+      "label": "Bill of lading",
+      "original_filename": "BL_ORD-2026-001.pdf",
+      "file_size": 190532,
+      "uploaded_at": "2026-05-02T14:22:01+00:00",
+      "download_url": "https://www.cameroontimberhub.com/api/v1/orders/ORD-2026-001/documents/21/download"
+    }
+  ]
+}
+```
+
+An order with no documents yet: `{ "data": [] }`, `200`.
 
 ### `GET /api/v1/products?per_page=1`
 
