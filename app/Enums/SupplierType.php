@@ -10,6 +10,7 @@ namespace App\Enums;
 enum SupplierType: string
 {
     case Manufacturer = 'manufacturer';
+    case Processor = 'processor';
     case Exporter = 'exporter';
     case Trader = 'trader';
     case ServiceProvider = 'service_provider';
@@ -19,6 +20,7 @@ enum SupplierType: string
     {
         return match ($this) {
             self::Manufacturer => 'Manufacturer',
+            self::Processor => 'Processor',
             self::Exporter => 'Exporter',
             self::Trader => 'Trader',
             self::ServiceProvider => 'Service Provider',
@@ -31,6 +33,7 @@ enum SupplierType: string
     {
         return match ($this) {
             self::Manufacturer => 'Manufacturers',
+            self::Processor => 'Processors',
             self::Exporter => 'Exporters',
             self::Trader => 'Traders',
             self::ServiceProvider => 'Service Providers',
@@ -43,6 +46,7 @@ enum SupplierType: string
     {
         return match ($this) {
             self::Manufacturer => 'building-office-2',
+            self::Processor => 'building-office-2',
             self::Exporter => 'globe-alt',
             self::Trader => 'arrows-right-left',
             self::ServiceProvider => 'wrench-screwdriver',
@@ -55,6 +59,7 @@ enum SupplierType: string
     {
         return match ($this) {
             self::Manufacturer => 'success',
+            self::Processor => 'success',
             self::Exporter => 'info',
             self::Trader => 'warning',
             self::ServiceProvider => 'gray',
