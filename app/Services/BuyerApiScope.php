@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Order;
 use App\Models\Quote;
+use App\Models\Receipt;
 use App\Models\Rfq;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
@@ -79,6 +80,33 @@ class BuyerApiScope
     {
         return $this->orders($buyer)
             ->where('reference_code', $reference)
+            ->firstOrFail();
+    }
+
+    /**
+     * Live (non-voided) receipts for this buyer's own orders — via
+     * `BuyerDashboard::receipts()`, the same query `/account/receipts`
+     * already uses. A voided receipt never appears here: void status is a
+     * post-issuance correction (fraud, duplicate, reversed order), so it is
+     * not a valid receipt to hand back to a buyer any more, even though the
+     * hash-chain row itself is immutable and stays on record for the
+     * verification endpoint.
+     */
+    public function receipts(User $buyer): Builder
+    {
+        return app(BuyerDashboard::class)->receipts($buyer)->orderByDesc('issued_at');
+    }
+
+    /**
+     * One of the buyer's own LIVE receipts by receipt number, or 404 — for
+     * a voided receipt's number and for another buyer's receipt number
+     * alike, so neither is distinguishable from a number that was never
+     * issued at all (same enumeration-safety convention as `order()`).
+     */
+    public function receipt(User $buyer, string $receiptNumber): Receipt
+    {
+        return $this->receipts($buyer)
+            ->where('receipt_number', $receiptNumber)
             ->firstOrFail();
     }
 }

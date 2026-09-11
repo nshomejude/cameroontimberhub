@@ -395,6 +395,19 @@ Two independent families — don't confuse them:
 
 **Download mechanism — both families stream the bytes directly through this authenticated API response**, rather than handing back a link to the web's signed `documents.download` / `order-documents.download` routes. Those web routes sit behind session (`auth`) middleware on top of their signed-URL check, and a Sanctum-token-only mobile client never carries a web session — a signed link to them would just redirect to a login page the app can't complete. `download_url` in both resources points back at these same `/api/v1/...` endpoints (still useful as a stable, bookmarkable reference), and both controllers call straight into the existing `DocumentService`/`OrderDocumentService` — the same storage/streaming/access-logging code the web uses, so there is no second download path.
 
+### Receipts
+
+The buyer's own **live (non-voided) receipts** — the API counterpart of `/account/receipts` and the printable `orders/{order}/receipt` web view. `Receipt` is a hash-chained, immutable attestation record ("the platform issued this document, for this order, for this amount, on this date") — **not** proof of payment, and not the same thing as an `Invoice`. Scoped through the same buyer-owns-the-underlying-order boundary as Orders/Trade Assurance/Disputes/Documents above.
+
+| Method | Path | Auth | Purpose |
+|---|---|---|---|
+| GET | `/receipts` | 🔑 buyer | The buyer's own live receipts, paginated (15/page), newest-issued-first (`ReceiptResource`). No receipts → `{ "data": [] }`, `200`. |
+| GET | `/receipts/{receiptNumber}` | 🔑 buyer | One receipt by its `receipt_number` (the public, opaque identifier — not a numeric id). |
+
+A receipt is data, not a file — the web "print view" is this same data in a Blade template with `window.print()`, so **there is no download/PDF endpoint**: `ReceiptResource` already carries everything a client needs to render its own receipt screen (`receipt_number`, `amount` as a raw decimal string, `currency`, `issued_at`, `verification_status` — always `AUTHENTIC` here, since void ones never reach this API — `verification_url`, and a minimal nested `order` reference: `reference`, `supplier_name`, `status`). Need the full order? Follow `order.reference` into `GET /orders/{reference}`.
+
+A **voided receipt never appears** here — neither in the list nor by its number (`404`, same as another buyer's) — even though the underlying hash-chain row is immutable and stays on record. This differs from the public, unauthenticated `/verify` web page, which deliberately still reports a voided receipt's status as `VOID` (a paper-copy holder needs to be able to confirm a revocation); this authenticated buyer API instead treats a void as "not a valid receipt to show any more."
+
 ### Messaging — plain buyer<->supplier chat
 
 | Method | Path | Auth | Purpose |

@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\V1\OrderController;
 use App\Http\Controllers\Api\V1\OrderDocumentController;
 use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\QuoteController;
+use App\Http\Controllers\Api\V1\ReceiptController;
 use App\Http\Controllers\Api\V1\RfqController;
 use App\Http\Controllers\Api\V1\SearchController;
 use App\Http\Controllers\Api\V1\SpeciesController;
@@ -27,8 +28,8 @@ use Illuminate\Support\Facades\Route;
 | could bypass anti-spam, the verification gate, the state machines or the
 | authorisation rules.
 |
-| v1 is browse + RFQ + quotes + orders + Trade Assurance view/confirm.
-| Messaging, documents, receipts and reorder stay on the web for now.
+| v1 is browse + RFQ + quotes + orders + Trade Assurance view/confirm +
+| documents + receipts. Reorder stays on the web for now.
 |
 */
 
@@ -212,6 +213,15 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
 
         Route::get('orders/{orderReference}/documents/{document}/download', [OrderDocumentController::class, 'download'])
             ->name('orders.documents.download');
+
+        // Receipts (this task): the buyer's own live (non-voided) receipts,
+        // read-only, API counterpart of `/account/receipts`. Same
+        // buyer-owns-the-underlying-order boundary as everything else in
+        // this group, via BuyerApiScope::receipts()/receipt(). See
+        // ReceiptController's docblock for why there is no download/PDF
+        // route alongside these two.
+        Route::get('receipts', [ReceiptController::class, 'index'])->name('receipts.index');
+        Route::get('receipts/{receiptNumber}', [ReceiptController::class, 'show'])->name('receipts.show');
     });
 
     /* ----------------------------------------------- supplier (authenticated) */
