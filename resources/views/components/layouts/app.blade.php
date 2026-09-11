@@ -300,6 +300,11 @@
                     'text-forest-700' => request()->routeIs('contact'),
                     'text-ink hover:text-forest-700' => ! request()->routeIs('contact'),
                 ])>{{ __('messages.nav.contact') }}</a>
+                <a href="{{ route('mobile.app') }}" @class([
+                    'py-2 text-sm font-medium transition',
+                    'text-forest-700' => request()->routeIs('mobile.app'),
+                    'text-ink hover:text-forest-700' => ! request()->routeIs('mobile.app'),
+                ])>{{ __('messages.nav.mobile_app') }}</a>
             </nav>
 
             {{-- Desktop auth actions --}}
@@ -353,6 +358,7 @@
                     @endforeach
                     <a href="{{ route('about') }}" class="block rounded-lg px-3 py-3 text-[15px] font-medium text-ink">{{ __('messages.nav.about_us') }}</a>
                     <a href="{{ route('contact') }}" class="block rounded-lg px-3 py-3 text-[15px] font-medium text-ink">{{ __('messages.nav.contact') }}</a>
+                    <a href="{{ route('mobile.app') }}" class="block rounded-lg px-3 py-3 text-[15px] font-medium text-ink">{{ __('messages.nav.mobile_app') }}</a>
                     <p class="px-3 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wider text-ink-soft">{{ __('messages.nav.resources') }}</p>
                     @foreach ($resources as $r)
                         <a href="{{ $r['url'] }}" class="block rounded-lg px-3 py-2.5 text-[15px] text-ink">{{ $r['label'] }}</a>
@@ -460,6 +466,7 @@
                         [__('messages.footer.link_about_us'), '/about'],
                         [__('messages.footer.link_how_it_works'), '/how-it-works'],
                         [__('messages.footer.link_pricing'), '/pricing'],
+                        [__('messages.footer.link_mobile_app'), route('mobile.app')],
                         [__('messages.footer.link_contact_us'), '/contact'],
                     ]],
                     ['title' => __('messages.footer.col_resources'), 'links' => [
