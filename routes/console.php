@@ -13,6 +13,10 @@ Artisan::command('inspire', function () {
 // B3): walks the chain in issue order and alerts on the first tampered row.
 Schedule::command('receipts:verify-chain')->daily();
 
+// Invoice + credit-note integrity hash-chain verification (billing engine
+// M4): same discipline as receipts — alerts on the first tampered row.
+Schedule::command('invoices:verify-chain')->daily();
+
 // Compliance daily maintenance.
 Schedule::command('compliance:expire-badges')->dailyAt('06:30');
 Schedule::command('compliance:remind-expiring')->dailyAt('07:00');

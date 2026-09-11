@@ -7,6 +7,7 @@ use App\Domain\Compliance\Events\ComplianceCaseOpened;
 use App\Domain\Logistics\Events\ShipmentCheckpointRecorded;
 use App\Domain\Trade\Events\OrderAwarded;
 use App\Listeners\ActivateSubscriptionOnPaymentCompleted;
+use App\Listeners\IssueInvoiceOnPaymentCompleted;
 use App\Listeners\IssueReceiptOnPaymentCompleted;
 use App\Events\BadgeIssued;
 use App\Events\BadgeRevoked;
@@ -71,6 +72,9 @@ class EventServiceProvider extends ServiceProvider
             // Billing engine M11: issue the verifiable Receipt for the charge.
             // Idempotent by payment_id; joins the receipt hash-chain.
             IssueReceiptOnPaymentCompleted::class,
+            // Billing engine M4: issue the immutable, hash-chained Invoice.
+            // Idempotent by payment_id; joins the invoice hash-chain.
+            IssueInvoiceOnPaymentCompleted::class,
         ],
         // No listener yet — dispatched for future consumers (webhooks,
         // notifications), same pattern as DocumentApproved/BadgeIssued above.

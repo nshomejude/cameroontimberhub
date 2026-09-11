@@ -39,9 +39,9 @@ it('serves both panel login pages', function () {
 it('seeds the canonical RBAC roles and permissions', function () {
     $this->seed(RolesAndPermissionsSeeder::class);
 
-    expect(Permission::count())->toBe(27);
-    expect(Role::findByName('super_admin', 'web')->permissions)->toHaveCount(27);
-    expect(Role::findByName('admin', 'web')->permissions)->toHaveCount(22);
+    expect(Permission::count())->toBe(28);
+    expect(Role::findByName('super_admin', 'web')->permissions)->toHaveCount(28);
+    expect(Role::findByName('admin', 'web')->permissions)->toHaveCount(23);
     expect(Role::findByName('verification_officer', 'web')->permissions)->toHaveCount(7);
     expect(Role::findByName('content_manager', 'web')->permissions)->toHaveCount(3);
     // Admin governance segregation of duties (blueprint §88, §89).
@@ -49,7 +49,7 @@ it('seeds the canonical RBAC roles and permissions', function () {
     expect(Role::findByName('billing_officer', 'web')->permissions)->toHaveCount(3);
     // Payment/gateway-credential authority (billing engine M12).
     // + pricing.manage (billing engine M5 — admin Tax Rules resource).
-    expect(Role::findByName('finance_officer', 'web')->permissions)->toHaveCount(2);
+    expect(Role::findByName('finance_officer', 'web')->permissions)->toHaveCount(3);
 });
 
 it('gates panel access by role and company membership', function () {

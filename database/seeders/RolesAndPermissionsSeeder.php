@@ -53,6 +53,11 @@ class RolesAndPermissionsSeeder extends Seeder
         // (super_admin + finance_officer only) and deliberately NOT to the
         // broader `admin` role — consistent with payments.manage.
         'pricing.manage',
+        // Gates the admin Invoices + Credit Notes resources (billing engine
+        // M4). Financial/billing authority — granted to super_admin, `admin`
+        // and `finance_officer`. The public /billing/invoices/{invoice}
+        // print view is authorised by company membership, NOT this permission.
+        'billing.view',
         // Added for the Market Intelligence dashboard (blueprint §33-34):
         // gates the Price/Demand/Supplier Performance index page.
         'market-intelligence.view',
@@ -93,6 +98,8 @@ class RolesAndPermissionsSeeder extends Seeder
             // every critical system, so these newly-introduced granular
             // permissions are added here too -- nothing existing is removed.
             'compliance.manage', 'payments.view',
+            // Invoices + Credit Notes admin resources (billing engine M4).
+            'billing.view',
             // Market Intelligence dashboard (blueprint §33-34): admin-only.
             'market-intelligence.view',
             // Blueprint §25 anti-fraud detection: admin-only.
@@ -133,6 +140,7 @@ class RolesAndPermissionsSeeder extends Seeder
         'finance_officer' => [
             'payments.manage',
             'pricing.manage',
+            'billing.view',
         ],
     ];
 

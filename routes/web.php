@@ -34,6 +34,7 @@ use App\Http\Controllers\Public\MobileAppController;
 use App\Http\Controllers\Public\OrderLifecycleController;
 use App\Http\Controllers\Public\PageController;
 use App\Http\Controllers\Public\BillingCheckoutController;
+use App\Http\Controllers\Public\BillingDocumentController;
 use App\Http\Controllers\Public\PricingController;
 use App\Http\Controllers\Public\ProductController;
 use App\Http\Controllers\Public\ProductVerificationController;
@@ -119,6 +120,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/billing/checkout/{payment}/pending', [BillingCheckoutController::class, 'pending'])->name('billing.checkout.pending');
     Route::get('/billing/checkout/{payment}/status', [BillingCheckoutController::class, 'status'])->name('billing.checkout.status');
     Route::get('/billing/checkout/{payment}/success', [BillingCheckoutController::class, 'success'])->name('billing.checkout.success');
+
+    // Billing engine M4: immutable invoice + credit-note print/PDF views.
+    Route::get('/billing/invoices/{invoice}', [BillingDocumentController::class, 'invoice'])->name('billing.invoices.show');
+    Route::get('/billing/credit-notes/{creditNote}', [BillingDocumentController::class, 'creditNote'])->name('billing.credit-notes.show');
 });
 
 // Buyer mobile app marketing page + "notify me at launch" capture. Static
