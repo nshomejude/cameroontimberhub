@@ -93,7 +93,10 @@ it('renders receipts and payment history scoped to the company', function () {
         'currency' => 'XAF',
     ]);
 
-    $otherPayment = Payment::factory()->completed()->create(['company_id' => Company::factory()->create()->id]);
+    $otherPayment = Payment::factory()->completed()->create([
+        'company_id' => Company::factory()->create()->id,
+        'plan_id' => $plan->id,
+    ]);
 
     $this->actingAs(billingMember($company))->get(route('billing.overview'))
         ->assertOk()
