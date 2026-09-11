@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\V1\OrderDocumentController;
 use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\QuoteController;
 use App\Http\Controllers\Api\V1\ReceiptController;
+use App\Http\Controllers\Api\V1\CompanyReviewController;
 use App\Http\Controllers\Api\V1\ReorderController;
 use App\Http\Controllers\Api\V1\RfqController;
 use App\Http\Controllers\Api\V1\SearchController;
@@ -225,6 +226,18 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
 
         Route::post('orders/{orderReference}/reorder', [ReorderController::class, 'store'])
             ->middleware('throttle:api-decision')->name('orders.reorder.store');
+
+        // Order review (buyer-initiated only): the buyer's own review of the
+        // supplier on a completed order, via CompanyReviewService — the same
+        // one-per-order rule and `isReviewable()` eligibility the web form
+        // already enforces. Same buyer-owns-the-order boundary as every route
+        // above, via BuyerApiScope::order(). See CompanyReviewController's
+        // docblock for the eligibility-is-always-200 decision.
+        Route::get('orders/{orderReference}/review', [CompanyReviewController::class, 'eligibility'])
+            ->name('orders.review.eligibility');
+
+        Route::post('orders/{orderReference}/review', [CompanyReviewController::class, 'store'])
+            ->middleware('throttle:api-decision')->name('orders.review.store');
 
         // Receipts (this task): the buyer's own live (non-voided) receipts,
         // read-only, API counterpart of `/account/receipts`. Same

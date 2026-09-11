@@ -421,6 +421,19 @@ No price field exists on the request body, and none is read — a buyer never se
 
 `POST` is idempotent for the ordinary case: while a reorder is already open, a second call returns the **same** `data.message.id` rather than creating a duplicate — mirrors `GET .../reorder`'s `in_progress` flag, so there is no state where the client needs to guess. Only the genuine concurrent-request race (two POSTs landing at once) surfaces as `409 reorder_already_open`; any other domain refusal (order not eligible after all, no line items to repeat) is `422 reorder_not_eligible`.
 
+### Reviews — rating a supplier on a completed order
+
+Buyer-initiated only. A review is anchored to a specific order (`App\Services\CompanyReviewService`): to review a supplier a buyer must own the order and the order's status must be `completed`. One review per order — a database UNIQUE index on `order_id` backs the rule the service already checks.
+
+| Method | Path | Auth | Purpose |
+|---|---|---|---|
+| GET | `/orders/{orderReference}/review` | 🔑 buyer | Eligibility check. Always `200`. `data.eligible` (bool); when `false`, `data.reason` carries the real refusal text (e.g. "You can review a supplier once the order is completed." or "You have already reviewed this order."). `data.existing_review` is the buyer's own prior review on this order (`id`, `rating`, `body`, `status`, `status_label`, `created_at`), or `null`. |
+| POST | `/orders/{orderReference}/review` | 🔑 buyer | Submit the review. Body: `{ "rating": 1-5 (required), "body": "..." (optional, up to 5000 chars) }`. → `201` with the created review (`CompanyReviewResource`). Rate-limited (`throttle:api-decision`). |
+
+A review is **published immediately** — there is no pending-moderation state on creation (`CompanyReviewService::create()` always writes `status: published`); `status`/`status_label` are still surfaced honestly in case moderation later takes it down. Publishing a review recomputes the supplier's `rating_avg`/`rating_count` automatically (`CompanyReviewService::recompute()`, called from inside `create()`).
+
+A second `POST` on the same order — by the same buyer or a race between two requests — is blocked by the service's real guard (the eligibility check, or the UNIQUE index catching a concurrent write) and surfaces as `422 review_not_eligible`, never a silent duplicate.
+
 ### Messaging — plain buyer<->supplier chat
 
 | Method | Path | Auth | Purpose |
