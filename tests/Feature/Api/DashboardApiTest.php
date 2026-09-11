@@ -61,6 +61,9 @@ it('returns the buyer dashboard feed with no web urls', function () {
         ->getJson('/api/v1/dashboard')
         ->assertOk();
 
+    expect(array_key_first($response->json('data')))->toBe('role')
+        ->and($response->json('data.role'))->toBe('buyer');
+
     $stats = $response->json('data.stats');
     expect($stats)->not->toBeEmpty();
 
@@ -101,13 +104,42 @@ it('requires buyer auth for the dashboard', function () {
     $this->getJson('/api/v1/dashboard')->assertUnauthorized();
 });
 
-it('rejects a non-buyer (supplier) account the same way other buyer endpoints do', function () {
+/**
+ * Product-scope change (RBAC foundation): the dashboard route moved from
+ * `api.buyer`-only to "any authenticated user". A supplier still 403s on
+ * buyer-only routes like /orders (unchanged), but the dashboard now
+ * returns 200 with an honest empty-but-valid `supplier` payload instead of
+ * a 403 — a 403 there would be indistinguishable from a permissions bug to
+ * the mobile client. This intentionally replaces the old
+ * "rejects a non-buyer (supplier) account" expectation.
+ */
+it('gives a supplier an empty-but-valid dashboard instead of a 403', function () {
     $supplierUser = User::factory()->create();
     $company = Company::factory()->create();
     $company->users()->attach($supplierUser);
 
-    $ordersResponse = $this->actingAs($supplierUser, 'sanctum')->getJson('/api/v1/orders');
-    $dashboardResponse = $this->actingAs($supplierUser, 'sanctum')->getJson('/api/v1/dashboard');
+    $this->actingAs($supplierUser, 'sanctum')->getJson('/api/v1/orders')->assertForbidden();
 
-    $dashboardResponse->assertStatus($ordersResponse->getStatusCode());
+    $this->actingAs($supplierUser, 'sanctum')
+        ->getJson('/api/v1/dashboard')
+        ->assertOk()
+        ->assertJsonPath('data.role', 'supplier')
+        ->assertJsonCount(0, 'data.stats')
+        ->assertJsonCount(0, 'data.recent_orders')
+        ->assertJsonCount(0, 'data.recent_quotes')
+        ->assertJsonCount(0, 'data.top_suppliers')
+        ->assertJsonCount(0, 'data.activity')
+        ->assertJsonPath('data.orders_by_status', null)
+        ->assertJsonPath('data.value_trend', null);
+});
+
+it('gives staff an empty-but-valid dashboard instead of a 403', function () {
+    $staffUser = User::factory()->create();
+    $staffUser->assignRole('admin');
+
+    $this->actingAs($staffUser, 'sanctum')
+        ->getJson('/api/v1/dashboard')
+        ->assertOk()
+        ->assertJsonPath('data.role', 'staff')
+        ->assertJsonCount(0, 'data.recent_orders');
 });

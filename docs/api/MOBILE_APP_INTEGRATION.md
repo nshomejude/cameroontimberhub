@@ -1,8 +1,28 @@
 # Cameroon Timber Hub — Mobile App Integration Guide (`/api/v1`)
 
-Everything an Expo / React Native developer needs to build the **buyer app**
-against the CTH backend. This is a hand-off summary; the authoritative,
-always-current contract is the generated OpenAPI spec.
+Everything an Expo / React Native developer needs to build the mobile app —
+now serving **buyers, suppliers and staff** — against the CTH backend. This
+is a hand-off summary; the authoritative, always-current contract is the
+generated OpenAPI spec.
+
+### Populations
+
+The app now serves three populations from one `/api/v1` surface:
+
+- **buyer** — a signed-in `User` who is neither platform staff nor a member
+  of a supplier company. Reaches the RFQ/quote/order/trade-assurance/
+  dispute/messaging endpoints (`api.buyer` gate).
+- **supplier** — a signed-in `User` who belongs to at least one company
+  (`company_user`). Reaches the shared endpoints (catalogue, search,
+  dashboard) plus any route behind the `api.supplier` gate. Cannot reach the
+  buyer-only endpoints above — a supplier acts as a supplier, not a buyer.
+- **staff** — a signed-in `User` holding one of the platform staff spatie
+  roles (`super_admin`, `admin`, `verification_officer`,
+  `content_manager`). Same shared-endpoint access as a supplier; the admin
+  panel itself stays on the web.
+
+`GET /api/v1/auth/me` (and the register response) tells the client which
+population it is via `role`, so the client never has to infer it.
 
 | Resource | URL |
 |---|---|
@@ -23,8 +43,11 @@ always-current contract is the generated OpenAPI spec.
 Sanctum bearer tokens. Send `Authorization: Bearer <token>` on authenticated calls.
 
 - **Public** (no token): `products`, `products/{slug}`, `species`, `species/{slug}`, `suppliers`, `suppliers/{slug}`, `search`.
-- **Buyer** (token required): everything under RFQs, quotes, orders, trade assurance, disputes. The token holder must be a **buyer** — a signed-in `User` who is *not* platform staff and *not* a member of a supplier company. A staff/supplier token gets `403 forbidden`; no token gets `401 unauthenticated`.
-- Supplier onboarding and the exporter dashboard stay on the web. The mobile app is buyer-only.
+- **Any authenticated user**: `dashboard` (shape switches on `role`, see §Dashboard).
+- **Buyer** (token required, `api.buyer` gate): everything under RFQs, quotes, orders, trade assurance, disputes, messaging. The token holder must be a **buyer** — a signed-in `User` who is *not* platform staff and *not* a member of a supplier company. A staff/supplier token gets `403 forbidden`; no token gets `401 unauthenticated`.
+- **Supplier** (token required, `api.supplier` gate): reserved for future supplier-only endpoints — a signed-in `User` who belongs to at least one company. None of the RFQ/quote/order/trade-assurance/dispute/messaging endpoints are supplier-reachable; those stay buyer-only by design.
+- Supplier **onboarding UI** and the exporter dashboard stay on the web; a supplier account can now be *created* from the mobile app (see Register below), but day-to-day supplier operations (product management, quote authoring) remain a web-only follow-up.
+- Messaging (`/conversations/*`) is `api.buyer`-only today. Opening it to suppliers (so a supplier can reply to a buyer thread from the app) is a documented follow-up, not yet built — see the Messaging section.
 
 ### Register
 
@@ -32,15 +55,35 @@ Sanctum bearer tokens. Send `Authorization: Bearer <token>` on authenticated cal
 
 ```json
 {
+  "account_type": "buyer",                 // optional, "buyer" (default) or "supplier"
   "name": "Amara Okafor",
   "email": "amara@buildright.ng",
   "password": "your-password",
-  "password_confirmation": "your-password",
-  "device_name": "amara-pixel-8"          // optional; labels the token, defaults to "mobile"
+  "device_name": "amara-pixel-8"           // optional; labels the token, defaults to "mobile"
 }
 ```
 
-`201 Created`:
+For `account_type: "supplier"`, add the company fields (mirrors the web
+supplier-registration flow — same `RegisterAccount` action, no second write
+path):
+
+```json
+{
+  "account_type": "supplier",
+  "name": "Sam Chia",
+  "email": "sam@timberco.cm",
+  "password": "your-password",
+  "company_name": "Sam Timber Co",         // required for account_type: supplier
+  "company_phone": "+237...",              // optional
+  "company_city": "Douala",                // optional
+  "company_country": "CM",                 // optional, defaults to "CM"
+  "company_registration_number": "..."     // optional
+}
+```
+
+`201 Created` — the response now carries the same `role`/`roles`/`company`/
+`capabilities` fields as `GET /auth/me` (see below), so the client has full
+identity info immediately and does not need a second call:
 
 ```json
 {
@@ -49,13 +92,19 @@ Sanctum bearer tokens. Send `Authorization: Bearer <token>` on authenticated cal
     "user": {
       "id": 42, "name": "Amara Okafor", "email": "amara@buildright.ng",
       "email_verified": false, "email_verified_at": null,
-      "created_at": "2026-09-10T08:00:00+00:00"
+      "created_at": "2026-09-10T08:00:00+00:00",
+      "role": "buyer", "roles": [], "company": null,
+      "capabilities": ["rfq.create", "quote.respond", "order.view", "dispute.file", "trade_assurance.confirm", "message.send"]
     }
   }
 }
 ```
 
-`account_type` is forced to `buyer` server-side — you cannot register a supplier here.
+Only `buyer` and `supplier` are accepted here — the other web-only
+account-forming types (`processor`, `artisan`, `carbon_developer`,
+`logistics_partner`, `carbon_buyer`) are `422` on this endpoint. Omitting
+`account_type` registers a buyer, exactly as before this change — existing
+clients need no update.
 
 ### Log in
 
@@ -73,8 +122,47 @@ Sanctum bearer tokens. Send `Authorization: Bearer <token>` on authenticated cal
 
 | | |
 |---|---|
-| `GET /api/v1/auth/me` | `{ "data": { …UserResource } }` |
+| `GET /api/v1/auth/me` | `{ "data": { …UserResource } }` — see below |
 | `POST /api/v1/auth/logout` | `204 No Content`. Revokes **only the calling token** — other devices stay signed in. |
+
+`UserResource` now carries the RBAC fields every population needs:
+
+```json
+{
+  "data": {
+    "id": 1, "name": "...", "email": "...", "email_verified": true,
+    "email_verified_at": "...", "created_at": "...",
+    "role": "buyer",           // "buyer" | "supplier" | "staff"
+    "roles": [],                // raw spatie role names, e.g. ["admin"] for staff
+    "company": null,            // null for buyer/staff; populated for a supplier — see below
+    "capabilities": ["rfq.create", "quote.respond", "order.view", "dispute.file", "trade_assurance.confirm", "message.send"]
+  }
+}
+```
+
+`role` resolution: staff first (`hasAnyRole` on the platform staff spatie
+roles), then company membership (`supplier`), then plain `buyer`. A user who
+is both staff and a company member gets `staff` — staff wins.
+
+For a **supplier**, `company` is populated with the user's primary company
+(the `company_user` pivot row flagged `is_primary`, or the first membership
+if none is flagged):
+
+```json
+"company": { "id": 5, "slug": "sam-timber-co", "name": "Sam Timber Co", "role": "owner", "status": "verified" }
+```
+
+`capabilities` is a short, explicit list — every entry is either backed by
+a real Gate/Policy or is an ad-hoc boolean computed server-side because no
+named policy exists yet for that action on the buyer/supplier population
+(see `App\Http\Resources\Api\V1\UserResource` for exactly which is which):
+
+| Capability | Role | Backing |
+|---|---|---|
+| `rfq.create`, `quote.respond`, `order.view`, `dispute.file`, `trade_assurance.confirm`, `message.send` | buyer | Ad-hoc — mirrors the `api.buyer` middleware population gate + query-level ownership scoping; no named Policy exists for these yet. |
+| `product.manage` | supplier, owner/manager pivot role only | Ad-hoc — mirrors `CompanyUserRole::canManage()`. NOT backed by `ProductPolicy`'s `products.manage` permission, which is staff-only in the seeder. |
+| `verification.upload` | supplier | Real — backed by `CompanyDocumentPolicy::create()`, the same policy the exporter panel's document upload flow authorises against. |
+| `admin.access` | staff | Real — the exact role list that gates `User::canAccessPanel('admin')`. |
 
 ### Token storage in Expo
 
@@ -152,13 +240,47 @@ Auth column: 🌐 public · 🔑 buyer token.
 | GET | `/suppliers/{slug}` | 🌐 | One supplier profile (`SupplierDetailResource`). |
 | GET | `/search` | 🌐 | Cross-entity search. Query: `q` (required). Returns grouped product / species / supplier hits. |
 
-### Dashboard — the buyer app home screen
+### Dashboard — home screen, role-switched
 
 | Method | Path | Auth | Purpose |
 |---|---|---|---|
-| GET | `/dashboard` | 🔑 | Stats, recent orders/quotes, top suppliers, order-status breakdown, value trend and an activity trail — all server-computed via the same `BuyerDashboard` service the web `/account` dashboard uses. |
+| GET | `/dashboard` | 🔑 any authenticated user | Stats, recent orders/quotes, top suppliers, order-status breakdown, value trend and an activity trail. Shape depends on `data.role`, always the **first key** in the payload. |
 
-`stats[]` and `activity[]` intentionally omit the `url` field the web dashboard's own payload carries internally — a Laravel `route()` URL is meaningless (and would 404) in a native app or a WebView. `stats[]` items carry a stable `key` instead (e.g. `active_rfqs`, `quotes_awaiting`, `active_orders`, `orders_in_progress`, `suppliers`) so the client can map its own icon/action without parsing `label`. `activity[]` items carry `type` (`quote_received` | `order_status_changed`) + `reference` instead — hand `reference` to the existing `GET /quotes/{reference}` or `GET /orders/{reference}` endpoint to navigate; no new mapping table is needed. `recent_orders`/`recent_quotes`/`top_suppliers` are capped at 5 and shaped with the same `OrderResource`/`QuoteResource`/`SupplierResource` used elsewhere. `orders_by_status` and `value_trend` are `null` for a buyer with no orders yet (empty state), not an error.
+**`role: "buyer"`** — the full feed, server-computed via the same
+`BuyerDashboard` service the web `/account` dashboard uses. `stats[]` and
+`activity[]` intentionally omit the `url` field the web dashboard's own
+payload carries internally — a Laravel `route()` URL is meaningless (and
+would 404) in a native app or a WebView. `stats[]` items carry a stable
+`key` instead (e.g. `active_rfqs`, `quotes_awaiting`, `active_orders`,
+`orders_in_progress`, `suppliers`) so the client can map its own icon/action
+without parsing `label`. `activity[]` items carry `type`
+(`quote_received` | `order_status_changed`) + `reference` instead — hand
+`reference` to the existing `GET /quotes/{reference}` or
+`GET /orders/{reference}` endpoint to navigate; no new mapping table is
+needed. `recent_orders`/`recent_quotes`/`top_suppliers` are capped at 5 and
+shaped with the same `OrderResource`/`QuoteResource`/`SupplierResource`
+used elsewhere. `orders_by_status` and `value_trend` are `null` for a buyer
+with no orders yet (empty state), not an error.
+
+**`role: "supplier"`** and **`role: "staff"`** — an honest **empty-but-valid**
+payload, `200 OK`, not `403`/`404` (a 403 there would be indistinguishable
+from a permissions bug to the client):
+
+```json
+{
+  "data": {
+    "role": "supplier",
+    "stats": [], "recent_orders": [], "recent_quotes": [],
+    "top_suppliers": [], "orders_by_status": null, "value_trend": null,
+    "activity": []
+  }
+}
+```
+
+Field names/shapes are identical across all three roles for shared concepts
+(e.g. `recent_orders` is always the same `OrderResource` shape) even though
+a supplier's/staff's version is `[]` today — building the real supplier
+dashboard (own RFQ inbox, sales figures, …) is a separate follow-up task.
 
 ### RFQs — the buyer's request for quotation
 
@@ -297,6 +419,7 @@ state machines and authorization behave identically to the web.
 ```json
 {
   "data": {
+    "role": "buyer",
     "stats": [
       { "key": "active_rfqs", "label": "Active requests", "value": 0, "hint": "Open RFQs still collecting quotes", "delta": null, "icon": "document-text" },
       { "key": "quotes_awaiting", "label": "Quotes to review", "value": 0, "hint": "Live offers you can still accept or decline", "delta": null, "icon": "tag" },

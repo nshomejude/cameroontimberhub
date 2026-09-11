@@ -52,13 +52,91 @@ it('adopts account-free RFQs raised under the same address at registration', fun
     expect($rfq->fresh()->user_id)->toBe(User::whereEmail('legacy@example.com')->value('id'));
 });
 
-it('never leaks the password hash or roles through the account payload', function () {
+it('never leaks the password hash through the account payload', function () {
     $user = User::factory()->create();
 
     $response = $this->actingAs($user, 'sanctum')->getJson('/api/v1/auth/me')->assertOk();
 
     expect(array_keys($response->json('data')))
-        ->toEqualCanonicalizing(['id', 'name', 'email', 'email_verified', 'email_verified_at', 'created_at']);
+        ->toEqualCanonicalizing(['id', 'name', 'email', 'email_verified', 'email_verified_at', 'created_at', 'role', 'roles', 'company', 'capabilities']);
+});
+
+/* --------------------------------------------------------- RBAC (auth/me) */
+
+it('resolves role/roles/company/capabilities for a plain buyer', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user, 'sanctum')->getJson('/api/v1/auth/me')
+        ->assertOk()
+        ->assertJsonPath('data.role', 'buyer')
+        ->assertJsonPath('data.roles', [])
+        ->assertJsonPath('data.company', null)
+        ->assertJsonPath('data.capabilities', ['rfq.create', 'quote.respond', 'order.view', 'dispute.file', 'trade_assurance.confirm', 'message.send']);
+});
+
+it('resolves role/roles/company/capabilities for a supplier company owner', function () {
+    $user = User::factory()->create();
+    $company = Company::factory()->create();
+    $company->users()->attach($user, ['role' => 'owner', 'is_primary' => true]);
+
+    $response = $this->actingAs($user, 'sanctum')->getJson('/api/v1/auth/me')
+        ->assertOk()
+        ->assertJsonPath('data.role', 'supplier')
+        ->assertJsonPath('data.roles', [])
+        ->assertJsonPath('data.company.id', $company->id)
+        ->assertJsonPath('data.company.role', 'owner');
+
+    expect($response->json('data.capabilities'))->toContain('product.manage');
+});
+
+it('resolves role/roles for staff, staff wins over company membership', function () {
+    $user = User::factory()->create();
+    $user->assignRole('admin');
+    $user->companies()->attach(Company::factory()->create(), ['role' => 'owner', 'is_primary' => true]);
+
+    $this->actingAs($user, 'sanctum')->getJson('/api/v1/auth/me')
+        ->assertOk()
+        ->assertJsonPath('data.role', 'staff')
+        ->assertJsonPath('data.roles', ['admin'])
+        ->assertJsonPath('data.capabilities', ['admin.access']);
+});
+
+/* -------------------------------------------------- supplier registration */
+
+it('registers a supplier with a company and returns role: supplier', function () {
+    $response = $this->postJson('/api/v1/auth/register', [
+        'account_type' => 'supplier',
+        'name' => 'Sam Supplier',
+        'email' => 'sam@example.com',
+        'password' => 'correct-horse-battery-staple',
+        'company_name' => 'Sam Timber Co',
+    ]);
+
+    $response->assertCreated()
+        ->assertJsonPath('data.user.role', 'supplier')
+        ->assertJsonPath('data.user.company.name', 'Sam Timber Co')
+        ->assertJsonPath('data.user.company.role', 'owner');
+
+    $user = User::whereEmail('sam@example.com')->firstOrFail();
+    expect($user->companies()->exists())->toBeTrue();
+});
+
+it('rejects supplier registration missing the required company fields', function () {
+    $this->postJson('/api/v1/auth/register', [
+        'account_type' => 'supplier',
+        'name' => 'No Company',
+        'email' => 'nocompany@example.com',
+        'password' => 'correct-horse-battery-staple',
+    ])->assertStatus(422)->assertJsonValidationErrors('company_name', 'error.details');
+});
+
+it('rejects an invalid account_type with a 422', function () {
+    $this->postJson('/api/v1/auth/register', [
+        'account_type' => 'processor',
+        'name' => 'Bad Type',
+        'email' => 'badtype@example.com',
+        'password' => 'correct-horse-battery-staple',
+    ])->assertStatus(422)->assertJsonValidationErrors('account_type', 'error.details');
 });
 
 it('rejects a duplicate email with a 422', function () {
@@ -186,4 +264,24 @@ it('keeps supplier and staff accounts out of the buyer commerce endpoints', func
     $staff->assignRole('admin');
 
     $this->actingAs($staff, 'sanctum')->getJson('/api/v1/rfqs')->assertForbidden();
+});
+
+it('lets a supplier reach the shared routes (products/search/dashboard) despite being blocked from buyer-only ones', function () {
+    $supplier = User::factory()->create();
+    $supplier->companies()->attach(Company::factory()->create(), ['role' => 'owner', 'is_primary' => true]);
+
+    $this->actingAs($supplier, 'sanctum')->getJson('/api/v1/products')->assertOk();
+    $this->actingAs($supplier, 'sanctum')->getJson('/api/v1/search?q=sapele')->assertOk();
+    $this->actingAs($supplier, 'sanctum')->getJson('/api/v1/dashboard')->assertOk();
+
+    // Still not a buyer.
+    $this->actingAs($supplier, 'sanctum')->getJson('/api/v1/rfqs')->assertForbidden();
+});
+
+it('still lets a buyer reach every buyer-only route (regression)', function () {
+    $buyer = User::factory()->create();
+
+    $this->actingAs($buyer, 'sanctum')->getJson('/api/v1/rfqs')->assertOk();
+    $this->actingAs($buyer, 'sanctum')->getJson('/api/v1/orders')->assertOk();
+    $this->actingAs($buyer, 'sanctum')->getJson('/api/v1/dashboard')->assertOk();
 });

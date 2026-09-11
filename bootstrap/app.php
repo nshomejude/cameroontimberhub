@@ -3,6 +3,7 @@
 use App\Exceptions\Api\ErrorEnvelope;
 use App\Http\Middleware\AssignRequestId;
 use App\Http\Middleware\EnsureApiBuyer;
+use App\Http\Middleware\EnsureApiSupplier;
 use App\Http\Middleware\EnsureBuyerAccount;
 use App\Http\Middleware\EnsureDemoLoginsEnabled;
 use App\Http\Middleware\AnnounceDeprecation;
@@ -62,6 +63,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'exporter.onboarded' => EnsureExporterOnboarded::class,
             'buyer' => EnsureBuyerAccount::class,
             'api.buyer' => EnsureApiBuyer::class,
+            'api.supplier' => EnsureApiSupplier::class,
             'demo.logins.enabled' => EnsureDemoLoginsEnabled::class,
             'requires.recent.2fa' => RequiresRecentTwoFactor::class,
             // Emits RFC 8594 Deprecation/Sunset/Link signalling on a route or

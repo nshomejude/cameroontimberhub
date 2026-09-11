@@ -98,15 +98,22 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
 
     Route::get('search', SearchController::class)->name('search');
 
+    /* --------------------------------------------- any authenticated user */
+
+    Route::middleware(['auth:sanctum'])->group(function (): void {
+        // Home-screen feed, open to all three populations (RBAC foundation
+        // — buyer/supplier/staff). DashboardController resolves the caller's
+        // role the same way UserResource::resolveRole() does and switches
+        // shape: a buyer gets the full BuyerDashboard-backed payload; a
+        // supplier or staff member gets an honest empty-but-valid payload
+        // (200, not 403) until their own dashboards are built — see the
+        // controller's docblock.
+        Route::get('dashboard', DashboardController::class)->name('dashboard');
+    });
+
     /* ------------------------------------------------- buyer (authenticated) */
 
     Route::middleware(['auth:sanctum', 'api.buyer'])->group(function (): void {
-        // Buyer app home-screen feed (mobile hand-off): stats, previews and
-        // activity, all server-computed via BuyerDashboard — see
-        // DashboardController's docblock for the url→key/type+reference
-        // reshaping this endpoint does before it leaves the server.
-        Route::get('dashboard', DashboardController::class)->name('dashboard');
-
         Route::get('rfqs', [RfqController::class, 'index'])->name('rfqs.index');
 
         Route::post('rfqs', [RfqController::class, 'store'])

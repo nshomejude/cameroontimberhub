@@ -6,24 +6,37 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\Api\V1\OrderResource;
 use App\Http\Resources\Api\V1\QuoteResource;
 use App\Http\Resources\Api\V1\SupplierResource;
+use App\Http\Resources\Api\V1\UserResource;
 use App\Models\User;
 use App\Services\BuyerDashboard;
 use Illuminate\Http\Request;
 
 /**
- * The buyer app's home-screen feed — the API counterpart of `/account`
- * (the web buyer dashboard partial views), reshaped for a native client.
+ * The app's home-screen feed — the API counterpart of `/account` (the web
+ * buyer dashboard partial views), reshaped for a native client, now
+ * role-switched for the buyer/supplier/staff product scope (RBAC
+ * foundation).
  *
- * Every figure comes straight out of BuyerDashboard, the same service the
- * web dashboard uses — there is no second computation path. The only work
- * done here is projection: `BuyerDashboard::stats()`/`activity()` embed web
- * `route()` URLs for the Blade dashboard, and a `route()` URL is meaningless
- * (and would 404) inside a native app or a WebView, so this controller never
- * forwards those arrays verbatim. Instead it drops the `url` key and keeps
- * (or adds) a stable machine `key` for stats and a `type` + `reference` pair
- * for activity — the client already has reference-keyed endpoints
- * (`GET /rfqs/{reference}`, `/quotes/{reference}`, `/orders/{reference}`), so
- * that pair is enough to navigate without a new mapping table.
+ * The route is open to any authenticated user; this controller resolves
+ * `role` exactly the way `UserResource::resolveRole()` does and puts it as
+ * the FIRST key of `data` (a mobile-team request: an explicit discriminator
+ * beats the client sniffing which keys are present).
+ *
+ * - `buyer`: the full feed below, unchanged — every figure comes straight
+ *   out of BuyerDashboard, the same service the web dashboard uses; there
+ *   is no second computation path. The only work done here is projection:
+ *   `BuyerDashboard::stats()`/`activity()` embed web `route()` URLs for the
+ *   Blade dashboard, and a `route()` URL is meaningless (and would 404)
+ *   inside a native app or a WebView, so this controller never forwards
+ *   those arrays verbatim. Instead it drops the `url` key and keeps (or
+ *   adds) a stable machine `key` for stats and a `type` + `reference` pair
+ *   for activity — the client already has reference-keyed endpoints
+ *   (`GET /rfqs/{reference}`, `/quotes/{reference}`, `/orders/{reference}`),
+ *   so that pair is enough to navigate without a new mapping table.
+ * - `supplier` / `staff`: an honest empty-but-valid payload (200, not
+ *   403/404) — a real supplier/staff dashboard is a separate follow-up.
+ *   Field names/shapes are kept identical to the buyer payload for shared
+ *   concepts, even though every collection is empty today.
  */
 class DashboardController extends Controller
 {
@@ -32,6 +45,22 @@ class DashboardController extends Controller
     public function __invoke(Request $request): array
     {
         $user = $request->user();
+        $role = UserResource::resolveRole($user);
+
+        if ($role !== 'buyer') {
+            return [
+                'data' => [
+                    'role' => $role,
+                    'stats' => [],
+                    'recent_orders' => [],
+                    'recent_quotes' => [],
+                    'top_suppliers' => [],
+                    'orders_by_status' => null,
+                    'value_trend' => null,
+                    'activity' => [],
+                ],
+            ];
+        }
 
         $stats = collect($this->dashboard->stats($user))
             ->map(fn (array $stat) => [
@@ -51,6 +80,7 @@ class DashboardController extends Controller
 
         return [
             'data' => [
+                'role' => $role,
                 'stats' => $stats,
                 'recent_orders' => OrderResource::collection($this->dashboard->recentOrders($user))->resolve(),
                 'recent_quotes' => QuoteResource::collection($this->dashboard->recentQuotes($user))->resolve(),
