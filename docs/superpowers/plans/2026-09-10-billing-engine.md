@@ -112,19 +112,30 @@ Effort is engineer-days for someone who knows this codebase. **Phase 0 is a busi
 **Phase 2 follow-ups:** FX rate capture on multi-currency charges; partial credit notes currently recorded net of tax (Phase 3); `GET /admin/invoices/create` 500s if typed manually (no create page — staff-only, no UI link).
 
 ### Phase 3 — Recurring & lifecycle (~10 days)
-- [ ] M6: **pull-model renewals** (§7.5) — `subscriptions:process-renewals` job: at `renews_at − 7d` send a re-pay link; at `renews_at` move to `past_due` + `grace_until = +7d`; during grace keep entitlements; at `grace_until` lapse to the segment Free plan and email. **Card-on-file / auto-charge** only for the USD (Stripe/PayPal) rails where the token model is clean — via `SetupIntent` / billing agreement; MoMo/Orange stay pull. Proration on upgrade (immediate) / downgrade (next cycle). **Trials** (§7.5): 14 days, no pre-auth, opt-in per plan, one per company lifetime, converts by the customer paying before the trial ends else lapses to Free. 30-day price-change notice job. `Company::hasFeature()` returns the Free-plan entitlement set while `past_due`-past-grace / `suspended`.
-- [ ] Tests: renewal paid → term extends; unpaid → grace → lapse to Free; upgrade prorates; trial paid → converts, unpaid → lapses; USD card-on-file auto-charges.
+
+**Status 2026-09-11: M6 shipped & deployed (`83a36f5`).**
+
+- [x] M6: **pull-model renewals** (§7.5) — `subscriptions:process-renewals` (`dailyAt('02:30')`): `renews_at−7d` → reminder email (`renewal_reminded_at` stamped, fires once); `renews_at` past → `PastDue` + `grace_until = +7d` (entitlements retained via `inGrace()`); `grace_until` past → `SubscriptionService::lapseToFree()` + email. Free-plan subs skipped entirely. **Trials**: `Plan.trial_days`, `SubscriptionService::startTrial()` — one per company lifetime (any historical `trial_ends_at` row blocks a second), no pre-auth, unpaid-at-expiry lapses via the same job; paying before expiry converts via `activateFromPayment()` (on-time renewal extends from the old `renews_at`, a lapsed/trial/different-plan payment starts fresh from now). `subscriptions:notify-price-changes` (`dailyAt('08:00')`) is a stub pending M9. **Deferred:** card-on-file/auto-charge for USD rails, proration on upgrade/downgrade — documented TODOs, not built.
+- [x] Tests: renewal paid → term extends; unpaid → grace → lapse to Free; trial paid → converts, unpaid → lapses to Free.
 
 ### Phase 4 — Marketplace commission (~8 days)
-- [ ] M7: `CommissionCalculator` (deterministic, plan-tiered, capped) reading a **`/admin` → Commission Rules Filament resource** (`commission_rules`: segment/plan-tier, domestic %, international %, cap amount + cap %, effective-from/until, active) — the §15 table seeded but fully editable without deploy. Commission line on protected-trade orders shown pre-commit; recorded on order + invoice; not charged on pre-acceptance cancel; refund treatment on the credit note. Per-enterprise-contract override stored on the contract record (audited).
-- [ ] Admin: commission report (take-rate, GMV, by segment); the rule editor above.
-- [ ] Tests: rate matches the active rule for the plan tier; a rule edit doesn't change a past order's commission; cap applied; cancel-before-acceptance → no commission; refund → commission credit.
+
+**Status 2026-09-11: M7 shipped & deployed (`c3af309`).**
+
+- [x] M7: `App\Services\Commission\CommissionCalculator` (bcmath, capped by amount and/or percent) reading **`/admin` → Commission Rules** (`commission_rules`: segment/plan-tier, domestic/international rate, cap amount + cap %, effective window, active) under the existing `pricing.manage` permission (no new perm). "Protected trade" = a `TradeAssuranceAgreement` exists on the order; `charge()` fires from `TradeAssuranceAgreement::booted()` (idempotent, snapshotted onto the order — a later rule change never rewrites a charged order). Commission preview shown on the buyer's quote-review screen pre-accept. `credit()` is refund-ready (over-credit guarded) but has no refund-flow UI to call it yet. **Not built:** per-enterprise-contract override (no `EnterpriseContract` model exists yet).
+- [x] Admin: commission report (`/admin` Filament page — GMV/commission/take-rate by segment) + the rule editor above.
+- [x] Tests: rate matches the active rule; a rule edit doesn't change a past order's commission; both caps applied; cancel-before-protection → no commission; `credit()` over-limit throws.
 
 ### Phase 5 — Governance & promotions (~6 days)
-- [ ] M9: `plan_prices` with effective-from/until + immutable history; **`/admin` → the Plans Filament resource gains price-version editing** (change a price = new version row, old one retained; `effective_from` scheduling) under a dedicated `pricing.manage` permission; "reproducible total from stored inputs" reconstruction test.
-- [ ] M8: **`/admin` → Coupons Filament resource** (`Coupon` — code, type, value, applies-to segments/plans, max redemptions, validity window, stacks-with-annual flag) + `Credit` (per-company non-cash balance, admin-grantable, audited) + referral-credit rule. Stacking off by default; coupons never reduce tax.
+
+**Status 2026-09-11: M8 shipped & deployed (`123751a`). M9 and M10 not started.**
+
+- [ ] M9: `plan_prices` with effective-from/until + immutable history; **`/admin` → the Plans Filament resource gains price-version editing** (change a price = new version row, old one retained; `effective_from` scheduling) under `pricing.manage`; "reproducible total from stored inputs" reconstruction test.
+- [x] M8: **`/admin` → Coupons** (`Coupon` — code, percent/fixed, applies-to segments/plans, max redemptions total + per-company, validity window, `stacks_with_annual`) + **Credits** (append-only per-company ledger, admin-grantable via a "Grant credit" action, never edited/deleted — corrections are new ledger rows) under `pricing.manage`. `CouponCalculator`/`CreditLedger` are pure services; race-safe redemption (`lockForUpdate`). **Deliberately NOT wired into checkout yet** — `PaymentCheckoutController` untouched; the class docblock documents the integration point (discount the subtotal, then run `TaxCalculator` on the discounted subtotal, never the reverse).
 - [ ] M10: wire the `api` plan feature to company API-key issuance quotas.
 - [ ] `PRICING_SPEC.md §27` launch checklist — walk every item, tick or file.
+
+**Cross-phase follow-ups:** wire `CouponCalculator` into `PaymentCheckoutController::start()`; wire `CommissionCalculator::credit()` into a refund/dispute UI; an `EnterpriseContract` model for per-contract commission overrides; nothing currently calls `TradeAssuranceAgreement::createDefaultMilestones()` so no live order is commission-protected yet (pre-existing gap, not introduced by M7).
 
 > **Admin-configurable, no deploy (owner direction):** every commercial parameter — gateway credentials (§8), tax rules, commission rules, plan prices + versions, coupons, credits, plan activation/features — is edited in `/admin` under `payments.manage` / `pricing.manage`, never in code or a one-off seeder. Seeders only provide the launch defaults. All edits are written to the hash-chained activity log; changing a rule never mutates a historical invoice, order commission or subscription.
 
