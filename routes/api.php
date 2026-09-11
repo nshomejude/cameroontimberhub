@@ -109,6 +109,31 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
         // (200, not 403) until their own dashboards are built — see the
         // controller's docblock.
         Route::get('dashboard', DashboardController::class)->name('dashboard');
+
+        // Plain buyer<->supplier messaging (read/post-a-plain-message + inbox +
+        // mark-read only — see ConversationController's docblock for what is
+        // deliberately NOT exposed here yet). Open to ANY authenticated
+        // participant, not just buyers: Conversation::scopeForParticipant()
+        // resolves membership from the participant row itself (a supplier's
+        // company membership counts, minted lazily on first access via
+        // MessagingService::participantFor()), so a role gate here would be
+        // wrong, not just incomplete — a conversation has a buyer side and a
+        // supplier side, and both must be able to hold up their end from the
+        // app. Authorization is still enforced per-conversation (404, not
+        // 403, for a non-participant's id) via MessagingService::find().
+        Route::get('conversations', [ConversationController::class, 'index'])->name('conversations.index');
+
+        Route::get('conversations/{id}', [ConversationController::class, 'show'])->name('conversations.show');
+
+        Route::get('conversations/{id}/messages', [ConversationController::class, 'messages'])->name('conversations.messages');
+
+        // Same write-throttle budget as the other decision endpoints (quotes
+        // accept/decline, dispute reply) — see the buyer group below for the
+        // shared `api-decision` limiter.
+        Route::post('conversations/{id}/messages', [ConversationController::class, 'postMessage'])
+            ->middleware('throttle:api-decision')->name('conversations.messages.store');
+
+        Route::post('conversations/{id}/read', [ConversationController::class, 'markRead'])->name('conversations.read');
     });
 
     /* ------------------------------------------------- buyer (authenticated) */
@@ -173,22 +198,5 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
 
         Route::post('orders/{orderReference}/disputes/{dispute}/reply', [DisputeController::class, 'reply'])
             ->middleware('throttle:api-decision')->name('orders.disputes.reply');
-
-        // Plain buyer<->supplier messaging (read/post-a-plain-message + inbox +
-        // mark-read only — see ConversationController's docblock for what is
-        // deliberately NOT exposed here yet).
-        Route::get('conversations', [ConversationController::class, 'index'])->name('conversations.index');
-
-        Route::get('conversations/{id}', [ConversationController::class, 'show'])->name('conversations.show');
-
-        Route::get('conversations/{id}/messages', [ConversationController::class, 'messages'])->name('conversations.messages');
-
-        // Same write-throttle budget as the other buyer-initiated decision
-        // endpoints (quotes accept/decline, dispute reply) — see the routes
-        // above for the shared `api-decision` limiter.
-        Route::post('conversations/{id}/messages', [ConversationController::class, 'postMessage'])
-            ->middleware('throttle:api-decision')->name('conversations.messages.store');
-
-        Route::post('conversations/{id}/read', [ConversationController::class, 'markRead'])->name('conversations.read');
     });
 });

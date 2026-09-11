@@ -196,13 +196,28 @@ it('requires auth for every conversations endpoint', function () {
     $this->postJson("/api/v1/conversations/{$conversation->id}/read")->assertUnauthorized();
 });
 
-it('rejects a non-buyer (supplier) account the same way other buyer endpoints do', function () {
+it('rejects a supplier on buyer-only endpoints but still lets them reach their own conversations', function () {
+    // Messaging is deliberately NOT gated to buyers: a conversation has a
+    // buyer side and a supplier side, and Conversation::scopeForParticipant()
+    // resolves membership from the participant row itself, not from a role.
+    // `orders` stays buyer-only; `conversations` does not.
     $supplierUser = User::factory()->create();
     $company = Company::factory()->create();
     $company->users()->attach($supplierUser);
 
-    $ordersResponse = $this->actingAs($supplierUser, 'sanctum')->getJson('/api/v1/orders');
-    $conversationsResponse = $this->actingAs($supplierUser, 'sanctum')->getJson('/api/v1/conversations');
+    $this->actingAs($supplierUser, 'sanctum')->getJson('/api/v1/orders')->assertForbidden();
 
-    $conversationsResponse->assertStatus($ordersResponse->getStatusCode());
+    $this->actingAs($supplierUser, 'sanctum')->getJson('/api/v1/conversations')->assertOk();
+});
+
+it("404s a supplier out of a conversation their company does not participate in", function () {
+    $supplierUser = User::factory()->create();
+    $company = Company::factory()->create();
+    $company->users()->attach($supplierUser);
+
+    $othersConversation = Conversation::factory()->create();
+
+    $this->actingAs($supplierUser, 'sanctum')
+        ->getJson("/api/v1/conversations/{$othersConversation->id}")
+        ->assertNotFound();
 });
