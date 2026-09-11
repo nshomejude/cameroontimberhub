@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Quote;
 use App\Models\Rfq;
 use App\Services\BuyerRfqAccess;
+use App\Services\Commission\CommissionCalculator;
 use App\Services\QuoteService;
 use App\Support\Bus\CommandBus;
 use Illuminate\Http\RedirectResponse;
@@ -68,7 +69,7 @@ class BuyerQuoteController extends Controller
     }
 
     /** Screen 2 — one quote in full, with the accept / decline actions. */
-    public function show(Request $request, Rfq $rfq, Quote $quote, QuoteService $quotes): View
+    public function show(Request $request, Rfq $rfq, Quote $quote, QuoteService $quotes, CommissionCalculator $commission): View
     {
         $this->access->authorize($request, $rfq);
         $quote = $this->scopedQuote($rfq, $quote);
@@ -77,11 +78,27 @@ class BuyerQuoteController extends Controller
         $quote = $quotes->markViewed($quote);
         $quote->load(['company', 'items.species', 'rfq.items.species']);
 
+        // Pre-commit disclosure (billing engine M7, plan §15): the
+        // marketplace commission a protected order would carry, computed
+        // read-only from the supplier's current plan tier — never charged
+        // here, and never assumed to apply until an actual Trade Assurance
+        // agreement exists on the resulting order.
+        $supplier = $quote->company;
+        $commissionPreview = $commission->preview(
+            supplierCountry: $supplier?->country_code,
+            destinationCountry: $rfq->destination_country_code ?? $rfq->buyer_country_code,
+            segment: $supplier?->effectivePlan()?->segment,
+            planTier: $supplier?->effectivePlan()?->slug,
+            subtotal: (string) $quote->subtotal_amount,
+            currency: (string) $quote->currency->value,
+        );
+
         return view('public.rfq.quote', [
             'rfq' => $rfq,
             'quote' => $quote,
             'access' => $this->access,
             'siblingCount' => $rfq->quotes()->buyerVisible()->count(),
+            'commissionPreview' => $commissionPreview,
         ]);
     }
 

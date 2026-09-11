@@ -12,6 +12,7 @@ use App\Models\CompanyDocument;
 use App\Observers\CompanyDocumentObserver;
 use App\Models\OrderDocument;
 use App\Observers\OrderDocumentObserver;
+use App\Observers\OrderCommissionObserver;
 use App\Policies\ActivityLogPolicy;
 use App\Support\Bus\CommandBus;
 use App\Support\Bus\QueryBus;
@@ -70,6 +71,10 @@ class AppServiceProvider extends ServiceProvider
         $this->registerRateLimiters();
 
         Order::observe(OrderObserver::class);
+        // Marketplace commission snapshot immutability (billing engine M7,
+        // plan §2) — kept in its own observer rather than editing Order.php,
+        // per the M7 task brief's shared-worktree guidance.
+        Order::observe(OrderCommissionObserver::class);
 
         // Shipment carries no status column of its own — its milestones are
         // CheckpointUpdate rows recorded against it (see app/Observers/ShipmentObserver.php

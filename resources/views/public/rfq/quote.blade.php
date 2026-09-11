@@ -190,6 +190,14 @@
                                         {{ $quote->money($quote->total_amount) }}
                                     </td>
                                 </tr>
+                                @if (($commissionPreview['rule_id'] ?? null) !== null)
+                                    <tr>
+                                        <td colspan="6" class="px-3 py-2 text-right text-ink-soft dark:text-[#8f887b]">
+                                            {{ __('messages.rfq_wizard.marketplace_commission', ['rate' => rtrim(rtrim(number_format(((float) $commissionPreview['rate']) * 100, 2), '0'), '.')]) }}
+                                        </td>
+                                        <td class="px-5 py-2 text-right tabular-nums sm:px-7">{{ $quote->money($commissionPreview['amount']) }}</td>
+                                    </tr>
+                                @endif
                             </tfoot>
                         </table>
                     </div>

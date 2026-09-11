@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\Commission\CommissionCalculator;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -14,12 +15,29 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * Coordination/tracking only -- explicitly NOT escrow or fund custody. No
  * money moves through this model or its milestones; real fund custody would
  * require a licensed financial partner and is out of scope for Phase 1.
+ *
+ * This is also, per billing engine M7 (plan §15), the moment an order becomes
+ * a "protected trade" — the presence of a live agreement IS the protected-
+ * trade flag `CommissionCalculator` gates on. Creating one is therefore the
+ * point marketplace commission gets recorded on the order (`charge()` is
+ * idempotent, so a re-created agreement never double-charges).
  */
 class TradeAssuranceAgreement extends Model
 {
     use HasFactory;
 
     protected $guarded = ['id'];
+
+    protected static function booted(): void
+    {
+        static::created(function (self $agreement): void {
+            $order = $agreement->order;
+
+            if ($order) {
+                app(CommissionCalculator::class)->charge($order);
+            }
+        });
+    }
 
     /* --------------------------------------------------------- relations */
 
