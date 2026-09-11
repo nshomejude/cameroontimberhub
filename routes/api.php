@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\V1\OrderDocumentController;
 use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\QuoteController;
 use App\Http\Controllers\Api\V1\ReceiptController;
+use App\Http\Controllers\Api\V1\ReorderController;
 use App\Http\Controllers\Api\V1\RfqController;
 use App\Http\Controllers\Api\V1\SearchController;
 use App\Http\Controllers\Api\V1\SpeciesController;
@@ -213,6 +214,17 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
 
         Route::get('orders/{orderReference}/documents/{document}/download', [OrderDocumentController::class, 'download'])
             ->name('orders.documents.download');
+
+        // Reorder (buyer-initiated only): re-enters the audited RFQ -> triage
+        // -> quote -> accept path via ReorderService, never clones the order
+        // directly. Same buyer-owns-the-order boundary as every route above,
+        // via BuyerApiScope::order(). See ReorderController's docblock for the
+        // eligibility-is-always-200 and idempotency decisions.
+        Route::get('orders/{orderReference}/reorder', [ReorderController::class, 'eligibility'])
+            ->name('orders.reorder.eligibility');
+
+        Route::post('orders/{orderReference}/reorder', [ReorderController::class, 'store'])
+            ->middleware('throttle:api-decision')->name('orders.reorder.store');
 
         // Receipts (this task): the buyer's own live (non-voided) receipts,
         // read-only, API counterpart of `/account/receipts`. Same

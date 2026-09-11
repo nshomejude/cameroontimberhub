@@ -408,6 +408,19 @@ A receipt is data, not a file — the web "print view" is this same data in a Bl
 
 A **voided receipt never appears** here — neither in the list nor by its number (`404`, same as another buyer's) — even though the underlying hash-chain row is immutable and stays on record. This differs from the public, unauthenticated `/verify` web page, which deliberately still reports a voided receipt's status as `VOID` (a paper-copy holder needs to be able to confirm a revocation); this authenticated buyer API instead treats a void as "not a valid receipt to show any more."
 
+### Reorder — repeating a past purchase
+
+Buyer-initiated only. A reorder does **not** clone the order — it re-enters the same audited path a fresh RFQ takes (buyer requests -> admin triages/routes -> supplier quotes with today's prices -> buyer accepts -> a brand-new `Order`). See `App\Services\ReorderService`'s class docblock for the full model; this API exposes only the buyer's first step, same boundary as Messaging above — the supplier's confirmation step stays web-only for now.
+
+| Method | Path | Auth | Purpose |
+|---|---|---|---|
+| GET | `/orders/{orderReference}/reorder` | 🔑 buyer | Eligibility + prefill check. Always `200`. `data.eligible` (bool); when `false`, `data.reason` carries the real refusal text. `data.in_progress` + `data.existing_rfq_reference` say whether a reorder for this order is already open. `data.lines` (prefillable line items, `null` when not eligible). |
+| POST | `/orders/{orderReference}/reorder` | 🔑 buyer | Raise the request. Body: `{ "quantities": { "<order_item_id>": 80 }, "shipping_port": "...", "deadline": "YYYY-MM-DD", "notes": "..." }` (all optional). → `201` with `data.message` (the `reorder_request` card, `MessageResource`) and `data.conversation.id` to open the thread. Rate-limited (`throttle:api-decision`). |
+
+No price field exists on the request body, and none is read — a buyer never sets the price of their own reorder (see `ReorderService`, "Pricing — the crux"). The previous unit price rides along in `data.lines[].previous_unit_price` as reference only.
+
+`POST` is idempotent for the ordinary case: while a reorder is already open, a second call returns the **same** `data.message.id` rather than creating a duplicate — mirrors `GET .../reorder`'s `in_progress` flag, so there is no state where the client needs to guess. Only the genuine concurrent-request race (two POSTs landing at once) surfaces as `409 reorder_already_open`; any other domain refusal (order not eligible after all, no line items to repeat) is `422 reorder_not_eligible`.
+
 ### Messaging — plain buyer<->supplier chat
 
 | Method | Path | Auth | Purpose |
