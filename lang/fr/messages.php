@@ -332,6 +332,28 @@ return [
         'tax_line' => ':label (:rate %)',
         'tax_total' => 'Total',
 
+        // Billing engine Phase 2 — page /billing côté client.
+        'no_company_title' => "Vous n'avez pas d'abonnement d'entreprise",
+        'no_company_body' => "La facturation, les factures et les offres sont rattachées à un profil d'entreprise. Rejoignez-en un ou créez-en un pour gérer un abonnement.",
+        'see_paid_plans' => 'Voir les offres payantes',
+        'on_free_plan' => "Vous êtes sur l'offre gratuite.",
+        'trial_ends' => "Fin de l'essai le :date",
+        'in_grace_until' => "Paiement en retard — l'accès continue jusqu'au :date",
+        'renews_on' => 'Renouvellement le :date',
+        'lapsed_on_free' => "Expirée — désormais sur l'offre gratuite",
+        'invoices' => 'Factures',
+        'no_invoices' => 'Aucune facture pour le moment.',
+        'view' => 'Voir',
+        'pdf' => 'PDF',
+        'actions' => 'Actions',
+        'showing_recent' => 'Affichage des :count plus récentes.',
+        'payment_history' => 'Historique des paiements',
+        'no_payments' => 'Aucun paiement pour le moment.',
+        'payment_date' => 'Date',
+        'method' => 'Moyen',
+        'payment_method' => 'Moyen de paiement',
+        'payment_method_note' => "Les paiements se font par facture via Mobile Money, Orange Money ou PayPal — rien n'est conservé.",
+
         // Billing engine M4 — factures + avoirs.
         'invoice_title' => 'Facture',
         'invoice_print' => 'Imprimer',

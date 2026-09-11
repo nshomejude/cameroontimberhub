@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers\Public;
 
+use App\Enums\PaymentProvider;
 use App\Http\Controllers\Controller;
+use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\Receipt;
+use App\Services\Tax\TaxCalculator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -43,7 +46,7 @@ class BillingCheckoutController extends Controller
                 'value' => $provider->value,
                 'label' => $provider->label(),
                 'configured' => app(config("payments.providers.{$provider->value}"))->isConfigured(),
-                'needs_msisdn' => $provider === \App\Enums\PaymentProvider::MtnMomo,
+                'needs_msisdn' => $provider === PaymentProvider::MtnMomo,
             ])
             ->values();
 
@@ -51,7 +54,7 @@ class BillingCheckoutController extends Controller
         // in the buyer's tax jurisdiction. Ships as a pure display concern —
         // when no active tax_rules row matches (the launch default) the
         // breakdown carries a null rule_id and the view shows only the total.
-        $breakdown = app(\App\Services\Tax\TaxCalculator::class)->breakdown(
+        $breakdown = app(TaxCalculator::class)->breakdown(
             $plan->price_amount,
             $plan->price_currency,
             $company->country_code ?: 'CM',
@@ -104,20 +107,44 @@ class BillingCheckoutController extends Controller
         ]);
     }
 
+    /**
+     * The customer-facing "Billing & plan" overview (billing engine Phase 2):
+     * current plan + status, the company's invoices, receipts, payment history
+     * and a note on the pull-model payment method. Everything is scoped to the
+     * user's company — the primary one when they belong to several — and a user
+     * with no company sees the "no company subscription" state.
+     */
     public function overview(Request $request): View
     {
-        $company = $request->user()?->companies()->first();
+        $company = $request->user()
+            ?->companies()
+            ->orderByDesc('company_user.is_primary')
+            ->orderBy('company_user.created_at')
+            ->first();
+
+        $cap = 24;
+
+        $invoices = $company
+            ? Invoice::where('company_id', $company->id)->orderByDesc('issued_at')->orderByDesc('id')->limit($cap)->get()
+            : collect();
 
         $receipts = $company
             ? Receipt::whereHas('payment', fn ($q) => $q->where('company_id', $company->id))
-                ->orderByDesc('issued_at')->limit(25)->get()
+                ->orderByDesc('issued_at')->orderByDesc('id')->limit($cap)->get()
+            : collect();
+
+        $payments = $company
+            ? Payment::where('company_id', $company->id)->orderByDesc('created_at')->orderByDesc('id')->limit($cap)->get()
             : collect();
 
         return view('public.billing.overview', [
             'company' => $company,
             'plan' => $company?->effectivePlan(),
             'subscription' => $company?->currentSubscription,
+            'invoices' => $invoices,
             'receipts' => $receipts,
+            'payments' => $payments,
+            'cap' => $cap,
         ]);
     }
 

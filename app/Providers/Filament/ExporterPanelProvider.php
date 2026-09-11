@@ -10,6 +10,7 @@ use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Navigation\MenuItem;
 use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
@@ -37,6 +38,14 @@ class ExporterPanelProvider extends PanelProvider
             ->discoverPages(in: app_path('Filament/Exporter/Pages'), for: 'App\Filament\Exporter\Pages')
             ->pages([
                 Dashboard::class,
+            ])
+            // Billing lives on the customer-facing site, not in this panel
+            // (billing engine Phase 2 follow-up 3). A user-menu link is enough.
+            ->userMenuItems([
+                MenuItem::make()
+                    ->label(fn () => __('messages.billing.nav_billing'))
+                    ->url(fn () => route('billing.overview'))
+                    ->icon('heroicon-o-credit-card'),
             ])
             ->discoverWidgets(in: app_path('Filament/Exporter/Widgets'), for: 'App\Filament\Exporter\Widgets')
             // FilamentInfoWidget (the vendor "filament v5.x / Docs / GitHub"

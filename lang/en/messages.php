@@ -326,6 +326,28 @@ return [
         'tax_line' => ':label (:rate%)',
         'tax_total' => 'Total',
 
+        // Billing engine Phase 2 — customer /billing overview page.
+        'no_company_title' => "You don't have a company subscription",
+        'no_company_body' => 'Billing, invoices and plans belong to a company profile. Join or create one to manage a subscription.',
+        'see_paid_plans' => 'See paid plans',
+        'on_free_plan' => "You're on the Free plan.",
+        'trial_ends' => 'Trial ends on :date',
+        'in_grace_until' => 'Payment past due — access continues until :date',
+        'renews_on' => 'Renews on :date',
+        'lapsed_on_free' => 'Lapsed — now on the Free plan',
+        'invoices' => 'Invoices',
+        'no_invoices' => 'No invoices yet.',
+        'view' => 'View',
+        'pdf' => 'PDF',
+        'actions' => 'Actions',
+        'showing_recent' => 'Showing the :count most recent.',
+        'payment_history' => 'Payment history',
+        'no_payments' => 'No payments yet.',
+        'payment_date' => 'Date',
+        'method' => 'Method',
+        'payment_method' => 'Payment method',
+        'payment_method_note' => 'Payments are made per invoice via Mobile Money, Orange Money or PayPal — nothing is stored on file.',
+
         // Billing engine M4 — invoice + credit-note print views.
         'invoice_title' => 'Invoice',
         'invoice_print' => 'Print',
