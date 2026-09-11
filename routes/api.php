@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\ConversationController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\DisputeController;
 use App\Http\Controllers\Api\V1\OrderController;
@@ -165,5 +166,22 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
 
         Route::post('orders/{orderReference}/disputes/{dispute}/reply', [DisputeController::class, 'reply'])
             ->middleware('throttle:api-decision')->name('orders.disputes.reply');
+
+        // Plain buyer<->supplier messaging (read/post-a-plain-message + inbox +
+        // mark-read only — see ConversationController's docblock for what is
+        // deliberately NOT exposed here yet).
+        Route::get('conversations', [ConversationController::class, 'index'])->name('conversations.index');
+
+        Route::get('conversations/{id}', [ConversationController::class, 'show'])->name('conversations.show');
+
+        Route::get('conversations/{id}/messages', [ConversationController::class, 'messages'])->name('conversations.messages');
+
+        // Same write-throttle budget as the other buyer-initiated decision
+        // endpoints (quotes accept/decline, dispute reply) — see the routes
+        // above for the shared `api-decision` limiter.
+        Route::post('conversations/{id}/messages', [ConversationController::class, 'postMessage'])
+            ->middleware('throttle:api-decision')->name('conversations.messages.store');
+
+        Route::post('conversations/{id}/read', [ConversationController::class, 'markRead'])->name('conversations.read');
     });
 });

@@ -252,6 +252,22 @@ Order lifecycle is in `status` / `status_label` plus the timestamp fields (`awar
 
 Evidence file upload and appeal are **not** in v1 — deferred to a later release (or handled on web for now).
 
+### Messaging — plain buyer<->supplier chat
+
+| Method | Path | Auth | Purpose |
+|---|---|---|---|
+| GET | `/conversations` | 🔑 | The buyer's inbox, paginated. Query: `q` (search subject/company/buyer name/message body). |
+| GET | `/conversations/{id}` | 🔑 | One conversation (`ConversationResource`). |
+| GET | `/conversations/{id}/messages` | 🔑 | The thread, **oldest-first** (same order the web thread renders). Query: `limit` (default/max 200). |
+| POST | `/conversations/{id}/messages` | 🔑 | Post a plain-text message. Body: `{ "body": "..." }` (required, 1–4000 chars). Rate-limited (`throttle:api-decision`). → `201`. |
+| POST | `/conversations/{id}/read` | 🔑 | Mark the thread read up to its latest message. → `{ data: { unread_count: 0 } }`. |
+
+**Scope of this pass — read this before wiring a composer.** This is plain buyer<->supplier prose only: reading the inbox, reading a thread, posting text, and marking read. **Quotation issuance, counter-offers, contract acceptance, and starting an RFQ from chat are NOT exposed via this API yet** — those are commerce actions with side effects (`MessagingService::postQuotation()`/`postCounterOffer()`/`postContractAcceptance()`, `ChatCommerceService`) that need their own careful API design and stay **web-only** for now. However, if a conversation already contains one of those structured cards, `GET .../messages` still returns it — read-only — so the client can render e.g. "Quote QTE-2026-X issued" or "Order ORD-2026-Y referenced" in the thread; it just cannot be the thing that *creates* one.
+
+Every message carries a `kind` field taken directly from `App\Enums\MessageType` (no invented values): `text`, `system`, `order_reference`, `order_status`, `product_reference`, `rfq_reference`, `quotation`, `counter_offer`, `contract_acceptance`, `proforma_invoice`, `payment_request`, `payment_confirmed`, `shipment_update`, `order_delivered`, `order_documents`, `transaction_completed`, `company_review`, `reorder_request`. Only `text` messages have a non-null `body`; every other kind carries its structured data in `payload` (the same immutable snapshot the web card partials render from) — render a fallback bubble/card per `kind` for anything the client doesn't have a dedicated view for yet, rather than assuming `body` is always populated.
+
+A conversation id you are not a participant on (or one that does not exist) is a **`404`**, never a `403` — same enumeration-safety rule as RFQs/quotes/orders (see `MessagingService`'s class docblock): a 403 would confirm the id is real.
+
 ---
 
 ## 4. A full transaction flow
@@ -302,6 +318,45 @@ state machines and authorization behave identically to the web.
 ```
 
 Note: `url` was intentionally omitted from `stats`/`activity` (the web dashboard's own copy of these arrays carries `route()` URLs for the Blade UI, which are meaningless — and would 404 — inside a native app or WebView) in favor of `key` (stats) and `type` + `reference` (activity) navigation, using the existing per-resource endpoints (`GET /rfqs/{reference}`, `/quotes/{reference}`, `/orders/{reference}`) — no new mapping table needed. A buyer with no activity at all gets empty arrays and `orders_by_status`/`value_trend: null`, not an error.
+
+### `GET /api/v1/conversations` (inbox)
+
+```json
+{
+  "data": [
+    {
+      "id": 7,
+      "subject": "Azobe decking for marina project",
+      "topic": "rfq",
+      "status": "open",
+      "counterparty": { "id": 3, "slug": "armstrong-ohara-sarl", "name": "Armstrong-O'Hara Sarl", "…": "…rest is SupplierResource" },
+      "last_message": { "body": "We can ship within 4 weeks of deposit.", "kind": "text", "at": "2026-09-11T09:12:03+01:00", "sender": { "id": 3, "name": "Armstrong-O'Hara Sarl", "is_own": false } },
+      "unread_count": 1,
+      "updated_at": "2026-09-11T09:12:03+01:00"
+    }
+  ],
+  "links": { "first": "…", "last": "…", "prev": null, "next": null },
+  "meta": { "current_page": 1, "last_page": 1, "per_page": 20, "total": 1, "…": "…standard Laravel paginator meta" }
+}
+```
+
+### `POST /api/v1/conversations/7/messages`
+
+Request: `{ "body": "Can you confirm the delivery port?" }`
+
+```json
+{
+  "data": {
+    "id": 42,
+    "kind": "text",
+    "body": "Can you confirm the delivery port?",
+    "payload": null,
+    "sender": { "id": 101, "name": "Jane Buyer", "company_name": null, "is_own": true },
+    "is_read": false,
+    "created_at": "2026-09-11T09:15:44+01:00"
+  }
+}
+```
 
 ### `GET /api/v1/products?per_page=1`
 
