@@ -19,7 +19,14 @@ class Plan extends Model
             'features' => 'array',
             'price_amount' => 'decimal:2',
             'is_active' => 'boolean',
+            'trial_days' => 'integer',
         ];
+    }
+
+    /** True when this plan offers an opt-in free trial (billing engine M6, §7.5). */
+    public function hasTrial(): bool
+    {
+        return (int) ($this->trial_days ?? 0) > 0;
     }
 
     public function getRouteKeyName(): string

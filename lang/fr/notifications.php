@@ -82,4 +82,34 @@ return [
         'line_2' => 'Référence : :reference',
     ],
 
+    'subscription_renewal' => [
+        'subject' => 'Votre offre :plan se renouvelle bientôt',
+        'line_1' => 'Votre abonnement :plan doit être renouvelé le :date pour :amount.',
+        'line_2' => 'Les paiements par mobile money ne peuvent pas être prélevés automatiquement : veuillez renouveler via le lien ci-dessous avant la fin de votre période.',
+        'action' => 'Renouveler maintenant',
+        'line_3' => 'Sans action de votre part, votre offre passe par une période de grâce de 7 jours après la date de renouvellement, puis bascule vers l\'offre gratuite.',
+    ],
+
+    'subscription_past_due' => [
+        'subject' => 'Paiement en retard — offre :plan',
+        'line_1' => 'Nous n\'avons pas reçu le paiement de :amount pour votre abonnement :plan.',
+        'line_2' => 'Votre accès est maintenu jusqu\'au :date. Renouvelez avant cette date pour éviter toute interruption.',
+        'action' => 'Renouveler maintenant',
+        'line_3' => 'Après cette date, votre société bascule vers l\'offre gratuite et les fonctionnalités payantes sont désactivées.',
+    ],
+
+    'subscription_lapsed' => [
+        'subject' => 'Votre abonnement a expiré — vous êtes maintenant sur l\'offre gratuite',
+        'line_1' => 'Votre abonnement :plan n\'a pas été renouvelé ; votre société est désormais sur l\'offre :free.',
+        'line_2' => 'Vos données sont conservées. Vous pouvez vous réabonner à tout moment pour rétablir les fonctionnalités payantes.',
+        'action' => 'Voir les offres',
+    ],
+
+    'trial_ended' => [
+        'subject' => 'Votre essai gratuit :plan est terminé',
+        'line_1' => 'Votre essai gratuit de :plan est terminé et aucun paiement n\'a été effectué.',
+        'line_2' => 'Votre société est maintenant sur l\'offre gratuite. Abonnez-vous ci-dessous pour conserver les fonctionnalités payantes.',
+        'action' => 'S\'abonner',
+    ],
+
 ];

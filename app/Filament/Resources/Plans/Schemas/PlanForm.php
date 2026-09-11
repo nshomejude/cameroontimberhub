@@ -25,6 +25,8 @@ class PlanForm
                         TextInput::make('price_amount')->numeric()->default(0)->required(),
                         Select::make('price_currency')->options(['XAF' => 'XAF', 'USD' => 'USD', 'EUR' => 'EUR', 'GBP' => 'GBP', 'CNY' => 'CNY'])->default('XAF')->required(),
                         Select::make('billing_period')->options(['monthly' => 'Monthly', 'yearly' => 'Yearly', 'once' => 'One-off'])->default('yearly')->required(),
+                        TextInput::make('trial_days')->numeric()->default(0)->minValue(0)->maxValue(365)
+                            ->helperText('0 = no trial. Days of full plan access before the first payment is due (pull-model, one per company lifetime).'),
                         TextInput::make('sort_order')->numeric()->default(0),
                         Toggle::make('is_active')->default(true),
                         Select::make('segment')->options([

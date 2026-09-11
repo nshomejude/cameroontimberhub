@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Domain\Commerce\Events\SubscriptionActivated;
+use App\Domain\Commerce\Events\SubscriptionLapsed;
 use App\Enums\SubscriptionStatus;
 use App\Models\Company;
 use App\Models\Payment;
@@ -83,15 +84,37 @@ class SubscriptionService
             $plan = Plan::findOrFail($payment->plan_id);
             $company = Company::findOrFail($payment->company_id);
 
+            // Renewal detection (billing engine M6): a still-Active sub for the
+            // SAME plan whose term has not yet elapsed means the customer paid
+            // early / on time — the new term extends from the old `renews_at`
+            // so they lose no days. A lapsed / past-due / trialing / different
+            // -plan prior sub means "start a fresh term from now". Either way
+            // the prior non-terminal sub is cancelled and a fresh Active row
+            // is created (consistent with assign() and the prior-active path).
+            $priorSamePlan = $company->subscriptions()
+                ->where('plan_id', $plan->getKey())
+                ->whereIn('status', [SubscriptionStatus::Active->value, SubscriptionStatus::Trialing->value, SubscriptionStatus::PastDue->value])
+                ->orderByDesc('id')
+                ->first();
+
             $company->subscriptions()
-                ->whereIn('status', [SubscriptionStatus::Active->value, SubscriptionStatus::Trialing->value])
+                ->whereIn('status', [
+                    SubscriptionStatus::Active->value,
+                    SubscriptionStatus::Trialing->value,
+                    SubscriptionStatus::PastDue->value,
+                ])
                 ->update(['status' => SubscriptionStatus::Cancelled->value, 'cancelled_at' => now()]);
 
             $startsAt = now();
             $billingPeriod = $plan->billing_period;
+            $termBase = ($priorSamePlan
+                && $priorSamePlan->status === SubscriptionStatus::Active
+                && $priorSamePlan->renews_at?->isFuture())
+                ? $priorSamePlan->renews_at->copy()
+                : $startsAt->copy();
             $renewsAt = match ($billingPeriod) {
-                'yearly' => $startsAt->copy()->addYear(),
-                default => $startsAt->copy()->addMonth(),
+                'yearly' => $termBase->addYear(),
+                default => $termBase->addMonth(),
             };
 
             $subscription = $company->subscriptions()->create([
@@ -145,5 +168,142 @@ class SubscriptionService
 
         activity('subscription')->performedOn($subscription)->causedBy($actor)->event('cancelled')
             ->withProperties(['reason' => $reason])->log('Subscription cancelled');
+    }
+
+    /**
+     * Start an opt-in free trial (billing engine M6, §7.5).
+     *
+     * Pull-model: full plan entitlements for `plan.trial_days` days, NO
+     * pre-authorisation, `payment_id = null`. Converts when the customer pays
+     * before `trial_ends_at` (normal checkout → activateFromPayment); if they
+     * do not, `subscriptions:process-renewals` lapses it to the segment Free
+     * plan. Guards: the plan must offer a trial; ONE trial per company for its
+     * whole lifetime (any subscription row that ever had `trial_ends_at` set);
+     * the company must not already be on a paid plan.
+     */
+    public function startTrial(Company $company, Plan $plan, ?User $actor = null): Subscription
+    {
+        if (! $plan->hasTrial()) {
+            throw new RuntimeException('This plan does not offer a free trial.');
+        }
+
+        if ($company->subscriptions()->whereNotNull('trial_ends_at')->exists()) {
+            throw new RuntimeException('This company has already used its one free trial.');
+        }
+
+        $current = $company->currentSubscription;
+        if ($current !== null && $current->entitled() && ! ($current->plan?->isFree() ?? false)) {
+            throw new RuntimeException('This company is already on a paid plan.');
+        }
+
+        return DB::transaction(function () use ($company, $plan, $actor) {
+            $company->subscriptions()
+                ->whereIn('status', [
+                    SubscriptionStatus::Active->value,
+                    SubscriptionStatus::Trialing->value,
+                    SubscriptionStatus::PastDue->value,
+                ])
+                ->update(['status' => SubscriptionStatus::Cancelled->value, 'cancelled_at' => now()]);
+
+            $startsAt = now();
+            $trialEndsAt = $startsAt->copy()->addDays((int) $plan->trial_days);
+
+            $subscription = $company->subscriptions()->create([
+                'plan_id' => $plan->getKey(),
+                'status' => SubscriptionStatus::Trialing,
+                'starts_at' => $startsAt,
+                'billing_period' => $plan->billing_period,
+                'trial_ends_at' => $trialEndsAt,
+                // The renewal job treats trial expiry off `trial_ends_at`; keep
+                // `renews_at` aligned so admin views read sensibly.
+                'renews_at' => $trialEndsAt,
+                // The amount that will be due when the trial converts — a price
+                // snapshot, exactly like a paid term.
+                'price_amount' => $plan->price_amount,
+                'price_currency' => $plan->price_currency,
+                'payment_id' => null,
+                'assigned_by' => $actor?->getKey(),
+            ]);
+
+            $company->update(['plan_id' => $plan->getKey()]);
+
+            activity('subscription')->performedOn($company)->causedBy($actor)->event('trial_started')
+                ->withProperties(['plan' => $plan->slug])->log("Free trial started for {$plan->slug}");
+
+            return $subscription;
+        });
+    }
+
+    /**
+     * Ensure the company sits on an active Free subscription for its segment
+     * (billing engine M6, §7.5) — the single DRY target for "lapsed to Free",
+     * used by the renewal job after it Expires a lapsed paid sub, and safe to
+     * call when the company is already on Free (idempotent: returns the
+     * existing row, emits nothing).
+     *
+     * Mirrors the path CompanyObserver uses for a brand-new company. A Free
+     * subscription is non-expiring: `renews_at` stays null so the renewal job
+     * never touches it.
+     */
+    public function lapseToFree(Company $company, ?int $previousPlanId = null): ?Subscription
+    {
+        return DB::transaction(function () use ($company, $previousPlanId) {
+            $segment = $company->currentSubscription?->plan?->segment ?? $company->plan?->segment;
+
+            $freePlan = ($segment
+                ? Plan::query()->forSegment($segment)->where('price_amount', 0)->orderBy('sort_order')->first()
+                : null)
+                ?? Plan::query()->where('slug', 'free')->first();
+
+            if ($freePlan === null) {
+                return null;
+            }
+
+            $existing = $company->subscriptions()
+                ->where('status', SubscriptionStatus::Active->value)
+                ->where('plan_id', $freePlan->getKey())
+                ->orderByDesc('id')
+                ->first();
+
+            if ($existing !== null) {
+                $company->update(['plan_id' => $freePlan->getKey()]);
+
+                return $existing;
+            }
+
+            $company->subscriptions()
+                ->whereIn('status', [
+                    SubscriptionStatus::Active->value,
+                    SubscriptionStatus::Trialing->value,
+                    SubscriptionStatus::PastDue->value,
+                ])
+                ->update(['status' => SubscriptionStatus::Cancelled->value, 'cancelled_at' => now()]);
+
+            $subscription = $company->subscriptions()->create([
+                'plan_id' => $freePlan->getKey(),
+                'status' => SubscriptionStatus::Active,
+                'starts_at' => now(),
+                'billing_period' => $freePlan->billing_period,
+                'renews_at' => null,
+                'price_amount' => 0,
+                'price_currency' => $freePlan->price_currency,
+                'assigned_by' => null,
+            ]);
+
+            $company->update(['plan_id' => $freePlan->getKey()]);
+
+            $this->recordOutboxEvent(new SubscriptionLapsed(
+                subscriptionId: $subscription->getKey(),
+                companyId: $company->getKey(),
+                planId: $freePlan->getKey(),
+                previousPlanId: $previousPlanId,
+            ));
+
+            activity('subscription')->performedOn($company)->event('lapsed_to_free')
+                ->withProperties(['plan' => $freePlan->slug, 'previous_plan_id' => $previousPlanId])
+                ->log("Subscription lapsed to Free plan {$freePlan->slug}");
+
+            return $subscription;
+        });
     }
 }

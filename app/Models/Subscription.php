@@ -23,6 +23,7 @@ class Subscription extends Model
             'renews_at' => 'datetime',
             'trial_ends_at' => 'datetime',
             'grace_until' => 'datetime',
+            'renewal_reminded_at' => 'datetime',
             'cancelled_at' => 'datetime',
             'price_amount' => 'decimal:2',
         ];

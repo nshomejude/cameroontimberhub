@@ -17,6 +17,15 @@ Schedule::command('receipts:verify-chain')->daily();
 // M4): same discipline as receipts — alerts on the first tampered row.
 Schedule::command('invoices:verify-chain')->daily();
 
+// Pull-model subscription renewals (billing engine M6, §7.5): renewal
+// reminders at renews_at − 7d, past-due + 7-day grace at renews_at, lapse to
+// the segment Free plan at end of grace (and for unpaid trials). Idempotent.
+Schedule::command('subscriptions:process-renewals')->dailyAt('02:30')->withoutOverlapping();
+
+// 30-day advance notice of scheduled subscription price changes (billing
+// engine M6). Stub until price versioning (M9) lands.
+Schedule::command('subscriptions:notify-price-changes')->dailyAt('08:00');
+
 // Compliance daily maintenance.
 Schedule::command('compliance:expire-badges')->dailyAt('06:30');
 Schedule::command('compliance:remind-expiring')->dailyAt('07:00');

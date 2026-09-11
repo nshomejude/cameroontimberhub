@@ -117,6 +117,8 @@ Route::get('/pricing', [PricingController::class, 'index'])->name('pricing');
 Route::middleware('auth')->group(function () {
     Route::get('/billing', [BillingCheckoutController::class, 'overview'])->name('billing.overview');
     Route::get('/billing/checkout/{plan}', [BillingCheckoutController::class, 'show'])->name('billing.checkout');
+    // Billing engine M6 (§7.5): opt-in free trial, no payment method needed.
+    Route::post('/billing/checkout/{plan}/trial', [BillingCheckoutController::class, 'startTrial'])->name('billing.checkout.trial');
     Route::get('/billing/checkout/{payment}/pending', [BillingCheckoutController::class, 'pending'])->name('billing.checkout.pending');
     Route::get('/billing/checkout/{payment}/status', [BillingCheckoutController::class, 'status'])->name('billing.checkout.status');
     Route::get('/billing/checkout/{payment}/success', [BillingCheckoutController::class, 'success'])->name('billing.checkout.success');

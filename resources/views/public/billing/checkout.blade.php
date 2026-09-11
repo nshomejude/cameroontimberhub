@@ -31,6 +31,21 @@
             @endif
         </div>
 
+        @if ($canStartTrial ?? false)
+            <div class="mt-6 rounded-2xl border border-forest-200 bg-forest-50/60 p-5 dark:border-forest-800 dark:bg-forest-950/30">
+                @if ($errors->has('trial'))
+                    <p class="mb-3 text-[0.8125rem] text-red-700 dark:text-red-300">{{ $errors->first('trial') }}</p>
+                @endif
+                <form method="POST" action="{{ route('billing.checkout.trial', $plan) }}">
+                    @csrf
+                    <button type="submit" class="w-full rounded-xl bg-forest-700 px-4 py-2.5 text-[0.875rem] font-semibold text-white hover:bg-forest-800">
+                        {{ __('messages.billing.start_trial', ['days' => $plan->trial_days]) }}
+                    </button>
+                </form>
+                <p class="mt-2 text-[0.75rem] text-ink-soft dark:text-[#b3ab9b]">{{ __('messages.billing.trial_no_card') }}</p>
+            </div>
+        @endif
+
         @if (! $anyConfigured)
             <div class="mt-6 rounded-2xl border border-amber-300 bg-amber-50 p-5 text-[0.875rem] text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
                 {{ __('messages.billing.no_online_payment') }}

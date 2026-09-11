@@ -93,4 +93,38 @@ return [
         'line_2' => 'Reference: :reference',
     ],
 
+    // ----- app/Notifications/SubscriptionRenewalReminder (billing engine M6) -----
+    'subscription_renewal' => [
+        'subject' => 'Your :plan plan renews soon',
+        'line_1' => 'Your :plan subscription is due to renew on :date for :amount.',
+        'line_2' => 'Mobile-money payments cannot be charged automatically, so please renew from the link below before your term ends.',
+        'action' => 'Renew now',
+        'line_3' => 'If you do nothing, your plan enters a 7-day grace period after the renewal date, then moves to the Free plan.',
+    ],
+
+    // ----- app/Notifications/SubscriptionPastDue (billing engine M6) -----
+    'subscription_past_due' => [
+        'subject' => 'Payment past due — :plan plan',
+        'line_1' => 'We have not received payment of :amount for your :plan subscription.',
+        'line_2' => 'Your access continues until :date. Renew before then to avoid any interruption.',
+        'action' => 'Renew now',
+        'line_3' => 'After that date your company moves to the Free plan and paid features stop.',
+    ],
+
+    // ----- app/Notifications/SubscriptionLapsedToFree (billing engine M6) -----
+    'subscription_lapsed' => [
+        'subject' => 'Your subscription has lapsed — you are now on the Free plan',
+        'line_1' => 'Your :plan subscription was not renewed, so your company is now on the :free plan.',
+        'line_2' => 'Your data is safe. You can re-subscribe at any time to restore paid features.',
+        'action' => 'View plans',
+    ],
+
+    // ----- app/Notifications/TrialEndedUnpaid (billing engine M6) -----
+    'trial_ended' => [
+        'subject' => 'Your :plan free trial has ended',
+        'line_1' => 'Your free trial of :plan has ended and no payment was taken.',
+        'line_2' => 'Your company is now on the Free plan. Subscribe below to keep the paid features.',
+        'action' => 'Subscribe',
+    ],
+
 ];

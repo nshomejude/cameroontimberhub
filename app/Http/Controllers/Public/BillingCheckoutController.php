@@ -10,6 +10,7 @@ use App\Models\Plan;
 use App\Models\Receipt;
 use App\Services\Tax\TaxCalculator;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -67,7 +68,46 @@ class BillingCheckoutController extends Controller
             'providers' => $providers,
             'anyConfigured' => $providers->contains('configured', true),
             'breakdown' => $breakdown,
+            'canStartTrial' => $plan->hasTrial() && $this->trialEligible($company),
         ]);
+    }
+
+    /**
+     * Opt-in free trial (billing engine M6, §7.5) — no payment method chosen,
+     * no pre-authorisation. Redirects back to the checkout picker with an
+     * error when the plan has no trial or the company already used its one
+     * lifetime trial / is already on a paid plan.
+     */
+    public function startTrial(Request $request, Plan $plan): RedirectResponse
+    {
+        abort_unless($plan->is_active, 404);
+
+        $company = $request->user()?->companies()->first();
+
+        if ($company === null) {
+            return redirect()->route('billing.checkout', $plan);
+        }
+
+        try {
+            app(\App\Services\SubscriptionService::class)->startTrial($company, $plan, $request->user());
+        } catch (\RuntimeException $e) {
+            return back()->withErrors(['trial' => $e->getMessage()]);
+        }
+
+        return redirect()->route('billing.overview')
+            ->with('status', __('messages.billing.trial_started', ['plan' => $plan->name, 'days' => $plan->trial_days]));
+    }
+
+    /** Company not already on an entitled paid subscription and hasn't used its one lifetime trial. */
+    private function trialEligible(\App\Models\Company $company): bool
+    {
+        if ($company->subscriptions()->whereNotNull('trial_ends_at')->exists()) {
+            return false;
+        }
+
+        $current = $company->currentSubscription;
+
+        return $current === null || ! $current->entitled() || ($current->plan?->isFree() ?? true);
     }
 
     public function pending(Request $request, Payment $payment): View

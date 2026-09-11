@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Domain\Catalog\Events\ProductPublished;
 use App\Domain\Commerce\Events\PaymentCompleted;
 use App\Domain\Commerce\Events\SubscriptionActivated;
+use App\Domain\Commerce\Events\SubscriptionLapsed;
 use App\Domain\Compliance\Events\ComplianceCaseOpened;
 use App\Domain\Compliance\Events\DisputeOpened;
 use App\Domain\Compliance\Events\InspectionFinalised;
@@ -102,6 +103,7 @@ class RelayOutboxEventsJob implements ShouldQueue
         // Commands\{AssignSubscription,RecordPaymentCompletion}Handler. Small,
         // separate, additive block; does not touch any other entry above. ---
         'subscription.activated' => SubscriptionActivated::class,
+        'subscription.lapsed' => SubscriptionLapsed::class,
         'payment.completed' => PaymentCompleted::class,
     ];
 
@@ -250,7 +252,7 @@ class RelayOutboxEventsJob implements ShouldQueue
             // direct columns (see App\Domain\Commerce\Events\
             // {SubscriptionActivated,PaymentCompleted}) — no extra lookup
             // needed. Small, separate, additive block. ---
-            'subscription.activated', 'payment.completed' => isset($row->payload['company_id']) ? (int) $row->payload['company_id'] : null,
+            'subscription.activated', 'subscription.lapsed', 'payment.completed' => isset($row->payload['company_id']) ? (int) $row->payload['company_id'] : null,
             default => null,
         };
 
