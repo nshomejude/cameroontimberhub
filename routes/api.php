@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\DisputeController;
 use App\Http\Controllers\Api\V1\OrderController;
 use App\Http\Controllers\Api\V1\ProductController;
@@ -99,6 +100,12 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
     /* ------------------------------------------------- buyer (authenticated) */
 
     Route::middleware(['auth:sanctum', 'api.buyer'])->group(function (): void {
+        // Buyer app home-screen feed (mobile hand-off): stats, previews and
+        // activity, all server-computed via BuyerDashboard — see
+        // DashboardController's docblock for the url→key/type+reference
+        // reshaping this endpoint does before it leaves the server.
+        Route::get('dashboard', DashboardController::class)->name('dashboard');
+
         Route::get('rfqs', [RfqController::class, 'index'])->name('rfqs.index');
 
         Route::post('rfqs', [RfqController::class, 'store'])

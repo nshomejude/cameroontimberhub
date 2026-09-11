@@ -152,6 +152,14 @@ Auth column: 🌐 public · 🔑 buyer token.
 | GET | `/suppliers/{slug}` | 🌐 | One supplier profile (`SupplierDetailResource`). |
 | GET | `/search` | 🌐 | Cross-entity search. Query: `q` (required). Returns grouped product / species / supplier hits. |
 
+### Dashboard — the buyer app home screen
+
+| Method | Path | Auth | Purpose |
+|---|---|---|---|
+| GET | `/dashboard` | 🔑 | Stats, recent orders/quotes, top suppliers, order-status breakdown, value trend and an activity trail — all server-computed via the same `BuyerDashboard` service the web `/account` dashboard uses. |
+
+`stats[]` and `activity[]` intentionally omit the `url` field the web dashboard's own payload carries internally — a Laravel `route()` URL is meaningless (and would 404) in a native app or a WebView. `stats[]` items carry a stable `key` instead (e.g. `active_rfqs`, `quotes_awaiting`, `active_orders`, `orders_in_progress`, `suppliers`) so the client can map its own icon/action without parsing `label`. `activity[]` items carry `type` (`quote_received` | `order_status_changed`) + `reference` instead — hand `reference` to the existing `GET /quotes/{reference}` or `GET /orders/{reference}` endpoint to navigate; no new mapping table is needed. `recent_orders`/`recent_quotes`/`top_suppliers` are capped at 5 and shaped with the same `OrderResource`/`QuoteResource`/`SupplierResource` used elsewhere. `orders_by_status` and `value_trend` are `null` for a buyer with no orders yet (empty state), not an error.
+
 ### RFQs — the buyer's request for quotation
 
 | Method | Path | Auth | Purpose |
@@ -267,6 +275,33 @@ state machines and authorization behave identically to the web.
 ---
 
 ## 5. Live sample responses
+
+### `GET /api/v1/dashboard`
+
+```json
+{
+  "data": {
+    "stats": [
+      { "key": "active_rfqs", "label": "Active requests", "value": 0, "hint": "Open RFQs still collecting quotes", "delta": null, "icon": "document-text" },
+      { "key": "quotes_awaiting", "label": "Quotes to review", "value": 0, "hint": "Live offers you can still accept or decline", "delta": null, "icon": "tag" },
+      { "key": "active_orders", "label": "Active orders", "value": 1, "hint": "Awarded and not yet completed or cancelled", "delta": null, "icon": "clipboard-document-check" },
+      { "key": "orders_in_progress", "label": "In progress", "value": 0, "hint": "Confirmed, in production or shipped", "delta": null, "icon": "cube" },
+      { "key": "suppliers", "label": "Suppliers engaged", "value": 1, "hint": "Distinct suppliers that have quoted for you", "delta": null, "icon": "user-group" }
+    ],
+    "recent_orders": [ { "reference": "ORD-2026-FJP7S", "status": "awarded", "status_label": "Awarded", "total_amount": "18500.00", "…": "…rest is OrderResource, see §3 Orders" } ],
+    "recent_quotes": [ { "reference": "QTE-2026-V7PRN", "status": "accepted", "status_label": "Accepted", "total_amount": "18500.00", "supplier": { "slug": "armstrong-ohara-sarl", "name": "Armstrong-O'Hara Sarl", "…": "…rest is SupplierResource" }, "…": "…rest is QuoteResource, see §3 Quotes" } ],
+    "top_suppliers": [ { "id": 1, "slug": "armstrong-ohara-sarl", "name": "Armstrong-O'Hara Sarl", "city": "Parkerport", "country_code": "CM", "…": "…rest is SupplierResource" } ],
+    "orders_by_status": { "total": 1, "slices": [ { "status": "awarded", "label": "Awarded", "count": 1 } ] },
+    "value_trend": null,
+    "activity": [
+      { "type": "quote_received", "label": "Quote received", "detail": "From Armstrong-O'Hara Sarl on RFQ-2026-DKOMJ", "at": "2026-09-11T07:29:25+01:00", "reference": "QTE-2026-V7PRN", "icon": "document-text", "tone": "timber" },
+      { "type": "order_status_changed", "label": "Order awarded", "detail": "ORD-2026-FJP7S · Armstrong-O'Hara Sarl", "at": "2026-09-11T07:29:25+01:00", "reference": "ORD-2026-FJP7S", "icon": "clipboard-document-check", "tone": "forest" }
+    ]
+  }
+}
+```
+
+Note: `url` was intentionally omitted from `stats`/`activity` (the web dashboard's own copy of these arrays carries `route()` URLs for the Blade UI, which are meaningless — and would 404 — inside a native app or WebView) in favor of `key` (stats) and `type` + `reference` (activity) navigation, using the existing per-resource endpoints (`GET /rfqs/{reference}`, `/quotes/{reference}`, `/orders/{reference}`) — no new mapping table needed. A buyer with no activity at all gets empty arrays and `orders_by_status`/`value_trend: null`, not an error.
 
 ### `GET /api/v1/products?per_page=1`
 
