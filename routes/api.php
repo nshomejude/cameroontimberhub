@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CompanyDocumentController;
+use App\Http\Controllers\Api\V1\FleetDriverController;
+use App\Http\Controllers\Api\V1\FleetVehicleController;
 use App\Http\Controllers\Api\V1\ConversationController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\DisputeController;
@@ -293,6 +295,31 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
             // caller's company is the SUPPLIER side. See SupplierOrderController.
             Route::get('orders', [SupplierOrderController::class, 'index'])->name('orders.index');
             Route::get('orders/{reference}', [SupplierOrderController::class, 'show'])->name('orders.show');
+
+            // Fleet (this task): vehicles + drivers, API counterpart of the
+            // exporter panel's Vehicles/Drivers resources. Sits under
+            // `api.supplier` like the rest of this group (company membership
+            // is the auth boundary), but every action additionally goes
+            // through FleetApiScope::ensureEligible() — a company that isn't
+            // OrganisationType::Logistics (and no logistics_partner member)
+            // gets a 403 here, mirroring the web resource's
+            // canViewAny/canCreate/canEdit/canDelete gate exactly. See
+            // FleetApiScope's docblock.
+            Route::prefix('fleet')->name('fleet.')->group(function (): void {
+                Route::get('vehicles', [FleetVehicleController::class, 'index'])->name('vehicles.index');
+                Route::post('vehicles', [FleetVehicleController::class, 'store'])
+                    ->middleware('throttle:api-rfq')->name('vehicles.store');
+                Route::get('vehicles/{vehicle}', [FleetVehicleController::class, 'show'])->name('vehicles.show');
+                Route::patch('vehicles/{vehicle}', [FleetVehicleController::class, 'update'])
+                    ->middleware('throttle:api-decision')->name('vehicles.update');
+
+                Route::get('drivers', [FleetDriverController::class, 'index'])->name('drivers.index');
+                Route::post('drivers', [FleetDriverController::class, 'store'])
+                    ->middleware('throttle:api-rfq')->name('drivers.store');
+                Route::get('drivers/{driver}', [FleetDriverController::class, 'show'])->name('drivers.show');
+                Route::patch('drivers/{driver}', [FleetDriverController::class, 'update'])
+                    ->middleware('throttle:api-decision')->name('drivers.update');
+            });
         });
     });
 });

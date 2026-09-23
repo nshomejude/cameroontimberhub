@@ -83,7 +83,7 @@ class UserResource extends JsonResource
      * the user's own pivot role on that company, and the company's
      * verification status.
      *
-     * @return array{id: int, slug: string, name: string, role: string, status: string}|null
+     * @return array{id: int, slug: string, name: string, role: string, status: string, type: string|null}|null
      */
     public static function resolveCompany(User $user): ?array
     {
@@ -100,11 +100,12 @@ class UserResource extends JsonResource
             'name' => $company->trade_name ?: $company->legal_name,
             'role' => $company->pivot->role,
             'status' => $company->status?->value,
+            'type' => $company->type?->value,
         ];
     }
 
     /**
-     * @param  array{id: int, slug: string, name: string, role: string, status: string}|null  $company
+     * @param  array{id: int, slug: string, name: string, role: string, status: string, type: string|null}|null  $company
      * @return list<string>
      */
     public static function resolveCapabilities(User $user, string $role, ?array $company): array

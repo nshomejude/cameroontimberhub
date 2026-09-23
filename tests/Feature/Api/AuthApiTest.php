@@ -76,7 +76,7 @@ it('resolves role/roles/company/capabilities for a plain buyer', function () {
 
 it('resolves role/roles/company/capabilities for a supplier company owner', function () {
     $user = User::factory()->create();
-    $company = Company::factory()->create();
+    $company = Company::factory()->create(['type' => \App\Enums\OrganisationType::Manufacturer]);
     $company->users()->attach($user, ['role' => 'owner', 'is_primary' => true]);
 
     $response = $this->actingAs($user, 'sanctum')->getJson('/api/v1/auth/me')
@@ -84,9 +84,20 @@ it('resolves role/roles/company/capabilities for a supplier company owner', func
         ->assertJsonPath('data.role', 'supplier')
         ->assertJsonPath('data.roles', [])
         ->assertJsonPath('data.company.id', $company->id)
-        ->assertJsonPath('data.company.role', 'owner');
+        ->assertJsonPath('data.company.role', 'owner')
+        ->assertJsonPath('data.company.type', 'manufacturer');
 
     expect($response->json('data.capabilities'))->toContain('product.manage');
+});
+
+it('surfaces company.type as the real OrganisationType value for a logistics company', function () {
+    $user = User::factory()->create();
+    $company = Company::factory()->create(['type' => \App\Enums\OrganisationType::Logistics]);
+    $company->users()->attach($user, ['role' => 'owner', 'is_primary' => true]);
+
+    $this->actingAs($user, 'sanctum')->getJson('/api/v1/auth/me')
+        ->assertOk()
+        ->assertJsonPath('data.company.type', 'logistics');
 });
 
 it('resolves role/roles for staff, staff wins over company membership', function () {

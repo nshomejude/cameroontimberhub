@@ -149,8 +149,15 @@ For a **supplier**, `company` is populated with the user's primary company
 if none is flagged):
 
 ```json
-"company": { "id": 5, "slug": "sam-timber-co", "name": "Sam Timber Co", "role": "owner", "status": "verified" }
+"company": { "id": 5, "slug": "sam-timber-co", "name": "Sam Timber Co", "role": "owner", "status": "verified", "type": "manufacturer" }
 ```
+
+`company.type` is the real `App\Enums\OrganisationType` value (`supplier`,
+`processor`, `manufacturer`, `artisan`, `buyer`, `retailer`, `logistics`,
+`carbon_developer`, `financier`, `training_provider`) — `null` when there is
+no company. Use it to branch on the actual organisation type (e.g. show the
+Fleet section below only for `"logistics"`) instead of guessing from
+`capabilities`.
 
 `capabilities` is a short, explicit list — every entry is either backed by
 a real Gate/Policy or is an ad-hoc boolean computed server-side because no
@@ -449,6 +456,35 @@ A second `POST` on the same order — by the same buyer or a race between two re
 Every message carries a `kind` field taken directly from `App\Enums\MessageType` (no invented values): `text`, `system`, `order_reference`, `order_status`, `product_reference`, `rfq_reference`, `quotation`, `counter_offer`, `contract_acceptance`, `proforma_invoice`, `payment_request`, `payment_confirmed`, `shipment_update`, `order_delivered`, `order_documents`, `transaction_completed`, `company_review`, `reorder_request`. Only `text` messages have a non-null `body`; every other kind carries its structured data in `payload` (the same immutable snapshot the web card partials render from) — render a fallback bubble/card per `kind` for anything the client doesn't have a dedicated view for yet, rather than assuming `body` is always populated.
 
 A conversation id you are not a participant on (or one that does not exist) is a **`404`**, never a `403` — same enumeration-safety rule as RFQs/quotes/orders (see `MessagingService`'s class docblock): a 403 would confirm the id is real.
+
+### Fleet (logistics) — a company's own vehicles + drivers
+
+All routes are under `/supplier/fleet/...`, behind the same `api.supplier`
+gate as the rest of `supplier/*` (**🔑** = requires a company membership), and
+**additionally require fleet eligibility**: the caller's `company.type` must
+be `"logistics"`, or the account must hold the `logistics_partner` role —
+the exact gate `Filament\Exporter\Resources\Vehicles\VehicleResource` /
+`Drivers\DriverResource` use on the web (`currentUserManagesFleet()`). A
+company member who is not fleet-eligible gets a hard **`403`** on every
+route below, not an empty list — check `company.type` from `auth/me` before
+showing the Fleet section in the client at all.
+
+| Method | Path | Auth | Purpose |
+|---|---|---|---|
+| GET | `/supplier/fleet/vehicles` | 🔑 | The caller's company's vehicles, paginated (15/page). |
+| POST | `/supplier/fleet/vehicles` | 🔑 | Create a vehicle. Body: `{ "registration_number": "...", "type": "truck\|trailer\|pickup\|van\|flatbed\|container_chassis\|other", "capacity_tonnes": 12.5, "is_active": true }` (`registration_number`, `type` required; `capacity_tonnes`/`is_active` optional). |
+| GET | `/supplier/fleet/vehicles/{id}` | 🔑 | One vehicle. `404` if not the caller's company's. |
+| PATCH | `/supplier/fleet/vehicles/{id}` | 🔑 | Partial update, same body fields, all optional. Rate-limited (`throttle:api-decision`). |
+| GET | `/supplier/fleet/drivers` | 🔑 | The caller's company's drivers, paginated (15/page). |
+| POST | `/supplier/fleet/drivers` | 🔑 | Create a driver. Body: `{ "name": "...", "license_number": "...", "phone": "...", "is_active": true }` (`name`, `license_number` required; `phone`/`is_active` optional). |
+| GET | `/supplier/fleet/drivers/{id}` | 🔑 | One driver. `404` if not the caller's company's. |
+| PATCH | `/supplier/fleet/drivers/{id}` | 🔑 | Partial update, same body fields, all optional. Rate-limited. |
+
+Both resources ride the shared polymorphic Document store for compliance
+paperwork (registration, insurance, driving licence, medical certificate) —
+there is no separate expiry-tracking API yet; that rides the same
+`/company/documents` family above. No delete endpoint exists yet on either
+the web resource or this API — noted as a follow-up, not an oversight.
 
 ---
 
