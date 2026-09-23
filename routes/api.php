@@ -16,6 +16,9 @@ use App\Http\Controllers\Api\V1\RfqController;
 use App\Http\Controllers\Api\V1\SearchController;
 use App\Http\Controllers\Api\V1\SpeciesController;
 use App\Http\Controllers\Api\V1\SupplierController;
+use App\Http\Controllers\Api\V1\SupplierOrderController;
+use App\Http\Controllers\Api\V1\SupplierQuoteController;
+use App\Http\Controllers\Api\V1\SupplierRfqController;
 use App\Http\Controllers\Api\V1\TradeAssuranceController;
 use Illuminate\Support\Facades\Route;
 
@@ -263,5 +266,33 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
 
         Route::get('company/documents/{document}/download', [CompanyDocumentController::class, 'download'])
             ->name('company.documents.download');
+
+        // RFQ inbox (this task): RFQs routed to the caller's company. Lives
+        // under a `supplier/` sub-prefix — NOT bare `rfqs`/`orders` — so it
+        // never collides with the buyer group's identically-named routes at
+        // `v1/rfqs`/`v1/orders` above (both groups share the `v1` prefix;
+        // Laravel resolves routes by URI+method first and would silently
+        // always match the buyer route otherwise, regardless of middleware).
+        // See SupplierRfqController's docblock for what stands in for a
+        // dedicated Filament "RFQ inbox" resource on the web today.
+        Route::prefix('supplier')->name('supplier.')->group(function (): void {
+            Route::get('rfqs', [SupplierRfqController::class, 'index'])->name('rfqs.index');
+            Route::get('rfqs/{reference}', [SupplierRfqController::class, 'show'])->name('rfqs.show');
+
+            // Quote submission (this task): wraps QuoteService::open()/submit(),
+            // the exact same write path the exporter "Create Quote" form uses.
+            Route::post('rfqs/{reference}/quote', [SupplierQuoteController::class, 'store'])
+                ->middleware('throttle:api-decision')->name('rfqs.quote.store');
+
+            // The supplier's own submitted quotes across all RFQs (this
+            // task) — distinct from the buyer-scoped
+            // GET /rfqs/{reference}/quotes above.
+            Route::get('quotes', [SupplierQuoteController::class, 'index'])->name('quotes.index');
+
+            // The supplier's own sales orders (this task): orders where the
+            // caller's company is the SUPPLIER side. See SupplierOrderController.
+            Route::get('orders', [SupplierOrderController::class, 'index'])->name('orders.index');
+            Route::get('orders/{reference}', [SupplierOrderController::class, 'show'])->name('orders.show');
+        });
     });
 });
