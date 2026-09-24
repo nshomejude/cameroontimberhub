@@ -107,13 +107,14 @@ it('requires buyer auth for the dashboard', function () {
 /**
  * Product-scope change (RBAC foundation): the dashboard route moved from
  * `api.buyer`-only to "any authenticated user". A supplier still 403s on
- * buyer-only routes like /orders (unchanged), but the dashboard now
- * returns 200 with an honest empty-but-valid `supplier` payload instead of
- * a 403 — a 403 there would be indistinguishable from a permissions bug to
- * the mobile client. This intentionally replaces the old
- * "rejects a non-buyer (supplier) account" expectation.
+ * buyer-only routes like /orders (unchanged). The dashboard now returns a
+ * REAL supplier payload (SupplierDashboard), not an empty stub — a 403
+ * there would be indistinguishable from a permissions bug to the mobile
+ * client, and an empty stub would hide real data from a supplier who has
+ * it. This replaces the earlier "empty-but-valid" expectation now that
+ * the supplier branch is implemented.
  */
-it('gives a supplier an empty-but-valid dashboard instead of a 403', function () {
+it('gives a supplier an honest empty-but-valid dashboard when they have no activity', function () {
     $supplierUser = User::factory()->create();
     $company = Company::factory()->create();
     $company->users()->attach($supplierUser);
@@ -124,13 +125,64 @@ it('gives a supplier an empty-but-valid dashboard instead of a 403', function ()
         ->getJson('/api/v1/dashboard')
         ->assertOk()
         ->assertJsonPath('data.role', 'supplier')
-        ->assertJsonCount(0, 'data.stats')
         ->assertJsonCount(0, 'data.recent_orders')
         ->assertJsonCount(0, 'data.recent_quotes')
-        ->assertJsonCount(0, 'data.top_suppliers')
-        ->assertJsonCount(0, 'data.activity')
-        ->assertJsonPath('data.orders_by_status', null)
-        ->assertJsonPath('data.value_trend', null);
+        ->assertJsonCount(0, 'data.activity');
+
+    // The stats tiles themselves are still real (all zero), not an empty array.
+    expect($this->actingAs($supplierUser, 'sanctum')->getJson('/api/v1/dashboard')->json('data.stats'))
+        ->not->toBeEmpty();
+});
+
+it('returns real, non-empty supplier dashboard data when the company has RFQs/orders/products', function () {
+    $supplierUser = User::factory()->create();
+    $company = Company::factory()->publiclyVisible()->create();
+    $company->users()->attach($supplierUser, ['role' => 'owner', 'is_primary' => true]);
+
+    $rfq = Rfq::factory()->approved()->create();
+    $rfq->items()->create(['species_text' => 'Sapele', 'form' => 'sawn', 'quantity' => 50, 'unit' => 'm3']);
+
+    $routing = RfqCompany::create([
+        'rfq_id' => $rfq->getKey(),
+        'company_id' => $company->getKey(),
+        'status' => 'sent',
+        'routed_at' => now(),
+    ]);
+
+    $quote = Quote::factory()->submitted()->create([
+        'rfq_id' => $rfq->getKey(),
+        'company_id' => $company->getKey(),
+        'rfq_company_id' => $routing->getKey(),
+    ]);
+
+    QuoteItem::factory()->create([
+        'quote_id' => $quote->getKey(),
+        'description' => 'Sawn timber',
+        'quantity' => 50,
+        'unit_price' => 200.00,
+        'line_total' => Quote::lineTotal(50, 200.00),
+    ]);
+    $quote->load('items')->recalculateTotals()->save();
+
+    app(App\Services\QuoteService::class)->accept($quote);
+
+    \App\Models\Product::factory()->create([
+        'company_id' => $company->getKey(),
+        'status' => \App\Enums\ProductStatus::Active,
+    ]);
+
+    $response = $this->actingAs($supplierUser, 'sanctum')
+        ->getJson('/api/v1/dashboard')
+        ->assertOk()
+        ->assertJsonPath('data.role', 'supplier');
+
+    expect($response->json('data.recent_orders'))->not->toBeEmpty()
+        ->and($response->json('data.recent_quotes'))->not->toBeEmpty()
+        ->and($response->json('data.products_by_status'))->not->toBeEmpty()
+        ->and($response->json('data.activity'))->not->toBeEmpty();
+
+    $stats = collect($response->json('data.stats'))->keyBy('key');
+    expect($stats->get('active_orders')['value'])->toBeGreaterThan(0);
 });
 
 it('gives staff an empty-but-valid dashboard instead of a 403', function () {

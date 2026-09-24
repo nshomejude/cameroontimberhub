@@ -62,6 +62,19 @@ class AuthController extends Controller
             ]);
         }
 
+        // Blueprint §39: a user with a CONFIRMED 2FA secret must complete
+        // the challenge below before a token is ever minted. This is the one
+        // place that check happens — no token is issued past this point for
+        // such an account without a verified TOTP/recovery code.
+        if ($user->hasTwoFactorEnabled()) {
+            return response()->json([
+                'data' => [
+                    'two_factor_required' => true,
+                    'challenge_token' => TwoFactorController::issueChallengeToken($user),
+                ],
+            ]);
+        }
+
         return response()->json([
             'data' => [
                 'token' => $this->issueToken($user, $request),

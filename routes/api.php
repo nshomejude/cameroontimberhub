@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\V1\AnnouncementController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CompanyDocumentController;
+use App\Http\Controllers\Api\V1\CompanyVerificationController;
 use App\Http\Controllers\Api\V1\FleetDriverController;
 use App\Http\Controllers\Api\V1\FleetVehicleController;
 use App\Http\Controllers\Api\V1\ChatCommerceController;
@@ -26,6 +27,9 @@ use App\Http\Controllers\Api\V1\SearchController;
 use App\Http\Controllers\Api\V1\SpeciesController;
 use App\Http\Controllers\Api\V1\SupplierController;
 use App\Http\Controllers\Api\V1\SupplierOrderController;
+use App\Http\Controllers\Api\V1\SupplierProductController;
+use App\Http\Controllers\Api\V1\TwoFactorController;
+use App\Http\Controllers\Api\V1\SupplierProductImageController;
 use App\Http\Controllers\Api\V1\SupplierQuoteController;
 use App\Http\Controllers\Api\V1\SupplierRfqController;
 use App\Http\Controllers\Api\V1\TradeAssuranceController;
@@ -106,9 +110,22 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
         Route::post('demo-login/{persona}', [DemoLoginController::class, 'login'])
             ->middleware('throttle:demo-login')->name('demo-login');
 
+        // Blueprint §39 mobile 2FA: second half of a login AuthController
+        // paused for a confirmed 2FA account. Public (no bearer token yet —
+        // that's the point), but rate-limited hard against brute force.
+        Route::post('two-factor/challenge', [TwoFactorController::class, 'challenge'])
+            ->middleware('throttle:api-2fa-challenge')->name('two-factor.challenge');
+
         Route::middleware('auth:sanctum')->group(function (): void {
             Route::post('logout', [AuthController::class, 'logout'])->name('logout');
             Route::get('me', [AuthController::class, 'me'])->name('me');
+
+            // Self-service 2FA management, mobile counterpart of the web
+            // Auth\TwoFactorController (see that class's docblock).
+            Route::get('two-factor', [TwoFactorController::class, 'show'])->name('two-factor.show');
+            Route::post('two-factor/enable', [TwoFactorController::class, 'enable'])->name('two-factor.enable');
+            Route::post('two-factor/confirm', [TwoFactorController::class, 'confirm'])->name('two-factor.confirm');
+            Route::post('two-factor/disable', [TwoFactorController::class, 'disable'])->name('two-factor.disable');
         });
     });
 
@@ -374,6 +391,11 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
         Route::get('company/documents/{document}/download', [CompanyDocumentController::class, 'download'])
             ->name('company.documents.download');
 
+        // The caller's own company's verification status (this task) — API
+        // counterpart of the exporter panel's VerificationStatusWidget.
+        Route::get('company/verification', CompanyVerificationController::class)
+            ->name('company.verification');
+
         // RFQ inbox (this task): RFQs routed to the caller's company. Lives
         // under a `supplier/` sub-prefix — NOT bare `rfqs`/`orders` — so it
         // never collides with the buyer group's identically-named routes at
@@ -400,6 +422,31 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
             // caller's company is the SUPPLIER side. See SupplierOrderController.
             Route::get('orders', [SupplierOrderController::class, 'index'])->name('orders.index');
             Route::get('orders/{reference}', [SupplierOrderController::class, 'show'])->name('orders.show');
+
+            // Product management (this task): full CRUD + submit-for-publish
+            // over the caller's own company's catalogue listings, API
+            // counterpart of `Filament\Exporter\Resources\Products\ProductResource`
+            // — see SupplierProductController's docblock. `options` must be
+            // registered before `{product}` so it is never swallowed by the
+            // wildcard show route.
+            Route::get('products/options', [SupplierProductController::class, 'options'])->name('products.options');
+            Route::get('products', [SupplierProductController::class, 'index'])->name('products.index');
+            Route::post('products', [SupplierProductController::class, 'store'])
+                ->middleware('throttle:api-rfq')->name('products.store');
+            Route::get('products/{product}', [SupplierProductController::class, 'show'])->name('products.show');
+            Route::patch('products/{product}', [SupplierProductController::class, 'update'])
+                ->middleware('throttle:api-decision')->name('products.update');
+            Route::post('products/{product}/submit', [SupplierProductController::class, 'submit'])
+                ->middleware('throttle:api-decision')->name('products.submit');
+            Route::delete('products/{product}', [SupplierProductController::class, 'destroy'])
+                ->middleware('throttle:api-decision')->name('products.destroy');
+
+            // Product photo upload (this task): mirrors the ONE real image
+            // field the web form has (`primary_image_path`). No
+            // gallery add/delete/reorder routes exist — see
+            // SupplierProductImageController's docblock for why.
+            Route::post('products/{product}/images', [SupplierProductImageController::class, 'store'])
+                ->middleware('throttle:api-rfq')->name('products.images.store');
 
             // Fleet (this task): vehicles + drivers, API counterpart of the
             // exporter panel's Vehicles/Drivers resources. Sits under

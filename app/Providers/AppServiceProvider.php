@@ -248,6 +248,14 @@ class AppServiceProvider extends ServiceProvider
             Limit::perHour(30)->by('api-login-ip-hour:'.$request->ip()),
         ]);
 
+        // Same budget as api-login (blueprint §39): the 2FA challenge is the
+        // brute-force target once credentials are already known, so it gets
+        // the identical per-IP/per-token limit rather than a looser one.
+        RateLimiter::for('api-2fa-challenge', fn (Request $request) => [
+            Limit::perMinute(5)->by('api-2fa-ip:'.$request->ip()),
+            Limit::perMinute(5)->by('api-2fa-token:'.strtolower((string) $request->input('challenge_token'))),
+        ]);
+
         RateLimiter::for('api-register', fn (Request $request) => [
             Limit::perHour(5)->by('api-register-ip:'.$request->ip()),
             Limit::perDay(10)->by('api-register-ip-day:'.$request->ip()),

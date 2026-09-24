@@ -5,10 +5,12 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Api\V1\OrderResource;
 use App\Http\Resources\Api\V1\QuoteResource;
+use App\Http\Resources\Api\V1\SupplierOrderResource;
 use App\Http\Resources\Api\V1\SupplierResource;
 use App\Http\Resources\Api\V1\UserResource;
 use App\Models\User;
 use App\Services\BuyerDashboard;
+use App\Services\SupplierDashboard;
 use Illuminate\Http\Request;
 
 /**
@@ -33,19 +35,32 @@ use Illuminate\Http\Request;
  *   for activity — the client already has reference-keyed endpoints
  *   (`GET /rfqs/{reference}`, `/quotes/{reference}`, `/orders/{reference}`),
  *   so that pair is enough to navigate without a new mapping table.
- * - `supplier` / `staff`: an honest empty-but-valid payload (200, not
- *   403/404) — a real supplier/staff dashboard is a separate follow-up.
- *   Field names/shapes are kept identical to the buyer payload for shared
- *   concepts, even though every collection is empty today.
+ * - `supplier`: a real payload backed by `SupplierDashboard` — the exact
+ *   same `rfq_company`/`quotes.company_id`/`orders.company_id` scoping
+ *   `SupplierApiScope` already uses for `/supplier/*`. Key names mirror the
+ *   buyer shape wherever the concept overlaps (`stats`, `recent_orders`,
+ *   `activity`), with `recent_quotes`/`products_by_status`/
+ *   `profile_completeness` added for the supplier-specific concepts.
+ * - `staff`: an honest empty-but-valid payload (200, not 403/404) — a real
+ *   staff dashboard is a separate follow-up. Field names/shapes are kept
+ *   identical to the buyer payload for shared concepts, even though every
+ *   collection is empty today.
  */
 class DashboardController extends Controller
 {
-    public function __construct(private readonly BuyerDashboard $dashboard) {}
+    public function __construct(
+        private readonly BuyerDashboard $dashboard,
+        private readonly SupplierDashboard $supplierDashboard,
+    ) {}
 
     public function __invoke(Request $request): array
     {
         $user = $request->user();
         $role = UserResource::resolveRole($user);
+
+        if ($role === 'supplier') {
+            return $this->supplierPayload($user);
+        }
 
         if ($role !== 'buyer') {
             return [
@@ -102,6 +117,24 @@ class DashboardController extends Controller
                 ],
                 'value_trend' => $this->dashboard->valueTrend($user),
                 'activity' => $activity,
+            ],
+        ];
+    }
+
+    /**
+     * @return array{data: array{role: string, stats: array, recent_orders: array, recent_quotes: array, products_by_status: array, profile_completeness: array, activity: array}}
+     */
+    private function supplierPayload(User $user): array
+    {
+        return [
+            'data' => [
+                'role' => 'supplier',
+                'stats' => $this->supplierDashboard->stats($user),
+                'recent_orders' => SupplierOrderResource::collection($this->supplierDashboard->recentOrders($user))->resolve(),
+                'recent_quotes' => QuoteResource::collection($this->supplierDashboard->recentQuotes($user))->resolve(),
+                'products_by_status' => $this->supplierDashboard->productsByStatus($user),
+                'profile_completeness' => $this->supplierDashboard->profileCompleteness($user),
+                'activity' => $this->supplierDashboard->activity($user),
             ],
         ];
     }
