@@ -135,6 +135,7 @@ class DashboardController extends Controller
                 'products_by_status' => $this->supplierDashboard->productsByStatus($user),
                 'profile_completeness' => $this->supplierDashboard->profileCompleteness($user),
                 'activity' => $this->supplierDashboard->activity($user),
+                'type_stats' => $this->supplierDashboard->typeSpecificStats($user),
             ],
         ];
     }

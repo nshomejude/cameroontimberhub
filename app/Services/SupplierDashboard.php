@@ -7,8 +7,12 @@ use App\Enums\OrganisationType;
 use App\Enums\ProductStatus;
 use App\Enums\QuoteStatus;
 use App\Enums\RfqCompanyStatus;
+use App\Models\Capacity;
+use App\Models\CarbonProject;
 use App\Models\Company;
+use App\Models\LotTransformation;
 use App\Models\Order;
+use App\Models\Product;
 use App\Models\Quote;
 use App\Models\RfqCompany;
 use App\Models\User;
@@ -40,7 +44,10 @@ class SupplierDashboard
     /** How many entries the derived activity trail shows. */
     public const ACTIVITY = 6;
 
-    public function __construct(private readonly SupplierApiScope $scope) {}
+    public function __construct(
+        private readonly SupplierApiScope $scope,
+        private readonly DomesticMarketplaceService $domesticMarketplace,
+    ) {}
 
     /* ------------------------------------------------------------ ownership */
 
@@ -326,5 +333,99 @@ class SupplierDashboard
         return ! $this->routings($user)->exists()
             && ! $this->quotes($user)->exists()
             && ! $this->orders($user)->exists();
+    }
+
+    /* --------------------------------------------------------- type_stats */
+
+    /**
+     * Additive, per-Company::type stats appended to the dashboard payload
+     * under a NEW top-level `type_stats` key — the existing `stats`/
+     * `recent_orders`/etc keys are untouched. Empty for a plain export
+     * supplier (no `type`, or `type === Supplier`) so today's response for
+     * that persona is unchanged.
+     *
+     * @return list<array{key: string, label: string, value: int|float, icon: string}>
+     */
+    public function typeSpecificStats(User $user): array
+    {
+        $company = $this->company($user);
+
+        if ($company === null || in_array($company->type, [null, OrganisationType::Supplier], true)) {
+            return [];
+        }
+
+        return match ($company->type) {
+            OrganisationType::Processor => $this->processorTypeStats($company),
+            OrganisationType::Manufacturer => $this->manufacturerTypeStats($company),
+            OrganisationType::Artisan => $this->artisanTypeStats($company),
+            OrganisationType::Retailer => $this->retailerTypeStats($company),
+            OrganisationType::CarbonDeveloper => $this->carbonDeveloperTypeStats($company),
+            default => [],
+        };
+    }
+
+    /** @return list<array{key: string, label: string, value: int|float, icon: string}> */
+    private function processorTypeStats(Company $company): array
+    {
+        $capacities = Capacity::query()->where('owner_type', Company::class)->where('owner_id', $company->id)->count();
+        $transformations = LotTransformation::query()->where('processor_company_id', $company->id)->count();
+        $outputVolume = (float) LotTransformation::query()->where('processor_company_id', $company->id)->sum('output_volume_m3');
+
+        return [
+            ['key' => 'capacities', 'label' => 'Declared capacities', 'value' => $capacities, 'icon' => 'cog-6-tooth'],
+            ['key' => 'transformations', 'label' => 'Lot transformations', 'value' => $transformations, 'icon' => 'arrow-path'],
+            ['key' => 'output_volume_m3', 'label' => 'Total output (m³)', 'value' => round($outputVolume, 2), 'icon' => 'cube'],
+        ];
+    }
+
+    /** @return list<array{key: string, label: string, value: int|float, icon: string}> */
+    private function manufacturerTypeStats(Company $company): array
+    {
+        $capacities = Capacity::query()->where('owner_type', Company::class)->where('owner_id', $company->id)->count();
+        $activeProducts = Product::query()->where('company_id', $company->id)->where('status', ProductStatus::Active->value)->count();
+
+        return [
+            ['key' => 'capacities', 'label' => 'Declared capacities', 'value' => $capacities, 'icon' => 'cog-6-tooth'],
+            ['key' => 'active_products', 'label' => 'Active products', 'value' => $activeProducts, 'icon' => 'cube'],
+        ];
+    }
+
+    /** @return list<array{key: string, label: string, value: int|float, icon: string}> */
+    private function artisanTypeStats(Company $company): array
+    {
+        $activeProducts = Product::query()->where('company_id', $company->id)->where('status', ProductStatus::Active->value)->count();
+
+        return [
+            ['key' => 'active_products', 'label' => 'Active products', 'value' => $activeProducts, 'icon' => 'cube'],
+        ];
+    }
+
+    /** @return list<array{key: string, label: string, value: int|float|string, icon: string}> */
+    private function retailerTypeStats(Company $company): array
+    {
+        $activeProducts = Product::query()->where('company_id', $company->id)->where('status', ProductStatus::Active->value)->count();
+
+        $visibleOnLocalMarket = $this->domesticMarketplace->base()->where('products.company_id', $company->id)->exists();
+
+        return [
+            ['key' => 'active_products', 'label' => 'Active products', 'value' => $activeProducts, 'icon' => 'cube'],
+            ['key' => 'region', 'label' => 'Region', 'value' => $company->region ?? '', 'icon' => 'map-pin'],
+            ['key' => 'city', 'label' => 'City', 'value' => $company->city ?? '', 'icon' => 'map-pin'],
+            ['key' => 'local_market_visible', 'label' => 'Visible on local market', 'value' => $visibleOnLocalMarket ? 1 : 0, 'icon' => 'eye'],
+        ];
+    }
+
+    /** @return list<array{key: string, label: string, value: int|float, icon: string}> */
+    private function carbonDeveloperTypeStats(Company $company): array
+    {
+        $projects = CarbonProject::query()->where('company_id', $company->id)->count();
+        $areaHectares = (float) CarbonProject::query()->where('company_id', $company->id)->sum('area_hectares');
+        $estimatedCreditsPerYear = (float) CarbonProject::query()->where('company_id', $company->id)->sum('estimated_credits_per_year');
+
+        return [
+            ['key' => 'carbon_projects', 'label' => 'Carbon projects', 'value' => $projects, 'icon' => 'globe-alt'],
+            ['key' => 'area_hectares', 'label' => 'Total area (ha)', 'value' => round($areaHectares, 2), 'icon' => 'map'],
+            ['key' => 'estimated_credits_per_year', 'label' => 'Estimated credits / year', 'value' => round($estimatedCreditsPerYear, 2), 'icon' => 'chart-bar'],
+        ];
     }
 }

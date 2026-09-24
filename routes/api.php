@@ -8,6 +8,8 @@ use App\Http\Controllers\Api\V1\CompanyProfileController;
 use App\Http\Controllers\Api\V1\CompanyVerificationController;
 use App\Http\Controllers\Api\V1\FleetDriverController;
 use App\Http\Controllers\Api\V1\FleetVehicleController;
+use App\Http\Controllers\Api\V1\LocalMarketController;
+use App\Http\Controllers\Api\V1\TransformationNetworkController;
 use App\Http\Controllers\Api\V1\ChatCommerceController;
 use App\Http\Controllers\Api\V1\ChatOrderController;
 use App\Http\Controllers\Api\V1\ConversationController;
@@ -156,6 +158,24 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
     Route::get('suppliers/{slug}', [SupplierController::class, 'show'])->name('suppliers.show');
 
     Route::get('search', SearchController::class)->name('search');
+
+    // Local market (Buy Cameroon Wood) — public read-only wrapper around
+    // DomesticMarketplaceService. A listing IS a Product row; there is no
+    // separate local-listing or local-order model, see LocalMarketController.
+    Route::prefix('local')->name('local.')->group(function (): void {
+        Route::get('listings', [LocalMarketController::class, 'index'])->name('listings.index');
+        Route::get('listings/{id}', [LocalMarketController::class, 'show'])->whereNumber('id')->name('listings.show');
+        Route::get('yards/{slug}', [LocalMarketController::class, 'yard'])->name('yards.show');
+    });
+
+    // Transformation Network — public read-only directory + capability
+    // match, wrapping Public\TransformationNetworkController's queries.
+    // There is no request/accept/decline/quote/job pipeline here.
+    Route::prefix('transformation')->name('transformation.')->group(function (): void {
+        Route::get('providers', [TransformationNetworkController::class, 'index'])->name('providers.index');
+        Route::get('providers/{slug}', [TransformationNetworkController::class, 'show'])->name('providers.show');
+        Route::get('match', [TransformationNetworkController::class, 'match'])->name('match');
+    });
 
     // Mobile home-screen feed (Announcements). Public, no auth, always
     // `{"data": [...]}` — see AnnouncementController.
