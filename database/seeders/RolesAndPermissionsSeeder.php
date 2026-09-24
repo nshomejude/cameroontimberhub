@@ -82,6 +82,9 @@ class RolesAndPermissionsSeeder extends Seeder
         // a different admin than the requester plus a fresh 2FA
         // confirmation (see App\Actions\ApiKeys).
         'api-keys.manage',
+        // Support tickets ("live chat with support"): staff inbox on
+        // /api/v1/staff/support/tickets and the admin SupportTicketResource.
+        'support.manage',
     ];
 
     /** Role => permission matrix (spec decision G). super_admin gets all. */
@@ -112,14 +115,26 @@ class RolesAndPermissionsSeeder extends Seeder
             'ai.manage',
             // `/api/v1` product API key issuance/revocation: admin-only.
             'api-keys.manage',
+            // Support ticket inbox.
+            'support.manage',
         ],
         'verification_officer' => [
             'companies.view', 'documents.review', 'verification.review',
             'badges.issue', 'badges.revoke', 'audit.view',
             'certificates.manage',
+            'support.manage',
         ],
         'content_manager' => [
             'companies.view', 'species.manage', 'pages.manage',
+            'support.manage',
+        ],
+        // Answers support tickets; no other authority.
+        'support_officer' => [
+            'support.manage',
+        ],
+        // Community/support moderator: answers support tickets.
+        'moderator' => [
+            'support.manage',
         ],
         // Compliance authority (blueprint §88, §89 segregation): manages
         // regulatory sources, compliance rules/cases, inspectors and
@@ -127,6 +142,7 @@ class RolesAndPermissionsSeeder extends Seeder
         // (billing) and users.manage (privilege escalation).
         'compliance_officer' => [
             'companies.view', 'compliance.manage', 'audit.view',
+            'support.manage',
         ],
         // Financial/billing authority (blueprint §88, §89 segregation):
         // manages subscription plans and can view payments. Deliberately
@@ -145,7 +161,7 @@ class RolesAndPermissionsSeeder extends Seeder
     ];
 
     /** Seedable-but-unused-in-MVP platform roles (no permissions yet). */
-    public const FUTURE_ROLES = ['sales_officer', 'support_officer'];
+    public const FUTURE_ROLES = ['sales_officer'];
 
     /**
      * Account-capability roles (brief §3.1) -- what a USER account can DO on
