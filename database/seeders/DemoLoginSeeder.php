@@ -24,6 +24,7 @@ use App\Models\Species;
 use App\Models\TimberLot;
 use App\Models\User;
 use App\Models\Vehicle;
+use App\Models\VerificationBadge;
 use App\Notifications\MessageReceivedNotification;
 use App\Notifications\OrderStatusChangedNotification;
 use App\Notifications\PaymentConfirmedNotification;
@@ -569,6 +570,7 @@ class DemoLoginSeeder extends Seeder
                 'phone' => '+237 6 92 00 00 00',
                 'description' => 'Atelier Ebang Menuiserie is a small-batch woodworking artisan making stools, boxes and carved decor.',
                 'verified_at' => now(),
+                'logo_path' => 'companies/demo/logo.png',
             ],
         );
 
@@ -586,6 +588,8 @@ class DemoLoginSeeder extends Seeder
                 );
             }
         }
+
+        $this->ensurePubliclyVisible($company);
     }
 
     /* ------------------------------------------------------------- retailer */
@@ -611,6 +615,7 @@ class DemoLoginSeeder extends Seeder
                 'phone' => '+237 6 93 00 00 00',
                 'description' => 'Marché Mokolo Timber Yard stocks sawn timber and boards for local walk-in buyers.',
                 'verified_at' => now(),
+                'logo_path' => 'companies/demo/logo.png',
             ],
         );
 
@@ -633,6 +638,8 @@ class DemoLoginSeeder extends Seeder
                 );
             }
         }
+
+        $this->ensurePubliclyVisible($company);
     }
 
     /* ------------------------------------------------------ carbon developer */
@@ -698,6 +705,49 @@ class DemoLoginSeeder extends Seeder
             && $project->registry_status->canTransitionTo(CarbonRegistryStatus::Submitted)) {
             $project->transitionTo(CarbonRegistryStatus::Submitted);
         }
+    }
+
+    /**
+     * Satisfies every `Company::scopePubliclyVisible()` predicate (verified
+     * status, logo_path, description, region, a species, a public contact,
+     * an active verification badge) so this persona's products actually
+     * appear in `DomesticMarketplaceService`'s search — mirrors
+     * `DomesticMarketDemoSeeder::ensurePubliclyVisible()` exactly, the
+     * established pattern for a "real, findable" demo company. `logo_path`
+     * is set on the company's own `firstOrCreate()` call above; this
+     * back-fills it on a company that already existed before that field was
+     * added, so a re-run of an already-seeded persona still becomes visible.
+     */
+    private function ensurePubliclyVisible(Company $company): void
+    {
+        if (blank($company->logo_path)) {
+            $company->forceFill(['logo_path' => 'companies/demo/logo.png'])->save();
+        }
+
+        $company->contacts()->firstOrCreate(
+            ['company_id' => $company->getKey(), 'is_public' => true],
+            ['name' => 'Sales Desk', 'title' => 'Sales', 'email' => $company->email, 'phone' => $company->phone],
+        );
+
+        if ($company->species()->doesntExist()) {
+            $speciesId = Species::query()->value('id');
+
+            if ($speciesId !== null) {
+                $company->species()->syncWithoutDetaching([$speciesId]);
+            }
+        }
+
+        VerificationBadge::firstOrCreate(
+            ['company_id' => $company->getKey()],
+            [
+                'badge_type' => \App\Enums\BadgeType::VerifiedExporter,
+                'status' => \App\Enums\BadgeStatus::Active,
+                'issued_at' => now(),
+                'valid_until' => now()->addYear()->toDateString(),
+                'is_public' => true,
+                'reference_code' => 'CTH-DOM-'.str_pad((string) $company->getKey(), 4, '0', STR_PAD_LEFT),
+            ],
+        );
     }
 
     /**

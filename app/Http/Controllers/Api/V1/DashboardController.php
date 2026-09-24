@@ -134,8 +134,9 @@ class DashboardController extends Controller
                 'recent_quotes' => QuoteResource::collection($this->supplierDashboard->recentQuotes($user))->resolve(),
                 'products_by_status' => $this->supplierDashboard->productsByStatus($user),
                 'profile_completeness' => $this->supplierDashboard->profileCompleteness($user),
-                'activity' => $this->supplierDashboard->activity($user),
                 'type_stats' => $this->supplierDashboard->typeSpecificStats($user),
+                'local_market_visibility' => $this->supplierDashboard->localMarketVisibility($user),
+                'activity' => $this->supplierDashboard->activity($user),
             ],
         ];
     }

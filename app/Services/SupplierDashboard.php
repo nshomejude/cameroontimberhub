@@ -415,6 +415,38 @@ class SupplierDashboard
         ];
     }
 
+    /**
+     * The exact reasons a Retailer/Artisan's own products do or don't
+     * appear in `DomesticMarketplaceService::base()` — every predicate
+     * `Company::scopePubliclyVisible()` checks, named individually so the
+     * app can render a "why you're not listed yet" checklist rather than a
+     * bare boolean. `null` for any other Company::type, since this concept
+     * only applies to the two local-market-facing org types.
+     *
+     * @return array{visible: bool, missing: list<string>}|null
+     */
+    public function localMarketVisibility(User $user): ?array
+    {
+        $company = $this->company($user);
+
+        if ($company === null || ! in_array($company->type, [OrganisationType::Retailer, OrganisationType::Artisan], true)) {
+            return null;
+        }
+
+        $company->loadMissing(['species', 'contacts', 'verificationBadges']);
+
+        $missing = array_values(array_filter([
+            filled($company->logo_path) ? null : 'logo',
+            filled($company->description) ? null : 'description',
+            filled($company->region) ? null : 'region',
+            $company->species->isNotEmpty() ? null : 'species',
+            $company->contacts->isNotEmpty() ? null : 'contact',
+            $company->verificationBadges->contains(fn ($b) => $b->status === \App\Enums\BadgeStatus::Active) ? null : 'verification_badge',
+        ]));
+
+        return ['visible' => $missing === [], 'missing' => $missing];
+    }
+
     /** @return list<array{key: string, label: string, value: int|float, icon: string}> */
     private function carbonDeveloperTypeStats(Company $company): array
     {
