@@ -21,7 +21,14 @@ class RfqItemResource extends JsonResource
             'moisture_content' => $this->moisture_content,
             'quantity' => $this->quantity,
             'unit' => $this->unit,
+            // Added so a supplier's quote-submission payload
+            // (StoreSupplierQuoteRequest::items.*.species_id) can reference
+            // the real numeric id — previously only slug/common_name were
+            // exposed here, which StoreSupplierQuoteRequest cannot validate
+            // against (`exists:species,id`).
+            'species_id' => $this->species_id,
             'species' => $this->whenLoaded('species', fn () => $this->species === null ? null : [
+                'id' => $this->species->id,
                 'slug' => $this->species->slug,
                 'common_name' => $this->species->common_name,
             ]),

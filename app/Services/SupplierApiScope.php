@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Company;
 use App\Models\Order;
+use App\Models\Product;
 use App\Models\Quote;
 use App\Models\Rfq;
 use App\Models\RfqCompany;
@@ -97,6 +98,29 @@ class SupplierApiScope
     {
         return $this->orders($supplier)
             ->where('reference_code', $reference)
+            ->firstOrFail();
+    }
+
+    /**
+     * The caller's own company's products, ANY status — the same population
+     * `ProductResource::getEloquentQuery()` / `ListSupplierProductsHandler`
+     * scope the exporter panel to, just resolved through the already-known
+     * company instead of a fresh `dashboardOwned()` membership check.
+     */
+    public function products(User $supplier): Builder
+    {
+        $companyId = $this->company($supplier)?->getKey();
+
+        return Product::query()
+            ->where('company_id', $companyId)
+            ->orderByDesc('updated_at');
+    }
+
+    /** One of the supplier's own products by id, or 404 (enumeration-safety, same convention as every other lookup here). */
+    public function product(User $supplier, int|string $id): Product
+    {
+        return $this->products($supplier)
+            ->where('id', $id)
             ->firstOrFail();
     }
 }
