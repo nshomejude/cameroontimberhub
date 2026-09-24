@@ -6,6 +6,8 @@ use App\Enums\DocumentStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Company;
 use App\Models\DocumentType;
+use App\Services\CompanyCompletenessService;
+use App\Services\VerificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -40,6 +42,50 @@ use Illuminate\Http\Request;
  */
 class CompanyVerificationController extends Controller
 {
+    public function __construct(
+        private readonly VerificationService $verification,
+        private readonly CompanyCompletenessService $completeness,
+    ) {}
+
+    /**
+     * Submit the caller's own company for verification review — the API
+     * counterpart of `EditCompany`'s "Submit for review" header action.
+     * Same gate (`CompanyCompletenessService::readyForSubmission()`), same
+     * status guard (only Draft/Rejected may submit — `VerificationService::submit()`
+     * itself no-ops/returns the existing open request for anything else, so
+     * this never double-submits), same underlying service call — no second
+     * submission path.
+     */
+    public function submit(Request $request): JsonResponse
+    {
+        $company = $request->user()->companies()->first();
+
+        if ($company === null) {
+            return response()->json(['message' => 'This account has no company.'], 404);
+        }
+
+        $readiness = $this->completeness->readyForSubmission($company);
+
+        if (! $readiness->isComplete()) {
+            return response()->json([
+                'error' => [
+                    'code' => 'profile_incomplete',
+                    'message' => 'Your profile is not yet ready for submission.',
+                    'details' => ['missing' => $readiness->missing],
+                ],
+            ], 422);
+        }
+
+        $verificationRequest = $this->verification->submit($company, [], $request->user());
+
+        return response()->json([
+            'data' => [
+                'status' => $verificationRequest->status->value,
+                'submitted_at' => $verificationRequest->created_at?->toIso8601String(),
+            ],
+        ], 201);
+    }
+
     public function __invoke(Request $request): JsonResponse
     {
         $company = $request->user()->companies()->first();

@@ -126,6 +126,49 @@ class CompanyProfileController extends Controller
         ]);
     }
 
+    /**
+     * Upload/replace the company logo or cover image.
+     *
+     * `CompanyForm::configure()` has two FileUpload fields for this:
+     * `logo_path` (disk `public`, directory `companies/logos`) and
+     * `cover_path` (disk `public`, directory `companies/covers`) — mirrored
+     * exactly here, same as `SupplierProductImageController` mirrors the
+     * product form's single image field. `UpdateCompanyProfileRequest`
+     * intentionally does NOT accept these as multipart files (it takes a
+     * pre-existing storage path string for every other write), so this is a
+     * separate, dedicated upload endpoint rather than overloading PATCH.
+     */
+    public function uploadImage(Request $request, string $field): JsonResponse
+    {
+        if (! in_array($field, ['logo', 'cover'], true)) {
+            return response()->json(['message' => 'Unknown image field.'], 404);
+        }
+
+        $company = $this->resolveCompany($request);
+
+        if ($company === null) {
+            return $this->noCompanyResponse();
+        }
+
+        $request->validate([
+            'image' => ['required', 'image', 'max:10240'],
+        ]);
+
+        $directory = $field === 'logo' ? 'companies/logos' : 'companies/covers';
+        $column = $field === 'logo' ? 'logo_path' : 'cover_path';
+
+        $path = $request->file('image')->store($directory, 'public');
+
+        $company->forceFill([$column => $path])->save();
+
+        $company->loadMissing(self::RELATIONS);
+
+        return response()->json([
+            'message' => 'Image uploaded.',
+            'data' => new CompanyProfileResource($company),
+        ], 201);
+    }
+
     private function resolveCompany(Request $request): ?Company
     {
         return $request->user()->companies()->first();

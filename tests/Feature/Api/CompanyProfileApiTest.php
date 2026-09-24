@@ -165,3 +165,56 @@ it('returns onboarding steps with false flags for a bare company', function () {
         ->and($steps['verification_submitted']['done'])->toBeFalse()
         ->and($response->json('data.completed_count'))->toBe(1);
 });
+
+/* --------------------------------------------------------- POST /company/images/{field} */
+
+it('uploads a logo and updates logo_url', function () {
+    \Illuminate\Support\Facades\Storage::fake('public');
+    [$user, $company] = companyProfileApiSupplier();
+
+    $response = $this->actingAs($user, 'sanctum')
+        ->postJson('/api/v1/company/images/logo', [
+            'image' => \Illuminate\Http\UploadedFile::fake()->image('logo.jpg'),
+        ])
+        ->assertCreated();
+
+    $company->refresh();
+    expect($company->logo_path)->toStartWith('companies/logos/');
+    \Illuminate\Support\Facades\Storage::disk('public')->assertExists($company->logo_path);
+    expect($response->json('data.logo_url'))->not->toBeNull();
+});
+
+it('uploads a cover image and updates cover_url', function () {
+    \Illuminate\Support\Facades\Storage::fake('public');
+    [$user, $company] = companyProfileApiSupplier();
+
+    $this->actingAs($user, 'sanctum')
+        ->postJson('/api/v1/company/images/cover', [
+            'image' => \Illuminate\Http\UploadedFile::fake()->image('cover.jpg'),
+        ])
+        ->assertCreated();
+
+    $company->refresh();
+    expect($company->cover_path)->toStartWith('companies/covers/');
+});
+
+it('rejects an unknown image field', function () {
+    [$user] = companyProfileApiSupplier();
+
+    $this->actingAs($user, 'sanctum')
+        ->postJson('/api/v1/company/images/banner', [
+            'image' => \Illuminate\Http\UploadedFile::fake()->image('x.jpg'),
+        ])
+        ->assertNotFound();
+});
+
+it('rejects a non-image upload for the logo field', function () {
+    \Illuminate\Support\Facades\Storage::fake('public');
+    [$user] = companyProfileApiSupplier();
+
+    $this->actingAs($user, 'sanctum')
+        ->postJson('/api/v1/company/images/logo', [
+            'image' => \Illuminate\Http\UploadedFile::fake()->create('doc.pdf', 100, 'application/pdf'),
+        ])
+        ->assertStatus(422);
+});

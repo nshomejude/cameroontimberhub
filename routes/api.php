@@ -453,6 +453,9 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
         Route::get('company/verification', CompanyVerificationController::class)
             ->name('company.verification');
 
+        Route::post('company/verification/submit', [CompanyVerificationController::class, 'submit'])
+            ->middleware('throttle:api-rfq')->name('company.verification.submit');
+
         // The caller's own company profile (this task) — API counterpart of
         // the exporter panel's "Edit company" form. Siblings of
         // `company/verification` above, same middleware.
@@ -460,6 +463,9 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
             ->name('company.show');
         Route::patch('company', [CompanyProfileController::class, 'update'])
             ->middleware('throttle:api-decision')->name('company.update');
+        Route::post('company/images/{field}', [CompanyProfileController::class, 'uploadImage'])
+            ->whereIn('field', ['logo', 'cover'])
+            ->middleware('throttle:api-rfq')->name('company.images.upload');
 
         // The caller's own company onboarding checklist (this task) — API
         // counterpart of the exporter panel's OnboardingChecklist page.

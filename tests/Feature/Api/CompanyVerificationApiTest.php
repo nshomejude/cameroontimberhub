@@ -98,3 +98,57 @@ it('gives a clean next_step for an already-verified company with no missing docu
         ->assertJsonPath('data.missing_documents', [])
         ->assertJsonPath('data.next_step', 'No action needed — your company is verified.');
 });
+
+it('rejects submission with the real missing requirements when the profile is incomplete', function () {
+    [$user] = verificationApiSupplier([
+        'status' => CompanyStatus::Draft,
+        'description' => null,
+        'region' => null,
+        'logo_path' => null,
+    ]);
+
+    $response = $this->actingAs($user, 'sanctum')->postJson('/api/v1/company/verification/submit')
+        ->assertStatus(422);
+
+    expect($response->json('error.code'))->toBe('profile_incomplete')
+        ->and($response->json('error.details.missing'))->toContain('A logo');
+});
+
+it('submits for verification once the profile is complete, mirroring EditCompany::submitForReview', function () {
+    [$user, $company] = verificationApiSupplier([
+        'status' => CompanyStatus::Draft,
+        'legal_name' => 'Test Timber Sarl',
+        'description' => str_repeat('A real company description. ', 3),
+        'region' => 'Littoral',
+        'logo_path' => 'companies/demo/logo.png',
+    ]);
+
+    $company->contacts()->create(['name' => 'Sales Desk', 'is_public' => true]);
+    $species = \App\Models\Species::factory()->create();
+    $company->species()->attach($species->getKey());
+
+    $response = $this->actingAs($user, 'sanctum')->postJson('/api/v1/company/verification/submit')
+        ->assertCreated();
+
+    expect($response->json('data.status'))->toBe('pending');
+    expect($company->verificationRequests()->count())->toBe(1);
+});
+
+it('does not duplicate an already-open verification request on a second submit', function () {
+    [$user, $company] = verificationApiSupplier([
+        'status' => CompanyStatus::Draft,
+        'legal_name' => 'Test Timber Sarl',
+        'description' => str_repeat('A real company description. ', 3),
+        'region' => 'Littoral',
+        'logo_path' => 'companies/demo/logo.png',
+    ]);
+
+    $company->contacts()->create(['name' => 'Sales Desk', 'is_public' => true]);
+    $species = \App\Models\Species::factory()->create();
+    $company->species()->attach($species->getKey());
+
+    $this->actingAs($user, 'sanctum')->postJson('/api/v1/company/verification/submit')->assertCreated();
+    $this->actingAs($user, 'sanctum')->postJson('/api/v1/company/verification/submit')->assertCreated();
+
+    expect($company->verificationRequests()->count())->toBe(1);
+});
