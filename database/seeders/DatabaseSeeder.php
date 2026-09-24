@@ -37,6 +37,7 @@ class DatabaseSeeder extends Seeder
             QuoteSeeder::class,
             OrderSeeder::class,
             MessagingSeeder::class,
+            CompanyCoordinatesSeeder::class,
         ]);
     }
 }

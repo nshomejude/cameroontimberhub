@@ -56,7 +56,7 @@ class Company extends Model
         'id', 'slug', 'legal_name', 'trade_name', 'city', 'region', 'country_code',
         'status', 'logo_path', 'supplier_type', 'is_featured', 'verified_at',
         'years_experience', 'response_rate_percent', 'orders_completed',
-        'rating_avg', 'rating_count',
+        'rating_avg', 'rating_count', 'address_line', 'latitude', 'longitude',
     ];
 
     /**
