@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\V1\FleetDriverController;
 use App\Http\Controllers\Api\V1\FleetVehicleController;
 use App\Http\Controllers\Api\V1\LocalMarketController;
 use App\Http\Controllers\Api\V1\TransformationNetworkController;
+use App\Http\Controllers\Api\V1\TransformationRequestController;
 use App\Http\Controllers\Api\V1\ChatCommerceController;
 use App\Http\Controllers\Api\V1\ChatOrderController;
 use App\Http\Controllers\Api\V1\ConversationController;
@@ -300,6 +301,27 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
         Route::prefix('devices')->name('devices.')->group(function (): void {
             Route::post('/', [DeviceTokenController::class, 'store'])->name('store');
             Route::delete('{token}', [DeviceTokenController::class, 'destroy'])->name('destroy');
+        });
+
+        // Transformation Requests — the request/accept/decline/quote/job
+        // pipeline against the (read-only) Transformation Network directory
+        // above. Any authenticated company (buyer/supplier/retailer/...) can
+        // send a request; only a verified processor/manufacturer can be the
+        // provider on one, enforced in TransformationRequestService::create().
+        // Own `transformation/requests` prefix, deliberately distinct from
+        // the read-only `transformation` group's routes.
+        Route::prefix('transformation/requests')->name('transformation-requests.')->group(function (): void {
+            Route::get('/', [TransformationRequestController::class, 'index'])->name('index');
+            Route::post('/', [TransformationRequestController::class, 'store'])->name('store');
+            Route::get('{reference}', [TransformationRequestController::class, 'show'])->name('show');
+            Route::post('{reference}/accept', [TransformationRequestController::class, 'accept'])->name('accept');
+            Route::post('{reference}/decline', [TransformationRequestController::class, 'decline'])->name('decline');
+            Route::post('{reference}/quote', [TransformationRequestController::class, 'quote'])->name('quote');
+            Route::post('{reference}/start', [TransformationRequestController::class, 'startJob'])->name('start');
+            Route::post('{reference}/complete', [TransformationRequestController::class, 'completeJob'])->name('complete');
+            Route::post('{reference}/accept-quote', [TransformationRequestController::class, 'acceptQuote'])->name('accept-quote');
+            Route::post('{reference}/decline-quote', [TransformationRequestController::class, 'declineQuote'])->name('decline-quote');
+            Route::post('{reference}/cancel', [TransformationRequestController::class, 'cancel'])->name('cancel');
         });
     });
 

@@ -124,6 +124,22 @@ return [
             'title' => 'Votre devis a été accepté',
             'body' => 'L\'acheteur a accepté votre devis pour la demande :rfq.',
         ],
+        'transformation_request_created' => [
+            'title' => 'Nouvelle demande de transformation',
+            'body' => ':requester vous a envoyé la demande de transformation :request.',
+        ],
+        'transformation_request_quoted' => [
+            'title' => 'Devis reçu pour la demande de transformation',
+            'body' => ':provider a envoyé un devis pour la demande de transformation :request.',
+        ],
+        'transformation_request_accepted' => [
+            'title' => 'Demande de transformation acceptée',
+            'body' => ':requester a accepté la demande de transformation :request.',
+        ],
+        'transformation_request_completed' => [
+            'title' => 'Demande de transformation terminée',
+            'body' => ':provider a terminé la demande de transformation :request.',
+        ],
         'quote_declined' => [
             'title' => 'Votre devis a été refusé',
             'body' => 'L\'acheteur a refusé votre devis :quote.',

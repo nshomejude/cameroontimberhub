@@ -154,6 +154,22 @@ return [
             'title' => 'Your quote was accepted',
             'body' => 'The buyer accepted your quote for RFQ :rfq.',
         ],
+        'transformation_request_created' => [
+            'title' => 'New transformation request',
+            'body' => ':requester sent you transformation request :request.',
+        ],
+        'transformation_request_quoted' => [
+            'title' => 'Transformation request quoted',
+            'body' => ':provider sent a quote for transformation request :request.',
+        ],
+        'transformation_request_accepted' => [
+            'title' => 'Transformation request accepted',
+            'body' => ':requester accepted transformation request :request.',
+        ],
+        'transformation_request_completed' => [
+            'title' => 'Transformation request completed',
+            'body' => ':provider completed transformation request :request.',
+        ],
         'quote_declined' => [
             'title' => 'Your quote was declined',
             'body' => 'The buyer declined your quote :quote.',

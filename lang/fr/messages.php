@@ -1329,6 +1329,7 @@ return [
             'rfq_queue' => "File d'attente des demandes de devis",
             'species' => 'Essences',
             'timber_lots' => 'Lots de bois',
+            'transformation_requests' => 'Demandes de transformation',
             'users' => 'Utilisateurs',
             'verification_badges' => 'Badges de vérification',
             'verification_queue' => "File d'attente de vérification",
@@ -1569,6 +1570,15 @@ return [
             'delivered' => 'La livraison a été enregistrée à destination.',
             'completed' => 'La commande est clôturée. Les deux parties la considèrent terminée.',
             'cancelled' => 'Cette commande a été annulée.',
+        ],
+        'transformation_request_status' => [
+            'pending' => 'En attente',
+            'quoted' => 'Devis reçu',
+            'accepted' => 'Acceptée',
+            'in_progress' => 'En cours',
+            'completed' => 'Terminée',
+            'declined' => 'Refusée',
+            'cancelled' => 'Annulée',
         ],
         'quote_status' => [
             'draft' => 'Brouillon',

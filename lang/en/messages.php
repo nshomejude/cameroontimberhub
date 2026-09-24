@@ -1323,6 +1323,7 @@ return [
             'rfq_queue' => 'RFQ queue',
             'species' => 'Species',
             'timber_lots' => 'Timber Lots',
+            'transformation_requests' => 'Transformation Requests',
             'users' => 'Users',
             'verification_badges' => 'Verification badges',
             'verification_queue' => 'Verification queue',
@@ -1563,6 +1564,15 @@ return [
             'delivered' => 'Delivery has been recorded at the destination.',
             'completed' => 'The order is closed. Both sides consider it finished.',
             'cancelled' => 'This order was cancelled.',
+        ],
+        'transformation_request_status' => [
+            'pending' => 'Pending',
+            'quoted' => 'Quoted',
+            'accepted' => 'Accepted',
+            'in_progress' => 'In progress',
+            'completed' => 'Completed',
+            'declined' => 'Declined',
+            'cancelled' => 'Cancelled',
         ],
         'quote_status' => [
             'draft' => 'Draft',
