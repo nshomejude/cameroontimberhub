@@ -12,8 +12,12 @@
 @theme {
     /* The approved mockups set every heading in the same geometric sans as body
        copy (no serif), so display and sans share a stack and differ by weight. */
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
-    --font-display: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
+    /* 'Noto Sans Thai'/'Noto Sans SC' aren't loaded via webfont — they ride on
+       the OS-shipped system fallback fonts (Android/iOS/Windows/macOS all bundle
+       Noto CJK/Thai as system fallbacks), so Thai/Chinese glyphs render instead
+       of tofu boxes without adding a webfont request for the 8-locale rollout. */
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, 'Noto Sans Thai', 'Noto Sans SC', sans-serif;
+    --font-display: 'Instrument Sans', ui-sans-serif, system-ui, 'Noto Sans Thai', 'Noto Sans SC', sans-serif;
 
     /* Forest — primary brand green. Values sampled directly from the approved
        marketplace mockups in /frontpages (buttons #0a5223, dark bands #031c12,

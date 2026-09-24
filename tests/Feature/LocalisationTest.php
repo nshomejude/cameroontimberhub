@@ -31,7 +31,7 @@ it('switches back to English after being set to French', function () {
 });
 
 it('rejects an invalid locale value instead of silently accepting it', function () {
-    $this->post(route('locale.set', 'de'))->assertNotFound();
+    $this->post(route('locale.set', 'ru'))->assertNotFound();
 
     expect(session('locale'))->toBeNull();
 });
@@ -40,6 +40,51 @@ it('rejects a non-supported locale like "xx" without setting the session', funct
     $this->post(route('locale.set', 'xx'))->assertNotFound();
 
     expect(session()->has('locale'))->toBeFalse();
+});
+
+it('accepts all 8 supported locales via the locale route', function () {
+    foreach (App\Http\Middleware\SetLocale::SUPPORTED as $locale) {
+        $this->post(route('locale.set', $locale))->assertRedirect();
+        expect(session('locale'))->toBe($locale);
+    }
+});
+
+it('resolves each supported Accept-Language primary subtag, bare and regional', function () {
+    $cases = [
+        'en' => ['en', 'en-US'],
+        'fr' => ['fr', 'fr-FR', 'fr-CA'],
+        'zh_CN' => ['zh', 'zh-CN'],
+        'th' => ['th', 'th-TH'],
+        'vi' => ['vi', 'vi-VN'],
+        'it' => ['it', 'it-IT'],
+        'es' => ['es', 'es-ES', 'es-MX'],
+        'de' => ['de', 'de-DE', 'de-AT', 'de-CH'],
+    ];
+
+    foreach ($cases as $expected => $headers) {
+        foreach ($headers as $header) {
+            $this->withHeaders(['Accept-Language' => $header])
+                ->getJson('/api/v1/announcements');
+
+            expect(app()->getLocale())->toBe($expected, "Accept-Language: {$header} should resolve to {$expected}");
+        }
+    }
+});
+
+it('falls back to app.locale for a garbage Accept-Language value', function () {
+    $this->withHeaders(['Accept-Language' => 'xx-XX,zz;q=0.9'])
+        ->getJson('/api/v1/announcements');
+
+    expect(app()->getLocale())->toBe(config('app.locale', 'en'));
+});
+
+it('renders the language switcher with all 8 native-script labels on the homepage', function () {
+    $response = $this->get(route('home'));
+
+    $response->assertOk();
+    foreach (['English', 'Français', '中文', 'ไทย', 'Tiếng Việt', 'Italiano', 'Español', 'Deutsch'] as $label) {
+        $response->assertSee($label, false);
+    }
 });
 
 it('renders the homepage in French with no missing-translation raw keys visible', function () {

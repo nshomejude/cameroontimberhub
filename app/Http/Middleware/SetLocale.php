@@ -12,7 +12,17 @@ class SetLocale
      * Supported locales. Keep in sync with the `locale` route's validation
      * and the language-switcher options in the header component.
      */
-    public const SUPPORTED = ['en', 'fr'];
+    public const SUPPORTED = ['en', 'fr', 'zh_CN', 'th', 'vi', 'it', 'es', 'de'];
+
+    /**
+     * Maps an `Accept-Language` primary subtag to its supported locale
+     * directory name, for the cases where they differ (the mobile client
+     * sends bare `zh`, but the translation directory is `zh_CN` since we
+     * only ship simplified Chinese today).
+     */
+    private const PRIMARY_SUBTAG_MAP = [
+        'zh' => 'zh_CN',
+    ];
 
     public function handle(Request $request, Closure $next): Response
     {
@@ -54,10 +64,11 @@ class SetLocale
 
         foreach (explode(',', $header) as $part) {
             $code = strtolower(trim(explode(';', $part)[0]));
-            $code = explode('-', $code)[0];
+            $primary = explode('-', $code)[0];
+            $primary = self::PRIMARY_SUBTAG_MAP[$primary] ?? $primary;
 
-            if (in_array($code, self::SUPPORTED, true)) {
-                return $code;
+            if (in_array($primary, self::SUPPORTED, true)) {
+                return $primary;
             }
         }
 

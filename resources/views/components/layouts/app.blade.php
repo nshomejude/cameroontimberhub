@@ -40,6 +40,20 @@
     ];
 
     // Deep screens swap the mobile hamburger for a back affordance.
+    // Native-script labels for the language switcher — these are display
+    // names in their own language, not translated strings, so they stay
+    // fixed regardless of the current locale.
+    $localeLabels = [
+        'en' => 'English',
+        'fr' => 'Français',
+        'zh_CN' => '中文',
+        'th' => 'ไทย',
+        'vi' => 'Tiếng Việt',
+        'it' => 'Italiano',
+        'es' => 'Español',
+        'de' => 'Deutsch',
+    ];
+
     $showBack = request()->routeIs('companies.show')
         || request()->routeIs('species.show')
         || request()->routeIs('rfq.create')
@@ -216,7 +230,7 @@
                     </button>
                     <div x-show="langOpen" x-cloak x-transition.opacity @click.outside="langOpen = false"
                          class="absolute right-0 top-full z-50 mt-1 w-36 rounded-lg border border-sand-200 bg-white py-1 text-left shadow-lg">
-                        @foreach (['en' => __('messages.locale.english'), 'fr' => __('messages.locale.french')] as $code => $label)
+                        @foreach ($localeLabels as $code => $label)
                             <form method="POST" action="{{ route('locale.set', $code) }}">
                                 @csrf
                                 <button type="submit" @class([
@@ -380,14 +394,14 @@
                         <a href="{{ route('register') }}" class="block rounded-lg bg-forest-700 px-4 py-2.5 text-center text-sm font-semibold text-white">{{ __('messages.nav.join_now') }}</a>
                     @endauth
                     <div class="flex items-center gap-1 pt-1">
-                        @foreach (['en' => __('messages.locale.english'), 'fr' => __('messages.locale.french')] as $code => $label)
+                        @foreach ($localeLabels as $code => $label)
                             <form method="POST" action="{{ route('locale.set', $code) }}" class="flex-1">
                                 @csrf
-                                <button type="submit" @class([
+                                <button type="submit" title="{{ $label }}" @class([
                                     'w-full rounded-lg border px-3 py-2 text-center text-sm font-semibold transition',
                                     'border-forest-700 bg-forest-50 text-forest-700' => app()->getLocale() === $code,
                                     'border-sand-200 text-ink' => app()->getLocale() !== $code,
-                                ])>{{ strtoupper($code) }}</button>
+                                ])>{{ strtoupper(explode('_', $code)[0]) }}</button>
                             </form>
                         @endforeach
                     </div>

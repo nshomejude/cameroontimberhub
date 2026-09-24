@@ -118,10 +118,45 @@ it('falls back to English for an unsupported Accept-Language', function () {
     $order = localeApiOrder($buyer);
 
     $label = $this->actingAs($buyer, 'sanctum')
-        ->withHeaders(['Accept-Language' => 'de-DE'])
+        ->withHeaders(['Accept-Language' => 'ru-RU'])
         ->getJson('/api/v1/orders/'.$order->reference_code)
         ->assertOk()
         ->json('data.status_label');
 
     expect($label)->toBe(__('messages.enums.order_status.awarded', [], 'en'));
+});
+
+it('switches to German when Accept-Language: de-DE is sent (primary subtag match)', function () {
+    $buyer = User::factory()->create();
+    $order = localeApiOrder($buyer);
+
+    $label = $this->actingAs($buyer, 'sanctum')
+        ->withHeaders(['Accept-Language' => 'de-DE'])
+        ->getJson('/api/v1/orders/'.$order->reference_code)
+        ->assertOk()
+        ->json('data.status_label');
+
+    expect($label)->toBe(__('messages.enums.order_status.awarded', [], 'de'));
+});
+
+it('returns validation errors in French for /auth/register when Accept-Language is fr', function () {
+    $response = $this->withHeaders(['Accept-Language' => 'fr'])
+        ->postJson('/api/v1/auth/register', []);
+
+    $response->assertStatus(422);
+    $response->assertJsonFragment(['name' => ['Le champ nom est requis.']]);
+    $response->assertJsonFragment(['email' => ['Le champ adresse e-mail est requis.']]);
+});
+
+it('maps bare zh to the zh_CN locale directory', function () {
+    $buyer = User::factory()->create();
+    $order = localeApiOrder($buyer);
+
+    $label = $this->actingAs($buyer, 'sanctum')
+        ->withHeaders(['Accept-Language' => 'zh'])
+        ->getJson('/api/v1/orders/'.$order->reference_code)
+        ->assertOk()
+        ->json('data.status_label');
+
+    expect($label)->toBe(__('messages.enums.order_status.awarded', [], 'zh_CN'));
 });
