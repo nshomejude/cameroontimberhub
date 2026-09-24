@@ -3,6 +3,8 @@
 use App\Http\Controllers\Api\V1\AnnouncementController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CompanyDocumentController;
+use App\Http\Controllers\Api\V1\CompanyOnboardingController;
+use App\Http\Controllers\Api\V1\CompanyProfileController;
 use App\Http\Controllers\Api\V1\CompanyVerificationController;
 use App\Http\Controllers\Api\V1\FleetDriverController;
 use App\Http\Controllers\Api\V1\FleetVehicleController;
@@ -116,9 +118,22 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
         Route::post('two-factor/challenge', [TwoFactorController::class, 'challenge'])
             ->middleware('throttle:api-2fa-challenge')->name('two-factor.challenge');
 
+        // Forgot/reset password — JSON counterpart of the web session+redirect
+        // flow (PasswordResetLinkController / NewPasswordController), public
+        // by necessity (the caller has no token yet). `api-forgot-password`
+        // mirrors `api-register`'s per-IP shape so this can't become an
+        // email-bombing vector.
+        Route::post('forgot-password', [AuthController::class, 'forgotPassword'])
+            ->middleware('throttle:api-forgot-password')->name('forgot-password');
+
+        Route::post('reset-password', [AuthController::class, 'resetPassword'])
+            ->middleware('throttle:api-forgot-password')->name('reset-password');
+
         Route::middleware('auth:sanctum')->group(function (): void {
             Route::post('logout', [AuthController::class, 'logout'])->name('logout');
             Route::get('me', [AuthController::class, 'me'])->name('me');
+            Route::patch('me', [AuthController::class, 'updateMe'])->name('me.update');
+            Route::post('password', [AuthController::class, 'updatePassword'])->name('password.update');
 
             // Self-service 2FA management, mobile counterpart of the web
             // Auth\TwoFactorController (see that class's docblock).
@@ -395,6 +410,19 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
         // counterpart of the exporter panel's VerificationStatusWidget.
         Route::get('company/verification', CompanyVerificationController::class)
             ->name('company.verification');
+
+        // The caller's own company profile (this task) — API counterpart of
+        // the exporter panel's "Edit company" form. Siblings of
+        // `company/verification` above, same middleware.
+        Route::get('company', [CompanyProfileController::class, 'show'])
+            ->name('company.show');
+        Route::patch('company', [CompanyProfileController::class, 'update'])
+            ->middleware('throttle:api-decision')->name('company.update');
+
+        // The caller's own company onboarding checklist (this task) — API
+        // counterpart of the exporter panel's OnboardingChecklist page.
+        Route::get('company/onboarding', [CompanyOnboardingController::class, 'index'])
+            ->name('company.onboarding');
 
         // RFQ inbox (this task): RFQs routed to the caller's company. Lives
         // under a `supplier/` sub-prefix — NOT bare `rfqs`/`orders` — so it
