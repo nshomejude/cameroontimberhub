@@ -608,6 +608,7 @@
 
                                 @case('certifications')
                                     @inject('productQr', \App\Services\ProductQrCodeService::class)
+                                    @inject('productBarcode', \App\Services\BarcodeService::class)
                                     <div class="mb-4 flex items-start gap-4 rounded-lg border border-sand-200 p-4">
                                         <div class="h-20 w-20 shrink-0">{!! $productQr->svg($product) !!}</div>
                                         <div>
@@ -617,6 +618,7 @@
                                                 Open verification page
                                                 <x-heroicon-s-arrow-top-right-on-square class="h-4 w-4" />
                                             </a>
+                                            <img src="{{ $productBarcode->svgDataUri($product->public_id) }}" alt="Barcode: {{ $product->public_id }}" class="mt-2 h-10 bg-white p-1">
                                         </div>
                                     </div>
                                     @php

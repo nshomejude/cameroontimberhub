@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Public;
 
 use App\Http\Controllers\Controller;
 use App\Models\Certificate;
+use App\Services\BarcodeService;
 use App\Services\CertificateQrCodeService;
 use App\Services\CertificateVerifier;
+use App\Services\CertificateWatermarkService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -27,6 +29,8 @@ class CertificateVerificationController extends Controller
     public function __construct(
         private readonly CertificateVerifier $verifier,
         private readonly CertificateQrCodeService $qr,
+        private readonly BarcodeService $barcode,
+        private readonly CertificateWatermarkService $watermark,
     ) {}
 
     public function create(Request $request): View
@@ -76,6 +80,10 @@ class CertificateVerificationController extends Controller
             'certificate' => $certificate,
             'qrDataUri' => $this->qr->dataUri($certificate),
             'verificationUrl' => $this->qr->verificationUrl($certificate),
+            'barcodeDataUri' => $this->barcode->svgDataUri($certificate->certificate_number),
+            'watermarkStyle' => $this->watermark->backgroundStyle($certificate),
+            'showVoidStamp' => $this->watermark->shouldShowVoidStamp($certificate),
+            'voidLabel' => $this->watermark->voidLabel($certificate),
         ]);
     }
 }

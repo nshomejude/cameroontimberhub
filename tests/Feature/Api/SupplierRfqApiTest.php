@@ -132,3 +132,25 @@ it('401s a guest on a single supplier rfq', function () {
 
     $this->getJson('/api/v1/supplier/rfqs/'.$rfq->reference_code)->assertUnauthorized();
 });
+
+/* ------------------------------------------------------------ attachments */
+
+it('exposes real attachments stored on the routed rfq', function () {
+    [$user, $company] = supplierRfqApiUser();
+    $rfq = apiRouteRfqTo($company, ['attachments' => ['grading-report.pdf']]);
+
+    $this->actingAs($user, 'sanctum')
+        ->getJson('/api/v1/supplier/rfqs/'.$rfq->reference_code)
+        ->assertOk()
+        ->assertJsonPath('data.attachments', ['grading-report.pdf']);
+});
+
+it('renders an empty attachments array when the rfq has none', function () {
+    [$user, $company] = supplierRfqApiUser();
+    $rfq = apiRouteRfqTo($company);
+
+    $this->actingAs($user, 'sanctum')
+        ->getJson('/api/v1/supplier/rfqs/'.$rfq->reference_code)
+        ->assertOk()
+        ->assertJsonPath('data.attachments', []);
+});

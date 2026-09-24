@@ -230,6 +230,15 @@
         overflow: visible !important;
     }
 
+    /* Ring 3 variable security background + VOID stamp (CertificateWatermarkService):
+       most print engines drop background images/opacity by default -- force
+       them to survive, the same way the receipt table header colors do above. */
+    .certificate-watermark,
+    .certificate-void-stamp {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
     /* No "(https://…)" noise appended to every link. */
     a[href]::after {
         content: none !important;

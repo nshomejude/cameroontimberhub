@@ -3,6 +3,7 @@
         <h1 class="text-2xl font-semibold text-ink dark:text-[#e4ddcf]">Waybill {{ $shipment->waybill_number }}</h1>
 
         <img src="{{ $qrDataUri }}" alt="Waybill QR code" class="my-6 h-40 w-40">
+        <img src="{{ $barcodeDataUri }}" alt="Barcode: {{ $shipment->waybill_number }}" class="mb-6 h-12 bg-white p-1">
 
         <dl class="grid grid-cols-2 gap-2 text-sm text-ink-soft dark:text-[#8f887b]">
             <dt>Origin</dt>

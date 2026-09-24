@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
@@ -88,6 +89,12 @@ class Product extends Model
     public function images(): HasMany
     {
         return $this->hasMany(ProductImage::class)->orderBy('sort_order');
+    }
+
+    /** TimberLot rows tracing this listing (TimberLot::product() belongsTo) — the traceability API's source, never queried per-row (see ProductResource::traceability()). */
+    public function lots(): HasMany
+    {
+        return $this->hasMany(TimberLot::class);
     }
 
     // ---- Presentation helpers -------------------------------------------
@@ -402,5 +409,11 @@ class Product extends Model
                     OrganisationType::Processor->value,
                     OrganisationType::Artisan->value,
                 ]));
+    }
+
+    /** Favorite rows pointing at this product (Favorite::favoritable() MorphTo). */
+    public function favoritedBy(): MorphMany
+    {
+        return $this->morphMany(Favorite::class, 'favoritable');
     }
 }

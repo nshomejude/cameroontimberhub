@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Exceptions\Api\ConflictException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\StoreSupplierQuoteRequest;
-use App\Http\Resources\Api\V1\QuoteResource;
+use App\Http\Resources\Api\V1\SupplierQuoteResource;
 use App\Models\Company;
 use App\Services\QuoteService;
 use App\Services\SupplierApiScope;
@@ -105,7 +105,7 @@ class SupplierQuoteController extends Controller
         $quote->load(['items', 'company', 'rfq']);
 
         return response()->json([
-            'data' => new QuoteResource($quote),
+            'data' => new SupplierQuoteResource($quote),
         ], 201);
     }
 
@@ -116,6 +116,46 @@ class SupplierQuoteController extends Controller
             ->with(['items', 'rfq'])
             ->paginate(15);
 
-        return QuoteResource::collection($quotes);
+        return SupplierQuoteResource::collection($quotes);
+    }
+
+    /** One of the caller's own submitted quotes by reference, or 404. */
+    public function show(Request $request, string $reference): SupplierQuoteResource
+    {
+        $quote = $this->scope->quotes($request->user())
+            ->where('reference_code', $reference)
+            ->with(['items', 'rfq', 'supersedes'])
+            ->firstOrFail();
+
+        return new SupplierQuoteResource($quote);
+    }
+
+    /**
+     * Withdraw one of the caller's own quotes. Wraps `QuoteService::withdraw()`
+     * exactly — the same transition the exporter panel's quote actions use.
+     * An illegal transition (already withdrawn/decided/expired — see
+     * `QuoteService::TRANSITIONS`) is a 409, not a 422: the request is
+     * well-formed, the quote just is not in a withdrawable state anymore.
+     */
+    public function withdraw(Request $request, string $reference, QuoteService $quotes): JsonResponse
+    {
+        $quote = $this->scope->quotes($request->user())
+            ->where('reference_code', $reference)
+            ->with(['items', 'rfq', 'supersedes'])
+            ->firstOrFail();
+
+        $data = $request->validate([
+            'reason' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        try {
+            $quote = $quotes->withdraw($quote, $request->user(), $data['reason'] ?? null);
+        } catch (RuntimeException $e) {
+            throw new ConflictException($e->getMessage(), 'quote_not_withdrawable', $e);
+        }
+
+        return response()->json([
+            'data' => new SupplierQuoteResource($quote),
+        ]);
     }
 }

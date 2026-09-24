@@ -6,6 +6,8 @@ use App\Http\Controllers\Api\V1\CompanyDocumentController;
 use App\Http\Controllers\Api\V1\CompanyOnboardingController;
 use App\Http\Controllers\Api\V1\CompanyProfileController;
 use App\Http\Controllers\Api\V1\CompanyVerificationController;
+use App\Http\Controllers\Api\V1\CertificateController;
+use App\Http\Controllers\Api\V1\TraceabilityController;
 use App\Http\Controllers\Api\V1\FleetDriverController;
 use App\Http\Controllers\Api\V1\FleetVehicleController;
 use App\Http\Controllers\Api\V1\LocalMarketController;
@@ -20,6 +22,9 @@ use App\Http\Controllers\Api\V1\NotificationPreferenceController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\DemoLoginController;
 use App\Http\Controllers\Api\V1\DisputeController;
+use App\Http\Controllers\Api\V1\FavoriteController;
+use App\Http\Controllers\Api\V1\FeedController;
+use App\Http\Controllers\Api\V1\FollowController;
 use App\Http\Controllers\Api\V1\OrderController;
 use App\Http\Controllers\Api\V1\OrderDocumentController;
 use App\Http\Controllers\Api\V1\ProductController;
@@ -182,6 +187,16 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
     // `{"data": [...]}` — see AnnouncementController.
     Route::get('announcements', [AnnouncementController::class, 'index'])->name('announcements.index');
 
+    // Traceability / certificates (this task) — public, no auth, read-only
+    // JSON counterpart of the web Timber Passport and certificate-verify
+    // pages. See TraceabilityController/CertificateController docblocks.
+    Route::get('lots/{lot_number}/passport', [TraceabilityController::class, 'passport'])->name('lots.passport');
+
+    Route::prefix('certificates')->name('certificates.')->group(function (): void {
+        Route::get('/', [CertificateController::class, 'index'])->name('index');
+        Route::get('{certificate_number}', [CertificateController::class, 'show'])->name('show');
+    });
+
     /* --------------------------------------------- any authenticated user */
 
     Route::middleware(['auth:sanctum'])->group(function (): void {
@@ -294,6 +309,30 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
             Route::get('{id}', [NotificationController::class, 'show'])->name('show');
             Route::post('{id}/read', [NotificationController::class, 'read'])->name('read');
         });
+
+        // Favorites — a user bookmarking a Product or a Company. Own
+        // `favorites` prefix, any-authenticated-user like `notifications`
+        // above. GET/POST/DELETE all share this one prefix per the mobile
+        // contract (POST/DELETE take the same `{type, id}` body).
+        Route::prefix('favorites')->name('favorites.')->group(function (): void {
+            Route::get('/', [FavoriteController::class, 'index'])->name('index');
+            Route::post('/', [FavoriteController::class, 'store'])->name('store');
+            Route::delete('/', [FavoriteController::class, 'destroy'])->name('destroy');
+        });
+
+        // Follow — a user following a Company or another User. Own
+        // `follow`/`following`/`followers` names alongside `feed`, per the
+        // mobile contract.
+        Route::post('follow', [FollowController::class, 'store'])->name('follow.store');
+        Route::delete('follow', [FollowController::class, 'destroy'])->name('follow.destroy');
+        Route::get('following', [FollowController::class, 'following'])->name('following.index');
+        Route::get('followers', [FollowController::class, 'followers'])->name('followers.index');
+
+        // "Things I follow" — see FeedController's docblock for exactly
+        // what real event sources back this today (published products from
+        // followed companies only; Announcements excluded — no
+        // company/publisher link exists on that model).
+        Route::get('feed', [FeedController::class, 'index'])->name('feed.index');
 
         // Expo push-token registration for the mobile app — own prefix,
         // right after `notifications` for the same reason that group sits
@@ -493,6 +532,9 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
             // task) — distinct from the buyer-scoped
             // GET /rfqs/{reference}/quotes above.
             Route::get('quotes', [SupplierQuoteController::class, 'index'])->name('quotes.index');
+            Route::get('quotes/{reference}', [SupplierQuoteController::class, 'show'])->name('quotes.show');
+            Route::post('quotes/{reference}/withdraw', [SupplierQuoteController::class, 'withdraw'])
+                ->middleware('throttle:api-decision')->name('quotes.withdraw');
 
             // The supplier's own sales orders (this task): orders where the
             // caller's company is the SUPPLIER side. See SupplierOrderController.

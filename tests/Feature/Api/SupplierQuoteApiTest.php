@@ -160,3 +160,119 @@ it('401s a guest submitting a quote', function () {
 it('401s a guest listing supplier quotes', function () {
     $this->getJson('/api/v1/supplier/quotes')->assertUnauthorized();
 });
+
+/* ------------------------------------------------------------------ show */
+
+it('shows full detail for the caller own quote', function () {
+    [$user, $company] = supplierQuoteApiUser();
+    $rfq = routeApprovedRfqTo($company);
+
+    $reference = $this->actingAs($user, 'sanctum')
+        ->postJson('/api/v1/supplier/rfqs/'.$rfq->reference_code.'/quote', validQuotePayload())
+        ->assertCreated()
+        ->json('data.reference');
+
+    $this->actingAs($user, 'sanctum')
+        ->getJson('/api/v1/supplier/quotes/'.$reference)
+        ->assertOk()
+        ->assertJsonPath('data.reference', $reference)
+        ->assertJsonPath('data.rfq_reference', $rfq->reference_code)
+        ->assertJsonCount(1, 'data.items');
+});
+
+it('supplier quote detail includes internals the buyer resource omits', function () {
+    [$user, $company] = supplierQuoteApiUser();
+    $rfq = routeApprovedRfqTo($company);
+
+    $reference = $this->actingAs($user, 'sanctum')
+        ->postJson('/api/v1/supplier/rfqs/'.$rfq->reference_code.'/quote', validQuotePayload())
+        ->assertCreated()
+        ->json('data.reference');
+
+    $response = $this->actingAs($user, 'sanctum')
+        ->getJson('/api/v1/supplier/quotes/'.$reference)
+        ->assertOk();
+
+    // QuoteResource's own docblock says rfq_company_id/revision are
+    // deliberately NOT part of the buyer payload — the supplier view carries
+    // them.
+    expect($response->json('data'))->toHaveKeys(['rfq_company_id', 'revision']);
+});
+
+it('404s fetching another company quote by reference', function () {
+    [$user] = supplierQuoteApiUser();
+    [, $otherCompany] = supplierQuoteApiUser();
+    $rfq = routeApprovedRfqTo($otherCompany);
+
+    $otherUser = User::factory()->create();
+    $otherCompany->users()->attach($otherUser);
+
+    $reference = $this->actingAs($otherUser, 'sanctum')
+        ->postJson('/api/v1/supplier/rfqs/'.$rfq->reference_code.'/quote', validQuotePayload())
+        ->assertCreated()
+        ->json('data.reference');
+
+    $this->actingAs($user, 'sanctum')
+        ->getJson('/api/v1/supplier/quotes/'.$reference)
+        ->assertNotFound();
+});
+
+it('401s a guest fetching a supplier quote', function () {
+    $this->getJson('/api/v1/supplier/quotes/QTE-DOES-NOT-EXIST')->assertUnauthorized();
+});
+
+/* -------------------------------------------------------------- withdraw */
+
+it('withdraws the caller own quote', function () {
+    [$user, $company] = supplierQuoteApiUser();
+    $rfq = routeApprovedRfqTo($company);
+
+    $reference = $this->actingAs($user, 'sanctum')
+        ->postJson('/api/v1/supplier/rfqs/'.$rfq->reference_code.'/quote', validQuotePayload())
+        ->assertCreated()
+        ->json('data.reference');
+
+    $this->actingAs($user, 'sanctum')
+        ->postJson('/api/v1/supplier/quotes/'.$reference.'/withdraw', ['reason' => 'Pricing changed'])
+        ->assertOk()
+        ->assertJsonPath('data.status', 'withdrawn');
+
+    $quote = Quote::where('reference_code', $reference)->firstOrFail();
+    expect($quote->status)->toBe(QuoteStatus::Withdrawn);
+});
+
+it('409s withdrawing an already withdrawn quote', function () {
+    [$user, $company] = supplierQuoteApiUser();
+    $rfq = routeApprovedRfqTo($company);
+
+    $reference = $this->actingAs($user, 'sanctum')
+        ->postJson('/api/v1/supplier/rfqs/'.$rfq->reference_code.'/quote', validQuotePayload())
+        ->assertCreated()
+        ->json('data.reference');
+
+    $this->actingAs($user, 'sanctum')
+        ->postJson('/api/v1/supplier/quotes/'.$reference.'/withdraw')
+        ->assertOk();
+
+    $this->actingAs($user, 'sanctum')
+        ->postJson('/api/v1/supplier/quotes/'.$reference.'/withdraw')
+        ->assertStatus(409);
+});
+
+it('404s withdrawing another company quote', function () {
+    [$user] = supplierQuoteApiUser();
+    [, $otherCompany] = supplierQuoteApiUser();
+    $rfq = routeApprovedRfqTo($otherCompany);
+
+    $otherUser = User::factory()->create();
+    $otherCompany->users()->attach($otherUser);
+
+    $reference = $this->actingAs($otherUser, 'sanctum')
+        ->postJson('/api/v1/supplier/rfqs/'.$rfq->reference_code.'/quote', validQuotePayload())
+        ->assertCreated()
+        ->json('data.reference');
+
+    $this->actingAs($user, 'sanctum')
+        ->postJson('/api/v1/supplier/quotes/'.$reference.'/withdraw')
+        ->assertNotFound();
+});

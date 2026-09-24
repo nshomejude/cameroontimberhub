@@ -2,7 +2,9 @@
 
 namespace App\Http\Resources\Api\V1;
 
+use App\Models\Certificate;
 use App\Models\Company;
+use App\Services\CertificateQrCodeService;
 use Illuminate\Http\Request;
 
 /**
@@ -36,7 +38,10 @@ class SupplierDetailResource extends SupplierResource
                 fn () => $this->activeBadges->map(fn ($b) => [
                     'type' => $b->badge_type->value,
                     'label' => $b->badge_type->label(),
+                    'issued_at' => $b->issued_at?->toIso8601String(),
                     'valid_until' => $b->valid_until?->toDateString(),
+                    'reference_code' => $b->reference_code,
+                    'verification_url' => $this->badgeVerificationUrl(),
                 ])->values(),
             ),
             'contacts' => $this->whenLoaded(
@@ -49,5 +54,39 @@ class SupplierDetailResource extends SupplierResource
                 ])->values(),
             ),
         ]);
+    }
+
+    /**
+     * The company's most recent live (Certificate::scopeLiveVersion())
+     * Certificate row, if any exists for this subject — badges themselves
+     * carry no verification_token, so there is no per-badge verification
+     * link to build; a company-level Certificate is the only real,
+     * QR-able verification artifact this codebase has, reusing
+     * CertificateQrCodeService::verificationUrl()'s exact route pattern
+     * rather than inventing a badge-specific one. Memoized per resource
+     * instance since every badge in the list shares the same company.
+     */
+    private ?string $cachedBadgeVerificationUrl = null;
+
+    private bool $badgeVerificationUrlResolved = false;
+
+    private function badgeVerificationUrl(): ?string
+    {
+        if ($this->badgeVerificationUrlResolved) {
+            return $this->cachedBadgeVerificationUrl;
+        }
+
+        $this->badgeVerificationUrlResolved = true;
+
+        $certificate = Certificate::query()
+            ->where('subject_type', Company::class)
+            ->where('subject_id', $this->id)
+            ->liveVersion()
+            ->orderByDesc('version')
+            ->first();
+
+        return $this->cachedBadgeVerificationUrl = $certificate
+            ? app(CertificateQrCodeService::class)->verificationUrl($certificate)
+            : null;
     }
 }

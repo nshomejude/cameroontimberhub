@@ -58,6 +58,7 @@
             <p class="text-[0.9375rem] font-semibold text-ink dark:text-[#e4ddcf]">Scan to reopen this page</p>
             <div class="mx-auto mt-3 h-40 w-40">{!! $qrSvg !!}</div>
             <p class="mt-2 break-all font-mono text-[0.8125rem] text-ink-soft dark:text-[#8f887b]">{{ $verificationUrl }}</p>
+            <img src="{{ $barcodeDataUri }}" alt="Barcode: {{ $product->public_id }}" class="mx-auto mt-4 h-12 bg-white p-1">
         </div>
 
         <p class="mt-6 text-[0.9375rem] text-ink-soft dark:text-[#8f887b]">

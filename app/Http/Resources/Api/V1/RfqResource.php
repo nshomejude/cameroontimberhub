@@ -62,6 +62,7 @@ class RfqResource extends JsonResource
             'target_currency' => $this->target_currency,
             'deadline' => $this->deadline?->toDateString(),
             'notes' => $this->notes,
+            'attachments' => $this->attachments ?? [],
             'created_at' => $this->created_at?->toIso8601String(),
             'items' => RfqItemResource::collection($this->whenLoaded('items')),
             'quotes_count' => $this->whenCounted('quotes'),

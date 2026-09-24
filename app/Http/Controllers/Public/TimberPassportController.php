@@ -6,6 +6,7 @@ use App\Enums\TimberLotStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Company;
 use App\Models\TimberLot;
+use App\Services\BarcodeService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\View\View;
 
@@ -45,7 +46,7 @@ class TimberPassportController extends Controller
         'conditional' => 'Conditionally passed',
     ];
 
-    public function show(TimberLot $timberLot): View
+    public function show(TimberLot $timberLot, BarcodeService $barcode): View
     {
         $timberLot = TimberLot::query()
             ->whereKey($timberLot->getKey())
@@ -60,6 +61,7 @@ class TimberPassportController extends Controller
         return view('public.passport.show', [
             'lot' => $timberLot,
             'company' => $timberLot->company,
+            'barcodeDataUri' => $barcode->svgDataUri($timberLot->lot_number),
             'legalityLabel' => self::LEGALITY_LABELS[$timberLot->legality_evidence_status] ?? ucwords(str_replace('_', ' ', (string) $timberLot->legality_evidence_status)),
             'traceabilityLabel' => self::TRACEABILITY_LABELS[$timberLot->traceability_status] ?? ucwords(str_replace('_', ' ', (string) $timberLot->traceability_status)),
             'inspectionLabel' => self::INSPECTION_LABELS[$timberLot->inspection_status] ?? ucwords(str_replace('_', ' ', (string) $timberLot->inspection_status)),

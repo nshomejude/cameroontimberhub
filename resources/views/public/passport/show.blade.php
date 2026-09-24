@@ -18,6 +18,7 @@
                     </span>
                 @endif
             </div>
+            <img src="{{ $barcodeDataUri }}" alt="Barcode: {{ $lot->lot_number }}" class="mt-4 h-12 bg-white p-1">
         </div>
     </section>
 

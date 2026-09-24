@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Public;
 
 use App\Http\Controllers\Controller;
 use App\Models\Shipment;
+use App\Services\BarcodeService;
 use App\Services\ShipmentWaybillQrCodeService;
 use Illuminate\View\View;
 
@@ -14,11 +15,12 @@ use Illuminate\View\View;
  */
 class ShipmentWaybillController extends Controller
 {
-    public function show(Shipment $shipment, ShipmentWaybillQrCodeService $qr): View
+    public function show(Shipment $shipment, ShipmentWaybillQrCodeService $qr, BarcodeService $barcode): View
     {
         return view('public.shipments.waybill', [
             'shipment' => $shipment,
             'qrDataUri' => $qr->dataUri($shipment),
+            'barcodeDataUri' => $barcode->svgDataUri($shipment->waybill_number),
             'cargoProductIds' => $shipment->cargoProductIds(),
         ]);
     }

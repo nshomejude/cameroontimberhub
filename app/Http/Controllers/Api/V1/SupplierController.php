@@ -42,7 +42,7 @@ class SupplierController extends Controller
         $company = Company::publiclyVisible()
             ->where('slug', $slug)
             ->with(['species:id,slug,common_name', 'exportMarkets', 'activeBadges', 'contacts'])
-            ->withCount(['products' => fn ($p) => $p->active()])
+            ->withCount(['products' => fn ($p) => $p->active(), 'followers'])
             ->firstOrFail();
 
         return new SupplierDetailResource($company);

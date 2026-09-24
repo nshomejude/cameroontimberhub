@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Api\V1;
 
+use App\Http\Resources\Api\V1\Concerns\ResolvesFavoriteAndFollowState;
 use App\Models\Company;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -26,6 +27,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  */
 class SupplierResource extends JsonResource
 {
+    use ResolvesFavoriteAndFollowState;
+
     /** @return array<string, mixed> */
     public function toArray(Request $request): array
     {
@@ -54,6 +57,33 @@ class SupplierResource extends JsonResource
                 'species',
                 fn () => $this->species->map(fn ($s) => ['slug' => $s->slug, 'common_name' => $s->common_name])->values(),
             ),
+            'is_favorited' => $this->isFavoritedBy($request, Company::class, $this->id),
+            'is_following' => $this->isFollowedBy($request, Company::class, $this->id),
+            'followers_count' => $this->followersCount(),
         ];
+    }
+
+    /**
+     * `followers_count` requires the caller's query to have eager-counted
+     * the relation (`Company::query()->withCount('followers')`) or eager
+     * loaded it (`->with('followers')`) — same `whenCounted()` convention
+     * `RfqResource::quotes_count` already uses in this codebase. This
+     * DELIBERATELY never fires a per-row query: `SupplierResource` renders
+     * inside product-listing/search collections (`ProductCatalogueService`,
+     * `SearchService`, `DomesticMarketplaceService`), and a per-row Follow
+     * count reintroduces exactly the N+1 this field was flagged for at
+     * review — `CatalogueApiTest`'s bounded-query-count test caught it.
+     * Not yet eager-counted anywhere, so this honestly returns 0 until a
+     * caller adds `withCount('followers')` to its Company eager-load —
+     * that is a real follow-up, not a silent lie: 0 is exactly what is
+     * knowable without the extra query this method refuses to run.
+     */
+    private function followersCount(): int
+    {
+        if ($this->resource->relationLoaded('followers')) {
+            return $this->followers->count();
+        }
+
+        return (int) ($this->resource->getAttributes()['followers_count'] ?? 0);
     }
 }

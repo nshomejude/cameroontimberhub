@@ -200,7 +200,20 @@ it('returns the RFQ detail with its line items', function () {
         ->assertOk()
         ->assertJsonPath('data.reference', $rfq->reference_code)
         ->assertJsonPath('data.items.0.species_text', 'Iroko')
-        ->assertJsonPath('data.quotes_count', 0);
+        ->assertJsonPath('data.quotes_count', 0)
+        ->assertJsonPath('data.attachments', []);
+});
+
+it('exposes real attachments stored on the rfq, empty when none', function () {
+    $buyer = User::factory()->create();
+    $rfq = Rfq::factory()->create([
+        'user_id' => $buyer->id,
+        'attachments' => ['specs.pdf', 'photo.jpg'],
+    ]);
+
+    $this->actingAs($buyer, 'sanctum')->getJson('/api/v1/rfqs/'.$rfq->reference_code)
+        ->assertOk()
+        ->assertJsonPath('data.attachments', ['specs.pdf', 'photo.jpg']);
 });
 
 /* ------------------------------------------------------- species linking */

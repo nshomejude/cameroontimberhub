@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Public;
 use App\Enums\ProductStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
+use App\Services\BarcodeService;
 use App\Services\ProductQrCodeService;
 use Illuminate\View\View;
 
@@ -19,7 +20,10 @@ use Illuminate\View\View;
  */
 class ProductVerificationController extends Controller
 {
-    public function __construct(private readonly ProductQrCodeService $qr) {}
+    public function __construct(
+        private readonly ProductQrCodeService $qr,
+        private readonly BarcodeService $barcode,
+    ) {}
 
     public function show(string $publicId): View
     {
@@ -48,6 +52,7 @@ class ProductVerificationController extends Controller
             'isVerified' => $product->isVerified(),
             'qrSvg' => $this->qr->svg($product),
             'verificationUrl' => $this->qr->verificationUrl($product),
+            'barcodeDataUri' => $this->barcode->svgDataUri($product->public_id),
             'documents' => in_array('documents', $with, true) ? $product->documents : collect(),
             'certificates' => in_array('certificates', $with, true) ? $product->certificates : collect(),
         ]);

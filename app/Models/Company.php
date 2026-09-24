@@ -26,6 +26,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[ObservedBy(CompanyObserver::class)]
@@ -632,5 +633,17 @@ class Company extends Model
         }
 
         return min($score, 100);
+    }
+
+    /** Favorite rows pointing at this company (Favorite::favoritable() MorphTo). */
+    public function favoritedBy(): MorphMany
+    {
+        return $this->morphMany(Favorite::class, 'favoritable');
+    }
+
+    /** Follow rows pointing at this company (Follow::followable() MorphTo) — this company's followers. */
+    public function followers(): MorphMany
+    {
+        return $this->morphMany(Follow::class, 'followable');
     }
 }

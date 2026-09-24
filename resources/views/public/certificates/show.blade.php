@@ -19,7 +19,24 @@
             </button>
         </div>
 
-        <article class="certificate-sheet mt-4 rounded-2xl border border-sand-200 bg-white p-5 text-ink dark:border-[#2c2a24] dark:bg-[#1f1d18] dark:text-[#e4ddcf] sm:p-8">
+        <article class="certificate-sheet relative overflow-hidden mt-4 rounded-2xl border border-sand-200 bg-white p-5 text-ink dark:border-[#2c2a24] dark:bg-[#1f1d18] dark:text-[#e4ddcf] sm:p-8">
+
+            {{-- Ring 3 variable security background: a diagonal microtext
+                 pattern seeded from data_hash (see CertificateWatermarkService).
+                 Subtle by design -- this is NOT the "VOID" stamp below. --}}
+            <div class="certificate-watermark pointer-events-none absolute inset-0" style="{{ $watermarkStyle }}" aria-hidden="true"></div>
+
+            @if ($showVoidStamp)
+                {{-- Unmissable, distinct from the subtle background pattern:
+                     shown only for Superseded/Revoked certificates so a
+                     printed copy of a non-live document can never be
+                     mistaken for a currently-valid one. --}}
+                <div class="certificate-void-stamp pointer-events-none absolute inset-0 flex items-center justify-center" aria-hidden="true">
+                    <span class="select-none text-[7rem] font-black uppercase tracking-widest text-red-600/25 [transform:rotate(-28deg)] sm:text-[9rem]">{{ $voidLabel }}</span>
+                </div>
+            @endif
+
+            <div class="relative z-10">
 
             {{-- Identity block --}}
             <header class="grid gap-6 border-b border-sand-200 pb-6 dark:border-[#2c2a24] md:grid-cols-[1.4fr_1fr]">
@@ -31,6 +48,7 @@
                 <div class="flex flex-col items-end gap-2">
                     <img src="{{ $qrDataUri }}" alt="Scan to verify this certificate" width="140" height="140">
                     <p class="text-[0.8125rem] text-ink-soft dark:text-[#8f887b] break-all text-right">{{ $verificationUrl }}</p>
+                    <img src="{{ $barcodeDataUri }}" alt="Barcode: {{ $certificate->certificate_number }}" class="mt-2 h-12 bg-white p-1">
                 </div>
             </header>
 
@@ -101,6 +119,7 @@
                 <p>This TimberHub certificate is a digitally verifiable record issued by Cameroon Timber Hub. It is not an EU-issued EUDR certificate and does not itself constitute regulatory clearance. Verify its current status at {{ $verificationUrl }}.</p>
             </footer>
 
+            </div>
         </article>
     </div>
 </x-layouts.app>

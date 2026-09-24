@@ -2,7 +2,9 @@
 
 namespace App\Http\Resources\Api\V1;
 
+use App\Http\Resources\Api\V1\Concerns\ResolvesFavoriteAndFollowState;
 use App\Models\Product;
+use App\Models\TimberLot;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -18,6 +20,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  */
 class ProductResource extends JsonResource
 {
+    use ResolvesFavoriteAndFollowState;
+
     /** @return array<string, mixed> */
     public function toArray(Request $request): array
     {
@@ -52,11 +56,54 @@ class ProductResource extends JsonResource
             ] : null,
             'primary_image_url' => $this->primaryImageUrl(),
             'created_at' => $this->created_at?->toIso8601String(),
+            'is_favorited' => $this->isFavoritedBy($request, Product::class, $this->id),
             'species' => $this->whenLoaded('species', fn () => $this->species === null ? null : [
                 'slug' => $this->species->slug,
                 'common_name' => $this->species->common_name,
             ]),
             'supplier' => $this->whenLoaded('company', fn () => new SupplierResource($this->company)),
+            'traceability' => $this->traceability(),
+        ];
+    }
+
+    /**
+     * Timber lots linked to this product (`Product::lots()`), for the
+     * public traceability API. Only computed `$this->whenLoaded('lots')` —
+     * a per-row `TimberLot` query here would reintroduce the same N+1 this
+     * class's `is_favorited` field was flagged for by
+     * `CatalogueApiTest`'s bounded-query-count test. `null` (never an
+     * empty/fake object) when no real lot is linked or the relation was not
+     * eager-loaded by the caller — this must not fabricate a traceability
+     * claim for a product nothing has actually traced.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function traceability(): ?array
+    {
+        if (! $this->resource->relationLoaded('lots')) {
+            return null;
+        }
+
+        $lots = $this->lots;
+
+        if ($lots->isEmpty()) {
+            return null;
+        }
+
+        $first = $lots->first();
+
+        return [
+            'lots' => $lots->map(fn (TimberLot $lot) => [
+                'lot_number' => $lot->lot_number,
+                'volume_m3' => $lot->volume_m3 !== null ? (float) $lot->volume_m3 : null,
+                'passport_url' => route('passport.show', $lot),
+                'barcode_value' => $lot->lot_number,
+            ])->values(),
+            'harvest_location' => [
+                'latitude' => $first->origin_latitude !== null ? (float) $first->origin_latitude : null,
+                'longitude' => $first->origin_longitude !== null ? (float) $first->origin_longitude : null,
+                'region' => $first->origin_region,
+            ],
         ];
     }
 }
