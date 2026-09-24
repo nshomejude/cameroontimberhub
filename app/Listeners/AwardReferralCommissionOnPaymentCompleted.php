@@ -46,4 +46,14 @@ class AwardReferralCommissionOnPaymentCompleted implements ShouldQueue
             throw $e;
         }
     }
+
+    public function failed(PaymentCompleted $event, ?Throwable $e): void
+    {
+        Log::channel('errors')->error('AwardReferralCommissionOnPaymentCompleted failed permanently — a referral commission was not awarded.', [
+            'listener' => self::class,
+            'payment_id' => $event->paymentId,
+            'exception' => $e?->getMessage(),
+            'exception_class' => $e ? $e::class : null,
+        ]);
+    }
 }
