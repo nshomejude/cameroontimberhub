@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\FleetDriverController;
 use App\Http\Controllers\Api\V1\FleetVehicleController;
 use App\Http\Controllers\Api\V1\ConversationController;
 use App\Http\Controllers\Api\V1\DashboardController;
+use App\Http\Controllers\Api\V1\DemoLoginController;
 use App\Http\Controllers\Api\V1\DisputeController;
 use App\Http\Controllers\Api\V1\OrderController;
 use App\Http\Controllers\Api\V1\OrderDocumentController;
@@ -88,6 +89,16 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
 
         Route::post('login', [AuthController::class, 'login'])
             ->middleware('throttle:api-login')->name('login');
+
+        // One-click demo logins (mobile mirror of the web `/demo-login`
+        // flow) — see DemoLoginController's docblock. Public on purpose
+        // (that's the point), gated by the same DemoLoginsEnabled Pennant
+        // flag and a dedicated throttle, same as the web route.
+        Route::get('demo-personas', [DemoLoginController::class, 'personas'])
+            ->name('demo-personas');
+
+        Route::post('demo-login/{persona}', [DemoLoginController::class, 'login'])
+            ->middleware('throttle:demo-login')->name('demo-login');
 
         Route::middleware('auth:sanctum')->group(function (): void {
             Route::post('logout', [AuthController::class, 'logout'])->name('logout');

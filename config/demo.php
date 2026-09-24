@@ -50,6 +50,20 @@ return [
             'description' => 'The staff moderation panel',
             'icon' => 'shield-check',
         ],
+        'logistics' => [
+            'email' => 'demo.logistics@cameroontimberhub.com',
+            'name' => 'Demo Logistics',
+            'label' => 'Demo Logistics',
+            'description' => 'A fleet operator\'s vehicles and drivers',
+            'icon' => 'truck',
+        ],
+        'pending_supplier' => [
+            'email' => 'demo.pending_supplier@cameroontimberhub.com',
+            'name' => 'Demo Pending Supplier',
+            'label' => 'Demo Pending Supplier',
+            'description' => 'A supplier account awaiting verification',
+            'icon' => 'clock',
+        ],
     ],
 
 ];

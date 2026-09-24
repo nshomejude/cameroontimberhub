@@ -2,6 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Enums\CompanyStatus;
+use App\Enums\OrganisationType;
 use App\Models\Company;
 use App\Models\Document;
 use App\Models\Driver;
@@ -48,6 +50,12 @@ class DemoLoginSeeder extends Seeder
     /** The flagship demo supplier the demo supplier account owns. */
     private const SUPPLIER_COMPANY = 'Kuété Timber Group Sarl';
 
+    /** The dedicated demo company the `logistics` persona owns. */
+    private const LOGISTICS_COMPANY = 'Bantu Freight Logistics Sarl';
+
+    /** The dedicated demo company the `pending_supplier` persona owns. */
+    private const PENDING_SUPPLIER_COMPANY = 'Nkolbisson Timber Traders Sarl';
+
     public function run(): void
     {
         $this->ensurePrerequisites();
@@ -55,10 +63,14 @@ class DemoLoginSeeder extends Seeder
         $buyer = $this->persona('buyer');
         $supplier = $this->persona('supplier');
         $admin = $this->persona('admin');
+        $logistics = $this->persona('logistics');
+        $pendingSupplier = $this->persona('pending_supplier');
 
         $this->wireBuyer($buyer);
         $this->wireSupplier($supplier);
         $this->wireAdmin($admin);
+        $this->wireLogistics($logistics);
+        $this->wirePendingSupplier($pendingSupplier);
 
         $this->command?->info('Demo personas ready: '.collect(config('demo.personas'))->pluck('email')->join(', '));
     }
@@ -266,6 +278,94 @@ class DemoLoginSeeder extends Seeder
         if (! $admin->hasRole($role)) {
             $admin->assignRole($role);
         }
+    }
+
+    /* ----------------------------------------------------------- logistics */
+
+    /**
+     * A dedicated `OrganisationType::Logistics` company, owned by this
+     * persona, with its own fleet — so `GET /supplier/fleet/vehicles`
+     * returns real rows for a caller whose *only* company is a logistics
+     * one (FleetApiScope::eligible() checks `company.type`, not a role).
+     * Idempotent on the company slug/legal_name and the `company_user`
+     * pivot.
+     */
+    private function wireLogistics(User $logistics): void
+    {
+        $company = Company::firstOrCreate(
+            ['slug' => Str::slug(self::LOGISTICS_COMPANY)],
+            [
+                'legal_name' => self::LOGISTICS_COMPANY,
+                'trade_name' => 'Bantu Freight',
+                'type' => OrganisationType::Logistics,
+                'status' => CompanyStatus::Verified,
+                'country_code' => 'CM',
+                'city' => 'Douala',
+                'region' => 'Littoral',
+                'email' => 'ops@bantufreight.example',
+                'phone' => '+237 6 88 00 00 00',
+                'description' => 'Bantu Freight Logistics moves containerised and bulk timber between the Douala/Kribi ports and inland mills.',
+                'verified_at' => now(),
+            ],
+        );
+
+        if ($company->type !== OrganisationType::Logistics) {
+            $company->forceFill(['type' => OrganisationType::Logistics])->save();
+        }
+
+        $primaryTaken = DB::table('company_user')
+            ->where('company_id', $company->getKey())
+            ->where('is_primary', true)
+            ->where('user_id', '!=', $logistics->getKey())
+            ->exists();
+
+        $logistics->companies()->syncWithoutDetaching([
+            $company->getKey() => ['role' => 'owner', 'is_primary' => ! $primaryTaken],
+        ]);
+
+        $this->seedFleet($company);
+    }
+
+    /* ----------------------------------------------------- pending supplier */
+
+    /**
+     * A supplier company stuck at `CompanyStatus::Pending`, so the mobile
+     * client's read-only/pending banner has a real account to render
+     * against. Idempotent on the company slug and the `company_user` pivot;
+     * the status is force-set back to Pending on every run so a stray
+     * verification action elsewhere never silently "fixes" this persona.
+     */
+    private function wirePendingSupplier(User $pendingSupplier): void
+    {
+        $company = Company::firstOrCreate(
+            ['slug' => Str::slug(self::PENDING_SUPPLIER_COMPANY)],
+            [
+                'legal_name' => self::PENDING_SUPPLIER_COMPANY,
+                'trade_name' => 'Nkolbisson Timber',
+                'type' => OrganisationType::Supplier,
+                'status' => CompanyStatus::Pending,
+                'country_code' => 'CM',
+                'city' => 'Yaoundé',
+                'region' => 'Centre',
+                'email' => 'contact@nkolbissontimber.example',
+                'phone' => '+237 6 77 00 00 00',
+                'description' => 'Nkolbisson Timber Traders has applied to join the marketplace and is awaiting verification.',
+            ],
+        );
+
+        if ($company->status !== CompanyStatus::Pending) {
+            $company->forceFill(['status' => CompanyStatus::Pending])->save();
+        }
+
+        $primaryTaken = DB::table('company_user')
+            ->where('company_id', $company->getKey())
+            ->where('is_primary', true)
+            ->where('user_id', '!=', $pendingSupplier->getKey())
+            ->exists();
+
+        $pendingSupplier->companies()->syncWithoutDetaching([
+            $company->getKey() => ['role' => 'owner', 'is_primary' => ! $primaryTaken],
+        ]);
     }
 
     /* -------------------------------------------------------- prerequisites */

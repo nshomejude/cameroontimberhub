@@ -83,10 +83,21 @@ class AuthController extends Controller
         return new UserResource($request->user());
     }
 
-    private function issueToken(User $user, Request $request): string
+    /**
+     * The single place a Sanctum token is minted for the v1 API. Both
+     * register()/login() above and DemoLoginController (the API mirror of
+     * the web one-click demo logins) call this — there is deliberately no
+     * second token-issuing code path.
+     */
+    public static function issueTokenFor(User $user, Request $request): string
     {
         $device = trim((string) $request->input('device_name', '')) ?: self::DEFAULT_DEVICE;
 
         return $user->createToken(mb_substr($device, 0, 120), ['buyer'])->plainTextToken;
+    }
+
+    private function issueToken(User $user, Request $request): string
+    {
+        return self::issueTokenFor($user, $request);
     }
 }

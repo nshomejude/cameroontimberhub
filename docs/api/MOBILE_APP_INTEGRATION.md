@@ -175,6 +175,54 @@ named policy exists yet for that action on the buyer/supplier population
 
 Store the token in `expo-secure-store` (Keychain / Keystone), not `AsyncStorage`. One token per device; on logout, delete it locally and call `/auth/logout`.
 
+### Demo logins
+
+Mobile mirror of the web `/login` "Explore a demo account" buttons — lets a
+reviewer sign into every role on their own phone without a password. The
+whole feature sits behind `App\Features\DemoLoginsEnabled`
+(`DEMO_LOGINS_ENABLED`, default **false**); both endpoints below stay live
+regardless, but `demo-personas` returns an empty list and `demo-login/*`
+`403`s when the flag is off.
+
+| Method | Path | Auth | Purpose |
+|---|---|---|---|
+| GET | `/auth/demo-personas` | none | The available personas. Always `200`; `{ "data": [] }` when demo logins are disabled. |
+| POST | `/auth/demo-login/{persona}` | none | Sign in as that persona. `{ persona }` must be one of the keys `demo-personas` returned. Rate-limited (`throttle:demo-login`, same budget as the web route). |
+
+```json
+// GET /auth/demo-personas → 200
+{
+  "data": [
+    { "key": "buyer", "label": "Demo Buyer", "description": "Requests, quotes and orders", "icon": "shopping-bag" },
+    { "key": "supplier", "label": "Demo Supplier", "description": "A verified exporter’s panel", "icon": "building-office-2" },
+    { "key": "admin", "label": "Demo Admin", "description": "The staff moderation panel", "icon": "shield-check" },
+    { "key": "logistics", "label": "Demo Logistics", "description": "A fleet operator's vehicles and drivers", "icon": "truck" },
+    { "key": "pending_supplier", "label": "Demo Pending Supplier", "description": "A supplier account awaiting verification", "icon": "clock" }
+  ]
+}
+```
+
+`POST /auth/demo-login/{persona}` returns the **exact same shape** as
+`POST /auth/login` — `{ data: { token, user } }` — minted through the same
+token-issuing code (`AuthController::issueTokenFor()`), so the client can
+reuse its normal post-login handling unmodified. An unknown `{persona}` is a
+clean `404`.
+
+Personas and what they demonstrate:
+
+| Persona | Role | What's seeded |
+|---|---|---|
+| `buyer` | buyer | Owns the seeded RFQs/orders/receipts. |
+| `supplier` | supplier | Owner of a verified exporter company, with fleet, leads and a routed RFQ. |
+| `admin` | staff | Real `super_admin` — full `/admin` access. |
+| `logistics` | supplier | Owner of a `company.type: "logistics"` company with seeded vehicles/drivers — exercises the Fleet endpoints. |
+| `pending_supplier` | supplier | Owner of a company with `company.status: "pending"` — exercises the pending/read-only verification banner. |
+
+No password is ever involved, transmitted, or displayed for any persona —
+`DemoLoginController` resolves the literal `{persona}` key to a config-defined
+email and mints a token directly, the same way the web controller calls
+`Auth::login()` without touching a password.
+
 ---
 
 ## 2. Conventions (read once, applies everywhere)
