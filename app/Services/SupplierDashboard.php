@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\OrderStatus;
+use App\Enums\OrganisationType;
 use App\Enums\ProductStatus;
 use App\Enums\QuoteStatus;
 use App\Enums\RfqCompanyStatus;
@@ -135,7 +136,7 @@ class SupplierDashboard
             [
                 'key' => 'profile_completion',
                 'label' => 'Profile completion',
-                'value' => (int) ($company?->profile_completion ?? 0),
+                'value' => $company?->calculateProfileCompletion() ?? 0,
                 'hint' => null,
                 'delta' => null,
                 'icon' => 'user-group',
@@ -191,10 +192,61 @@ class SupplierDashboard
     {
         $company = $this->company($user);
 
+        if ($company === null) {
+            return ['percent' => 0, 'missing' => []];
+        }
+
         return [
-            'percent' => (int) ($company?->profile_completion ?? 0),
-            'missing' => [],
+            'percent' => $company->calculateProfileCompletion(),
+            'missing' => $this->missingChecklistLabels($company),
         ];
+    }
+
+    /**
+     * The label of every {@see \App\Filament\Exporter\Pages\OnboardingChecklist}
+     * step this company has not yet completed, in the same order and wording
+     * as that page — so the mobile app's "what's missing" copy matches the
+     * exporter panel's checklist exactly.
+     *
+     * @return list<string>
+     */
+    private function missingChecklistLabels(Company $company): array
+    {
+        $company->loadMissing(['contacts', 'species', 'gallery', 'documents', 'verificationRequests']);
+
+        $missing = [];
+
+        $hasBasicProfile = filled($company->legal_name)
+            && mb_strlen((string) $company->description) >= 50
+            && filled($company->region)
+            && (filled($company->city) || filled($company->website_url) || filled($company->email) || filled($company->phone));
+
+        if (! $hasBasicProfile) {
+            $missing[] = 'Basic profile completed';
+        }
+
+        if (! in_array($company->type, [OrganisationType::Logistics, OrganisationType::CarbonDeveloper], true)
+            && $company->species->isEmpty()) {
+            $missing[] = 'Species / products added';
+        }
+
+        if ($company->contacts->isEmpty()) {
+            $missing[] = 'Contact person added';
+        }
+
+        if ($company->gallery->isEmpty()) {
+            $missing[] = 'Gallery images uploaded';
+        }
+
+        if ($company->documents->isEmpty()) {
+            $missing[] = 'Compliance documents uploaded';
+        }
+
+        if ($company->verificationRequests->isEmpty()) {
+            $missing[] = 'Submitted for verification';
+        }
+
+        return $missing;
     }
 
     /**

@@ -31,7 +31,10 @@ it('redirects a company owner with an incomplete checklist from the dashboard to
 });
 
 it('does not redirect a company owner whose checklist is complete', function () {
-    $company = Company::factory()->create(['profile_completion' => 100]);
+    // Basic profile fields (legal_name/description/region/contact info) come
+    // from the factory defaults already — no dead `profile_completion`
+    // column to fake; the remaining checklist steps are satisfied below.
+    $company = Company::factory()->create();
 
     CompanyContact::factory()->create(['company_id' => $company->id]);
     CompanyGallery::create(['company_id' => $company->id, 'image_path' => 'gallery/test.jpg']);

@@ -46,6 +46,8 @@ class OnboardingChecklist extends Page
 
         $editUrl = \App\Filament\Exporter\Resources\Companies\CompanyResource::getUrl('edit', ['record' => $company]);
 
+        $completion = $company->calculateProfileCompletion();
+
         $steps = [
             [
                 'label'    => 'Company profile created',
@@ -55,8 +57,8 @@ class OnboardingChecklist extends Page
             ],
             [
                 'label'    => 'Basic profile completed',
-                'done'     => $company->profile_completion >= 60,
-                'detail'   => $company->profile_completion . '% complete — fill in description, region, website',
+                'done'     => $completion >= 60,
+                'detail'   => $completion . '% complete — fill in description, region, website',
                 'url'      => $editUrl,
             ],
         ];

@@ -570,4 +570,67 @@ class Company extends Model
             ->where('status', BadgeStatus::Active->value)
             ->where(fn (Builder $e) => $e->whereNull('valid_until')->orWhere('valid_until', '>', now()));
     }
+
+    /**
+     * Live profile-completion score (0-100), computed on demand instead of
+     * read from the `profile_completion` column, which is never written
+     * anywhere in the app and therefore always sits at its default of 0 for
+     * real companies. This mirrors, weight-for-weight, the six meaningful
+     * steps in {@see \App\Filament\Exporter\Pages\OnboardingChecklist::getChecklist()}
+     * so the checklist page and any percentage shown elsewhere never
+     * disagree about what "profile complete" means:
+     *
+     *   - Basic profile filled in (legal_name, description >= 50 chars,
+     *     region, plus at least one of city/website/email/phone) .... 17 pts
+     *   - Species / products added (skipped — counted as done — for
+     *     Logistics and CarbonDeveloper companies, which don't handle
+     *     timber species) .......................................... 17 pts
+     *   - At least one contact person on file ......................  17 pts
+     *   - At least one gallery image uploaded .......................  17 pts
+     *   - At least one compliance document uploaded .................  16 pts
+     *   - Submitted for verification .................................. 16 pts
+     *                                                          total = 100 pts
+     *
+     * Callers should treat >= 60 as "basic profile complete", matching the
+     * threshold the checklist page has always used.
+     */
+    public function calculateProfileCompletion(): int
+    {
+        $this->loadMissing(['contacts', 'species', 'gallery', 'documents', 'verificationRequests']);
+
+        $score = 0;
+
+        $hasBasicProfile = filled($this->legal_name)
+            && mb_strlen((string) $this->description) >= 50
+            && filled($this->region)
+            && (filled($this->city) || filled($this->website_url) || filled($this->email) || filled($this->phone));
+
+        if ($hasBasicProfile) {
+            $score += 17;
+        }
+
+        $speciesNotApplicable = in_array($this->type, [OrganisationType::Logistics, OrganisationType::CarbonDeveloper], true);
+
+        if ($speciesNotApplicable || $this->species->isNotEmpty()) {
+            $score += 17;
+        }
+
+        if ($this->contacts->isNotEmpty()) {
+            $score += 17;
+        }
+
+        if ($this->gallery->isNotEmpty()) {
+            $score += 17;
+        }
+
+        if ($this->documents->isNotEmpty()) {
+            $score += 16;
+        }
+
+        if ($this->verificationRequests->isNotEmpty()) {
+            $score += 16;
+        }
+
+        return min($score, 100);
+    }
 }

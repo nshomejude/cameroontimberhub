@@ -1,11 +1,16 @@
 <?php
 
 use App\Models\Company;
+use App\Models\CompanyContact;
+use App\Models\CompanyDocument;
+use App\Models\CompanyGallery;
 use App\Models\Quote;
 use App\Models\QuoteItem;
 use App\Models\Rfq;
 use App\Models\RfqCompany;
+use App\Models\Species;
 use App\Models\User;
+use App\Models\VerificationRequest;
 use App\Services\QuoteService;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Support\Facades\Mail;
@@ -194,4 +199,54 @@ it('gives staff an empty-but-valid dashboard instead of a 403', function () {
         ->assertOk()
         ->assertJsonPath('data.role', 'staff')
         ->assertJsonCount(0, 'data.recent_orders');
+});
+
+/**
+ * profile_completion used to be a dead stored column (never written outside
+ * tests), so a fully verified demo company would show 0% in the mobile app
+ * — self-contradictory for a "verified" supplier. It is now computed live
+ * from the same fields OnboardingChecklist checks, so a fully-profiled
+ * company reports a real, near-100% figure with nothing missing.
+ */
+it('reports a real, near-complete profile_completeness for a fully-profiled supplier', function () {
+    $supplierUser = User::factory()->create();
+    $company = Company::factory()->publiclyVisible()->create();
+    $company->users()->attach($supplierUser, ['role' => 'owner', 'is_primary' => true]);
+
+    CompanyContact::factory()->create(['company_id' => $company->id]);
+    CompanyGallery::create(['company_id' => $company->id, 'image_path' => 'gallery/test.jpg']);
+    CompanyDocument::factory()->create(['company_id' => $company->id]);
+    VerificationRequest::factory()->create(['company_id' => $company->id]);
+    $company->species()->attach(Species::factory()->create());
+
+    $response = $this->actingAs($supplierUser, 'sanctum')
+        ->getJson('/api/v1/dashboard')
+        ->assertOk();
+
+    expect($response->json('data.profile_completeness.percent'))->toBeGreaterThanOrEqual(90)
+        ->and($response->json('data.profile_completeness.missing'))->toBeEmpty();
+
+    $stats = collect($response->json('data.stats'))->keyBy('key');
+    expect($stats->get('profile_completion')['value'])->toBeGreaterThanOrEqual(90);
+});
+
+it('reports a low profile_completeness with named gaps for a bare supplier company', function () {
+    $supplierUser = User::factory()->create();
+    $company = Company::factory()->create([
+        'description' => 'short',
+        'region' => null,
+        'city' => null,
+        'website_url' => null,
+        'email' => null,
+        'phone' => null,
+    ]);
+    $company->users()->attach($supplierUser, ['role' => 'owner', 'is_primary' => true]);
+
+    $response = $this->actingAs($supplierUser, 'sanctum')
+        ->getJson('/api/v1/dashboard')
+        ->assertOk();
+
+    expect($response->json('data.profile_completeness.percent'))->toBeLessThan(60)
+        ->and($response->json('data.profile_completeness.missing'))->not->toBeEmpty()
+        ->and($response->json('data.profile_completeness.missing'))->toContain('Basic profile completed');
 });

@@ -38,7 +38,7 @@ class VerificationStatusWidget extends StatsOverviewWidget
         };
 
         $activeBadges = $company->activeBadges()->count();
-        $completion   = $company->profile_completion ?? 0;
+        $completion   = $company->calculateProfileCompletion();
 
         return [
             Stat::make(__('messages.filament.widgets.company_status'), $statusLabel)->color($statusColor),
