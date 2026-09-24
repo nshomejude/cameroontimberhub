@@ -12,10 +12,18 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * One inbox row for the buyer mobile app — the API counterpart of an inbox
  * list item in `App\Livewire\Messaging\Inbox`.
  *
- * The counterparty is always the supplier company here: this API is
- * buyer-only (`api.buyer` gate), so `conversation.user_id` is always the
- * token holder and the other side is always `company_id`. Reuses
- * `SupplierResource` rather than inventing a second supplier-card shape.
+ * `counterparty` is resolved from the VIEWER's side, exactly like
+ * `Conversation::counterpartyName()`/`counterpartyLogoUrl()` already do for
+ * the web thread — this endpoint has been open to any authenticated
+ * participant (buyer or supplier) since messaging was widened past
+ * buyer-only, so hardcoding "the other side is always company_id" here would
+ * show a supplier their OWN company as the counterparty instead of the
+ * buyer. When the viewer IS the buyer (`user_id` matches), the counterparty
+ * is the supplier company (`SupplierResource`, reused rather than inventing
+ * a second supplier-card shape); when the viewer is a member of the supplier
+ * company, the counterparty is the buyer account (a minimal inline shape —
+ * there is no dedicated buyer-profile resource, and a buyer has no company/
+ * logo to show).
  *
  * `unread_count` is real, derived state from `MessagingService::unreadCounts()`
  * — never a stored counter. The controller computes the whole page's counts
@@ -33,6 +41,7 @@ class ConversationResource extends JsonResource
     {
         $user = $request->user();
         $latest = $this->latestMessage;
+        $viewerIsBuyer = $user && (int) $this->user_id === (int) $user->getKey();
 
         $unread = $this->resource->getAttribute('unread_count')
             ?? app(MessagingService::class)->unreadCounts($user, [$this->id])[$this->id]
@@ -43,10 +52,12 @@ class ConversationResource extends JsonResource
             'subject' => $this->subjectLine(),
             'topic' => $this->topic?->value,
             'status' => $this->status?->value,
-            'counterparty' => $this->whenLoaded(
-                'company',
-                fn () => $this->company ? new SupplierResource($this->company) : null,
-            ),
+            'counterparty' => $viewerIsBuyer
+                ? $this->whenLoaded('company', fn () => $this->company ? new SupplierResource($this->company) : null)
+                : $this->whenLoaded('user', fn () => $this->user ? [
+                    'id' => $this->user->id,
+                    'name' => $this->user->name,
+                ] : null),
             'last_message' => $latest ? [
                 'body' => $latest->preview(160),
                 'kind' => $latest->type->value,

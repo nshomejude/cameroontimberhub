@@ -210,6 +210,26 @@ it('rejects a supplier on buyer-only endpoints but still lets them reach their o
     $this->actingAs($supplierUser, 'sanctum')->getJson('/api/v1/conversations')->assertOk();
 });
 
+it('shows the buyer as counterparty to a supplier viewer, and the supplier company as counterparty to the buyer', function () {
+    // Regression: counterparty used to hardcode $this->company regardless of
+    // viewer, a leftover from when this API was buyer-only. Once messaging
+    // opened to any participant, a supplier viewing their own thread saw
+    // the conversation's own supplier company (i.e. themselves) instead of
+    // the buyer.
+    $buyer = User::factory()->create(['name' => 'Bella Buyer']);
+    $conversation = apiConversation($buyer);
+    $supplierUser = $conversation->company->users()->firstOrFail();
+
+    $asBuyer = $this->actingAs($buyer, 'sanctum')->getJson("/api/v1/conversations/{$conversation->id}")->assertOk();
+    expect($asBuyer->json('data.counterparty.name'))->toBe($conversation->company->name)
+        ->and($asBuyer->json('data.counterparty'))->toHaveKey('slug');
+
+    $asSupplier = $this->actingAs($supplierUser, 'sanctum')->getJson("/api/v1/conversations/{$conversation->id}")->assertOk();
+    expect($asSupplier->json('data.counterparty.name'))->toBe('Bella Buyer')
+        ->and($asSupplier->json('data.counterparty.id'))->toBe($buyer->id)
+        ->and($asSupplier->json('data.counterparty'))->not->toHaveKey('slug');
+});
+
 it("404s a supplier out of a conversation their company does not participate in", function () {
     $supplierUser = User::factory()->create();
     $company = Company::factory()->create();
