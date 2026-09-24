@@ -150,6 +150,15 @@ return [
         'dispute_reply' => [
             'title' => 'New reply on your dispute',
         ],
+        'support_ticket_opened' => [
+            'title' => 'New support ticket',
+        ],
+        'support_ticket_user_reply' => [
+            'title' => 'New reply on a support ticket',
+        ],
+        'support_ticket_staff_reply' => [
+            'title' => 'Support replied to your ticket',
+        ],
         'quote_accepted' => [
             'title' => 'Your quote was accepted',
             'body' => 'The buyer accepted your quote for RFQ :rfq.',

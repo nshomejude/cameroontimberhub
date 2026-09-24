@@ -201,9 +201,32 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
         Route::get('{certificate_number}', [CertificateController::class, 'show'])->name('show');
     });
 
+    // Public contact details (config/contact.php essentials) for the app's
+    // "Contact us" screen. No auth.
+    Route::get('contact', \App\Http\Controllers\Api\V1\ContactController::class)->name('contact');
+
     /* --------------------------------------------- any authenticated user */
 
     Route::middleware(['auth:sanctum'])->group(function (): void {
+        // Support tickets ("live chat with support") — any authenticated user,
+        // own tickets only (others' 404). Staff inbox is gated in-controller
+        // by the `support.manage` permission (403 otherwise).
+        Route::prefix('support/tickets')->name('support.tickets.')->group(function (): void {
+            Route::get('/', [\App\Http\Controllers\Api\V1\SupportTicketController::class, 'index'])->name('index');
+            Route::post('/', [\App\Http\Controllers\Api\V1\SupportTicketController::class, 'store'])
+                ->middleware('throttle:api-decision')->name('store');
+            Route::get('{reference}', [\App\Http\Controllers\Api\V1\SupportTicketController::class, 'show'])->name('show');
+            Route::post('{reference}/reply', [\App\Http\Controllers\Api\V1\SupportTicketController::class, 'reply'])
+                ->middleware('throttle:api-decision')->name('reply');
+        });
+
+        Route::prefix('staff/support/tickets')->name('staff.support.tickets.')->group(function (): void {
+            Route::get('/', [\App\Http\Controllers\Api\V1\StaffSupportTicketController::class, 'index'])->name('index');
+            Route::get('{reference}', [\App\Http\Controllers\Api\V1\StaffSupportTicketController::class, 'show'])->name('show');
+            Route::post('{reference}/reply', [\App\Http\Controllers\Api\V1\StaffSupportTicketController::class, 'reply'])
+                ->middleware('throttle:api-decision')->name('reply');
+        });
+
         // Home-screen feed, open to all three populations (RBAC foundation
         // — buyer/supplier/staff). DashboardController resolves the caller's
         // role the same way UserResource::resolveRole() does and switches
