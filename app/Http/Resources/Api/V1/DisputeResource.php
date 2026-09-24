@@ -26,6 +26,7 @@ class DisputeResource extends JsonResource
             'category_label' => $this->category->label(),
             'status' => $this->status->value,
             'status_label' => $this->status->label(),
+            'can_reply' => $this->resource->isReplyable(),
             'description' => $this->description,
             'raised_by_user_name' => $this->whenLoaded('raisedByUser', fn () => $this->raisedByUser?->name),
             'raised_by_company_name' => $this->whenLoaded('raisedByCompany', fn () => $this->raisedByCompany?->name),

@@ -108,6 +108,21 @@ class Dispute extends Model
             && $user->companies()->whereKey($order->company_id)->exists();
     }
 
+    /* --------------------------------------------------------- can-* gates */
+
+    /**
+     * True only while the dispute is actually awaiting the counterparty's
+     * response -- the exact status respondentReply() itself requires. Single
+     * source of truth for "can this dispute receive a reply right now",
+     * used by both DisputeService::reply() (to guard the write, before any
+     * row is persisted) and DisputeResource's `can_reply` field, so the two
+     * can never drift apart.
+     */
+    public function isReplyable(): bool
+    {
+        return $this->status === DisputeStatus::CounterpartyResponsePending;
+    }
+
     /* -------------------------------------------------------- transitions */
 
     /**

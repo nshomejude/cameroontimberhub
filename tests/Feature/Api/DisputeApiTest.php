@@ -262,3 +262,73 @@ it('requires buyer auth to reply to a dispute', function () {
         'body' => 'Anonymous attempt.',
     ])->assertUnauthorized();
 });
+
+/* --------------------------------------------------------- can_reply flag */
+
+it('reports can_reply true only while a dispute is awaiting counterparty response', function () {
+    [$order, $buyer] = apiDisputeOrder();
+    $dispute = app(DisputeService::class)->open($order, $buyer, DisputeCategory::Payment, 'Payment discrepancy.');
+
+    // Opened -- not yet repliable.
+    $this->actingAs($buyer, 'sanctum')
+        ->getJson("/api/v1/orders/{$order->reference_code}/disputes/{$dispute->id}")
+        ->assertOk()
+        ->assertJsonPath('data.can_reply', false);
+
+    // CounterpartyResponsePending -- repliable, and the reply actually succeeds.
+    app(DisputeService::class)->submitEvidence($dispute, $buyer, 'Supporting invoice attached.');
+
+    $this->actingAs($buyer, 'sanctum')
+        ->getJson("/api/v1/orders/{$order->reference_code}/disputes/{$dispute->id}")
+        ->assertOk()
+        ->assertJsonPath('data.can_reply', true);
+
+    $this->actingAs($buyer, 'sanctum')
+        ->postJson("/api/v1/orders/{$order->reference_code}/disputes/{$dispute->id}/reply", [
+            'body' => 'Here is more detail.',
+        ])
+        ->assertOk();
+});
+
+it('reports can_reply false and rejects a reply on a Closed dispute without persisting it', function () {
+    [$order, $buyer, $supplierCompany] = apiDisputeOrder();
+    $supplierUser = apiAttachDisputeSupplierUser($supplierCompany);
+    $admin = User::factory()->create();
+
+    $dispute = app(DisputeService::class)->open($order, $buyer, DisputeCategory::Payment, 'Payment discrepancy.');
+    app(DisputeService::class)->submitEvidence($dispute, $buyer, 'Invoice attached.');
+    app(DisputeService::class)->reply($dispute, $supplierUser, 'We dispute this.');
+    $dispute->refresh()->resolve($admin, 'Resolved in favour of the buyer.');
+    $dispute->refresh()->close($admin);
+
+    expect($dispute->fresh()->status)->toBe(DisputeStatus::Closed);
+
+    $this->actingAs($buyer, 'sanctum')
+        ->getJson("/api/v1/orders/{$order->reference_code}/disputes/{$dispute->id}")
+        ->assertOk()
+        ->assertJsonPath('data.can_reply', false);
+
+    $this->actingAs($buyer, 'sanctum')
+        ->postJson("/api/v1/orders/{$order->reference_code}/disputes/{$dispute->id}/reply", [
+            'body' => 'Reopening after close.',
+        ])
+        ->assertStatus(409)
+        ->assertJsonPath('error.code', 'dispute_not_actionable');
+
+    // No orphaned message was written, and the dispute is still Closed.
+    expect($dispute->fresh()->status)->toBe(DisputeStatus::Closed)
+        ->and($dispute->fresh()->messages()->count())->toBe(1);
+});
+
+/**
+ * Attaches a user to a company as a dispute-capable member, matching
+ * DisputeLifecycleTest's own `attachDisputeSupplierUser` helper of the same
+ * shape (renamed here to avoid a cross-file function-name collision).
+ */
+function apiAttachDisputeSupplierUser(Company $company): User
+{
+    $user = User::factory()->create();
+    $company->users()->attach($user, ['role' => 'owner', 'is_primary' => true]);
+
+    return $user;
+}

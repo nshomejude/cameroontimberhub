@@ -222,6 +222,24 @@ class Order extends Model
         return $this->status === OrderStatus::Completed;
     }
 
+    /**
+     * True when a dispute may be opened against this order.
+     *
+     * DisputeService::open() (via OpenDisputeCommand, used by both the web
+     * and API `store()` actions) has never actually gated this on order
+     * status, a time window, or an existing open dispute -- the only real
+     * check there is `isOrderParty()`, which is per-actor and cannot be
+     * encoded into a single order-level boolean. Since that is genuinely
+     * the whole rule today, this stays permissive (always true) rather than
+     * inventing a stricter check the write path does not itself enforce.
+     * Single source of truth: DisputeService::open() calls this too, so if
+     * that changes, `can_open_dispute` on OrderResource updates with it.
+     */
+    public function isDisputable(): bool
+    {
+        return true;
+    }
+
     /** "USD 18,500.00" — currency code up front, never a guessed symbol. */
     public function money(float|string|null $amount): string
     {

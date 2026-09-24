@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\MessageType;
 use App\Enums\OrderStatus;
+use App\Enums\QuoteStatus;
 use App\Enums\RfqStatus;
 use App\Models\Conversation;
 use App\Models\Message;
@@ -187,6 +188,9 @@ class ReorderService
     {
         $rfq->loadMissing('quotes');
 
+        // $rfq->quotes is a hydrated Collection here (not a query builder), and
+        // Quote::status casts to QuoteStatus, so this compares enum instances,
+        // not their string values.
         return $rfq->quotes->where('company_id', $companyId)
             ->whereNotIn('status', [QuoteStatus::Withdrawn, QuoteStatus::Draft])
             ->isNotEmpty();

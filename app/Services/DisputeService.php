@@ -45,6 +45,10 @@ class DisputeService
             throw new RuntimeException('You are not a party to this order.');
         }
 
+        if (! $order->isDisputable()) {
+            throw new RuntimeException('A dispute cannot be opened on this order.');
+        }
+
         $description = trim($description);
 
         if ($description === '') {
@@ -100,6 +104,16 @@ class DisputeService
     /** Log a threaded reply and advance the lifecycle. */
     public function reply(Dispute $dispute, User $actor, string $body): DisputeMessage
     {
+        // Checked BEFORE anything is written: respondentReply() below already
+        // enforces this same status, but only after the message row would
+        // already exist -- a reply attempted while the dispute is, say,
+        // Closed used to insert a DisputeMessage and then throw, leaving an
+        // orphaned reply on a case that could no longer act on it. Guarding
+        // here first means a rejected reply leaves no trace at all.
+        if (! $dispute->isReplyable()) {
+            throw new RuntimeException('This dispute is not awaiting a response right now.');
+        }
+
         $body = trim($body);
 
         if ($body === '') {

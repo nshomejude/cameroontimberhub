@@ -4,24 +4,26 @@ namespace App\Http\Requests\Api\V1;
 
 use App\Actions\Auth\RegisterAccount;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 /**
  * Registration rules come straight from RegisterAccount, the shared action the
  * web form uses, so the two paths can never drift apart.
  *
- * The mobile client can register `buyer` or `supplier` accounts (product
- * scope: buyers AND suppliers AND staff). `account_type` defaults to
- * `buyer` when omitted, so the current app (which never sends the field)
- * keeps registering buyers exactly as before. A `supplier` submission goes
- * through the same `company_name`/`company_phone`/... fields
- * `RegisterAccount::rules()` already requires for company-forming account
- * types, and is created by the exact same `RegisterAccount` action the web
- * supplier-registration flow uses — no second write path.
- *
- * The other company-forming account types (`processor`, `artisan`,
- * `carbon_developer`, `logistics_partner`) and `carbon_buyer` stay web-only
- * for now; only `buyer`/`supplier` are exposed here.
+ * The mobile client can register ANY account type the web signup flow
+ * supports — buyer, supplier, processor, artisan, carbon_developer,
+ * carbon_buyer, logistics_partner (product scope: buyers AND sellers AND
+ * transport AND every other population the web already onboards). We
+ * deliberately do NOT hand-maintain a narrower `Rule::in([...])` here: an
+ * earlier version of this file did (buyer/supplier only), and that's
+ * exactly what left transport operators unable to sign up through the app
+ * even after fleet endpoints existed for them — a FormRequest narrower
+ * than the action behind it. `RegisterAccount::rules()` is now the single
+ * source of truth for which account types exist and what each requires
+ * (`company_name`/`company_phone`/... for every company-forming type, see
+ * `RegisterAccount::companyFormingTypes()`); this class only asks for it.
+ * `account_type` defaults to `buyer` when omitted, so the current app
+ * (which may not send the field yet) keeps registering buyers exactly as
+ * before.
  */
 class RegisterRequest extends FormRequest
 {
@@ -33,11 +35,7 @@ class RegisterRequest extends FormRequest
     /** @return array<string, mixed> */
     public function rules(): array
     {
-        $rules = RegisterAccount::rules(forApi: true);
-
-        $rules['account_type'] = ['required', Rule::in(['buyer', 'supplier'])];
-
-        return $rules;
+        return RegisterAccount::rules(forApi: true);
     }
 
     protected function prepareForValidation(): void

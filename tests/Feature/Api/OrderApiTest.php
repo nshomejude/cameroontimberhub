@@ -94,7 +94,8 @@ it('shows a single order the buyer owns, including line items', function () {
         ->assertJsonPath('data.reference', $order->reference_code)
         ->assertJsonPath('data.total_amount', '18500.00')
         ->assertJsonPath('data.items.0.line_total', '18500.00')
-        ->assertJsonPath('data.has_trade_assurance', false);
+        ->assertJsonPath('data.has_trade_assurance', false)
+        ->assertJsonPath('data.can_open_dispute', true);
 });
 
 it('404s another buyer order rather than confirming it exists', function () {

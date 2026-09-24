@@ -143,11 +143,49 @@ it('rejects supplier registration missing the required company fields', function
 
 it('rejects an invalid account_type with a 422', function () {
     $this->postJson('/api/v1/auth/register', [
-        'account_type' => 'processor',
+        'account_type' => 'not-a-real-type',
         'name' => 'Bad Type',
         'email' => 'badtype@example.com',
         'password' => 'correct-horse-battery-staple',
     ])->assertStatus(422)->assertJsonValidationErrors('account_type', 'error.details');
+});
+
+it('registers a logistics_partner (transport) account with a company and returns company.type: logistics', function () {
+    $response = $this->postJson('/api/v1/auth/register', [
+        'account_type' => 'logistics_partner',
+        'name' => 'Tina Transport',
+        'email' => 'tina@example.com',
+        'password' => 'correct-horse-battery-staple',
+        'company_name' => 'Tina Haulage Ltd',
+    ]);
+
+    $response->assertCreated()
+        ->assertJsonPath('data.user.role', 'supplier')
+        ->assertJsonPath('data.user.company.name', 'Tina Haulage Ltd')
+        ->assertJsonPath('data.user.company.type', 'logistics');
+
+    $user = User::whereEmail('tina@example.com')->firstOrFail();
+    expect($user->companies()->exists())->toBeTrue();
+});
+
+it('accepts every RegisterAccount account type the web signup flow supports', function () {
+    $this->withoutMiddleware(\Illuminate\Routing\Middleware\ThrottleRequests::class);
+
+    foreach (['buyer', 'supplier', 'processor', 'artisan', 'carbon_developer', 'carbon_buyer', 'logistics_partner'] as $i => $type) {
+        $payload = [
+            'account_type' => $type,
+            'name' => "Type Test {$i}",
+            'email' => "type-test-{$i}@example.com",
+            'password' => 'correct-horse-battery-staple',
+        ];
+
+        if (in_array($type, \App\Actions\Auth\RegisterAccount::companyFormingTypes(), true)) {
+            $payload['company_name'] = "Type Test Co {$i}";
+        }
+
+        $this->postJson('/api/v1/auth/register', $payload)
+            ->assertCreated();
+    }
 });
 
 it('rejects a duplicate email with a 422', function () {

@@ -54,6 +54,7 @@ class OrderResource extends JsonResource
             'has_trade_assurance' => $this->resource->relationLoaded('tradeAssuranceAgreement')
                 ? $this->tradeAssuranceAgreement !== null
                 : null,
+            'can_open_dispute' => $this->resource->isDisputable(),
         ];
     }
 }
