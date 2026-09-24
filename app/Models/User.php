@@ -42,6 +42,7 @@ class User extends Authenticatable implements FilamentUser
             'two_factor_recovery_codes' => 'encrypted',
             'last_login_at' => 'datetime',
             'known_login_ips' => 'array',
+            'referred_at' => 'datetime',
         ];
     }
 

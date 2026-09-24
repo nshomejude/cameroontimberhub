@@ -75,6 +75,9 @@ class EventServiceProvider extends ServiceProvider
             // Billing engine M4: issue the immutable, hash-chained Invoice.
             // Idempotent by payment_id; joins the invoice hash-chain.
             IssueInvoiceOnPaymentCompleted::class,
+            // Referral programme: one-time commission on the referred
+            // company's FIRST subscription payment. Idempotent by payment_id.
+            \App\Listeners\AwardReferralCommissionOnPaymentCompleted::class,
         ],
         // No listener yet — dispatched for future consumers (webhooks,
         // notifications), same pattern as DocumentApproved/BadgeIssued above.

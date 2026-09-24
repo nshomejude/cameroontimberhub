@@ -280,6 +280,17 @@
                             </section>
 
                             <div>
+                                <label for="auth-referral-code" class="block text-[1.0625rem] font-semibold text-ink">{{ __('Referral code (optional)') }}</label>
+                                <input id="auth-referral-code" type="text" name="referral_code" maxlength="20" autocomplete="off"
+                                       value="{{ old('referral_code', $referralCode ?? '') }}" placeholder="CTH-XXXXXX"
+                                       @if ($errors->has('referral_code')) aria-invalid="true" aria-describedby="auth-referral-code-error" @endif
+                                       class="mt-1.5 block w-full rounded-xl border border-sand-300 px-4 py-3 text-[1.0625rem] uppercase focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest-600">
+                                @error('referral_code')
+                                    <p id="auth-referral-code-error" class="mt-1.5 text-[0.9375rem] font-medium text-red-700">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div>
                                 <label for="auth-terms" class="flex items-start gap-3 text-[1.0625rem] leading-relaxed text-ink-soft">
                                     <input id="auth-terms" type="checkbox" name="terms" value="1" @checked(old('terms'))
                                            @if ($errors->has('terms')) aria-invalid="true" aria-describedby="auth-terms-error" @endif

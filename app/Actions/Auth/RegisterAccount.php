@@ -8,6 +8,7 @@ use App\Enums\OrganisationType;
 use App\Models\Company;
 use App\Models\Rfq;
 use App\Models\User;
+use App\Services\Referrals\ReferralService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
@@ -64,6 +65,23 @@ class RegisterAccount
             'company_registration_number' => [$excludeUnlessCompanyForming, 'nullable', 'string', 'max:100'],
             'password' => ['required', 'confirmed', Password::defaults()],
             'terms' => ['accepted'],
+            // Optional referral code (CTH-XXXXXX). Unknown codes and
+            // self-referrals are rejected here, before any row is written.
+            'referral_code' => ['nullable', 'string', 'max:20', function (string $attribute, mixed $value, \Closure $fail): void {
+                $service = app(ReferralService::class);
+                $referrer = $service->resolveReferrer(is_string($value) ? $value : null);
+
+                if ($referrer === null) {
+                    $fail(__('This referral code is not valid.'));
+
+                    return;
+                }
+
+                $email = strtolower(trim((string) request()->input('email')));
+                if ($service->selfReferralReason($referrer, $email) !== null) {
+                    $fail(__('You cannot use your own referral code.'));
+                }
+            }],
         ];
 
         if ($forApi) {
@@ -126,6 +144,12 @@ class RegisterAccount
             Rfq::whereNull('user_id')
                 ->whereRaw('lower(buyer_email) = ?', [strtolower($data['email'])])
                 ->update(['user_id' => $user->id]);
+
+            // Referral programme: record who referred this account (and its
+            // company). The referrer is notified after commit.
+            if (filled($data['referral_code'] ?? null)) {
+                app(ReferralService::class)->attachReferrer($user, $company ?? null, $data['referral_code']);
+            }
 
             return $user;
         });
