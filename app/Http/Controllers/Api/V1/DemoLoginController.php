@@ -40,7 +40,23 @@ class DemoLoginController extends Controller
             return response()->json(['data' => []]);
         }
 
+        // Only list a persona whose account has actually been seeded on this
+        // environment. `DEMO_LOGINS_ENABLED` can be true (e.g. staging) before
+        // `DemoLoginSeeder` has run, or a new persona can be added to the
+        // config before its data is seeded — either way, a button that 404s
+        // on tap is worse than one that never appears.
+        $emails = collect((array) config('demo.personas', []))
+            ->pluck('email')
+            ->filter()
+            ->values();
+
+        $existingEmails = User::query()
+            ->whereIn('email', $emails)
+            ->pluck('email')
+            ->flip();
+
         $personas = collect((array) config('demo.personas', []))
+            ->filter(fn (array $persona) => isset($persona['email']) && $existingEmails->has($persona['email']))
             ->map(fn (array $persona, string $key) => [
                 'key' => $key,
                 'label' => $persona['label'] ?? $persona['name'] ?? $key,

@@ -155,6 +155,16 @@ class DemoLoginSeeder extends Seeder
             return;
         }
 
+        // `DemoCompanySeeder`'s companies predate the `type` column and may
+        // never have had one set — without it, the API's role/organisation
+        // gating can't tell a seller from a haulier (auth/me's
+        // company.type comes back null). Mirror the logistics persona's
+        // force-fill below: this is a demo fixture, not live data, so
+        // stamping a sensible default here is safe.
+        if ($company->type === null) {
+            $company->forceFill(['type' => OrganisationType::Supplier])->save();
+        }
+
         // `company_user_primary_idx` is a unique index on (company_id) WHERE
         // is_primary — so a company can only ever have one primary member. The
         // flagship demo company already has one, and claiming it here would
