@@ -48,11 +48,7 @@
     // tracks the request as it moves rather than freezing at "sent".
     $routed = $rfq ? $reorders->isRoutedToSupplier($rfq, $conversation->company_id) : false;
 
-    $answered = $rfq
-        ? $rfq->quotes->where('company_id', $conversation->company_id)
-            ->whereNotIn('status', [\App\Enums\QuoteStatus::Withdrawn, \App\Enums\QuoteStatus::Draft])
-            ->isNotEmpty()
-        : false;
+    $answered = $rfq ? $reorders->hasBeenQuoted($rfq, $conversation->company_id) : false;
 
     $pricing = ! $isBuyer && $rfq && $quotingReorderRfqId === $rfq->getKey();
 @endphp

@@ -3,6 +3,7 @@
 namespace App\Http\Resources\Api\V1;
 
 use App\Models\Conversation;
+use App\Models\User;
 use App\Services\MessagingService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -57,7 +58,54 @@ class ConversationResource extends JsonResource
                 ],
             ] : null,
             'unread_count' => $unread,
+            'composer_actions' => $user ? $this->composerActions($user) : [],
             'updated_at' => $this->updated_at?->toIso8601String(),
         ];
+    }
+
+    /**
+     * The "+" composer trigger(s) available to this viewer on this thread.
+     *
+     * `thread.blade.php` gates the RFQ composer with `@if ($isBuyer)` alone —
+     * no "only if there is no open RFQ yet" condition exists there, so this
+     * mirrors exactly that: every buyer sees `create_rfq` on every thread,
+     * unconditionally.
+     *
+     * The web composer has no supplier-side trigger of its own: a supplier
+     * issues a quotation from the exporter panel (`QuoteController`), not
+     * from a "+" menu in the thread — `ChatCommerceService::issueQuotation()`
+     * is called from there, never from `Thread`'s composer. So a supplier
+     * gets `[]` here, not an invented `send_quotation` item; see this
+     * class's calling controller's docblock / the task report for why.
+     *
+     * @return list<array{key: string, label: string, method: string, path: string}>
+     */
+    private function composerActions(User $user): array
+    {
+        $isBuyer = (int) $this->user_id === (int) $user->getKey();
+
+        if (! $isBuyer) {
+            return [];
+        }
+
+        return [[
+            'key' => 'create_rfq',
+            'label' => 'Request for quote',
+            'method' => 'POST',
+            'path' => "conversations/{$this->id}/rfq",
+            'fields' => [
+                ['name' => 'species_text', 'label' => 'Species', 'type' => 'text', 'required' => true, 'max_length' => 180],
+                ['name' => 'quantity', 'label' => 'Quantity', 'type' => 'decimal', 'required' => true],
+                ['name' => 'unit', 'label' => 'Unit', 'type' => 'select', 'required' => true, 'options' => collect(\App\Enums\RfqUnit::options())->map(fn ($label, $value) => ['value' => $value, 'label' => $label])->values()->all()],
+                ['name' => 'form', 'label' => 'Form', 'type' => 'select', 'required' => false, 'options' => collect(\App\Enums\TimberForm::cases())->map(fn ($case) => ['value' => $case->value, 'label' => $case->value])->all()],
+                ['name' => 'grade', 'label' => 'Grade', 'type' => 'text', 'required' => false, 'max_length' => 60],
+                ['name' => 'dimensions', 'label' => 'Dimensions', 'type' => 'text', 'required' => false, 'max_length' => 255],
+                ['name' => 'moisture_content', 'label' => 'Moisture content', 'type' => 'text', 'required' => false, 'max_length' => 60],
+                ['name' => 'incoterm', 'label' => 'Incoterm', 'type' => 'select', 'required' => false, 'options' => collect(\App\Enums\RfqIncoterm::cases())->map(fn ($case) => ['value' => $case->value, 'label' => $case->value])->all()],
+                ['name' => 'shipping_port', 'label' => 'Shipping port', 'type' => 'text', 'required' => false, 'max_length' => 120],
+                ['name' => 'deadline', 'label' => 'Deadline', 'type' => 'date', 'required' => false],
+                ['name' => 'notes', 'label' => 'Notes', 'type' => 'textarea', 'required' => false, 'max_length' => 500],
+            ],
+        ]];
     }
 }

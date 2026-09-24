@@ -176,6 +176,22 @@ class ReorderService
         return ! $this->isRoutedToSupplier($rfq, $companyId);
     }
 
+    /**
+     * Has $companyId already answered this reorder RFQ with a real quote?
+     *
+     * The exact boolean `reorder-request.blade.php`'s `$answered` computes —
+     * extracted here so the API's `actions[]` computation and the Blade card
+     * read the same query instead of two copies that could drift.
+     */
+    public function hasBeenQuoted(Rfq $rfq, int|string $companyId): bool
+    {
+        $rfq->loadMissing('quotes');
+
+        return $rfq->quotes->where('company_id', $companyId)
+            ->whereNotIn('status', [QuoteStatus::Withdrawn, QuoteStatus::Draft])
+            ->isNotEmpty();
+    }
+
     /** The open reorder request against this order, if one is already running. */
     public function openReorderFor(Order $order): ?Rfq
     {
