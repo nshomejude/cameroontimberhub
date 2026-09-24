@@ -182,6 +182,14 @@ return [
             'title' => 'Payment requested',
             'body' => 'The supplier requested payment for order :order.',
         ],
+        'referral_signed_up' => [
+            'title' => 'New referral signed up',
+            'body' => ':name joined Cameroon Timber Hub with your referral code.',
+        ],
+        'referral_commission_earned' => [
+            'title' => 'Referral commission earned',
+            'body' => 'You earned :amount from a referral\'s first subscription payment.',
+        ],
         'payment_confirmed' => [
             'title' => 'Payment recorded',
             'body' => 'A payment was recorded on order :order.',

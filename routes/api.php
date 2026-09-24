@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\V1\ChatOrderController;
 use App\Http\Controllers\Api\V1\ConversationController;
 use App\Http\Controllers\Api\V1\DeviceTokenController;
 use App\Http\Controllers\Api\V1\NotificationController;
+use App\Http\Controllers\Api\V1\ReferralController;
 use App\Http\Controllers\Api\V1\NotificationPreferenceController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\DemoLoginController;
@@ -293,6 +294,14 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
             Route::patch('preferences', [NotificationPreferenceController::class, 'update'])->name('preferences.update');
             Route::get('{id}', [NotificationController::class, 'show'])->name('show');
             Route::post('{id}/read', [NotificationController::class, 'read'])->name('read');
+        });
+
+        // Referral programme (mobile "Refer & earn") — the signed-in user's
+        // code/stats, the people they referred, and their commissions.
+        Route::prefix('referrals')->name('referrals.')->group(function (): void {
+            Route::get('me', [ReferralController::class, 'me'])->name('me');
+            Route::get('earnings', [ReferralController::class, 'earnings'])->name('earnings');
+            Route::get('/', [ReferralController::class, 'index'])->name('index');
         });
 
         // Expo push-token registration for the mobile app — own prefix,

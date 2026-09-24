@@ -15,9 +15,16 @@ class RegisterController extends Controller
 {
     use ProvidesAuthPageStats, RedirectsAfterAuth;
 
-    public function create(): View
+    public function create(Request $request): View
     {
-        return view('auth.register', ['stats' => $this->authPageStats()]);
+        // ?ref=CODE (the share_url from /api/v1/referrals/me) prefills the
+        // optional referral code field.
+        $ref = $request->query('ref');
+
+        return view('auth.register', [
+            'stats' => $this->authPageStats(),
+            'referralCode' => is_string($ref) ? mb_substr(strtoupper(trim($ref)), 0, 20) : null,
+        ]);
     }
 
     public function store(Request $request, RegisterAccount $register): RedirectResponse
