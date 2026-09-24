@@ -471,9 +471,11 @@ class DemoLoginSeeder extends Seeder
         );
 
         if (! LotTransformation::query()->where('processor_company_id', $company->getKey())->exists()) {
-            $inputOne = TimberLot::factory()->for($company)->available()->create(['volume_m3' => 40]);
-            $inputTwo = TimberLot::factory()->for($company)->available()->create(['volume_m3' => 25]);
-            $output = TimberLot::factory()->for($company)->available()->create(['volume_m3' => 52]);
+            $speciesId = Species::query()->value('id');
+
+            $inputOne = TimberLot::create($this->timberLotAttributes($company->getKey(), $speciesId, 40));
+            $inputTwo = TimberLot::create($this->timberLotAttributes($company->getKey(), $speciesId, 25));
+            $output = TimberLot::create($this->timberLotAttributes($company->getKey(), $speciesId, 52));
 
             LotTransformation::recordFor(
                 processorCompanyId: $company->getKey(),
@@ -537,7 +539,7 @@ class DemoLoginSeeder extends Seeder
             foreach (['Iroko Dining Table', 'Sapele Bookshelf', 'Bubinga Office Desk'] as $name) {
                 Product::firstOrCreate(
                     ['company_id' => $company->getKey(), 'name' => $name],
-                    Product::factory()->active()->make(['company_id' => $company->getKey(), 'name' => $name])->toArray(),
+                    $this->productAttributes($company->getKey(), $name),
                 );
             }
         }
@@ -580,7 +582,7 @@ class DemoLoginSeeder extends Seeder
             foreach (['Carved Ebony Stool', 'Bamboo Storage Box', 'Hand-Carved Wall Decor'] as $name) {
                 Product::firstOrCreate(
                     ['company_id' => $company->getKey(), 'name' => $name],
-                    Product::factory()->active()->make(['company_id' => $company->getKey(), 'name' => $name])->toArray(),
+                    $this->productAttributes($company->getKey(), $name),
                 );
             }
         }
@@ -627,7 +629,7 @@ class DemoLoginSeeder extends Seeder
             ] as $name) {
                 Product::firstOrCreate(
                     ['company_id' => $company->getKey(), 'name' => $name],
-                    Product::factory()->active()->make(['company_id' => $company->getKey(), 'name' => $name])->toArray(),
+                    $this->productAttributes($company->getKey(), $name),
                 );
             }
         }
@@ -696,6 +698,75 @@ class DemoLoginSeeder extends Seeder
             && $project->registry_status->canTransitionTo(CarbonRegistryStatus::Submitted)) {
             $project->transitionTo(CarbonRegistryStatus::Submitted);
         }
+    }
+
+    /**
+     * A literal TimberLot attribute set — deliberately NOT TimberLot::factory(),
+     * which requires fakerphp/faker. That package is require-dev only and is
+     * absent from a `composer install --no-dev` production deploy, so a
+     * factory call here would fatal in production (as it did the first time
+     * this method didn't exist). Every other persona in this seeder already
+     * avoids factories for the same reason.
+     *
+     * @return array<string, mixed>
+     */
+    private function timberLotAttributes(int $companyId, ?int $speciesId, float $volumeM3): array
+    {
+        return [
+            'company_id' => $companyId,
+            'species_id' => $speciesId,
+            'product_form' => 'sawn_timber',
+            'grade' => 'Select & Better',
+            'quantity' => $volumeM3,
+            'volume_m3' => $volumeM3,
+            'unit' => 'm3',
+            'origin_country' => 'CM',
+            'origin_region' => 'Littoral',
+            'available_quantity' => $volumeM3,
+            'reserved_quantity' => 0,
+            'price_currency' => 'XAF',
+            'legality_evidence_status' => 'not_assessed',
+            'traceability_status' => 'not_traceable',
+            'inspection_status' => 'not_inspected',
+            'status' => \App\Enums\TimberLotStatus::Available,
+        ];
+    }
+
+    /**
+     * A literal Product attribute set — see timberLotAttributes()'s docblock
+     * for why this avoids Product::factory() (fakerphp/faker is absent from
+     * a production `composer install --no-dev`).
+     *
+     * @return array<string, mixed>
+     */
+    private function productAttributes(int $companyId, string $name): array
+    {
+        return [
+            'company_id' => $companyId,
+            'species_id' => Species::query()->value('id'),
+            'name' => $name,
+            'product_type' => \App\Enums\ProductType::SawnTimber,
+            'description' => 'Demo listing seeded for the '.$name.' persona showcase.',
+            'price_amount' => 450000,
+            'price_currency' => 'XAF',
+            'price_unit' => \App\Enums\PriceUnit::CubicMetre,
+            'moq_quantity' => 20,
+            'moq_unit' => \App\Enums\PriceUnit::CubicMetre,
+            'grade' => 'Select & Better',
+            'thickness_mm' => 50,
+            'width_min_mm' => 100,
+            'width_max_mm' => 250,
+            'length_min_m' => 2.4,
+            'length_max_m' => 6.0,
+            'moisture_content' => '12% - 15% (KD)',
+            'origin' => 'Cameroon',
+            'certification' => 'Legal Origin Verified',
+            'status' => ProductStatus::Active,
+            'is_featured' => false,
+            'is_best_seller' => false,
+            'reviews_count' => 0,
+            'buyers_count' => 0,
+        ];
     }
 
     /**
