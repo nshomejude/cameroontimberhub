@@ -30,6 +30,20 @@ it('lists personas from config when enabled', function () {
         ->and($response->json('data.0'))->toHaveKeys(['key', 'label', 'description', 'icon']);
 });
 
+it('lists all 10 personas and never financier/training_provider', function () {
+    $response = $this->getJson('/api/v1/auth/demo-personas')->assertOk();
+
+    $keys = collect($response->json('data'))->pluck('key')->all();
+
+    expect($keys)->toHaveCount(10)
+        ->and($keys)->toEqualCanonicalizing([
+            'buyer', 'supplier', 'admin', 'logistics', 'pending_supplier',
+            'processor', 'manufacturer', 'artisan', 'retailer', 'carbon_developer',
+        ])
+        ->and($keys)->not->toContain('financier')
+        ->and($keys)->not->toContain('training_provider');
+});
+
 it('returns an empty persona list when disabled, never an error', function () {
     Feature::deactivate(DemoLoginsEnabled::class);
 
@@ -52,7 +66,19 @@ it('logs in each persona with a valid token and matching seeded state', function
         ->getJson('/api/v1/auth/me')
         ->assertOk()
         ->assertJsonPath('data.email', config("demo.personas.{$persona}.email"));
-})->with(['buyer', 'supplier', 'admin', 'logistics', 'pending_supplier']);
+})->with(['buyer', 'supplier', 'admin', 'logistics', 'pending_supplier', 'processor', 'manufacturer', 'artisan', 'retailer', 'carbon_developer']);
+
+it('gives each new persona\'s company the correct organisation type', function (string $persona, string $type) {
+    $response = $this->postJson("/api/v1/auth/demo-login/{$persona}")->assertOk();
+
+    expect($response->json('data.user.company.type'))->toBe($type);
+})->with([
+    ['processor', 'processor'],
+    ['manufacturer', 'manufacturer'],
+    ['artisan', 'artisan'],
+    ['retailer', 'retailer'],
+    ['carbon_developer', 'carbon_developer'],
+]);
 
 it('shows the logistics persona as a logistics company', function () {
     $response = $this->postJson('/api/v1/auth/demo-login/logistics')->assertOk();

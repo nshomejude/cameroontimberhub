@@ -64,6 +64,41 @@ return [
             'description' => 'A supplier account awaiting verification',
             'icon' => 'clock',
         ],
+        'processor' => [
+            'email' => 'demo.processor@cameroontimberhub.com',
+            'name' => 'Demo Processor',
+            'label' => 'Demo Processor',
+            'description' => 'A sawmill with capacity and a real transformation',
+            'icon' => 'cog-6-tooth',
+        ],
+        'manufacturer' => [
+            'email' => 'demo.manufacturer@cameroontimberhub.com',
+            'name' => 'Demo Manufacturer',
+            'label' => 'Demo Manufacturer',
+            'description' => 'A finished-goods manufacturer with capacity and products',
+            'icon' => 'wrench-screwdriver',
+        ],
+        'artisan' => [
+            'email' => 'demo.artisan@cameroontimberhub.com',
+            'name' => 'Demo Artisan',
+            'label' => 'Demo Artisan',
+            'description' => 'A small-batch artisan with marketplace listings',
+            'icon' => 'paint-brush',
+        ],
+        'retailer' => [
+            'email' => 'demo.retailer@cameroontimberhub.com',
+            'name' => 'Demo Retailer',
+            'label' => 'Demo Retailer',
+            'description' => 'A timber yard with local marketplace stock',
+            'icon' => 'building-storefront',
+        ],
+        'carbon_developer' => [
+            'email' => 'demo.carbon_developer@cameroontimberhub.com',
+            'name' => 'Demo Carbon Developer',
+            'label' => 'Demo Carbon Developer',
+            'description' => 'A carbon project developer with a registered project',
+            'icon' => 'globe-alt',
+        ],
     ],
 
 ];

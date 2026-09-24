@@ -3,18 +3,25 @@
 namespace Database\Seeders;
 
 use App\Enums\CompanyStatus;
+use App\Enums\CarbonRegistryStatus;
 use App\Enums\OrderPaymentStatus;
 use App\Enums\OrderStatus;
 use App\Enums\OrganisationType;
+use App\Enums\ProductStatus;
+use App\Models\CarbonProject;
+use App\Models\Capacity;
 use App\Models\Company;
 use App\Models\Document;
 use App\Models\Driver;
+use App\Models\LotTransformation;
 use App\Models\Message;
 use App\Models\Order;
+use App\Models\Product;
 use App\Models\Quote;
 use App\Models\Rfq;
 use App\Models\RfqCompany;
 use App\Models\Species;
+use App\Models\TimberLot;
 use App\Models\User;
 use App\Models\Vehicle;
 use App\Notifications\MessageReceivedNotification;
@@ -68,6 +75,21 @@ class DemoLoginSeeder extends Seeder
     /** The dedicated demo company the `pending_supplier` persona owns. */
     private const PENDING_SUPPLIER_COMPANY = 'Nkolbisson Timber Traders Sarl';
 
+    /** The dedicated demo company the `processor` persona owns. */
+    private const PROCESSOR_COMPANY = 'Sanaga Sawmill Sarl';
+
+    /** The dedicated demo company the `manufacturer` persona owns. */
+    private const MANUFACTURER_COMPANY = 'Mvog-Betsi Furniture Works Sarl';
+
+    /** The dedicated demo company the `artisan` persona owns. */
+    private const ARTISAN_COMPANY = 'Atelier Ebang Menuiserie';
+
+    /** The dedicated demo company the `retailer` persona owns. */
+    private const RETAILER_COMPANY = 'Marché Mokolo Timber Yard Sarl';
+
+    /** The dedicated demo company the `carbon_developer` persona owns. */
+    private const CARBON_DEVELOPER_COMPANY = 'Dja Forest Carbon Sarl';
+
     public function run(): void
     {
         $this->ensurePrerequisites();
@@ -77,12 +99,22 @@ class DemoLoginSeeder extends Seeder
         $admin = $this->persona('admin');
         $logistics = $this->persona('logistics');
         $pendingSupplier = $this->persona('pending_supplier');
+        $processor = $this->persona('processor');
+        $manufacturer = $this->persona('manufacturer');
+        $artisan = $this->persona('artisan');
+        $retailer = $this->persona('retailer');
+        $carbonDeveloper = $this->persona('carbon_developer');
 
         $this->wireBuyer($buyer);
         $this->wireSupplier($supplier);
         $this->wireAdmin($admin);
         $this->wireLogistics($logistics);
         $this->wirePendingSupplier($pendingSupplier);
+        $this->wireProcessor($processor);
+        $this->wireManufacturer($manufacturer);
+        $this->wireArtisan($artisan);
+        $this->wireRetailer($retailer);
+        $this->wireCarbonDeveloper($carbonDeveloper);
 
         $this->seedNotifications($buyer, $supplier, $logistics);
 
@@ -388,6 +420,298 @@ class DemoLoginSeeder extends Seeder
             ->exists();
 
         $pendingSupplier->companies()->syncWithoutDetaching([
+            $company->getKey() => ['role' => 'owner', 'is_primary' => ! $primaryTaken],
+        ]);
+    }
+
+    /* ----------------------------------------------------------- processor */
+
+    /**
+     * A dedicated `OrganisationType::Processor` company: verified, with
+     * capacity rows (so it is directory-visible on the Transformation
+     * Network) and a real, completed `LotTransformation` (2 input lots -> 1
+     * output lot) so the demo shows an actual mass-balance record rather
+     * than an empty shell. Idempotent on the company slug/legal_name, the
+     * `company_user` pivot, the capacity capability/period pair, and the
+     * transformation's own `firstOrCreate` on processor+type+processed_at.
+     */
+    private function wireProcessor(User $processor): void
+    {
+        $company = Company::firstOrCreate(
+            ['slug' => Str::slug(self::PROCESSOR_COMPANY)],
+            [
+                'legal_name' => self::PROCESSOR_COMPANY,
+                'trade_name' => 'Sanaga Sawmill',
+                'type' => OrganisationType::Processor,
+                'status' => CompanyStatus::Verified,
+                'country_code' => 'CM',
+                'city' => 'Edéa',
+                'region' => 'Littoral',
+                'email' => 'ops@sanagasawmill.example',
+                'phone' => '+237 6 90 00 00 00',
+                'description' => 'Sanaga Sawmill processes logs into sawn timber for the domestic and export markets.',
+                'verified_at' => now(),
+            ],
+        );
+
+        if ($company->type !== OrganisationType::Processor) {
+            $company->forceFill(['type' => OrganisationType::Processor])->save();
+        }
+
+        $this->attachPrimary($processor, $company);
+
+        Capacity::firstOrCreate(
+            ['owner_type' => Company::class, 'owner_id' => $company->getKey(), 'capability' => 'Sawing'],
+            ['quantity' => 500, 'unit' => 'm3', 'period' => 'month'],
+        );
+
+        Capacity::firstOrCreate(
+            ['owner_type' => Company::class, 'owner_id' => $company->getKey(), 'capability' => 'Kiln drying'],
+            ['quantity' => 150, 'unit' => 'm3', 'period' => 'month'],
+        );
+
+        if (! LotTransformation::query()->where('processor_company_id', $company->getKey())->exists()) {
+            $inputOne = TimberLot::factory()->for($company)->available()->create(['volume_m3' => 40]);
+            $inputTwo = TimberLot::factory()->for($company)->available()->create(['volume_m3' => 25]);
+            $output = TimberLot::factory()->for($company)->available()->create(['volume_m3' => 52]);
+
+            LotTransformation::recordFor(
+                processorCompanyId: $company->getKey(),
+                transformationType: 'sawing',
+                inputs: [
+                    ['lot' => $inputOne, 'quantity' => 40],
+                    ['lot' => $inputTwo, 'quantity' => 25],
+                ],
+                outputs: [
+                    ['lot' => $output, 'quantity' => 52],
+                ],
+                processedAt: now()->subDays(4),
+                notes: 'Demo sawing run: logs into Select & Better sawn timber.',
+            );
+        }
+    }
+
+    /* -------------------------------------------------------- manufacturer */
+
+    /**
+     * A dedicated `OrganisationType::Manufacturer` company: verified, with
+     * capacity rows and a few real Active finished-goods Products so the
+     * demo panel and marketplace both have something to show.
+     */
+    private function wireManufacturer(User $manufacturer): void
+    {
+        $company = Company::firstOrCreate(
+            ['slug' => Str::slug(self::MANUFACTURER_COMPANY)],
+            [
+                'legal_name' => self::MANUFACTURER_COMPANY,
+                'trade_name' => 'Mvog-Betsi Furniture',
+                'type' => OrganisationType::Manufacturer,
+                'status' => CompanyStatus::Verified,
+                'country_code' => 'CM',
+                'city' => 'Yaoundé',
+                'region' => 'Centre',
+                'email' => 'sales@mvogbetsifurniture.example',
+                'phone' => '+237 6 91 00 00 00',
+                'description' => 'Mvog-Betsi Furniture Works turns kiln-dried timber into finished furniture for the domestic market.',
+                'verified_at' => now(),
+            ],
+        );
+
+        if ($company->type !== OrganisationType::Manufacturer) {
+            $company->forceFill(['type' => OrganisationType::Manufacturer])->save();
+        }
+
+        $this->attachPrimary($manufacturer, $company);
+
+        Capacity::firstOrCreate(
+            ['owner_type' => Company::class, 'owner_id' => $company->getKey(), 'capability' => 'Furniture'],
+            ['quantity' => 200, 'unit' => 'units', 'period' => 'month'],
+        );
+
+        Capacity::firstOrCreate(
+            ['owner_type' => Company::class, 'owner_id' => $company->getKey(), 'capability' => 'CNC'],
+            ['quantity' => 80, 'unit' => 'units', 'period' => 'month'],
+        );
+
+        if ($company->products()->count() < 3) {
+            foreach (['Iroko Dining Table', 'Sapele Bookshelf', 'Bubinga Office Desk'] as $name) {
+                Product::firstOrCreate(
+                    ['company_id' => $company->getKey(), 'name' => $name],
+                    Product::factory()->active()->make(['company_id' => $company->getKey(), 'name' => $name])->toArray(),
+                );
+            }
+        }
+    }
+
+    /* -------------------------------------------------------------- artisan */
+
+    /**
+     * A dedicated `OrganisationType::Artisan` company: verified, with a
+     * handful of small-batch Active Products so it is real inventory the
+     * domestic/local marketplace search can find (DomesticMarketplaceService
+     * just filters Product/Company — nothing else needed).
+     */
+    private function wireArtisan(User $artisan): void
+    {
+        $company = Company::firstOrCreate(
+            ['slug' => Str::slug(self::ARTISAN_COMPANY)],
+            [
+                'legal_name' => self::ARTISAN_COMPANY,
+                'trade_name' => 'Atelier Ebang',
+                'type' => OrganisationType::Artisan,
+                'status' => CompanyStatus::Verified,
+                'country_code' => 'CM',
+                'city' => 'Bafoussam',
+                'region' => 'West',
+                'email' => 'contact@atelierebang.example',
+                'phone' => '+237 6 92 00 00 00',
+                'description' => 'Atelier Ebang Menuiserie is a small-batch woodworking artisan making stools, boxes and carved decor.',
+                'verified_at' => now(),
+            ],
+        );
+
+        if ($company->type !== OrganisationType::Artisan) {
+            $company->forceFill(['type' => OrganisationType::Artisan])->save();
+        }
+
+        $this->attachPrimary($artisan, $company);
+
+        if ($company->products()->count() < 3) {
+            foreach (['Carved Ebony Stool', 'Bamboo Storage Box', 'Hand-Carved Wall Decor'] as $name) {
+                Product::firstOrCreate(
+                    ['company_id' => $company->getKey(), 'name' => $name],
+                    Product::factory()->active()->make(['company_id' => $company->getKey(), 'name' => $name])->toArray(),
+                );
+            }
+        }
+    }
+
+    /* ------------------------------------------------------------- retailer */
+
+    /**
+     * A dedicated `OrganisationType::Retailer` company: verified, with a
+     * region/city set (so local-market search filters have something real
+     * to match) and a few Active Products representing yard stock.
+     */
+    private function wireRetailer(User $retailer): void
+    {
+        $company = Company::firstOrCreate(
+            ['slug' => Str::slug(self::RETAILER_COMPANY)],
+            [
+                'legal_name' => self::RETAILER_COMPANY,
+                'trade_name' => 'Marché Mokolo Timber Yard',
+                'type' => OrganisationType::Retailer,
+                'status' => CompanyStatus::Verified,
+                'country_code' => 'CM',
+                'city' => 'Yaoundé',
+                'region' => 'Centre',
+                'email' => 'yard@marchemokolotimber.example',
+                'phone' => '+237 6 93 00 00 00',
+                'description' => 'Marché Mokolo Timber Yard stocks sawn timber and boards for local walk-in buyers.',
+                'verified_at' => now(),
+            ],
+        );
+
+        if ($company->type !== OrganisationType::Retailer) {
+            $company->forceFill(['type' => OrganisationType::Retailer])->save();
+        }
+
+        $this->attachPrimary($retailer, $company);
+
+        if ($company->products()->count() < 4) {
+            foreach ([
+                'Ayous Sawn Timber 2x4',
+                'Iroko Plank Bundle',
+                'Sapele Board 25mm',
+                'Framire Squared Timber',
+            ] as $name) {
+                Product::firstOrCreate(
+                    ['company_id' => $company->getKey(), 'name' => $name],
+                    Product::factory()->active()->make(['company_id' => $company->getKey(), 'name' => $name])->toArray(),
+                );
+            }
+        }
+    }
+
+    /* ------------------------------------------------------ carbon developer */
+
+    /**
+     * A dedicated `OrganisationType::CarbonDeveloper` company: verified,
+     * with a real `CarbonProject` (a valid GeoJSON boundary, area, estimated
+     * credits) advanced from Draft to Submitted — the only legal transition
+     * `CarbonRegistryStatus::Draft` allows — so the demo shows a project
+     * mid-registry rather than a blank Draft.
+     */
+    private function wireCarbonDeveloper(User $carbonDeveloper): void
+    {
+        $company = Company::firstOrCreate(
+            ['slug' => Str::slug(self::CARBON_DEVELOPER_COMPANY)],
+            [
+                'legal_name' => self::CARBON_DEVELOPER_COMPANY,
+                'trade_name' => 'Dja Forest Carbon',
+                'type' => OrganisationType::CarbonDeveloper,
+                'status' => CompanyStatus::Verified,
+                'country_code' => 'CM',
+                'city' => 'Djoum',
+                'region' => 'South',
+                'email' => 'projects@djaforestcarbon.example',
+                'phone' => '+237 6 94 00 00 00',
+                'description' => 'Dja Forest Carbon develops REDD+ carbon projects around the Dja Faunal Reserve buffer zone.',
+                'verified_at' => now(),
+            ],
+        );
+
+        if ($company->type !== OrganisationType::CarbonDeveloper) {
+            $company->forceFill(['type' => OrganisationType::CarbonDeveloper])->save();
+        }
+
+        $this->attachPrimary($carbonDeveloper, $company);
+
+        $project = CarbonProject::query()->where('company_id', $company->getKey())->first();
+
+        if ($project === null) {
+            $project = CarbonProject::create([
+                'company_id' => $company->getKey(),
+                'name' => 'Dja Buffer Zone Reforestation',
+                'project_type' => 'reforestation',
+                'region' => 'South',
+                'description' => 'Community reforestation of the Dja Faunal Reserve buffer zone.',
+                'status' => 'active',
+                'area_hectares' => 1250.50,
+                'estimated_credits_per_year' => 8400.00,
+                'boundary' => [
+                    'type' => 'Polygon',
+                    'coordinates' => [[
+                        [12.5000, 2.8000],
+                        [12.5400, 2.8000],
+                        [12.5400, 2.8400],
+                        [12.5000, 2.8400],
+                        [12.5000, 2.8000],
+                    ]],
+                ],
+            ]);
+        }
+
+        if ($project->registry_status === CarbonRegistryStatus::Draft
+            && $project->registry_status->canTransitionTo(CarbonRegistryStatus::Submitted)) {
+            $project->transitionTo(CarbonRegistryStatus::Submitted);
+        }
+    }
+
+    /**
+     * Shared "make this persona the (or a) primary member of this company"
+     * logic, factored out of the logistics/pending_supplier blocks above —
+     * never steals the primary seat from a real owner.
+     */
+    private function attachPrimary(User $user, Company $company): void
+    {
+        $primaryTaken = DB::table('company_user')
+            ->where('company_id', $company->getKey())
+            ->where('is_primary', true)
+            ->where('user_id', '!=', $user->getKey())
+            ->exists();
+
+        $user->companies()->syncWithoutDetaching([
             $company->getKey() => ['role' => 'owner', 'is_primary' => ! $primaryTaken],
         ]);
     }
