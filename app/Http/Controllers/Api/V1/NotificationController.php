@@ -29,6 +29,20 @@ class NotificationController extends Controller
     }
 
     /**
+     * One notification, full detail. Scoped to the caller's own the same
+     * way `read()` is — a stranger's id 404s rather than 403s.
+     */
+    public function show(Request $request, string $id): JsonResponse
+    {
+        $notification = $request->user()
+            ->notifications()
+            ->whereKey($id)
+            ->firstOrFail();
+
+        return response()->json(['data' => new NotificationResource($notification)]);
+    }
+
+    /**
      * Mark one read. Scoped to the caller's own notifications via the
      * relation query itself — a stranger's id simply does not resolve, so
      * this 404s rather than 403s (enumeration-safety, same boundary

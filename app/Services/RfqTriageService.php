@@ -114,7 +114,7 @@ class RfqTriageService
 
             if ($routing->wasRecentlyCreated) {
                 $leads->createFromRouting($routing);
-                Notification::send($routing->company->users, new RfqRoutedToExporter($rfq));
+                Notification::send($routing->company->users, new RfqRoutedToExporter($rfq, $routing->company));
                 $routed++;
             }
         }

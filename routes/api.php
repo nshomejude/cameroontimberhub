@@ -8,7 +8,9 @@ use App\Http\Controllers\Api\V1\FleetVehicleController;
 use App\Http\Controllers\Api\V1\ChatCommerceController;
 use App\Http\Controllers\Api\V1\ChatOrderController;
 use App\Http\Controllers\Api\V1\ConversationController;
+use App\Http\Controllers\Api\V1\DeviceTokenController;
 use App\Http\Controllers\Api\V1\NotificationController;
+use App\Http\Controllers\Api\V1\NotificationPreferenceController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\DemoLoginController;
 use App\Http\Controllers\Api\V1\DisputeController;
@@ -234,7 +236,18 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
             Route::get('/', [NotificationController::class, 'index'])->name('index');
             Route::get('unread-count', [NotificationController::class, 'unreadCount'])->name('unread-count');
             Route::post('read-all', [NotificationController::class, 'readAll'])->name('read-all');
+            Route::get('preferences', [NotificationPreferenceController::class, 'show'])->name('preferences.show');
+            Route::patch('preferences', [NotificationPreferenceController::class, 'update'])->name('preferences.update');
+            Route::get('{id}', [NotificationController::class, 'show'])->name('show');
             Route::post('{id}/read', [NotificationController::class, 'read'])->name('read');
+        });
+
+        // Expo push-token registration for the mobile app — own prefix,
+        // right after `notifications` for the same reason that group sits
+        // where it does (any-authenticated-user, not buyer/supplier-scoped).
+        Route::prefix('devices')->name('devices.')->group(function (): void {
+            Route::post('/', [DeviceTokenController::class, 'store'])->name('store');
+            Route::delete('{token}', [DeviceTokenController::class, 'destroy'])->name('destroy');
         });
     });
 

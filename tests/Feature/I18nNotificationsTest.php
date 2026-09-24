@@ -148,8 +148,9 @@ it('renders the RFQ routed to exporter notification in both locales', function (
     App::setLocale($locale);
     $rfq = Rfq::factory()->create(['reference_code' => 'RFQ-2026-ZZZZZ']);
     $user = User::factory()->create();
+    $company = Company::factory()->create();
 
-    [$subject, $lines] = renderNotificationMail(new RfqRoutedToExporter($rfq), $user);
+    [$subject, $lines] = renderNotificationMail(new RfqRoutedToExporter($rfq, $company), $user);
 
     expect($subject)->toContain($subjectNeedle);
     expect($lines)->toContain($bodyNeedle);

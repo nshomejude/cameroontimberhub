@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Schema;
@@ -69,5 +71,17 @@ class User extends Authenticatable implements FilamentUser
         return $this->belongsToMany(Company::class, 'company_user')
             ->withPivot('role')
             ->withTimestamps();
+    }
+
+    /** Registered Expo push tokens for this user's mobile devices. */
+    public function deviceTokens(): HasMany
+    {
+        return $this->hasMany(DeviceToken::class);
+    }
+
+    /** This user's notification channel/type preferences (auto-created with defaults on first access via `forUser()`). */
+    public function notificationPreference(): HasOne
+    {
+        return $this->hasOne(NotificationPreference::class);
     }
 }

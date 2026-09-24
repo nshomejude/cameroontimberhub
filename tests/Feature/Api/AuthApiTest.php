@@ -271,6 +271,42 @@ it('refuses an unauthenticated call to a protected endpoint', function () {
     $this->getJson('/api/v1/rfqs')->assertUnauthorized();
 });
 
+it('deletes the given device token in the same request as logout', function () {
+    $user = App\Models\User::factory()->create(['email' => 'signout@example.com', 'password' => 'correct-horse-battery-staple']);
+    App\Models\DeviceToken::factory()->create([
+        'user_id' => $user->getKey(),
+        'expo_push_token' => 'ExponentPushToken-signout',
+    ]);
+
+    $token = $this->postJson('/api/v1/auth/login', [
+        'email' => 'signout@example.com', 'password' => 'correct-horse-battery-staple',
+    ])->json('data.token');
+
+    $this->withToken($token)
+        ->postJson('/api/v1/auth/logout', ['expo_push_token' => 'ExponentPushToken-signout'])
+        ->assertNoContent();
+
+    expect(App\Models\DeviceToken::where('expo_push_token', 'ExponentPushToken-signout')->exists())->toBeFalse();
+});
+
+it('logs out normally when no expo_push_token is given (regression)', function () {
+    $user = App\Models\User::factory()->create(['email' => 'signout2@example.com', 'password' => 'correct-horse-battery-staple']);
+    App\Models\DeviceToken::factory()->create([
+        'user_id' => $user->getKey(),
+        'expo_push_token' => 'ExponentPushToken-untouched',
+    ]);
+
+    $token = $this->postJson('/api/v1/auth/login', [
+        'email' => 'signout2@example.com', 'password' => 'correct-horse-battery-staple',
+    ])->json('data.token');
+
+    $this->withToken($token)
+        ->postJson('/api/v1/auth/logout')
+        ->assertNoContent();
+
+    expect(App\Models\DeviceToken::where('expo_push_token', 'ExponentPushToken-untouched')->exists())->toBeTrue();
+});
+
 /* ------------------------------------------------------------- throttle */
 
 it('throttles repeated login attempts', function () {

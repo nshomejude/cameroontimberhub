@@ -70,9 +70,26 @@ class AuthController extends Controller
         ]);
     }
 
-    /** Revokes only the token that made this call — other devices stay signed in. */
+    /**
+     * Revokes only the token that made this call — other devices stay
+     * signed in. Optionally accepts `expo_push_token` in the body and, if
+     * present, deletes that DEVICE token row too (scoped to the caller,
+     * same as `DELETE /devices/{token}`) in this SAME request — the mobile
+     * client's sign-out flow needs this atomic, because a client-side
+     * "logout, then call DELETE /devices/{token}" sequence always 401s on
+     * the second call once the bearer is already revoked. Sending no
+     * `expo_push_token` behaves exactly as before.
+     */
     public function logout(Request $request): Response
     {
+        $expoPushToken = $request->string('expo_push_token')->trim()->value();
+
+        if ($expoPushToken !== '') {
+            \App\Models\DeviceToken::where('user_id', $request->user()->getKey())
+                ->where('expo_push_token', $expoPushToken)
+                ->delete();
+        }
+
         $request->user()->currentAccessToken()->delete();
 
         return response()->noContent();

@@ -3,8 +3,11 @@
 namespace App\Notifications;
 
 use App\Enums\OrderStatus;
+use App\Models\NotificationPreference;
 use App\Models\Order;
+use App\Notifications\Channels\ExpoPushChannel;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
 
 /**
@@ -13,9 +16,11 @@ use Illuminate\Notifications\Notification;
  * and `OrderLifecycleService::complete()`. `type`/`reference` mirror the
  * `order_status_changed` pairing `DashboardController::activity()` uses.
  */
-class OrderStatusChangedNotification extends Notification
+class OrderStatusChangedNotification extends Notification implements ShouldQueue
 {
     use Queueable;
+
+    public const TYPE = 'order_status_changed';
 
     public function __construct(
         public Order $order,
@@ -26,16 +31,29 @@ class OrderStatusChangedNotification extends Notification
     /** @return array<int, string> */
     public function via(object $notifiable): array
     {
-        return ['database'];
+        $channels = [];
+
+        if (NotificationPreference::allows($notifiable, self::TYPE, 'database')) {
+            $channels[] = 'database';
+        }
+
+        if (NotificationPreference::allows($notifiable, self::TYPE, 'push')) {
+            $channels[] = ExpoPushChannel::class;
+        }
+
+        return $channels;
     }
 
     /** @return array<string, mixed> */
     public function toArray(object $notifiable): array
     {
         return [
-            'type' => 'order_status_changed',
-            'title' => 'Order status updated',
-            'body' => "Order {$this->order->reference_code} is now {$this->to->label()}.",
+            'type' => self::TYPE,
+            'title' => __('notifications.push.order_status_changed.title'),
+            'body' => __('notifications.push.order_status_changed.body', [
+                'order' => $this->order->reference_code,
+                'status' => $this->to->label(),
+            ]),
             'reference' => $this->order->reference_code,
             'screen' => 'order',
             'from_status' => $this->from->value,

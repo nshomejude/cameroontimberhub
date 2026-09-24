@@ -105,6 +105,59 @@ return [
         'action' => 'Voir les offres',
     ],
 
+    'push' => [
+        'quote_received' => [
+            'title' => 'Nouveau devis reçu',
+            'body' => ':supplier a soumis un devis pour la demande :rfq.',
+        ],
+        'order_status_changed' => [
+            'title' => 'Statut de la commande mis à jour',
+            'body' => 'La commande :order est maintenant :status.',
+        ],
+        'message_received' => [
+            'title' => 'Nouveau message de :sender',
+        ],
+        'dispute_reply' => [
+            'title' => 'Nouvelle réponse à votre litige',
+        ],
+        'quote_accepted' => [
+            'title' => 'Votre devis a été accepté',
+            'body' => 'L\'acheteur a accepté votre devis pour la demande :rfq.',
+        ],
+        'quote_declined' => [
+            'title' => 'Votre devis a été refusé',
+            'body' => 'L\'acheteur a refusé votre devis :quote.',
+        ],
+        'counter_offer' => [
+            'title' => 'Nouvelle contre-offre',
+            'body' => ':party a envoyé une contre-offre sur le devis :quote.',
+        ],
+        'payment_requested' => [
+            'title' => 'Paiement demandé',
+            'body' => 'Le fournisseur a demandé le paiement de la commande :order.',
+        ],
+        'payment_confirmed' => [
+            'title' => 'Paiement enregistré',
+            'body' => 'Un paiement a été enregistré sur la commande :order.',
+        ],
+        'shipment_update' => [
+            'title' => 'Mise à jour de l\'expédition',
+            'body' => 'Les détails d\'expédition ont été mis à jour pour la commande :order.',
+        ],
+        'document_uploaded' => [
+            'title' => 'Nouveau document de commande',
+            'body' => 'Un nouveau document a été ajouté à la commande :order.',
+        ],
+        'dispute_opened' => [
+            'title' => 'Un litige a été ouvert',
+            'body' => 'Un litige a été ouvert sur la commande :order.',
+        ],
+        'rfq_routed' => [
+            'title' => 'Nouvelle demande acheteur',
+            'body' => 'Une demande d\'acheteur vérifiée a été transmise à votre société.',
+        ],
+    ],
+
     'trial_ended' => [
         'subject' => 'Votre essai gratuit :plan est terminé',
         'line_1' => 'Votre essai gratuit de :plan est terminé et aucun paiement n\'a été effectué.',

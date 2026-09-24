@@ -127,4 +127,65 @@ return [
         'action' => 'Subscribe',
     ],
 
+    // ----- mobile push/database notification centre (App\Notifications\*) -----
+    // `title`/`body` here are baked into the notification's stored `data` at
+    // CREATION time (see each class's docblock) using whatever locale is
+    // active when `app()->getLocale()` resolves for that request — there is
+    // no `users.locale` column yet, so a per-recipient locale is not
+    // possible; the current request's resolved locale is used as the
+    // documented fallback (same limitation `lang/en/notifications.php`'s
+    // header already notes for mail).
+    'push' => [
+        'quote_received' => [
+            'title' => 'New quote received',
+            'body' => ':supplier submitted a quote for RFQ :rfq.',
+        ],
+        'order_status_changed' => [
+            'title' => 'Order status updated',
+            'body' => 'Order :order is now :status.',
+        ],
+        'message_received' => [
+            'title' => 'New message from :sender',
+        ],
+        'dispute_reply' => [
+            'title' => 'New reply on your dispute',
+        ],
+        'quote_accepted' => [
+            'title' => 'Your quote was accepted',
+            'body' => 'The buyer accepted your quote for RFQ :rfq.',
+        ],
+        'quote_declined' => [
+            'title' => 'Your quote was declined',
+            'body' => 'The buyer declined your quote :quote.',
+        ],
+        'counter_offer' => [
+            'title' => 'New counter-offer',
+            'body' => ':party sent a counter-offer on quotation :quote.',
+        ],
+        'payment_requested' => [
+            'title' => 'Payment requested',
+            'body' => 'The supplier requested payment for order :order.',
+        ],
+        'payment_confirmed' => [
+            'title' => 'Payment recorded',
+            'body' => 'A payment was recorded on order :order.',
+        ],
+        'shipment_update' => [
+            'title' => 'Shipment update',
+            'body' => 'Shipment details were updated for order :order.',
+        ],
+        'document_uploaded' => [
+            'title' => 'New order document',
+            'body' => 'A new document was attached to order :order.',
+        ],
+        'dispute_opened' => [
+            'title' => 'A dispute was opened',
+            'body' => 'A dispute was opened on order :order.',
+        ],
+        'rfq_routed' => [
+            'title' => 'New buyer lead',
+            'body' => 'A verified buyer request was routed to your company.',
+        ],
+    ],
+
 ];

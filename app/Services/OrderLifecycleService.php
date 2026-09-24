@@ -169,6 +169,9 @@ class OrderLifecycleService
 
             $order->refresh();
 
+            $order->loadMissing('user');
+            $order->user?->notify(new \App\Notifications\PaymentRequestedNotification($order));
+
             return $this->write($conversation, $supplier, $order, MessageType::PaymentRequest, [
                 'reference_code' => $order->reference_code,
                 'currency' => $order->currency->value,
@@ -209,6 +212,9 @@ class OrderLifecycleService
             // OrderService owns the arithmetic, the status derivation and the
             // activity log entry. Nothing about settlement is re-implemented.
             $updated = $this->orders->recordPayment($order, $amount, $method ? trim($method) : null, $supplier);
+
+            $updated->loadMissing('user');
+            $updated->user?->notify(new \App\Notifications\PaymentConfirmedNotification($updated));
 
             return $this->write($conversation, $supplier, $updated, MessageType::PaymentConfirmed, [
                 'reference_code' => $updated->reference_code,
@@ -297,7 +303,11 @@ class OrderLifecycleService
         return DB::transaction(function () use ($conversation, $order, $supplier, $tracking) {
             $this->writeTracking($order, $supplier, $tracking);
 
-            return $this->write($conversation, $supplier, $order->refresh(), MessageType::ShipmentUpdate, [
+            $refreshed = $order->refresh();
+            $refreshed->loadMissing('user');
+            $refreshed->user?->notify(new \App\Notifications\ShipmentUpdateNotification($refreshed));
+
+            return $this->write($conversation, $supplier, $refreshed, MessageType::ShipmentUpdate, [
                 'reference_code' => $order->reference_code,
             ]);
         });
@@ -367,6 +377,9 @@ class OrderLifecycleService
                 ->event('documents_attached')
                 ->withProperties(['count' => count($files), 'kind' => $kind->value])
                 ->log('Supplier attached order documents');
+
+            $order->loadMissing('user');
+            $order->user?->notify(new \App\Notifications\DocumentUploadedNotification($order));
 
             // One documents card per order; it lists the set live, so a later
             // upload appears in the card that is already in the thread.

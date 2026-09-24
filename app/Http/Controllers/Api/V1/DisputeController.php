@@ -101,6 +101,15 @@ class DisputeController extends Controller
             throw new ConflictException($e->getMessage(), 'dispute_not_actionable', $e);
         }
 
+        // Notify the OTHER party, mirroring how reply() notifies below —
+        // wired here rather than inside OpenDisputeCommand's handler for the
+        // same additive reasoning documented on reply()'s notify call.
+        $otherParty = (int) $dispute->raised_by_user_id === (int) $request->user()->getKey()
+            ? $dispute->respondentUser
+            : $dispute->raisedByUser;
+
+        $otherParty?->notify(new \App\Notifications\DisputeOpenedNotification($dispute));
+
         return response()->json([
             'message' => 'Dispute opened.',
             'data' => new DisputeResource($dispute),

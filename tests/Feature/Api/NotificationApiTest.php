@@ -3,17 +3,21 @@
 use App\Models\Company;
 use App\Models\Conversation;
 use App\Models\ConversationParticipant;
+use App\Models\DeviceToken;
 use App\Models\Dispute;
+use App\Models\NotificationPreference;
 use App\Models\Order;
 use App\Models\Quote;
 use App\Models\QuoteItem;
 use App\Models\Rfq;
 use App\Models\RfqCompany;
 use App\Models\User;
+use App\Services\ChatCommerceService;
 use App\Services\DisputeService;
 use App\Services\OrderLifecycleService;
 use App\Services\QuoteService;
 use Database\Seeders\RolesAndPermissionsSeeder;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 
 beforeEach(function () {
@@ -254,4 +258,142 @@ it('requires auth on every notification route', function () {
     $this->getJson('/api/v1/notifications/unread-count')->assertUnauthorized();
     $this->postJson('/api/v1/notifications/read-all')->assertUnauthorized();
     $this->postJson('/api/v1/notifications/00000000-0000-0000-0000-000000000000/read')->assertUnauthorized();
+});
+
+/* -------------------------------------------------------- detail route */
+
+it('shows one notification in full detail; 404s for someone else\'s', function () {
+    [$order, $buyer] = notificationApiOrder();
+    app(DisputeService::class)->open($order, $buyer, App\Enums\DisputeCategory::Other, 'Misc.');
+    $buyer->notify(new App\Notifications\DisputeReplyNotification(
+        Dispute::where('order_id', $order->getKey())->firstOrFail(),
+        'Reply body',
+    ));
+
+    $notification = $buyer->fresh()->notifications()->firstOrFail();
+
+    $this->actingAs($buyer, 'sanctum')
+        ->getJson("/api/v1/notifications/{$notification->id}")
+        ->assertOk()
+        ->assertJsonPath('data.type', 'dispute_reply')
+        ->assertJsonPath('data.icon', 'exclamation-triangle')
+        ->assertJsonPath('data.tone', 'warning');
+
+    $stranger = User::factory()->create();
+    $this->actingAs($stranger, 'sanctum')
+        ->getJson("/api/v1/notifications/{$notification->id}")
+        ->assertNotFound();
+});
+
+/* ------------------------------------------------------- ExpoPushChannel */
+
+it('Expo push posts one array-bodied request with the expected message shape', function () {
+    Http::fake(['exp.host/*' => Http::response(['data' => [['status' => 'ok']]], 200)]);
+
+    [$order, $buyer] = notificationApiOrder();
+    DeviceToken::factory()->create(['user_id' => $buyer->getKey(), 'expo_push_token' => 'ExponentPushToken-live']);
+
+    $user = $buyer;
+    $user->notify(new App\Notifications\PaymentRequestedNotification($order));
+
+    Http::assertSent(function ($request) use ($order) {
+        $body = $request->data();
+
+        return $request->url() === 'https://exp.host/--/api/v2/push/send'
+            && is_array($body)
+            && $body[0]['to'] === 'ExponentPushToken-live'
+            && $body[0]['sound'] === 'default'
+            && $body[0]['channelId'] === 'default'
+            && $body[0]['data']['reference'] === $order->reference_code;
+    });
+});
+
+it('prunes a device token when Expo reports DeviceNotRegistered', function () {
+    Http::fake(['exp.host/*' => Http::response([
+        'data' => [['status' => 'error', 'message' => 'not registered', 'details' => ['error' => 'DeviceNotRegistered']]],
+    ], 200)]);
+
+    [$order, $buyer] = notificationApiOrder();
+    $token = DeviceToken::factory()->create(['user_id' => $buyer->getKey(), 'expo_push_token' => 'ExponentPushToken-dead']);
+
+    $buyer->notify(new App\Notifications\PaymentRequestedNotification($order));
+
+    expect(DeviceToken::whereKey($token->getKey())->exists())->toBeFalse();
+});
+
+/* ----------------------------------------------------------- preferences */
+
+it('does not create a notification row when the type is disabled', function () {
+    $supplierCompany = Company::factory()->publiclyVisible()->create();
+    $supplierUser = User::factory()->create();
+    $supplierCompany->users()->attach($supplierUser);
+
+    $buyer = User::factory()->create();
+    NotificationPreference::forUser($buyer)->forceFill(['types' => ['quote_received' => false]])->save();
+
+    $rfq = Rfq::factory()->approved()->create(['buyer_email' => $buyer->email, 'user_id' => $buyer->getKey()]);
+    $rfq->items()->create(['species_text' => 'Sapele', 'form' => 'sawn', 'quantity' => 50, 'unit' => 'm3']);
+    RfqCompany::create(['rfq_id' => $rfq->getKey(), 'company_id' => $supplierCompany->getKey(), 'status' => 'sent', 'routed_at' => now()]);
+
+    $quote = app(QuoteService::class)->open($rfq, $supplierCompany);
+    QuoteItem::create(['quote_id' => $quote->getKey(), 'description' => 'Sawn', 'quantity' => 50, 'unit' => 'm3', 'unit_price' => 185.00, 'line_total' => Quote::lineTotal(50, 185.00)]);
+    app(QuoteService::class)->submit($quote->fresh(), $supplierUser);
+
+    expect($buyer->fresh()->notifications()->count())->toBe(0);
+});
+
+it('records the database row but never invokes push when channels.push is off', function () {
+    Http::fake(['exp.host/*' => Http::response(['data' => []], 200)]);
+
+    [$order, $buyer] = notificationApiOrder();
+    DeviceToken::factory()->create(['user_id' => $buyer->getKey(), 'expo_push_token' => 'ExponentPushToken-muted']);
+    NotificationPreference::forUser($buyer)->forceFill(['channels' => ['push' => false, 'email' => true]])->save();
+
+    $buyer->notify(new App\Notifications\PaymentRequestedNotification($order));
+
+    expect($buyer->fresh()->notifications()->count())->toBe(1);
+    Http::assertNothingSent();
+});
+
+/* ------------------------------------------------------------- new types */
+
+it('notifies the supplier company when the buyer accepts their quote', function () {
+    $supplierCompany = Company::factory()->publiclyVisible()->create();
+    $supplierUser = User::factory()->create();
+    $supplierCompany->users()->attach($supplierUser);
+
+    $buyer = User::factory()->create();
+    $rfq = Rfq::factory()->approved()->create(['buyer_email' => $buyer->email, 'user_id' => $buyer->getKey()]);
+    $rfq->items()->create(['species_text' => 'Sapele', 'form' => 'sawn', 'quantity' => 50, 'unit' => 'm3']);
+    RfqCompany::create(['rfq_id' => $rfq->getKey(), 'company_id' => $supplierCompany->getKey(), 'status' => 'sent', 'routed_at' => now()]);
+
+    $quote = Quote::factory()->submitted()->create(['rfq_id' => $rfq->getKey(), 'company_id' => $supplierCompany->getKey()]);
+    QuoteItem::factory()->create(['quote_id' => $quote->getKey(), 'quantity' => 50, 'unit_price' => 185.00, 'line_total' => Quote::lineTotal(50, 185.00)]);
+    $quote->load('items')->recalculateTotals()->save();
+
+    $conversation = Conversation::factory()->create(['user_id' => $buyer->getKey(), 'company_id' => $supplierCompany->getKey()]);
+    ConversationParticipant::firstOrCreate(
+        ['conversation_id' => $conversation->getKey(), 'user_id' => $supplierUser->getKey()],
+        ['role' => ConversationParticipant::ROLE_SUPPLIER, 'company_id' => $supplierCompany->getKey()],
+    );
+
+    app(ChatCommerceService::class)->acceptQuotation($conversation, $quote->fresh(), $buyer);
+
+    expect($supplierUser->fresh()->unreadNotifications()->count())->toBe(1);
+    $this->actingAs($supplierUser, 'sanctum')
+        ->getJson('/api/v1/notifications')
+        ->assertOk()
+        ->assertJsonPath('data.0.type', 'quote_accepted');
+});
+
+it('notifies the buyer when the supplier requests payment', function () {
+    [$order, $buyer, , $supplierUser, $conversation] = notificationApiOrder();
+
+    app(OrderLifecycleService::class)->requestPayment($conversation, $order, $supplierUser, null, null);
+
+    expect($buyer->fresh()->unreadNotifications()->count())->toBe(1);
+    $this->actingAs($buyer, 'sanctum')
+        ->getJson('/api/v1/notifications')
+        ->assertOk()
+        ->assertJsonPath('data.0.type', 'payment_requested');
 });

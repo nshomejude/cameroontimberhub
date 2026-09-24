@@ -306,6 +306,10 @@ class ChatCommerceService
                 $this->messaging->postOrderReference($conversation, null, $order);
             }
 
+            // Tell the supplier's company their quote was accepted.
+            $accepted->loadMissing('company.users');
+            $accepted->company?->users?->each(fn (User $u) => $u->notify(new \App\Notifications\QuoteAcceptedNotification($accepted)));
+
             return $acceptance->refresh();
         });
     }
@@ -331,6 +335,9 @@ class ChatCommerceService
                 $conversation,
                 'Quotation '.$declined->reference_code.' was declined by the buyer.',
             );
+
+            $declined->loadMissing('company.users');
+            $declined->company?->users?->each(fn (User $u) => $u->notify(new \App\Notifications\QuoteDeclinedNotification($declined)));
 
             return $declined;
         });
@@ -446,6 +453,8 @@ class ChatCommerceService
                 ])
                 ->log('Counter-offer proposed');
 
+            $this->notifyOtherPartyOfCounter($conversation, $offer->setRelation('quote', $locked), $actor, $party);
+
             return $offer;
         });
     }
@@ -487,6 +496,8 @@ class ChatCommerceService
                     'The counter-offer on quotation '.$quote->reference_code.' was declined.',
                 );
 
+                $this->notifyOtherPartyOfCounter($conversation, $locked->setRelation('quote', $quote), $actor, $party);
+
                 return $locked->refresh();
             }
 
@@ -507,8 +518,31 @@ class ChatCommerceService
 
             $conversation->forceFill(['quote_id' => $revision->getKey()])->save();
 
+            $this->notifyOtherPartyOfCounter($conversation, $locked->setRelation('quote', $revision), $actor, $party);
+
             return $locked->refresh();
         });
+    }
+
+    /**
+     * Tell the party that did NOT propose/answer this round. `$party` is the
+     * ACTOR's side, so the notification goes to the opposite side: the
+     * buyer (`conversation->user`) when the actor is the supplier, or every
+     * user of the supplier's company when the actor is the buyer.
+     */
+    private function notifyOtherPartyOfCounter(Conversation $conversation, QuoteCounterOffer $offer, User $actor, string $party): void
+    {
+        $notification = new \App\Notifications\CounterOfferNotification($offer, $actor->name);
+
+        if ($party === ConversationParticipant::ROLE_BUYER) {
+            $conversation->loadMissing('company.users');
+            $conversation->company?->users?->each(fn (User $u) => $u->notify($notification));
+
+            return;
+        }
+
+        $conversation->loadMissing('user');
+        $conversation->user?->notify($notification);
     }
 
     /**
