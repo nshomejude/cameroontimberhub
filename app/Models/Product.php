@@ -105,7 +105,19 @@ class Product extends Model
             return $path;
         }
 
-        return is_file(public_path('img/'.$path)) ? asset('img/'.$path) : null;
+        // Seeded/legacy images live under public/img/...; images uploaded via
+        // SupplierProductImageController::store() are written to the `public`
+        // storage disk instead (Storage::disk('public')->putFile('products', ...)).
+        // Both are real sources for the same column, so both must resolve.
+        if (is_file(public_path('img/'.$path))) {
+            return asset('img/'.$path);
+        }
+
+        if (\Illuminate\Support\Facades\Storage::disk('public')->exists($path)) {
+            return \Illuminate\Support\Facades\Storage::disk('public')->url($path);
+        }
+
+        return null;
     }
 
     /**

@@ -195,17 +195,16 @@ it('uploads a product image', function () {
         ])
         ->assertCreated();
 
-    // primaryImageUrl()/publicImage() only resolves files physically under
-    // public/img (a pre-existing Product model quirk, unrelated to this
-    // change — it does not look at the `public` Storage disk at all), so it
-    // stays null for a Storage::fake() upload here; the real, verifiable
-    // outcome is that the upload was persisted to the right disk/directory
-    // and the product's primary_image_path was updated to point at it.
-    $path = $response->json('data');
     $product->refresh();
 
     expect($product->primary_image_path)->toStartWith('products/');
     Storage::disk('public')->assertExists($product->primary_image_path);
+
+    // Regression: publicImage() used to only resolve public/img/... paths,
+    // so an image uploaded through this endpoint (public disk, products/...)
+    // rendered as a broken image everywhere primaryImageUrl() is read.
+    expect($product->primaryImageUrl())
+        ->toBe(Storage::disk('public')->url($product->primary_image_path));
 });
 
 it('rejects a non-image file upload', function () {
