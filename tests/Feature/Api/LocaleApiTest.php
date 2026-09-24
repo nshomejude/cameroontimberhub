@@ -9,6 +9,7 @@ use App\Models\RfqCompany;
 use App\Models\User;
 use App\Services\QuoteService;
 use Database\Seeders\RolesAndPermissionsSeeder;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
 
 /**
@@ -145,6 +146,58 @@ it('returns validation errors in French for /auth/register when Accept-Language 
 
     $response->assertStatus(422);
     $response->assertJsonFragment(['name' => ['Le champ nom est requis.']]);
+    $response->assertJsonFragment(['email' => ['Le champ adresse e-mail est requis.']]);
+});
+
+/**
+ * Verified live bug: POST /auth/login with an empty body and Accept-Language
+ * set to zh/th/vi/it/es/de returned English validation errors even though
+ * SetLocale correctly resolved the locale, because lang/{locale}/validation.php
+ * did not exist for these six locales and Laravel fell back to its built-in
+ * English strings. Publishing those files (this change) fixes it.
+ */
+dataset('new-locale-login-validation', [
+    'zh (maps to zh_CN)' => ['zh', 'zh_CN'],
+    'th' => ['th', 'th'],
+    'vi' => ['vi', 'vi'],
+    'it' => ['it', 'it'],
+    'es' => ['es', 'es'],
+    'de' => ['de', 'de'],
+]);
+
+it('returns translated validation errors for /auth/login in the newly published locales', function (string $acceptLanguage, string $langDir) {
+    Cache::flush();
+
+    $response = $this->withHeaders(['Accept-Language' => $acceptLanguage])
+        ->postJson('/api/v1/auth/login', []);
+
+    $response->assertStatus(422);
+
+    $expectedEmailMessage = __('validation.required', ['attribute' => __('validation.attributes.email', [], $langDir)], $langDir);
+
+    $response->assertJsonFragment(['email' => [$expectedEmailMessage]]);
+
+    $englishMessage = __('validation.required', ['attribute' => __('validation.attributes.email', [], 'en')], 'en');
+    expect($expectedEmailMessage)->not->toBe($englishMessage);
+})->with('new-locale-login-validation');
+
+it('keeps /auth/login validation errors in English when Accept-Language is en (regression)', function () {
+    Cache::flush();
+
+    $response = $this->withHeaders(['Accept-Language' => 'en'])
+        ->postJson('/api/v1/auth/login', []);
+
+    $response->assertStatus(422);
+    $response->assertJsonFragment(['email' => ['The email field is required.']]);
+});
+
+it('keeps /auth/login validation errors in French when Accept-Language is fr (regression)', function () {
+    Cache::flush();
+
+    $response = $this->withHeaders(['Accept-Language' => 'fr'])
+        ->postJson('/api/v1/auth/login', []);
+
+    $response->assertStatus(422);
     $response->assertJsonFragment(['email' => ['Le champ adresse e-mail est requis.']]);
 });
 
