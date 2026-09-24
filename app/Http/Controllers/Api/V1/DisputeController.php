@@ -122,6 +122,18 @@ class DisputeController extends Controller
             throw new ConflictException($e->getMessage(), 'dispute_not_actionable', $e);
         }
 
+        // Notify the OTHER party. Wired here rather than inside
+        // DisputeService::reply() itself: that method had an uncommitted,
+        // in-flight change from another agent (a can_reply/isReplyable guard)
+        // when this was built, so the notification is added additively at
+        // the controller layer instead of touching that method's body.
+        $body = $request->validated('body');
+        $otherParty = (int) $model->raised_by_user_id === (int) $request->user()->getKey()
+            ? $model->respondentUser
+            : $model->raisedByUser;
+
+        $otherParty?->notify(new \App\Notifications\DisputeReplyNotification($model, $body));
+
         return response()->json([
             'message' => 'Response sent.',
             'data' => new DisputeResource($model->refresh()->load(['evidence', 'messages.user', 'messages.company', 'raisedByUser', 'raisedByCompany', 'respondentCompany'])),

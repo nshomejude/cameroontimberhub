@@ -164,6 +164,12 @@ class QuoteService
             new QuoteSubmittedMail($quote->fresh(['items', 'company', 'rfq']), $this->buyerResponsesUrl($quote->rfq)),
         );
 
+        // Database notification for the registered buyer (a guest-submitted
+        // RFQ has no `user_id`, so there is nobody to notify in-app).
+        if ($quote->rfq->user) {
+            $quote->rfq->user->notify(new \App\Notifications\QuoteReceivedNotification($quote->fresh(['items', 'company', 'rfq'])));
+        }
+
         // docs/PRICE_DATA_STANDARD.md §5 — `quoted` price signal. No domain
         // event exists for quote submission; the collector is defensive and
         // wrapped here too so it can never block a submit.

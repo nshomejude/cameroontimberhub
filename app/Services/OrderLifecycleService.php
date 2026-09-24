@@ -315,9 +315,14 @@ class OrderLifecycleService
         $this->commerce->assertBuyer($conversation, $buyer);
         $this->assertOrderOnThread($conversation, $order);
 
-        return DB::transaction(function () use ($conversation, $order, $buyer) {
+        $before = $order->status;
+
+        return DB::transaction(function () use ($conversation, $order, $buyer, $before) {
             // OrderService refuses anything that is not delivered -> completed.
             $completed = $this->orders->complete($order, $buyer);
+
+            // Buyer drove this move, so the supplier's company is told.
+            $this->notifyStatusChanged($completed, $before, buyer: false);
 
             return $this->write($conversation, $buyer, $completed, MessageType::TransactionCompleted, [
                 'reference_code' => $completed->reference_code,
@@ -468,15 +473,45 @@ class OrderLifecycleService
         $this->commerce->assertSupplier($conversation, $supplier);
         $this->assertOrderOnThread($conversation, $order);
 
-        return DB::transaction(function () use ($conversation, $order, $supplier, $move, $type) {
+        $before = $order->status;
+
+        return DB::transaction(function () use ($conversation, $order, $supplier, $move, $type, $before) {
             /** @var Order $updated */
             $updated = $move($order);
+
+            // Supplier drove this move, so the buyer is the one being told.
+            $this->notifyStatusChanged($updated, $before, buyer: true);
 
             return $this->write($conversation, $supplier, $updated, $type, [
                 'reference_code' => $updated->reference_code,
                 'status_at_post' => $updated->status->value,
             ]);
         });
+    }
+
+    /**
+     * Database notification for a real order-status transition. Recipient is
+     * whichever side did NOT drive the move: the buyer (`order->user`) for a
+     * supplier-driven `advance()`, the supplier's company users for the
+     * buyer-driven `complete()`.
+     */
+    private function notifyStatusChanged(Order $order, OrderStatus $before, bool $buyer): void
+    {
+        if ($before === $order->status) {
+            return;
+        }
+
+        $notification = new \App\Notifications\OrderStatusChangedNotification($order, $before, $order->status);
+
+        if ($buyer) {
+            $order->loadMissing('user');
+            $order->user?->notify($notification);
+
+            return;
+        }
+
+        $order->loadMissing('company.users');
+        $order->company?->users?->each(fn (User $user) => $user->notify($notification));
     }
 
     /** @param array<string, mixed> $tracking */

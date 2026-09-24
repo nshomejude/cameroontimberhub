@@ -217,7 +217,29 @@ class MessagingService
             'last_read_at' => $message->created_at,
         ])->save();
 
+        $this->notifyOthers($conversation, $sender, $message);
+
         return $message;
+    }
+
+    /**
+     * Database notification for the OTHER side of the conversation, never the
+     * sender. The buyer side is `conversation->user_id`; the supplier side is
+     * every user on `conversation->company_id`.
+     */
+    private function notifyOthers(Conversation $conversation, User $sender, Message $message): void
+    {
+        $notification = new \App\Notifications\MessageReceivedNotification($message);
+
+        if ((int) $conversation->user_id !== (int) $sender->getKey() && $conversation->user) {
+            $conversation->user->notify($notification);
+        }
+
+        $conversation->loadMissing('company.users');
+
+        $conversation->company?->users
+            ?->reject(fn (User $user) => (int) $user->getKey() === (int) $sender->getKey())
+            ->each(fn (User $user) => $user->notify($notification));
     }
 
     /** Platform-authored note. No sender, never deletable. */
