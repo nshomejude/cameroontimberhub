@@ -27,6 +27,13 @@ class LocalMarketController extends Controller
 
     public function index(Request $request): AnonymousResourceCollection
     {
+        // Optional buyer location: adds distance_km per listing and enables
+        // sort=nearest. Both or neither; everything else is unchanged.
+        $request->validate([
+            'lat' => ['nullable', 'required_with:lng', 'numeric', 'between:-90,90'],
+            'lng' => ['nullable', 'required_with:lat', 'numeric', 'between:-180,180'],
+        ]);
+
         $filters = $this->filters($request);
 
         $perPage = min(max((int) $request->query('per_page', 12), 1), 48);
@@ -39,7 +46,7 @@ class LocalMarketController extends Controller
                     'categories' => $this->catalogue->categoryFacets($filters),
                     'regions' => $this->catalogue->regionFacets(),
                 ],
-                'sort_options' => DomesticMarketplaceService::sortOptions(),
+                'sort_options' => DomesticMarketplaceService::sortOptions() + ['nearest' => 'Nearest to me'],
             ],
         ]);
     }
@@ -90,6 +97,8 @@ class LocalMarketController extends Controller
             'minQuantity' => $request->query('quantity'),
             'maxThicknessMm' => $request->query('max_thickness'),
             'sort' => (string) $request->query('sort', 'newest'),
+            'lat' => $request->query('lat'),
+            'lng' => $request->query('lng'),
         ];
     }
 }

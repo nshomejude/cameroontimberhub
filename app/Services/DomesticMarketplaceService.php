@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Company;
 use App\Models\Product;
 use App\Support\CameroonGeography;
+use App\Support\Geo\Haversine;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -62,15 +63,49 @@ class DomesticMarketplaceService
     {
         $query = $this->applyFilters($this->base(), $filters);
 
+        // Explicit products.* so the delivery_fast join and the optional
+        // distance_km column never clobber each other.
+        $query->select('products.*');
+        $hasPoint = $this->withDistance($query, $filters);
+
         return match ($filters['sort'] ?? 'newest') {
+            // Only meaningful with a point; without one it falls back to newest.
+            'nearest' => $hasPoint
+                ? $query->orderByRaw('distance_km ASC NULLS LAST')->orderByDesc('products.created_at')
+                : $query->orderByDesc('created_at'),
             'price_low' => $query->orderByRaw('price_amount ASC NULLS LAST')->orderBy('name'),
             'price_high' => $query->orderByRaw('price_amount DESC NULLS LAST')->orderBy('name'),
             'delivery_fast' => $query->join('companies', 'companies.id', '=', 'products.company_id')
-                ->orderByRaw('companies.delivery_days_min ASC NULLS LAST')
-                ->select('products.*'),
+                ->orderByRaw('companies.delivery_days_min ASC NULLS LAST'),
             'name' => $query->orderBy('name'),
             default => $query->orderByDesc('created_at'),
         };
+    }
+
+    /**
+     * When the caller supplies a point (`lat` + `lng` filters), select each
+     * listing's seller distance in km as `distance_km` (NULL when the seller
+     * has no coordinates). Returns whether a point was applied.
+     *
+     * @param  array<string, mixed>  $filters
+     */
+    private function withDistance(Builder $query, array $filters): bool
+    {
+        $lat = $filters['lat'] ?? null;
+        $lng = $filters['lng'] ?? null;
+
+        if (! is_numeric($lat) || ! is_numeric($lng)) {
+            return false;
+        }
+
+        [$sql, $bindings] = Haversine::sql((float) $lat, (float) $lng, 'dist_c.latitude', 'dist_c.longitude');
+
+        $query->selectRaw(
+            "(select {$sql} from companies as dist_c where dist_c.id = products.company_id and dist_c.latitude is not null and dist_c.longitude is not null) as distance_km",
+            $bindings,
+        );
+
+        return true;
     }
 
     /** @param array<string, mixed> $filters */

@@ -56,6 +56,11 @@ class ProductResource extends JsonResource
                 'slug' => $this->species->slug,
                 'common_name' => $this->species->common_name,
             ]),
+            // Only present when the caller passed lat & lng (local/listings).
+            'distance_km' => $this->when(
+                array_key_exists('distance_km', $this->resource->getAttributes()),
+                fn () => $this->resource->getAttributes()['distance_km'] === null ? null : round((float) $this->resource->getAttributes()['distance_km'], 1),
+            ),
             'supplier' => $this->whenLoaded('company', fn () => new SupplierResource($this->company)),
         ];
     }

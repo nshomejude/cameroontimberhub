@@ -119,6 +119,9 @@ class DemoLoginSeeder extends Seeder
 
         $this->seedNotifications($buyer, $supplier, $logistics);
 
+        // Map pins for the "nearest sellers" screen (fills NULLs only).
+        \App\Support\Geo\SeedCompanyCoordinates::apply();
+
         $this->command?->info('Demo personas ready: '.collect(config('demo.personas'))->pluck('email')->join(', '));
     }
 

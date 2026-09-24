@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\V1\CompanyVerificationController;
 use App\Http\Controllers\Api\V1\FleetDriverController;
 use App\Http\Controllers\Api\V1\FleetVehicleController;
 use App\Http\Controllers\Api\V1\LocalMarketController;
+use App\Http\Controllers\Api\V1\NearbyController;
 use App\Http\Controllers\Api\V1\TransformationNetworkController;
 use App\Http\Controllers\Api\V1\TransformationRequestController;
 use App\Http\Controllers\Api\V1\ChatCommerceController;
@@ -159,6 +160,9 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
     Route::get('suppliers/{slug}', [SupplierController::class, 'show'])->name('suppliers.show');
 
     Route::get('search', SearchController::class)->name('search');
+
+    // Nearest sellers for buyers (public) — see NearbyController.
+    Route::get('nearby', NearbyController::class)->name('nearby');
 
     // Local market (Buy Cameroon Wood) — public read-only wrapper around
     // DomesticMarketplaceService. A listing IS a Product row; there is no
