@@ -3,6 +3,7 @@
 namespace App\Http\Resources\Api\V1;
 
 use App\Models\Order;
+use App\Services\CompanyReviewService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -55,6 +56,86 @@ class OrderResource extends JsonResource
                 ? $this->tradeAssuranceAgreement !== null
                 : null,
             'can_open_dispute' => $this->resource->isDisputable(),
+            'conversation_id' => $this->whenLoaded('conversation', fn () => $this->conversation?->id),
+            'actions' => $this->buyerActions($request),
         ];
+    }
+
+    /**
+     * The order-detail equivalent of `MessageResource`'s `actions[]` — same
+     * key/label/method/path shape, same real gates, just read off the order
+     * directly instead of off a chat card:
+     *
+     *  - `complete` mirrors `MessageResource::orderDeliveredActions()`
+     *    (`$isBuyer && status === Delivered`).
+     *  - `review` mirrors `MessageResource::transactionCompletedActions()`,
+     *    which defers to `CompanyReviewService::canReview()` rather than the
+     *    weaker `Order::isReviewable()` — that service is the one place
+     *    "already reviewed" is actually checked, so this reuses it instead
+     *    of re-deriving eligibility from `isReviewable()` alone.
+     *  - `open_dispute` reuses `Order::isDisputable()`, same as the existing
+     *    `can_open_dispute` flag above. Its real endpoint
+     *    (`Api\V1\DisputeController::store()`) is NOT one of
+     *    `ChatOrderController`'s conversation-scoped routes and does not
+     *    need a conversation to exist, so unlike `complete`/`review` it is
+     *    not gated on `conversation_id` being present.
+     *
+     * `complete`/`review` need the real conversation id in their path (that
+     * is how `ChatOrderController` routes are shaped), so when the order has
+     * no conversation yet those two are simply omitted rather than emitting
+     * a path that 404s.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function buyerActions(Request $request): array
+    {
+        /** @var Order $order */
+        $order = $this->resource;
+        $actions = [];
+
+        if ($order->isDisputable()) {
+            $actions[] = [
+                'key' => 'open_dispute',
+                'label' => 'Open a dispute',
+                'method' => 'POST',
+                'path' => "orders/{$order->reference_code}/disputes",
+            ];
+        }
+
+        $conversationId = $order->relationLoaded('conversation') ? $order->conversation?->id : null;
+
+        if ($conversationId === null) {
+            return $actions;
+        }
+
+        $base = "conversations/{$conversationId}/orders/{$order->getKey()}";
+
+        if ($order->status === \App\Enums\OrderStatus::Delivered) {
+            $actions[] = [
+                'key' => 'complete',
+                'label' => 'Confirm receipt and close this order',
+                'method' => 'POST',
+                'path' => "{$base}/complete",
+                'confirm' => 'Confirm receipt and close this order? Only you can close it. Once closed you can review the supplier.',
+            ];
+        }
+
+        $user = $request->user();
+
+        if ($user !== null && app(CompanyReviewService::class)->canReview($user, $order)) {
+            $actions[] = [
+                'key' => 'review',
+                'label' => 'Leave a review',
+                'method' => 'POST',
+                'path' => "{$base}/review",
+                'fields' => [
+                    ['name' => 'rating', 'label' => 'Rating (1-5)', 'type' => 'number', 'required' => true],
+                    ['name' => 'title', 'label' => 'Title', 'type' => 'text', 'required' => false, 'max_length' => 160],
+                    ['name' => 'body', 'label' => 'Review', 'type' => 'textarea', 'required' => false, 'max_length' => 2000],
+                ],
+            ];
+        }
+
+        return $actions;
     }
 }

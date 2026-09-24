@@ -12,6 +12,8 @@ use App\Models\Shipment;
 use App\Models\TradeAssuranceAgreement;
 use App\Models\User;
 use App\Services\CheckpointTracker;
+use App\Services\MessagingService;
+use App\Services\OrderService;
 use App\Services\QuoteService;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Support\Facades\Mail;
@@ -25,8 +27,10 @@ beforeEach(function () {
  * A real Order via the award path (mirrors OrderTest/TradeAssuranceTest's
  * helper), attached to $buyer by forcing `user_id` — factories leave RFQs
  * guest by default and Order has no buyer-company FK to hook into instead.
+ *
+ * @return array{0: Order, 1: Company}
  */
-function apiOrder(?User $buyer = null): Order
+function apiOrderWithSupplier(?User $buyer = null): array
 {
     $supplierCompany = Company::factory()->publiclyVisible()->create();
     $rfq = Rfq::factory()->approved()->create($buyer ? ['user_id' => $buyer->getKey()] : []);
@@ -60,7 +64,12 @@ function apiOrder(?User $buyer = null): Order
 
     $order = Order::where('quote_id', $quote->getKey())->firstOrFail();
 
-    return $order->fresh();
+    return [$order->fresh(), $supplierCompany];
+}
+
+function apiOrder(?User $buyer = null): Order
+{
+    return apiOrderWithSupplier($buyer)[0];
 }
 
 /* -------------------------------------------------------------- listing */
@@ -96,6 +105,84 @@ it('shows a single order the buyer owns, including line items', function () {
         ->assertJsonPath('data.items.0.line_total', '18500.00')
         ->assertJsonPath('data.has_trade_assurance', false)
         ->assertJsonPath('data.can_open_dispute', true);
+});
+
+it('returns no conversation id and no conversation-gated actions when the order has no conversation', function () {
+    $buyer = User::factory()->create();
+    $order = apiOrder($buyer);
+
+    $response = $this->actingAs($buyer, 'sanctum')
+        ->getJson('/api/v1/orders/'.$order->reference_code)
+        ->assertOk()
+        ->assertJsonPath('data.conversation_id', null);
+
+    // `open_dispute` needs no conversation (its real route is
+    // Api\V1\DisputeController::store(), keyed by reference, not by
+    // conversation), so it is the only action left; `complete`/`review`
+    // require a conversation and must not appear.
+    $keys = collect($response->json('data.actions'))->pluck('key');
+
+    expect($keys->all())->toBe(['open_dispute']);
+});
+
+it('includes conversation_id and a complete action when the order is delivered', function () {
+    $buyer = User::factory()->create();
+    [$order, $supplierCompany] = apiOrderWithSupplier($buyer);
+
+    $conversation = app(MessagingService::class)->start($buyer, $supplierCompany, order: $order);
+    app(OrderService::class)->confirm($order);
+    app(OrderService::class)->startProduction($order);
+    app(OrderService::class)->ship($order);
+    app(OrderService::class)->deliver($order);
+
+    $response = $this->actingAs($buyer, 'sanctum')
+        ->getJson('/api/v1/orders/'.$order->reference_code)
+        ->assertOk()
+        ->assertJsonPath('data.conversation_id', $conversation->id);
+
+    $keys = collect($response->json('data.actions'))->pluck('key');
+
+    expect($keys)->toContain('complete')
+        ->and($keys)->not->toContain('review');
+
+    $complete = collect($response->json('data.actions'))->firstWhere('key', 'complete');
+
+    expect($complete['path'])
+        ->toBe("conversations/{$conversation->id}/orders/{$order->getKey()}/complete");
+});
+
+it('includes a review action once the order is completed and not yet reviewed', function () {
+    $buyer = User::factory()->create();
+    [$order, $supplierCompany] = apiOrderWithSupplier($buyer);
+
+    app(MessagingService::class)->start($buyer, $supplierCompany, order: $order);
+    app(OrderService::class)->confirm($order);
+    app(OrderService::class)->startProduction($order);
+    app(OrderService::class)->ship($order);
+    app(OrderService::class)->deliver($order);
+    app(OrderService::class)->complete($order);
+
+    $response = $this->actingAs($buyer, 'sanctum')
+        ->getJson('/api/v1/orders/'.$order->reference_code)
+        ->assertOk();
+
+    $keys = collect($response->json('data.actions'))->pluck('key');
+
+    expect($keys)->toContain('review')
+        ->and($keys)->not->toContain('complete');
+});
+
+it('includes an open_dispute action regardless of conversation state', function () {
+    $buyer = User::factory()->create();
+    $order = apiOrder($buyer);
+
+    $response = $this->actingAs($buyer, 'sanctum')
+        ->getJson('/api/v1/orders/'.$order->reference_code)
+        ->assertOk();
+
+    $keys = collect($response->json('data.actions'))->pluck('key');
+
+    expect($keys)->toContain('open_dispute');
 });
 
 it('404s another buyer order rather than confirming it exists', function () {

@@ -43,7 +43,7 @@ class SupplierOrderController extends Controller
     public function show(Request $request, string $reference): SupplierOrderResource
     {
         $order = $this->scope->order($request->user(), $reference);
-        $order->load('items');
+        $order->load(['items', 'conversation']);
 
         return new SupplierOrderResource($order);
     }

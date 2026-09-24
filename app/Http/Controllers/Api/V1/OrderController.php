@@ -44,7 +44,7 @@ class OrderController extends Controller
     public function show(Request $request, string $reference): OrderResource
     {
         $order = $this->scope->order($request->user(), $reference);
-        $order->load(['items', 'tradeAssuranceAgreement']);
+        $order->load(['items', 'tradeAssuranceAgreement', 'conversation']);
 
         return new OrderResource($order);
     }

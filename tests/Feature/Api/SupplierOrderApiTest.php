@@ -6,6 +6,8 @@ use App\Models\Quote;
 use App\Models\Rfq;
 use App\Models\RfqCompany;
 use App\Models\User;
+use App\Services\MessagingService;
+use App\Services\OrderService;
 use App\Services\QuoteService;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Support\Facades\Mail;
@@ -100,6 +102,85 @@ it('shows the buyer identity on a supplier own order', function () {
         ->assertJsonPath('data.reference', $order->reference_code)
         ->assertJsonPath('data.buyer_email', $order->buyer_email)
         ->assertJsonPath('data.buyer_name', $order->buyer_name);
+});
+
+it('returns an empty actions array and no conversation id when the order has no conversation', function () {
+    [$user, $company] = supplierOrderApiUser();
+    $order = awardedOrderFor($company);
+
+    $this->actingAs($user, 'sanctum')
+        ->getJson('/api/v1/supplier/orders/'.$order->reference_code)
+        ->assertOk()
+        ->assertJsonPath('data.conversation_id', null)
+        ->assertJsonPath('data.actions', []);
+});
+
+it('offers confirm but not ship on a freshly awarded order', function () {
+    [$user, $company] = supplierOrderApiUser();
+    $order = awardedOrderFor($company);
+    $buyer = User::factory()->create();
+    $order->forceFill(['user_id' => $buyer->getKey()])->save();
+
+    $conversation = app(MessagingService::class)->start($buyer, $company, order: $order);
+
+    $response = $this->actingAs($user, 'sanctum')
+        ->getJson('/api/v1/supplier/orders/'.$order->reference_code)
+        ->assertOk()
+        ->assertJsonPath('data.conversation_id', $conversation->id);
+
+    $keys = collect($response->json('data.actions'))->pluck('key');
+
+    expect($keys)->toContain('confirm')
+        ->and($keys)->not->toContain('ship')
+        ->and($keys)->not->toContain('production')
+        ->and($keys)->not->toContain('deliver');
+
+    // Non-transition actions are still on offer while the order is active.
+    expect($keys)->toContain('tracking')
+        ->and($keys)->toContain('add_documents')
+        ->and($keys)->toContain('proforma')
+        ->and($keys)->toContain('request_payment')
+        ->and($keys)->toContain('record_payment');
+});
+
+it('offers ship but not confirm once the order is confirmed', function () {
+    [$user, $company] = supplierOrderApiUser();
+    $order = awardedOrderFor($company);
+    $buyer = User::factory()->create();
+    $order->forceFill(['user_id' => $buyer->getKey()])->save();
+    app(MessagingService::class)->start($buyer, $company, order: $order);
+
+    app(OrderService::class)->confirm($order);
+
+    $response = $this->actingAs($user, 'sanctum')
+        ->getJson('/api/v1/supplier/orders/'.$order->reference_code)
+        ->assertOk();
+
+    $keys = collect($response->json('data.actions'))->pluck('key');
+
+    expect($keys)->toContain('ship')
+        ->and($keys)->toContain('production')
+        ->and($keys)->not->toContain('confirm')
+        ->and($keys)->not->toContain('deliver');
+});
+
+it('offers no transition or terminal-gated actions once the order is completed', function () {
+    [$user, $company] = supplierOrderApiUser();
+    $order = awardedOrderFor($company);
+    $buyer = User::factory()->create();
+    $order->forceFill(['user_id' => $buyer->getKey()])->save();
+    app(MessagingService::class)->start($buyer, $company, order: $order);
+
+    app(OrderService::class)->confirm($order);
+    app(OrderService::class)->startProduction($order);
+    app(OrderService::class)->ship($order);
+    app(OrderService::class)->deliver($order);
+    app(OrderService::class)->complete($order);
+
+    $response = $this->actingAs($user, 'sanctum')
+        ->getJson('/api/v1/supplier/orders/'.$order->reference_code)
+        ->assertOk()
+        ->assertJsonPath('data.actions', []);
 });
 
 it('404s an order belonging to a buyer, where the caller company is not the supplier', function () {
