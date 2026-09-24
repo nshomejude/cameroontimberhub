@@ -34,6 +34,7 @@ class ProductIndexRequest extends FormRequest
             'supplier' => ['nullable', 'string', 'max:160'],
             'certified' => ['nullable', 'boolean'],
             'best_sellers' => ['nullable', 'boolean'],
+            'featured' => ['nullable', 'boolean'],
             'sort' => ['nullable', Rule::in(array_keys(ProductCatalogueService::sortOptions()))],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:'.self::MAX_PER_PAGE],
         ];
@@ -50,6 +51,7 @@ class ProductIndexRequest extends FormRequest
             'supplier' => (string) $this->query('supplier', ''),
             'certifiedOnly' => $this->boolean('certified'),
             'bestSellers' => $this->boolean('best_sellers'),
+            'featuredOnly' => $this->boolean('featured'),
             'sort' => (string) $this->query('sort', 'featured'),
         ];
     }

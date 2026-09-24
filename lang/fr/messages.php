@@ -1292,6 +1292,7 @@ return [
             'trust_safety' => 'Confiance et sécurité',
         ],
         'nav' => [
+            'announcements' => 'Annonces',
             'audit_log' => "Journal d'audit",
             'ai_api_key_changes' => 'Changements de clé API IA',
             'payment_settings' => 'Paramètres de paiement',
@@ -1352,6 +1353,8 @@ return [
             'webhooks' => 'Webhooks',
         ],
         'model' => [
+            'announcement_one' => 'annonce',
+            'announcement_many' => 'Annonces',
             'activity_one' => 'activité',
             'activity_many' => "Journal d'activité",
             'ai_api_key_change_one' => 'demande de changement de clé API IA',

@@ -204,6 +204,36 @@ it('embeds the same supplier card shape in search results', function () {
         ->and($supplier['country_code'])->toBe('CM');
 });
 
+it('filters products by featured, server-side across a full paginated set', function () {
+    $company = Company::factory()->publiclyVisible()->create();
+
+    // More items than fit on one page (default per_page is 12), so a
+    // client-side "fetch a page and filter" approach would miss featured
+    // rows sitting past page 1.
+    Product::factory()->count(15)->active()->for($company)->create(['is_featured' => false]);
+    $featured = Product::factory()->count(3)->active()->for($company)->create(['is_featured' => true]);
+
+    $response = $this->getJson('/api/v1/products?featured=1&per_page=48')->assertOk();
+
+    expect(collect($response->json('data'))->pluck('slug')->sort()->values()->all())
+        ->toBe($featured->pluck('slug')->sort()->values()->all());
+
+    // Absent param: regression, everything comes back.
+    $this->getJson('/api/v1/products?per_page=48')->assertOk()->assertJsonCount(18, 'data');
+});
+
+it('filters suppliers by featured, server-side across a full paginated set', function () {
+    Company::factory()->count(15)->publiclyVisible()->create(['is_featured' => false]);
+    $featured = Company::factory()->count(3)->publiclyVisible()->create(['is_featured' => true]);
+
+    $response = $this->getJson('/api/v1/suppliers?featured=1&per_page=48')->assertOk();
+
+    expect(collect($response->json('data'))->pluck('slug')->sort()->values()->all())
+        ->toBe($featured->pluck('slug')->sort()->values()->all());
+
+    $this->getJson('/api/v1/suppliers?per_page=48')->assertOk()->assertJsonCount(18, 'data');
+});
+
 /* -------------------------------------------------------------- species */
 
 it('lists only published species and 404s an unpublished one', function () {

@@ -40,6 +40,14 @@ return Application::configure(basePath: dirname(__DIR__))
             AssignRequestId::class,
         ]);
 
+        // Same SetLocale middleware as `web` (Task: API locale from
+        // Accept-Language) — on `api` it has no session to read, so it
+        // resolves from the `Accept-Language` header instead. See
+        // SetLocale::handle().
+        $middleware->api(append: [
+            SetLocale::class,
+        ]);
+
         $middleware->web(append: [
             SetLocale::class,
             HandleSlugRedirects::class,

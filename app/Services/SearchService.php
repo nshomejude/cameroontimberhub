@@ -51,6 +51,7 @@ class SearchService
             ->withSpecialisation(array_values((array) ($filters['specs'] ?? [])))
             ->withCertifications(array_values((array) ($filters['certs'] ?? [])))
             ->minExperience(($filters['minYears'] ?? null) === null ? null : (int) $filters['minYears'])
+            ->when(! empty($filters['featuredOnly']), fn ($query) => $query->where('is_featured', true))
             ->when($region !== '', fn ($query) => $query->where('region', $region))
             ->when($species !== '', fn ($query) => $query->whereHas('species', fn ($s) => $s->where('species.slug', $species)))
             ->when($market !== '', fn ($query) => $query->whereHas('exportMarkets', fn ($m) => $m->where('country_code', $market)))

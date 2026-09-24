@@ -94,7 +94,8 @@ class ProductCatalogueService
             ->when($skipGroup !== 'types' && $types !== [], fn (Builder $b) => $b->whereIn('products.product_type', $types))
             ->when($skipGroup !== 'species' && $speciesIn !== [], fn (Builder $b) => $b->whereHas('species', fn ($s) => $s->whereIn('species.slug', $speciesIn)))
             ->when($skipGroup !== 'flags' && ! empty($filters['certifiedOnly']), fn (Builder $b) => $b->whereNotNull('products.certification'))
-            ->when($skipGroup !== 'flags' && ! empty($filters['bestSellers']), fn (Builder $b) => $b->where('products.is_best_seller', true));
+            ->when($skipGroup !== 'flags' && ! empty($filters['bestSellers']), fn (Builder $b) => $b->where('products.is_best_seller', true))
+            ->when($skipGroup !== 'flags' && ! empty($filters['featuredOnly']), fn (Builder $b) => $b->where('products.is_featured', true));
     }
 
     /**

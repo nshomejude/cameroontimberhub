@@ -1286,6 +1286,7 @@ return [
             'trust_safety' => 'Trust & Safety',
         ],
         'nav' => [
+            'announcements' => 'Announcements',
             'audit_log' => 'Audit log',
             'ai_api_key_changes' => 'AI API key changes',
             'payment_settings' => 'Payment settings',
@@ -1346,6 +1347,8 @@ return [
             'webhooks' => 'Webhooks',
         ],
         'model' => [
+            'announcement_one' => 'announcement',
+            'announcement_many' => 'Announcements',
             'activity_one' => 'activity',
             'activity_many' => 'Activity log',
             'ai_api_key_change_one' => 'AI API key change request',

@@ -1,10 +1,14 @@
 <?php
 
+use App\Http\Controllers\Api\V1\AnnouncementController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CompanyDocumentController;
 use App\Http\Controllers\Api\V1\FleetDriverController;
 use App\Http\Controllers\Api\V1\FleetVehicleController;
+use App\Http\Controllers\Api\V1\ChatCommerceController;
+use App\Http\Controllers\Api\V1\ChatOrderController;
 use App\Http\Controllers\Api\V1\ConversationController;
+use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\DemoLoginController;
 use App\Http\Controllers\Api\V1\DisputeController;
@@ -119,6 +123,10 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
 
     Route::get('search', SearchController::class)->name('search');
 
+    // Mobile home-screen feed (Announcements). Public, no auth, always
+    // `{"data": [...]}` — see AnnouncementController.
+    Route::get('announcements', [AnnouncementController::class, 'index'])->name('announcements.index');
+
     /* --------------------------------------------- any authenticated user */
 
     Route::middleware(['auth:sanctum'])->group(function (): void {
@@ -155,6 +163,79 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
             ->middleware('throttle:api-decision')->name('conversations.messages.store');
 
         Route::post('conversations/{id}/read', [ConversationController::class, 'markRead'])->name('conversations.read');
+
+        /*
+         * ---------------------------------------------- in-thread commerce
+         *
+         * The mobile-app counterpart of the web `chat.*` route group
+         * (routes/web.php, "In-thread commerce"). Same any-participant
+         * conversation group as above — the buyer/supplier split is a
+         * property of the thread, decided entirely by ChatCommerceService /
+         * OrderLifecycleService / ReorderService, never by middleware here.
+         * Every write reuses the SAME throttle bucket the web route for the
+         * same action uses.
+         */
+        Route::post('conversations/{id}/rfq', [ChatCommerceController::class, 'storeRfq'])
+            ->middleware('throttle:chat-rfq')->name('conversations.rfq');
+
+        Route::post('conversations/{id}/quotes/{quote}/accept', [ChatCommerceController::class, 'acceptQuote'])
+            ->middleware('throttle:chat-decision')->name('conversations.quotes.accept');
+        Route::post('conversations/{id}/quotes/{quote}/decline', [ChatCommerceController::class, 'declineQuote'])
+            ->middleware('throttle:chat-decision')->name('conversations.quotes.decline');
+        Route::post('conversations/{id}/quotes/{quote}/withdraw', [ChatCommerceController::class, 'withdrawQuote'])
+            ->middleware('throttle:chat-decision')->name('conversations.quotes.withdraw');
+        Route::post('conversations/{id}/quotes/{quote}/counter', [ChatCommerceController::class, 'counter'])
+            ->middleware('throttle:chat-decision')->name('conversations.quotes.counter');
+
+        Route::post('conversations/{id}/counter-offers/{offer}/respond', [ChatCommerceController::class, 'respondToCounter'])
+            ->middleware('throttle:chat-decision')->name('conversations.counter-offers.respond');
+
+        // Read-only, so no write throttle: the same structured snapshot the
+        // web proforma sheet renders as HTML.
+        Route::get('conversations/{id}/orders/{order}/proforma', [ChatOrderController::class, 'proformaSheet'])
+            ->name('conversations.orders.proforma.show');
+
+        Route::prefix('conversations/{id}/orders/{order}')->name('conversations.orders.')->middleware('throttle:chat-decision')->group(function (): void {
+            Route::post('proforma', [ChatOrderController::class, 'proforma'])->name('proforma');
+            Route::post('payment-request', [ChatOrderController::class, 'requestPayment'])->name('payment-request');
+            Route::post('payment-record', [ChatOrderController::class, 'recordPayment'])->name('payment-record');
+            Route::post('confirm', [ChatOrderController::class, 'confirm'])->name('confirm');
+            Route::post('production', [ChatOrderController::class, 'startProduction'])->name('production');
+            Route::post('ship', [ChatOrderController::class, 'ship'])->name('ship');
+            Route::post('tracking', [ChatOrderController::class, 'updateTracking'])->name('tracking');
+            Route::post('deliver', [ChatOrderController::class, 'deliver'])->name('deliver');
+            Route::post('complete', [ChatOrderController::class, 'complete'])->name('complete');
+            Route::post('review', [ChatOrderController::class, 'review'])
+                ->middleware('throttle:order-review')->name('review');
+        });
+
+        // Uploads get their own tighter bucket — same reasoning as the web
+        // route: they cost disk, not just rows.
+        Route::post('conversations/{id}/orders/{order}/documents', [ChatOrderController::class, 'attachDocuments'])
+            ->middleware('throttle:order-upload')->name('conversations.orders.documents');
+
+        // Streams through the SAME participation rule as the web download
+        // controller (buyer OR a member of the supplying company), reached
+        // via the conversation instead of a signed web link — see
+        // ChatOrderController::downloadDocument()'s docblock.
+        Route::get('conversations/{id}/orders/{order}/documents/{document}/download', [ChatOrderController::class, 'downloadDocument'])
+            ->name('conversations.orders.documents.download');
+
+        // Supplier prices a reorder request, keyed by the reorder RFQ rather
+        // than an order — mirrors `chat.reorder.quote` on the web.
+        Route::post('conversations/{id}/reorders/{rfq}/quote', [ChatOrderController::class, 'reorderQuote'])
+            ->middleware('throttle:chat-decision')->name('conversations.reorders.quote');
+
+        // Any authenticated user's own notification center (quote received,
+        // order status changed, message received, dispute reply). Own
+        // `notifications` prefix, deliberately placed right after the
+        // conversation group rather than inside it.
+        Route::prefix('notifications')->name('notifications.')->group(function (): void {
+            Route::get('/', [NotificationController::class, 'index'])->name('index');
+            Route::get('unread-count', [NotificationController::class, 'unreadCount'])->name('unread-count');
+            Route::post('read-all', [NotificationController::class, 'readAll'])->name('read-all');
+            Route::post('{id}/read', [NotificationController::class, 'read'])->name('read');
+        });
     });
 
     /* ------------------------------------------------- buyer (authenticated) */

@@ -30,6 +30,7 @@ class SupplierIndexRequest extends FormRequest
             'specs' => ['nullable', 'array', 'max:20'],
             'specs.*' => [Rule::in(array_column(ProductType::cases(), 'value'))],
             'min_years' => ['nullable', 'integer', 'min:0', 'max:200'],
+            'featured' => ['nullable', 'boolean'],
             'sort' => ['nullable', Rule::in(array_keys(SearchService::companySortOptions()))],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:'.self::MAX_PER_PAGE],
         ];
@@ -46,6 +47,7 @@ class SupplierIndexRequest extends FormRequest
             'types' => array_values(array_filter((array) $this->query('types', []))),
             'specs' => array_values(array_filter((array) $this->query('specs', []))),
             'minYears' => $this->query('min_years'),
+            'featuredOnly' => $this->boolean('featured'),
             'sort' => (string) $this->query('sort', 'featured'),
         ];
     }
