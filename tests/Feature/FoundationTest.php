@@ -39,17 +39,21 @@ it('serves both panel login pages', function () {
 it('seeds the canonical RBAC roles and permissions', function () {
     $this->seed(RolesAndPermissionsSeeder::class);
 
-    expect(Permission::count())->toBe(28);
-    expect(Role::findByName('super_admin', 'web')->permissions)->toHaveCount(28);
-    expect(Role::findByName('admin', 'web')->permissions)->toHaveCount(23);
-    expect(Role::findByName('verification_officer', 'web')->permissions)->toHaveCount(7);
-    expect(Role::findByName('content_manager', 'web')->permissions)->toHaveCount(3);
+    // 28 + support.manage (support tickets — live chat with support).
+    expect(Permission::count())->toBe(29);
+    expect(Role::findByName('super_admin', 'web')->permissions)->toHaveCount(29);
+    expect(Role::findByName('admin', 'web')->permissions)->toHaveCount(24);
+    expect(Role::findByName('verification_officer', 'web')->permissions)->toHaveCount(8);
+    expect(Role::findByName('content_manager', 'web')->permissions)->toHaveCount(4);
     // Admin governance segregation of duties (blueprint §88, §89).
-    expect(Role::findByName('compliance_officer', 'web')->permissions)->toHaveCount(3);
+    expect(Role::findByName('compliance_officer', 'web')->permissions)->toHaveCount(4);
     expect(Role::findByName('billing_officer', 'web')->permissions)->toHaveCount(3);
     // Payment/gateway-credential authority (billing engine M12).
     // + pricing.manage (billing engine M5 — admin Tax Rules resource).
     expect(Role::findByName('finance_officer', 'web')->permissions)->toHaveCount(3);
+    // Support ticket answerers: no other authority.
+    expect(Role::findByName('support_officer', 'web')->permissions)->toHaveCount(1);
+    expect(Role::findByName('moderator', 'web')->permissions)->toHaveCount(1);
 });
 
 it('gates panel access by role and company membership', function () {
