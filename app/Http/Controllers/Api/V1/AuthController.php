@@ -4,14 +4,21 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Actions\Auth\RegisterAccount;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\ForgotPasswordRequest;
 use App\Http\Requests\Api\V1\LoginRequest;
 use App\Http\Requests\Api\V1\RegisterRequest;
+use App\Http\Requests\Api\V1\ResetPasswordRequest;
+use App\Http\Requests\Api\V1\UpdateMeRequest;
+use App\Http\Requests\Api\V1\UpdatePasswordRequest;
 use App\Http\Resources\Api\V1\UserResource;
 use App\Models\User;
+use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -111,6 +118,104 @@ class AuthController extends Controller
     public function me(Request $request): UserResource
     {
         return new UserResource($request->user());
+    }
+
+    /**
+     * Updates only the fields the caller actually sent — `name`, `phone`,
+     * `locale` — and leaves everything else untouched. `locale` is validated
+     * against `SetLocale::SUPPORTED` in UpdateMeRequest, the same list the
+     * middleware already accepts, so persisting it here and reading it back
+     * through that middleware later can never disagree on what is valid.
+     */
+    public function updateMe(UpdateMeRequest $request): UserResource
+    {
+        $user = $request->user();
+
+        $user->fill($request->safe()->only(['name', 'phone', 'locale']));
+        $user->save();
+
+        return new UserResource($user->fresh());
+    }
+
+    /**
+     * Changes the caller's own password. `current_password` is checked with
+     * a raw `Hash::check()` against the authenticated user's own password
+     * column — the same technique login() above already uses — rather than
+     * the `current_password` validation rule, which validates against a
+     * guard's credential provider and is awkward to point at the `sanctum`
+     * guard from inside a FormRequest.
+     *
+     * Scope is deliberately narrow: only the password is changed. There is
+     * no existing precedent in this codebase for revoking sibling tokens on
+     * a password change (NewPasswordController's web reset only rotates
+     * `remember_token`, which Sanctum tokens do not use), so other devices
+     * are left signed in.
+     */
+    public function updatePassword(UpdatePasswordRequest $request): Response
+    {
+        $user = $request->user();
+
+        if (! Hash::check($request->string('current_password')->value(), (string) $user->password)) {
+            throw ValidationException::withMessages([
+                'current_password' => __('The provided password does not match your current password.'),
+            ]);
+        }
+
+        $user->forceFill([
+            'password' => $request->string('password')->value(),
+        ])->save();
+
+        return response()->noContent();
+    }
+
+    /**
+     * JSON counterpart of PasswordResetLinkController::store(). Calls the
+     * exact same broker method and, just like the web controller, never
+     * lets the broker's return status reach the client — the response is
+     * identical whether or not the address has an account, preserving the
+     * enumeration-safety property of the web flow.
+     */
+    public function forgotPassword(ForgotPasswordRequest $request): JsonResponse
+    {
+        Password::sendResetLink(['email' => $request->validated('email')]);
+
+        return response()->json([
+            'data' => [
+                'message' => __('If that email address matches an account, we have sent a password reset link.'),
+            ],
+        ]);
+    }
+
+    /**
+     * JSON counterpart of NewPasswordController::store() — same broker call,
+     * same closure body (forceFill password + remember_token, fire
+     * PasswordReset), same "invalid or expired" message on failure, just
+     * returned as JSON instead of a redirect.
+     */
+    public function resetPassword(ResetPasswordRequest $request): JsonResponse
+    {
+        $data = $request->validated();
+
+        $status = Password::reset($data, function (User $user, string $password): void {
+            $user->forceFill([
+                'password' => $password,
+                'remember_token' => Str::random(60),
+            ])->save();
+
+            event(new PasswordReset($user));
+        });
+
+        if ($status !== Password::PasswordReset) {
+            throw ValidationException::withMessages([
+                'email' => __('This password reset link is invalid or has expired.'),
+            ]);
+        }
+
+        return response()->json([
+            'data' => [
+                'message' => __('Your password has been reset. You can now sign in.'),
+            ],
+        ]);
     }
 
     /**

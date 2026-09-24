@@ -58,7 +58,7 @@ it('never leaks the password hash through the account payload', function () {
     $response = $this->actingAs($user, 'sanctum')->getJson('/api/v1/auth/me')->assertOk();
 
     expect(array_keys($response->json('data')))
-        ->toEqualCanonicalizing(['id', 'name', 'email', 'email_verified', 'email_verified_at', 'created_at', 'role', 'roles', 'company', 'capabilities']);
+        ->toEqualCanonicalizing(['id', 'name', 'email', 'phone', 'locale', 'email_verified', 'email_verified_at', 'created_at', 'role', 'roles', 'company', 'capabilities']);
 });
 
 /* --------------------------------------------------------- RBAC (auth/me) */

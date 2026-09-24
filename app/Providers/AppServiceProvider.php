@@ -261,6 +261,14 @@ class AppServiceProvider extends ServiceProvider
             Limit::perDay(10)->by('api-register-ip-day:'.$request->ip()),
         ]);
 
+        // Forgot/reset-password (mobile JSON counterpart of the web flow).
+        // Same shape as api-register: per-IP and per-email, so this can't
+        // become an email-bombing vector against an arbitrary address.
+        RateLimiter::for('api-forgot-password', fn (Request $request) => [
+            Limit::perHour(5)->by('api-forgot-password-ip:'.$request->ip()),
+            Limit::perHour(3)->by('api-forgot-password-email:'.strtolower((string) $request->input('email'))),
+        ]);
+
         RateLimiter::for('api-rfq', fn (Request $request) => [
             Limit::perHour(5)->by('api-rfq-ip:'.$request->ip()),
             Limit::perHour(3)->by('api-rfq-user:'.($request->user()?->getAuthIdentifier() ?? $request->ip())),
