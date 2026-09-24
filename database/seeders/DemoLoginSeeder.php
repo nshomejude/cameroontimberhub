@@ -3,18 +3,30 @@
 namespace Database\Seeders;
 
 use App\Enums\CompanyStatus;
+use App\Enums\OrderPaymentStatus;
+use App\Enums\OrderStatus;
 use App\Enums\OrganisationType;
 use App\Models\Company;
 use App\Models\Document;
 use App\Models\Driver;
+use App\Models\Message;
 use App\Models\Order;
+use App\Models\Quote;
 use App\Models\Rfq;
 use App\Models\RfqCompany;
 use App\Models\Species;
 use App\Models\User;
 use App\Models\Vehicle;
+use App\Notifications\MessageReceivedNotification;
+use App\Notifications\OrderStatusChangedNotification;
+use App\Notifications\PaymentConfirmedNotification;
+use App\Notifications\QuoteAcceptedNotification;
+use App\Notifications\QuoteReceivedNotification;
+use App\Notifications\RfqRoutedToExporter;
 use App\Services\LeadFlowService;
+use App\Services\OrderService;
 use Illuminate\Database\Seeder;
+use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
@@ -71,6 +83,8 @@ class DemoLoginSeeder extends Seeder
         $this->wireAdmin($admin);
         $this->wireLogistics($logistics);
         $this->wirePendingSupplier($pendingSupplier);
+
+        $this->seedNotifications($buyer, $supplier, $logistics);
 
         $this->command?->info('Demo personas ready: '.collect(config('demo.personas'))->pluck('email')->join(', '));
     }
@@ -376,6 +390,175 @@ class DemoLoginSeeder extends Seeder
         $pendingSupplier->companies()->syncWithoutDetaching([
             $company->getKey() => ['role' => 'owner', 'is_primary' => ! $primaryTaken],
         ]);
+    }
+
+    /* ----------------------------------------------------------- notifications */
+
+    /**
+     * So the demo buyer's/supplier's/logistics's notification inbox is never
+     * the one empty surface in an otherwise-populated demo. Every row here is
+     * dispatched through the real notification classes against REAL existing
+     * demo records (the RFQs/quotes/orders/messages the seeders above already
+     * produced) — never a hand-crafted `data` array, so `reference`/`screen`
+     * come straight out of each class's own `toArray()`.
+     *
+     * Idempotent: each persona's block is skipped once a notification of its
+     * first seeded `type` already exists for that user.
+     */
+    private function seedNotifications(User $buyer, User $supplier, User $logistics): void
+    {
+        $this->seedBuyerNotifications($buyer);
+        $this->seedSupplierNotifications($supplier);
+        $this->seedLogisticsNotifications($logistics);
+    }
+
+    /**
+     * Buyer: quote_received (RFQ-DEMO-00001's submitted quotes), order_status_changed
+     * (the real awarded order, advanced to Shipped), payment_confirmed (a real
+     * off-platform payment recorded on that same order via OrderService — the
+     * exact service the live "record payment" action calls), and
+     * message_received when MessagingSeeder has already produced a thread
+     * with a supplier reply. dispute_reply is skipped: no Dispute exists
+     * anywhere in the demo fixtures and nothing else seeds one, so inventing
+     * one here would be a notification with no backing record.
+     */
+    private function seedBuyerNotifications(User $buyer): void
+    {
+        if ($buyer->notifications()->where('type', QuoteReceivedNotification::class)->exists()) {
+            return;
+        }
+
+        $quote = Quote::query()
+            ->whereHas('rfq', fn ($q) => $q->where('user_id', $buyer->getKey()))
+            ->where('status', '!=', \App\Enums\QuoteStatus::Accepted)
+            ->oldest('id')
+            ->first();
+
+        if ($quote !== null) {
+            $buyer->notify(new QuoteReceivedNotification($quote));
+            $this->backdateLatest($buyer, QuoteReceivedNotification::class, now()->subDays(3));
+        }
+
+        $order = Order::query()->where('user_id', $buyer->getKey())->latest('id')->first();
+
+        if ($order !== null) {
+            $from = $order->status;
+
+            if ($order->status === OrderStatus::InProduction) {
+                $order = app(OrderService::class)->ship($order);
+            }
+
+            if ($order->status !== $from) {
+                $buyer->notify(new OrderStatusChangedNotification($order, $from, $order->status));
+                $this->backdateLatest($buyer, OrderStatusChangedNotification::class, now()->subDays(1));
+            }
+
+            if ($order->payment_status === OrderPaymentStatus::Unpaid) {
+                $order = app(OrderService::class)->recordPayment($order, (string) $order->total_amount, 'bank_transfer');
+                $buyer->notify(new PaymentConfirmedNotification($order));
+                $notification = $this->backdateLatest($buyer, PaymentConfirmedNotification::class, now()->subHours(2));
+                $notification?->markAsRead();
+            }
+
+            $supplierMessage = Message::query()
+                ->whereHas('conversation', fn ($q) => $q->where('user_id', $buyer->getKey()))
+                ->where('sender_user_id', '!=', $buyer->getKey())
+                ->latest('id')
+                ->first();
+
+            if ($supplierMessage !== null) {
+                $buyer->notify(new MessageReceivedNotification($supplierMessage));
+                $notification = $this->backdateLatest($buyer, MessageReceivedNotification::class, now()->subDays(5));
+                $notification?->markAsRead();
+            }
+        }
+    }
+
+    /**
+     * Supplier: rfq_routed (a real routing to the supplier's flagship demo
+     * company), quote_accepted (the real quote that won the demo order, if
+     * that company is the one that won it), and message_received mirroring
+     * the buyer's thread from the supplier's side.
+     */
+    private function seedSupplierNotifications(User $supplier): void
+    {
+        if ($supplier->notifications()->where('type', RfqRoutedToExporter::class)->exists()) {
+            return;
+        }
+
+        $companyIds = $supplier->companies()->pluck('companies.id');
+
+        $routing = RfqCompany::query()
+            ->whereIn('company_id', $companyIds)
+            ->with('rfq')
+            ->whereHas('rfq')
+            ->oldest('id')
+            ->first();
+
+        if ($routing !== null && $routing->rfq !== null) {
+            $company = Company::find($routing->company_id);
+
+            if ($company !== null) {
+                $supplier->notify(new RfqRoutedToExporter($routing->rfq, $company));
+                $this->backdateLatest($supplier, RfqRoutedToExporter::class, now()->subDays(6));
+            }
+        }
+
+        $winningQuote = Quote::query()
+            ->whereIn('company_id', $companyIds)
+            ->whereHas('rfq.orders')
+            ->latest('id')
+            ->first();
+
+        if ($winningQuote !== null) {
+            $supplier->notify(new QuoteAcceptedNotification($winningQuote));
+            $notification = $this->backdateLatest($supplier, QuoteAcceptedNotification::class, now()->subDays(2));
+            $notification?->markAsRead();
+        }
+
+        $buyerMessage = Message::query()
+            ->whereHas('conversation', fn ($q) => $q->whereIn('company_id', $companyIds))
+            ->whereHas('conversation', fn ($q) => $q->whereNotNull('user_id'))
+            ->whereHas('sender', function ($q) use ($companyIds): void {
+                $q->whereDoesntHave('companies', fn ($c) => $c->whereIn('companies.id', $companyIds));
+            })
+            ->latest('id')
+            ->first();
+
+        if ($buyerMessage !== null) {
+            $supplier->notify(new MessageReceivedNotification($buyerMessage));
+            $this->backdateLatest($supplier, MessageReceivedNotification::class, now()->subHours(6));
+        }
+    }
+
+    /**
+     * Logistics: no seeded notification type actually fits this persona.
+     * `DocumentUploadedNotification` — the only class that resembles a
+     * company/fleet document event — requires a real `Order` in its
+     * constructor (`OrderLifecycleService::attachDocuments()` is its only
+     * trigger), and the logistics persona's company is never a party to any
+     * demo order: it exists solely to expose `GET /supplier/fleet/vehicles`
+     * for an `OrganisationType::Logistics` company. There is currently no
+     * notification class modelled around a company/vehicle/driver document,
+     * so nothing is seeded here rather than forcing a fake fit.
+     */
+    private function seedLogisticsNotifications(User $logistics): void
+    {
+        // Intentionally empty — see the docblock above.
+    }
+
+    /**
+     * The notification `notify()` just created is always the newest row for
+     * this user of this class — fetch it and move its `created_at` back so
+     * the inbox has realistic age variety instead of a single timestamp.
+     */
+    private function backdateLatest(User $user, string $type, \Illuminate\Support\Carbon $at): ?DatabaseNotification
+    {
+        $notification = $user->notifications()->where('type', $type)->latest('created_at')->first();
+
+        $notification?->forceFill(['created_at' => $at])->save();
+
+        return $notification;
     }
 
     /* -------------------------------------------------------- prerequisites */
