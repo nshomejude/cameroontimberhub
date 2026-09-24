@@ -46,7 +46,7 @@
                             </p>
                         </div>
                         <div class="flex shrink-0 flex-wrap gap-3">
-                            <a href="{{ $apkUrl }}" class="rounded-lg bg-forest-700 px-5 py-2.5 text-[1.0625rem] font-semibold text-white transition hover:bg-forest-800">Download APK</a>
+                            <a href="{{ $apkUrl }}" download="CameroonTimberHub.apk" class="rounded-lg bg-forest-700 px-5 py-2.5 text-[1.0625rem] font-semibold text-white transition hover:bg-forest-800">Download APK</a>
                             @if ($playStoreUrl)
                                 <a href="{{ $playStoreUrl }}" class="rounded-lg border border-sand-300 px-5 py-2.5 text-[1.0625rem] font-semibold text-ink transition hover:border-forest-600 hover:text-forest-700">Google Play</a>
                             @endif
