@@ -114,7 +114,7 @@ class MtnMomoGateway implements PaymentGatewayContract
                 'Ocp-Apim-Subscription-Key' => $config['subscription_key'],
                 'Content-Type' => 'application/json',
             ])->post("{$baseUrl}/collection/v1_0/requesttopay", [
-                'amount' => (string) $payment->amount,
+                'amount' => PaymentAmount::forProvider($payment), // XAF: "50000", never "50000.00"
                 'currency' => $config['currency'],
                 'externalId' => (string) $payment->id,
                 'payer' => [

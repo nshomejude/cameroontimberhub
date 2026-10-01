@@ -115,7 +115,7 @@ it('accepts a validly signed checkout.session.completed webhook and marks the pa
     $secret = 'whsec_test_secret';
     config(['payments.stripe.webhook_secret' => $secret]);
 
-    $payment = Payment::factory()->create();
+    $payment = Payment::factory()->create(['amount' => '19.99', 'currency' => 'USD']);
 
     $payload = json_encode([
         'id' => 'evt_test',
@@ -123,6 +123,9 @@ it('accepts a validly signed checkout.session.completed webhook and marks the pa
         'data' => ['object' => [
             'id' => 'cs_test_123',
             'payment_intent' => 'pi_test_123',
+            'payment_status' => 'paid',
+            'amount_total' => 1999,
+            'currency' => 'usd',
             'metadata' => ['payment_id' => (string) $payment->id],
         ]],
     ]);

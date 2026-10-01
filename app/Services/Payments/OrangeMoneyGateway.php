@@ -69,7 +69,7 @@ class OrangeMoneyGateway implements PaymentGatewayContract
                 'merchant_key' => $config['merchant_key'],
                 'currency' => $config['currency'],
                 'order_id' => (string) $payment->id,
-                'amount' => (string) $payment->amount,
+                'amount' => PaymentAmount::forProvider($payment),
                 'return_url' => route('payments.orange-money.return', ['payment' => $payment->id]),
                 'cancel_url' => route('payments.orange-money.return', ['payment' => $payment->id]),
                 'notif_url' => route('payments.orange-money.notify'),
@@ -220,7 +220,7 @@ class OrangeMoneyGateway implements PaymentGatewayContract
 
             $response = Http::withToken($token)->post("{$baseUrl}/transactionstatus", [
                 'order_id' => (string) $payment->id,
-                'amount' => (string) $payment->amount,
+                'amount' => PaymentAmount::forProvider($payment),
                 'pay_token' => (string) $payment->provider_reference,
             ]);
 

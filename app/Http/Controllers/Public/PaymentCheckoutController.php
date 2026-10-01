@@ -38,11 +38,27 @@ class PaymentCheckoutController extends Controller
             'msisdn' => ['nullable', 'string', 'regex:/^\+?[0-9]{8,15}$/'],
         ]);
 
+        // A retired plan is not for sale (the picker never offers one; this
+        // closes a hand-posted plan id).
+        abort_unless($plan->is_active, 404);
+
         $company = $request->user()?->companies()->first();
 
         abort_if(! $company, 403, 'A company account is required to purchase a plan.');
 
         $provider = PaymentProvider::from($data['provider']);
+
+        // Mobile money settles in XAF only, and both gateways send our
+        // decimal `amount` with the gateway's configured currency. A plan
+        // priced in another currency (e.g. a USD enterprise plan, which the
+        // self-serve allow-list below does not cover) would otherwise be
+        // charged as that many FRANCS — USD 249 paid as XAF 249.
+        $mobileMoney = [PaymentProvider::MtnMomo, PaymentProvider::OrangeMoney];
+        if (in_array($provider, $mobileMoney, true) && strtoupper((string) $plan->price_currency) !== 'XAF') {
+            throw ValidationException::withMessages([
+                'provider' => __('messages.billing.provider_not_allowed', ['currency' => $plan->price_currency]),
+            ]);
+        }
 
         // Billing engine M11: the provider must be one this plan's currency
         // can actually settle on (XAF → MoMo/Orange, USD → PayPal). Rejects

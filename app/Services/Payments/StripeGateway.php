@@ -65,7 +65,9 @@ class StripeGateway implements PaymentGatewayContract
                         'product_data' => [
                             'name' => $payment->plan?->name ?? 'Plan subscription',
                         ],
-                        'unit_amount' => (int) round(((float) $payment->amount) * 100),
+                        // Smallest currency unit: cents for USD, but XAF is a
+                        // Stripe zero-decimal currency — francs, never x100.
+                        'unit_amount' => PaymentAmount::minorUnits($payment),
                     ],
                     'quantity' => 1,
                 ]],
@@ -110,10 +112,14 @@ class StripeGateway implements PaymentGatewayContract
         $type = $event->type;
         $object = $event->data->object ?? null;
 
-        if ($type === 'checkout.session.completed' && $object) {
+        // `checkout.session.completed` only means the customer finished the
+        // Checkout page: for delayed methods `payment_status` is still
+        // `unpaid` and the money arrives (or not) later via
+        // `checkout.session.async_payment_succeeded|failed`.
+        if (in_array($type, ['checkout.session.completed', 'checkout.session.async_payment_succeeded'], true) && $object) {
             $payment = $this->findPayment($object);
 
-            if ($payment) {
+            if ($payment && $this->sessionPaysFor($payment, $object)) {
                 app(CommandBus::class)->dispatch(new RecordPaymentCompletionCommand(
                     paymentId: $payment->getKey(),
                     providerReference: $object->payment_intent ?? null,
@@ -121,13 +127,39 @@ class StripeGateway implements PaymentGatewayContract
             }
         }
 
-        if (in_array($type, ['checkout.session.expired', 'payment_intent.payment_failed'], true) && $object) {
+        if (in_array($type, ['checkout.session.expired', 'checkout.session.async_payment_failed', 'payment_intent.payment_failed'], true) && $object) {
             $payment = $this->findPayment($object);
 
             $payment?->markFailed();
         }
 
         return response('OK', 200);
+    }
+
+    /**
+     * A Checkout Session settles a Payment only once Stripe reports it paid,
+     * for exactly our amount (in the currency's smallest unit) and currency.
+     */
+    private function sessionPaysFor(Payment $payment, object $session): bool
+    {
+        $paid = ($session->payment_status ?? null) === 'paid';
+        $amountOk = isset($session->amount_total) && (int) $session->amount_total === PaymentAmount::minorUnits($payment);
+        $currencyOk = isset($session->currency) && strtolower((string) $session->currency) === strtolower((string) $payment->currency);
+
+        if ($paid && $amountOk && $currencyOk) {
+            return true;
+        }
+
+        Log::log($paid ? 'critical' : 'info', 'Stripe session does not (yet) pay for this payment — not completing', [
+            'payment_id' => $payment->id,
+            'payment_status' => $session->payment_status ?? null,
+            'expected_amount' => PaymentAmount::minorUnits($payment),
+            'amount_total' => $session->amount_total ?? null,
+            'expected_currency' => $payment->currency,
+            'currency' => $session->currency ?? null,
+        ]);
+
+        return false;
     }
 
     private function findPayment(object $object): ?Payment
