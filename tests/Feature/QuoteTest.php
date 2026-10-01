@@ -211,7 +211,15 @@ it('binds a new RFQ to a matching account and backfills on registration', functi
         'terms' => '1',
     ]);
 
-    expect($guest->fresh()->user_id)->toBe(User::where('email', 'later@acme.test')->value('id'));
+    // Not adopted until the address is proven (RFQ-takeover guard)...
+    expect($guest->fresh()->user_id)->toBeNull();
+
+    $later = User::where('email', 'later@acme.test')->firstOrFail();
+    $later->markEmailAsVerified();
+    event(new \Illuminate\Auth\Events\Verified($later));
+
+    // ...then it is.
+    expect($guest->fresh()->user_id)->toBe($later->getKey());
 });
 
 /* ---------------------------------------------------- security: supplier side */

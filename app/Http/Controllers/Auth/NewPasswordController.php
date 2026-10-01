@@ -25,6 +25,8 @@ class NewPasswordController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        $request->merge(['email' => strtolower(trim((string) $request->input('email')))]);
+
         $data = $request->validate([
             'token' => ['required', 'string'],
             'email' => ['required', 'email:rfc', 'max:180'],
@@ -36,6 +38,10 @@ class NewPasswordController extends Controller
                 'password' => $password,
                 'remember_token' => Str::random(60),
             ])->save();
+
+            // A reset means the old password may be compromised: revoke every
+            // Sanctum (mobile/API) token too.
+            $user->tokens()->delete();
 
             event(new PasswordReset($user));
         });

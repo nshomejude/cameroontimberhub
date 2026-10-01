@@ -6,20 +6,21 @@ use App\Enums\CompanyStatus;
 use App\Enums\CompanyUserRole;
 use App\Enums\OrganisationType;
 use App\Models\Company;
-use App\Models\Rfq;
 use App\Models\User;
 use App\Services\Referrals\ReferralService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
+use Spatie\Permission\Models\Role;
 
 /**
  * The single account-creation write path.
  *
  * Extracted from RegisterController so the web form and the mobile API create
  * accounts identically: same validation rules, same hashing, same supplier
- * company/ownership rules, same adoption of account-free RFQs already sitting
- * under that address. Both callers validate with `rules()` and then hand the
+ * company/ownership rules, same terms-consent record. Account-free RFQs
+ * already sitting under the address are adopted only after the email is
+ * verified (AdoptGuestRfqsOnEmailVerified), never here. Both callers validate with `rules()` and then hand the
  * validated payload here; neither re-implements any of it.
  */
 class RegisterAccount
@@ -46,6 +47,12 @@ class RegisterAccount
         return ['supplier', 'processor', 'artisan', 'logistics_partner', 'carbon_developer'];
     }
 
+    /** Canonical stored form of an email address: trimmed, lower-cased. */
+    public static function normaliseEmail(mixed $email): mixed
+    {
+        return is_string($email) ? strtolower(trim($email)) : $email;
+    }
+
     public static function rules(bool $forApi = false): array
     {
         $excludeUnlessCompanyForming = Rule::excludeIf(
@@ -57,7 +64,12 @@ class RegisterAccount
                 'buyer', 'supplier', 'processor', 'artisan', 'carbon_developer', 'carbon_buyer', 'logistics_partner',
             ])],
             'name' => ['required', 'string', 'min:2', 'max:120'],
-            'email' => ['required', 'email:rfc', 'max:180', Rule::unique('users', 'email')],
+            'email' => ['required', 'email:rfc', 'max:180', function (string $attribute, mixed $value, \Closure $fail): void {
+                // Case-insensitive uniqueness: legacy rows may be mixed-case.
+                if (is_string($value) && \App\Models\User::whereRaw('lower(email) = ?', [strtolower(trim($value))])->exists()) {
+                    $fail(__('validation.unique', ['attribute' => $attribute]));
+                }
+            }],
             'company_name' => [$excludeUnlessCompanyForming, 'required', 'string', 'min:2', 'max:255'],
             'company_phone' => [$excludeUnlessCompanyForming, 'nullable', 'string', 'max:32'],
             'company_city' => [$excludeUnlessCompanyForming, 'nullable', 'string', 'max:120'],
@@ -87,6 +99,9 @@ class RegisterAccount
         if ($forApi) {
             $rules['password'] = ['required', Password::defaults()];
             unset($rules['terms']);
+            // A native client presents its own terms screen but must still
+            // send explicit consent, which is recorded on the user row.
+            $rules['terms_accepted'] = ['accepted'];
         }
 
         return $rules;
@@ -98,9 +113,16 @@ class RegisterAccount
         return DB::transaction(function () use ($data): User {
             $user = User::create([
                 'name' => $data['name'],
-                'email' => $data['email'],
+                'email' => self::normaliseEmail($data['email']),
                 'password' => $data['password'],
             ]);
+
+            // Consent record (terms of service). Both callers validate the
+            // consent field as `accepted` before reaching here.
+            $user->forceFill([
+                'terms_accepted_at' => now(),
+                'terms_version' => (string) config('app.terms_version', '1'),
+            ])->save();
 
             $accountType = $data['account_type'] ?? 'buyer';
 
@@ -133,17 +155,18 @@ class RegisterAccount
 
                 // Account-capability role (brief §3.1), distinct from the
                 // company_user pivot role above -- see RolesAndPermissionsSeeder.
-                $user->assignRole($accountType);
+                $user->assignRole(Role::findOrCreate($accountType, 'web'));
             } else {
                 // 'buyer' and 'carbon_buyer': pure-demand roles, no company.
-                $user->assignRole($accountType);
+                // findOrCreate so an environment where the roles seeder has
+                // not run yet does not 500 on signup.
+                $user->assignRole(Role::findOrCreate($accountType, 'web'));
             }
 
-            // Adopt any account-free RFQs this address submitted earlier, so
-            // they appear in the new account without a signed link.
-            Rfq::whereNull('user_id')
-                ->whereRaw('lower(buyer_email) = ?', [strtolower($data['email'])])
-                ->update(['user_id' => $user->id]);
+            // Account-free RFQs this address submitted earlier are NOT adopted
+            // here: the address is unverified at this point. They are adopted
+            // by AdoptGuestRfqsOnEmailVerified once the owner clicks the
+            // verification link.
 
             // Referral programme: record who referred this account (and its
             // company). The referrer is notified after commit.

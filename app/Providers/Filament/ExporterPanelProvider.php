@@ -34,6 +34,11 @@ class ExporterPanelProvider extends PanelProvider
             ->authGuard('web')
             ->brandName('Cameroon Timber Hub')
             ->login()
+            // Dismissible "verify your email" nudge for unverified owners.
+            ->renderHook(
+                \Filament\View\PanelsRenderHook::CONTENT_START,
+                fn (): \Illuminate\Contracts\View\View => view('partials.verify-email-banner'),
+            )
             ->discoverResources(in: app_path('Filament/Exporter/Resources'), for: 'App\Filament\Exporter\Resources')
             ->discoverPages(in: app_path('Filament/Exporter/Pages'), for: 'App\Filament\Exporter\Pages')
             ->pages([

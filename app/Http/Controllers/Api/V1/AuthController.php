@@ -13,6 +13,7 @@ use App\Http\Requests\Api\V1\UpdatePasswordRequest;
 use App\Http\Resources\Api\V1\UserResource;
 use App\Models\User;
 use Illuminate\Auth\Events\PasswordReset;
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -25,8 +26,9 @@ use Illuminate\Validation\ValidationException;
  * Token auth for the buyer app.
  *
  * Registration delegates to RegisterAccount, the same action the web form
- * calls, so hashing, the supplier/company rules and the adoption of earlier
- * account-free RFQs behave identically on both paths.
+ * calls, so hashing, the supplier/company rules and consent recording behave
+ * identically on both paths. Guest RFQs are adopted only once the email is
+ * verified (AdoptGuestRfqsOnEmailVerified).
  */
 class AuthController extends Controller
 {
@@ -36,6 +38,9 @@ class AuthController extends Controller
     public function register(RegisterRequest $request, RegisterAccount $register): JsonResponse
     {
         $user = $register($request->validated());
+
+        // Sends the email-verification link (MustVerifyEmail).
+        event(new Registered($user));
 
         return response()->json([
             'data' => [
@@ -145,11 +150,8 @@ class AuthController extends Controller
      * guard's credential provider and is awkward to point at the `sanctum`
      * guard from inside a FormRequest.
      *
-     * Scope is deliberately narrow: only the password is changed. There is
-     * no existing precedent in this codebase for revoking sibling tokens on
-     * a password change (NewPasswordController's web reset only rotates
-     * `remember_token`, which Sanctum tokens do not use), so other devices
-     * are left signed in.
+     * Every OTHER Sanctum token of the user is revoked, so a device signed
+     * in with the old password is signed out; the calling token survives.
      */
     public function updatePassword(UpdatePasswordRequest $request): Response
     {
@@ -165,6 +167,9 @@ class AuthController extends Controller
             'password' => $request->string('password')->value(),
         ])->save();
 
+        $currentId = $user->currentAccessToken()?->getKey();
+        $user->tokens()->when($currentId !== null, fn ($q) => $q->whereKeyNot($currentId))->delete();
+
         return response()->noContent();
     }
 
@@ -177,7 +182,7 @@ class AuthController extends Controller
      */
     public function forgotPassword(ForgotPasswordRequest $request): JsonResponse
     {
-        Password::sendResetLink(['email' => $request->validated('email')]);
+        Password::sendResetLink(['email' => strtolower(trim((string) $request->validated('email')))]);
 
         return response()->json([
             'data' => [
@@ -195,12 +200,17 @@ class AuthController extends Controller
     public function resetPassword(ResetPasswordRequest $request): JsonResponse
     {
         $data = $request->validated();
+        $data['email'] = strtolower(trim((string) $data['email']));
 
         $status = Password::reset($data, function (User $user, string $password): void {
             $user->forceFill([
                 'password' => $password,
                 'remember_token' => Str::random(60),
             ])->save();
+
+            // A reset means the old password may be compromised: sign every
+            // device out.
+            $user->tokens()->delete();
 
             event(new PasswordReset($user));
         });
@@ -216,6 +226,29 @@ class AuthController extends Controller
                 'message' => __('Your password has been reset. You can now sign in.'),
             ],
         ]);
+    }
+
+    /**
+     * Re-sends the email-verification link to the caller. The link itself is
+     * the signed web route `verification.verify`, which needs no session, so
+     * it works when opened from the device's mail app.
+     */
+    public function sendVerificationEmail(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        if (! $user->hasVerifiedEmail()) {
+            $user->sendEmailVerificationNotification();
+        }
+
+        return response()->json([
+            'data' => [
+                'email_verified' => $user->hasVerifiedEmail(),
+                'message' => $user->hasVerifiedEmail()
+                    ? __('Your email address is already verified.')
+                    : __('A new verification link has been sent to your email address.'),
+            ],
+        ], Response::HTTP_ACCEPTED);
     }
 
     /**

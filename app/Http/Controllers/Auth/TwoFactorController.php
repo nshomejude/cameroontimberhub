@@ -45,10 +45,19 @@ class TwoFactorController extends Controller
 
     /**
      * Start (or restart) enrolment: generates a new unconfirmed secret.
+     *
+     * Re-enrolling over a CONFIRMED setup would silently disable 2FA (the new
+     * secret is unconfirmed), so it requires the current password.
      */
     public function enable(Request $request): RedirectResponse
     {
         $user = $request->user();
+
+        if ($user->hasTwoFactorEnabled()) {
+            $request->validate([
+                'password' => ['required', 'string', 'current_password'],
+            ]);
+        }
         $secret = $user->generateTwoFactorSecret();
         $qrSvg = $user->twoFactorQrCodeSvg($secret);
 
@@ -124,8 +133,36 @@ class TwoFactorController extends Controller
     public function showChallenge(Request $request): View
     {
         return view('auth.two-factor.challenge', [
-            'redirectTo' => $request->query('redirect_to', url()->previous()),
+            'redirectTo' => self::safeRedirect($request->query('redirect_to', url()->previous()), $request),
         ]);
+    }
+
+    /**
+     * Only same-site destinations: a relative path ("/admin/x", not "//evil")
+     * or an absolute http(s) URL on this request's host. Anything else falls
+     * back to the 2FA screen, so the challenge is not an open redirect.
+     */
+    public static function safeRedirect(mixed $target, Request $request): string
+    {
+        $fallback = route('two-factor.show');
+
+        if (! is_string($target) || $target === '' || preg_match('/[\\\\\x00-\x1F]/', $target)) {
+            return $fallback;
+        }
+
+        if (str_starts_with($target, '/') && ! str_starts_with($target, '//')) {
+            return $target;
+        }
+
+        $parts = parse_url($target);
+
+        if ($parts === false || ! isset($parts['scheme'], $parts['host'])
+            || ! in_array(strtolower($parts['scheme']), ['http', 'https'], true)
+            || strtolower($parts['host']) !== strtolower($request->getHost())) {
+            return $fallback;
+        }
+
+        return $target;
     }
 
     public function challenge(Request $request): RedirectResponse
@@ -145,7 +182,7 @@ class TwoFactorController extends Controller
 
         $this->stepUp->markVerified($request);
 
-        return redirect()->to($data['redirect_to'] ?? route('two-factor.show'))
+        return redirect()->to(self::safeRedirect($data['redirect_to'] ?? null, $request))
             ->with('status', 'Re-verified.');
     }
 }

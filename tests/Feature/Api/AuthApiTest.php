@@ -15,6 +15,7 @@ beforeEach(function () {
 
 it('registers a buyer and returns a usable token', function () {
     $response = $this->postJson('/api/v1/auth/register', [
+        'terms_accepted' => true,
         'name' => 'Amina Buyer',
         'email' => 'Amina@Example.com',
         'password' => 'correct-horse-battery-staple',
@@ -40,16 +41,25 @@ it('registers a buyer and returns a usable token', function () {
         ->assertJsonPath('data.email', 'amina@example.com');
 });
 
-it('adopts account-free RFQs raised under the same address at registration', function () {
+it('adopts account-free RFQs raised under the same address only once the email is verified', function () {
     $rfq = Rfq::factory()->create(['buyer_email' => 'legacy@example.com', 'user_id' => null]);
 
     $this->postJson('/api/v1/auth/register', [
+        'terms_accepted' => true,
         'name' => 'Legacy Buyer',
         'email' => 'legacy@example.com',
         'password' => 'correct-horse-battery-staple',
     ])->assertCreated();
 
-    expect($rfq->fresh()->user_id)->toBe(User::whereEmail('legacy@example.com')->value('id'));
+    // Unverified address: no takeover of someone else's RFQs at signup.
+    expect($rfq->fresh()->user_id)->toBeNull();
+
+    $user = User::whereEmail('legacy@example.com')->firstOrFail();
+    $this->get(\Illuminate\Support\Facades\URL::temporarySignedRoute('verification.verify', now()->addHour(), [
+        'id' => $user->getKey(), 'hash' => sha1($user->email),
+    ]))->assertRedirect();
+
+    expect($rfq->fresh()->user_id)->toBe($user->getKey());
 });
 
 it('never leaks the password hash through the account payload', function () {
@@ -116,6 +126,7 @@ it('resolves role/roles for staff, staff wins over company membership', function
 
 it('registers a supplier with a company and returns role: supplier', function () {
     $response = $this->postJson('/api/v1/auth/register', [
+        'terms_accepted' => true,
         'account_type' => 'supplier',
         'name' => 'Sam Supplier',
         'email' => 'sam@example.com',
@@ -134,6 +145,7 @@ it('registers a supplier with a company and returns role: supplier', function ()
 
 it('rejects supplier registration missing the required company fields', function () {
     $this->postJson('/api/v1/auth/register', [
+        'terms_accepted' => true,
         'account_type' => 'supplier',
         'name' => 'No Company',
         'email' => 'nocompany@example.com',
@@ -143,6 +155,7 @@ it('rejects supplier registration missing the required company fields', function
 
 it('rejects an invalid account_type with a 422', function () {
     $this->postJson('/api/v1/auth/register', [
+        'terms_accepted' => true,
         'account_type' => 'not-a-real-type',
         'name' => 'Bad Type',
         'email' => 'badtype@example.com',
@@ -152,6 +165,7 @@ it('rejects an invalid account_type with a 422', function () {
 
 it('registers a logistics_partner (transport) account with a company and returns company.type: logistics', function () {
     $response = $this->postJson('/api/v1/auth/register', [
+        'terms_accepted' => true,
         'account_type' => 'logistics_partner',
         'name' => 'Tina Transport',
         'email' => 'tina@example.com',
@@ -174,6 +188,7 @@ it('accepts every RegisterAccount account type the web signup flow supports', fu
     foreach (['buyer', 'supplier', 'processor', 'artisan', 'carbon_developer', 'carbon_buyer', 'logistics_partner'] as $i => $type) {
         $payload = [
             'account_type' => $type,
+            'terms_accepted' => true,
             'name' => "Type Test {$i}",
             'email' => "type-test-{$i}@example.com",
             'password' => 'correct-horse-battery-staple',
@@ -192,6 +207,7 @@ it('rejects a duplicate email with a 422', function () {
     User::factory()->create(['email' => 'taken@example.com']);
 
     $this->postJson('/api/v1/auth/register', [
+        'terms_accepted' => true,
         'name' => 'Someone Else',
         'email' => 'taken@example.com',
         'password' => 'correct-horse-battery-staple',
@@ -200,6 +216,7 @@ it('rejects a duplicate email with a 422', function () {
 
 it('rejects a weak password with a 422', function () {
     $this->postJson('/api/v1/auth/register', [
+        'terms_accepted' => true,
         'name' => 'Weak Password',
         'email' => 'weak@example.com',
         'password' => 'abc',
@@ -324,6 +341,7 @@ it('throttles repeated login attempts', function () {
 it('throttles repeated registrations from one host', function () {
     foreach (range(1, 5) as $i) {
         $this->postJson('/api/v1/auth/register', [
+        'terms_accepted' => true,
             'name' => "Buyer {$i}",
             'email' => "buyer{$i}@example.com",
             'password' => 'correct-horse-battery-staple',
@@ -331,6 +349,7 @@ it('throttles repeated registrations from one host', function () {
     }
 
     $this->postJson('/api/v1/auth/register', [
+        'terms_accepted' => true,
         'name' => 'One Too Many',
         'email' => 'toomany@example.com',
         'password' => 'correct-horse-battery-staple',
