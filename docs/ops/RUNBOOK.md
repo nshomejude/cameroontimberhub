@@ -11,7 +11,7 @@ SSH: `ssh -i ~/.ssh/cameroontimberhub_deploy root@www.cameroontimberhub.com` (th
 | Signal | Where |
 |---|---|
 | Liveness | `GET /up` (Laravel default — 200 = the app booted) |
-| Readiness | `GET /up/health` — JSON `{status, checks:{database,cache,queue}, time}`; **503** if any check fails. Point the uptime monitor here. |
+| Readiness | `GET /up/health` — JSON `{status, checks:{database,cache,queue,scheduler}, time}`; **503** if any check fails (`queue` = backlog on the configured connection < 10k; `scheduler` = heartbeat < 3 min old). Point the uptime monitor here. |
 | Errors | `storage/logs/errors-YYYY-MM-DD.log` (dedicated `errors` channel, 30-day retention). Every unhandled exception is reported here in addition to the normal log. |
 | Daily error digest | Emailed 07:00 to `config('mail.ops_address')` (`MAIL_OPS_ADDRESS`, falls back to `MAIL_FROM_ADDRESS`) by `php artisan ops:error-digest`. |
 | Queue health | `php artisan ops:queue-health` runs every 15 min; warns on the `errors` channel when `failed_jobs` grows or the oldest pending job is > 5 min old (worker / outbox-relay starvation). Run it by hand any time for a summary line. |
@@ -67,22 +67,18 @@ A migration that ran and now needs reverting: `php artisan migrate:rollback --st
 
 ## 4. Backups & restore
 
-**Backup:** `pg_dump` the `cameroontimberhub` database daily, gzip, keep 7 days locally + copy offsite.
+**Backup:** `deploy/backup.sh` (installed from `deploy/cron`, daily 02:00) writes `cth-db-<stamp>.dump` (`pg_dump -Fc`) **and** `cth-files-<stamp>.tar.gz` (`storage/app` — uploaded documents, certificates, media; excludes framework caches/logs/livewire-tmp) to `/home/timberhub/backups`, keeps `BACKUP_RETENTION_DAYS` (default 14) days, and copies both offsite with `rclone` when `BACKUP_RCLONE_REMOTE` is set. DB-only backups lose every uploaded document — always restore both.
 
-> **TODO (owner decision):** confirm the offsite target (S3 bucket / second host / Hostinger snapshot). Until then only the local `pg_dump` cron below is in place — a single-host failure loses the DB.
-
-```bash
-# crontab -u timberhub  — daily 02:00
-0 2 * * * pg_dump -Fc cameroontimberhub | gzip > /home/timberhub/backups/cth-$(date +\%F).dump.gz && find /home/timberhub/backups -name 'cth-*.dump.gz' -mtime +7 -delete
-```
+> **TODO (owner decision):** confirm the offsite target (S3 bucket / second host / Hostinger snapshot) and set `BACKUP_RCLONE_REMOTE` in the cron environment. Until then a single-host failure loses everything.
 
 **Restore drill (against a scratch DB — never the live one without a maintenance window):**
 
 ```bash
 createdb cth_restore_test
-gunzip -c /home/timberhub/backups/cth-<date>.dump.gz | pg_restore -d cth_restore_test --clean --if-exists
+pg_restore -d cth_restore_test --clean --if-exists /home/timberhub/backups/cth-db-<stamp>.dump
 psql cth_restore_test -c "select count(*) from orders; select count(*) from companies;"
-dropdb cth_restore_test
+mkdir /tmp/files-restore && tar -xzf /home/timberhub/backups/cth-files-<stamp>.tar.gz -C /tmp/files-restore && ls /tmp/files-restore/app
+dropdb cth_restore_test && rm -rf /tmp/files-restore
 ```
 
 Record the drill date + row counts here each time one is run:
@@ -106,9 +102,30 @@ Record the drill date + row counts here each time one is run:
 | Rotate a webhook secret | exporter panel → Webhooks → the subscription → regenerate (shows once) |
 | Rotate the AI provider key | two-person + fresh-2FA flow in `/admin` → AI API key changes |
 
-Cron (as `timberhub`): `* * * * * cd /home/timberhub/htdocs/www.cameroontimberhub.com && /usr/bin/php artisan schedule:run >> /dev/null 2>&1` — **this must exist** or the outbox relay, digests, badge expiry and queue-health all stop silently. Verify: `crontab -l -u timberhub`.
+Cron (as `timberhub`, file: `deploy/cron`): `* * * * * cd /home/timberhub/htdocs/www.cameroontimberhub.com && /usr/bin/php artisan schedule:run >> /dev/null 2>&1` — **this must exist** or the outbox relay, digests, badge expiry and queue-health all stop silently. Verify: `crontab -l -u timberhub`; `/up/health` reports `checks.scheduler: false` (503) when the every-minute `ops:scheduler-heartbeat` is > 3 min stale.
 
-Queue worker: `systemctl status timberhub-queue.service` — must be `active (running)`. Logs: `journalctl -u timberhub-queue -n 100`.
+Queue worker (unit file: `deploy/systemd/timberhub-queue.service`): `systemctl status timberhub-queue.service` — must be `active (running)`. Logs: `journalctl -u timberhub-queue -n 100`.
+
+---
+
+## 5a. Go-live checklist
+
+Work through in order on the production host. Every step is re-runnable.
+
+1. **Environment** — copy the commented *PRODUCTION* block at the bottom of `.env.example` into `.env` and fill it in: `APP_ENV=production`, `APP_DEBUG=false`, `APP_URL=https://www.cameroontimberhub.com`, `APP_KEY` (generate **once**, store in the password manager), `TRUSTED_PROXIES` (loopback for nginx on the same host; the Cloudflare/LB CIDRs or `*` if traffic comes through one), `SESSION_SECURE_COOKIE=true`, `QUEUE_CONNECTION=redis`, `MAIL_MAILER=smtp` + real SMTP creds + `MAIL_FROM_ADDRESS` on our domain, `MAIL_OPS_ADDRESS`, `DEMO_LOGINS_ENABLED=false`, `STAFF_REQUIRE_2FA=true`, `CONTACT_INBOX`.
+2. **Schema + reference data** — `php artisan migrate --force` then `php artisan db:seed --force` (in production this runs **only** `ReferenceDataSeeder`: roles/permissions, plans, tax rules, document types, species, pages, glossary — no users, no demo data). Never run `DemoDataSeeder` (it refuses in production).
+3. **First admin** — `php artisan admin:create you@cameroontimberhub.com --name="Your Name"` → emails a password-reset link (use `--show-password` only if mail is not working yet, and change it at once). Lowercases the email; promotes an existing user instead of duplicating.
+4. **Second admin** — repeat for a second person. Two-person controls (payment credentials, AI key, approvals) cannot be completed by one admin.
+5. **2FA enrolment** — both admins sign in, enrol TOTP 2FA, store recovery codes offline.
+6. **Files** — `php artisan storage:link`; `php artisan certificates:generate-signing-key` (once; **back up the key file** — losing it invalidates certificate verification).
+7. **Workers** — install `deploy/systemd/timberhub-queue.service` (enable --now) and `deploy/cron` (scheduler + backup). Wait 1 min, then `curl -s https://www.cameroontimberhub.com/up/health` must show every check `true`.
+8. **Caches** — `php artisan config:cache route:cache view:cache event:cache && php artisan filament:cache-components`.
+9. **Backups** — run `deploy/backup.sh` by hand once; set `BACKUP_RCLONE_REMOTE`; do the restore drill in §4 and record it in the table.
+10. **Gate** — `php artisan launch:check` must exit 0. It fails on: debug on, log/array mailer, placeholder from-address, non-https `APP_URL`, insecure session cookie, sync queue, demo logins (config, Pennant row, or the demo admin account), unseeded roles/plans, no super_admin, missing storage link or signing key. It warns on: one admin only, scheduler heartbeat stale/never seen, old pending jobs, no payment gateway configured.
+11. **DNS / TLS** — A/AAAA records for apex + `www`, valid certificate (auto-renew), http→https redirect in nginx; confirm `Strict-Transport-Security` appears on an https response (it only does once `TRUSTED_PROXIES` is right behind a TLS-terminating proxy).
+12. **Mail deliverability** — SPF (`v=spf1 include:<provider> -all`), DKIM (provider key published), DMARC (`v=DMARC1; p=quarantine; rua=mailto:…`). Send a password reset to a Gmail and an Outlook address and check headers show `spf=pass dkim=pass dmarc=pass`.
+13. **Payments** — enter live gateway credentials in `/admin` (two-person). Mobile-money callbacks are re-verified against the provider's status API (Orange `transactionstatus`, MTN `requesttopay/{ref}`), so a forged callback cannot complete a payment. Do one real low-value payment per gateway.
+14. **Monitoring** — uptime monitor on `https://www.cameroontimberhub.com/up/health` (alert on non-200, 1-min interval); the daily `ops:error-digest` reaches `MAIL_OPS_ADDRESS`.
 
 ---
 

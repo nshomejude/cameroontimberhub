@@ -1,0 +1,29 @@
+# Queue worker for Cameroon Timber Hub (see docs/ops/RUNBOOK.md).
+#
+# Install:
+#   sudo cp deploy/systemd/timberhub-queue.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now timberhub-queue.service
+# Check:   systemctl status timberhub-queue.service
+# Logs:    journalctl -u timberhub-queue -n 100
+#
+# On deploy run `php artisan queue:restart` then `systemctl restart timberhub-queue`.
+# --max-time recycles the worker hourly so memory leaks can't accumulate;
+# systemd restarts it immediately.
+
+[Unit]
+Description=Cameroon Timber Hub queue worker
+After=network.target postgresql.service redis-server.service
+
+[Service]
+User=timberhub
+Group=timberhub
+WorkingDirectory=/home/timberhub/htdocs/www.cameroontimberhub.com
+ExecStart=/usr/bin/php artisan queue:work --sleep=3 --tries=3 --backoff=10 --timeout=120 --max-time=3600
+Restart=always
+RestartSec=5
+KillSignal=SIGTERM
+TimeoutStopSec=150
+
+[Install]
+WantedBy=multi-user.target

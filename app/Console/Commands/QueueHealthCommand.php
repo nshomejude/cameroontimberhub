@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Support\Ops\OpsProbes;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
@@ -14,7 +15,7 @@ use Illuminate\Support\Facades\Log;
  * two silent failure modes loud on the `errors` log channel:
  *
  *  1. failed_jobs is growing — a job class is dying repeatedly.
- *  2. The oldest un-reserved row in `jobs` is older than 5 minutes — the
+ *  2. The oldest pending job on the configured queue connection is older than 5 minutes — the
  *     queue worker (or, via the every-10s outbox relay, the whole event
  *     backbone) has stopped draining work.
  *
@@ -70,26 +71,24 @@ class QueueHealthCommand extends Command
 
     private function checkPendingStarvation(): string
     {
-        $oldest = DB::table('jobs')
-            ->whereNull('reserved_at')
-            ->orderBy('available_at')
-            ->first();
+        // Driver-agnostic: asks the CONFIGURED queue connection (database,
+        // redis, ...) rather than assuming the DB `jobs` table.
+        $ageSeconds = OpsProbes::oldestPendingAgeSeconds();
 
-        if ($oldest === null) {
+        if ($ageSeconds === null) {
             return 'oldest_pending=none';
         }
 
-        $availableAt = Carbon::createFromTimestamp($oldest->available_at ?? $oldest->created_at);
-        $ageMinutes = (int) $availableAt->diffInMinutes(now());
+        $ageMinutes = intdiv($ageSeconds, 60);
 
         if ($ageMinutes >= self::STARVATION_THRESHOLD_MINUTES) {
             Log::channel('errors')->warning('ops:queue-health — oldest un-reserved job exceeds the starvation threshold; the queue worker or outbox relay may be down.', [
                 'command' => self::class,
-                'oldest_job_id' => $oldest->id,
-                'queue' => $oldest->queue,
+                'connection' => OpsProbes::queueConnectionName(),
+                'pending' => OpsProbes::queueSize(),
                 'age_minutes' => $ageMinutes,
                 'threshold_minutes' => self::STARVATION_THRESHOLD_MINUTES,
-                'available_at' => $availableAt->toIso8601String(),
+                'available_at' => Carbon::createFromTimestamp(now()->getTimestamp() - $ageSeconds)->toIso8601String(),
             ]);
         }
 

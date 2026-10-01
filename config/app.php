@@ -55,6 +55,12 @@ return [
     'url' => env('APP_URL', 'http://localhost'),
 
     /*
+    | Reverse proxies whose X-Forwarded-* headers are trusted (see
+    | App\Http\Middleware\TrustProxies). Comma-separated IPs/CIDRs, or '*'.
+    */
+    'trusted_proxies' => env('TRUSTED_PROXIES', '127.0.0.1,::1'),
+
+    /*
     |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------

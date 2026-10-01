@@ -15,6 +15,7 @@ use App\Http\Middleware\HandleSlugRedirects;
 use App\Http\Middleware\RequiresRecentTwoFactor;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetLocale;
+use App\Http\Middleware\TrustProxies;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -30,6 +31,16 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Behind nginx / Cloudflare the TCP peer is the proxy, so without
+        // this every visitor shares one IP (one throttle bucket) and
+        // $request->secure() is false (HSTS never emitted). Our subclass
+        // reads config('app.trusted_proxies') (env TRUSTED_PROXIES) at
+        // request time so it survives `config:cache` (env() would not).
+        $middleware->replace(
+            \Illuminate\Http\Middleware\TrustProxies::class,
+            TrustProxies::class,
+        );
+
         // Request-correlation id (GAPS.md §6): accept-or-generate + echo.
         // Prepended so every downstream middleware, controller and the
         // exception renderer sees `request_id` on the request / in Context.

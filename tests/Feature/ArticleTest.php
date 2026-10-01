@@ -345,6 +345,17 @@ it('allows the major AI crawlers in robots.txt', function () {
         ->toContain('LLM-Content: '.route('llms'));
 });
 
+it('keeps API, payment, API-docs and token paths out of robots.txt for every agent', function () {
+    $body = $this->get('/robots.txt')->assertOk()->getContent();
+
+    foreach (['/api/', '/payments/', '/docs/api', '/verify/', '/track/'] as $path) {
+        // Once for `*` and once per named AI crawler group.
+        expect(substr_count($body, 'Disallow: '.$path))->toBeGreaterThan(1);
+    }
+
+    expect($body)->not->toContain("Disallow: /verify\n");
+});
+
 /*
 |--------------------------------------------------------------------------
 | Model behaviour

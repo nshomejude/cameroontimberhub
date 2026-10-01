@@ -62,6 +62,9 @@ it('ops:queue-health warns when the oldest pending job exceeds the starvation th
         ->withArgs(fn (string $message): bool => str_contains($message, 'starvation threshold'));
     Log::shouldReceive('info')->zeroOrMoreTimes();
 
+    // The probe follows the configured connection; phpunit.xml uses `sync`.
+    config(['queue.default' => 'database']);
+
     DB::table('jobs')->insert([
         'queue' => 'default',
         'payload' => json_encode(['displayName' => 'App\\Jobs\\StuckJob']),
