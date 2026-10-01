@@ -123,7 +123,7 @@ class DisputeController extends Controller
         /** @var Dispute $model */
         $model = Dispute::query()->where('order_id', $order->getKey())->findOrFail($dispute);
 
-        abort_unless($model->isParty($request->user()), 403);
+        abort_unless($model->isParty($request->user()), 404);
 
         return $model;
     }
@@ -147,7 +147,7 @@ class DisputeController extends Controller
         /** @var Dispute $model */
         $model = Dispute::query()->where('order_id', $order->getKey())->findOrFail($dispute);
 
-        abort_unless($model->isParty($request->user()), 403);
+        abort_unless($model->isParty($request->user()), 404);
 
         $model->load(['evidence.submittedByUser', 'evidence.submittedByCompany', 'messages.user', 'messages.company', 'raisedByUser', 'raisedByCompany', 'respondentCompany']);
 
@@ -190,7 +190,7 @@ class DisputeController extends Controller
         /** @var Dispute $model */
         $model = Dispute::query()->where('order_id', $order->getKey())->findOrFail($dispute);
 
-        abort_unless($model->isParty($request->user()), 403);
+        abort_unless($model->isParty($request->user()), 404);
 
         try {
             $this->disputes->reply($model, $request->user(), $request->validated('body'));

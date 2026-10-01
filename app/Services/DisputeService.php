@@ -77,6 +77,11 @@ class DisputeService
         string $description,
         ?UploadedFile $file = null,
     ): DisputeEvidence {
+        // Party check BEFORE anything (row or file) is written.
+        if (! $dispute->isParty($actor)) {
+            throw new RuntimeException('You are not a party to this dispute.');
+        }
+
         $description = trim($description);
 
         if ($description === '') {
@@ -110,6 +115,10 @@ class DisputeService
         // Closed used to insert a DisputeMessage and then throw, leaving an
         // orphaned reply on a case that could no longer act on it. Guarding
         // here first means a rejected reply leaves no trace at all.
+        if (! $dispute->isParty($actor)) {
+            throw new RuntimeException('You are not a party to this dispute.');
+        }
+
         if (! $dispute->isReplyable()) {
             throw new RuntimeException('This dispute is not awaiting a response right now.');
         }

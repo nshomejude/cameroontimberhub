@@ -196,7 +196,7 @@ it('rejects a non-party company from opening a dispute via the HTTP endpoint', f
         'description' => 'Trying to open a dispute I have no business opening.',
     ]);
 
-    $response->assertForbidden();
+    $response->assertNotFound();
     expect(Dispute::where('order_id', $order->id)->exists())->toBeFalse();
 });
 
@@ -288,4 +288,29 @@ it('lets the admin desk move, resolve and close disputes and notifies both parti
     $html = (string) (new \App\Notifications\DisputeResolvedNotification($dispute, 'appeal_decided'))->toMail($buyer)->render();
     expect($html)->toContain($order->reference_code)->toContain(route('disputes.show', [$order->id, $dispute->id]));
     expect((string) (new \App\Notifications\DisputeOpenedStaffNotification($dispute))->toMail($admin)->render())->toContain($order->reference_code);
+});
+
+it('audit P2: a stranger cannot see or write into another tenant\'s dispute over HTTP (404, nothing persisted)', function () {
+    [$order, $buyer] = buildDisputeOrderContext();
+    $dispute = app(DisputeService::class)->open($order, $buyer, DisputeCategory::Quality, 'Wrong grade.');
+    $stranger = User::factory()->create();
+
+    $this->actingAs($stranger)->get(route('disputes.index', $order))->assertNotFound();
+    $this->actingAs($stranger)->get(route('disputes.show', [$order, $dispute]))->assertNotFound();
+    $this->actingAs($stranger)->post(route('disputes.evidence', [$order, $dispute]), ['description' => 'planted'])->assertNotFound();
+    $this->actingAs($stranger)->post(route('disputes.reply', [$order, $dispute]), ['body' => 'planted'])->assertNotFound();
+    $this->actingAs($stranger)->post(route('disputes.appeal', [$order, $dispute]))->assertNotFound();
+
+    expect($dispute->evidence()->count())->toBe(0)
+        ->and($dispute->messages()->count())->toBe(0);
+});
+
+it('audit P2: DisputeService::submitEvidence writes nothing for a non-party', function () {
+    [$order, $buyer] = buildDisputeOrderContext();
+    $dispute = app(DisputeService::class)->open($order, $buyer, DisputeCategory::Quality, 'Wrong grade.');
+
+    expect(fn () => app(DisputeService::class)->submitEvidence($dispute, User::factory()->create(), 'planted'))
+        ->toThrow(RuntimeException::class);
+
+    expect($dispute->evidence()->count())->toBe(0);
 });
