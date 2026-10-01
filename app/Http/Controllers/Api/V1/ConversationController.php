@@ -117,18 +117,31 @@ class ConversationController extends Controller
      * (and it was placed with this same company). `product_id`, when given,
      * must be one of this company's products. 201 for a new thread, 200 when
      * an open one was reused.
+     *
+     * Released-app compatibility: the shipped mobile build posts
+     * `{company_slug, product_slug}` with NO `body` ("Message supplier"
+     * button). `company_slug` is accepted as an alias of `company`,
+     * `product_slug` resolves a product of that same company, and `body` is
+     * optional — without one the thread is started/reused and nothing is
+     * posted.
      */
     public function store(Request $request): JsonResponse
     {
         $user = $request->user();
 
+        if (! $request->filled('company') && $request->filled('company_slug')) {
+            $request->merge(['company' => $request->input('company_slug')]);
+        }
+
         $data = $request->validate([
             'company' => ['required'],
+            'company_slug' => ['nullable', 'string', 'max:191'],
             'product_id' => ['nullable', 'integer'],
+            'product_slug' => ['nullable', 'string', 'max:191'],
             'order' => ['nullable', 'string', 'max:64'],
             'topic' => ['nullable', 'string', Rule::in(ConversationTopic::values())],
             'subject' => ['nullable', 'string', 'max:170'],
-            'body' => ['required', 'string', 'min:1', 'max:4000'],
+            'body' => ['nullable', 'string', 'min:1', 'max:4000'],
         ]);
 
         $companyKey = (string) $data['company'];
@@ -158,6 +171,12 @@ class ConversationController extends Controller
 
             if ($product === null) {
                 throw ValidationException::withMessages(['product_id' => [__('validation.exists', ['attribute' => 'product'])]]);
+            }
+        } elseif (filled($data['product_slug'] ?? null)) {
+            $product = Product::where('slug', $data['product_slug'])->where('company_id', $company->getKey())->first();
+
+            if ($product === null) {
+                throw ValidationException::withMessages(['product_slug' => [__('validation.exists', ['attribute' => 'product'])]]);
             }
         }
 
@@ -199,7 +218,9 @@ class ConversationController extends Controller
             subject: $data['subject'] ?? null,
         );
 
-        $this->messaging->post($conversation, $user, $data['body']);
+        if (filled($data['body'] ?? null)) {
+            $this->messaging->post($conversation, $user, $data['body']);
+        }
 
         $conversation = $this->messaging->find($user, (int) $conversation->getKey());
         $conversation->load('company:id,slug,legal_name,trade_name,logo_path,verified_at', 'user:id,name', 'latestMessage');

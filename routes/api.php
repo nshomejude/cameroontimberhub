@@ -153,6 +153,10 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
             Route::post('logout', [AuthController::class, 'logout'])->name('logout');
             Route::get('me', [AuthController::class, 'me'])->name('me');
             Route::patch('me', [AuthController::class, 'updateMe'])->name('me.update');
+            // In-app account deletion (App Store / Play requirement) — see
+            // AccountDeletionController / Actions\Account\DeleteAccount.
+            Route::delete('me', [\App\Http\Controllers\Api\V1\AccountDeletionController::class, 'destroy'])
+                ->middleware('throttle:5,1')->name('me.destroy');
             Route::post('password', [AuthController::class, 'updatePassword'])->name('password.update');
             Route::post('email/verification-notification', [AuthController::class, 'sendVerificationEmail'])
                 ->middleware('throttle:6,1')->name('verification.send');
@@ -287,6 +291,11 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
 
         Route::post('conversations/{id}/read', [ConversationController::class, 'markRead'])->name('conversations.read');
 
+        // Chat paperclip: the caller's own orders/quotes/RFQs/receipts that
+        // involve this thread's counterparty. Read-only.
+        Route::get('conversations/{id}/attachables', [\App\Http\Controllers\Api\V1\ConversationAttachablesController::class, 'index'])
+            ->name('conversations.attachables');
+
         /*
          * ---------------------------------------------- in-thread commerce
          *
@@ -380,6 +389,11 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
         Route::delete('follow', [FollowController::class, 'destroy'])->name('follow.destroy');
         Route::get('following', [FollowController::class, 'following'])->name('following.index');
         Route::get('followers', [FollowController::class, 'followers'])->name('followers.index');
+
+        // Supply-chain partners, read-only, derived from completed orders
+        // (no invitation flow exists — POST is deliberately not routed).
+        Route::get('supply-chain/relationships', [\App\Http\Controllers\Api\V1\SupplyChainRelationshipController::class, 'index'])
+            ->name('supply-chain.relationships.index');
 
         // "Things I follow" — see FeedController's docblock for exactly
         // what real event sources back this today (published products from
@@ -687,11 +701,16 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
                 ->middleware('throttle:api-decision')->name('products.destroy');
 
             // Product photo upload (this task): mirrors the ONE real image
-            // field the web form has (`primary_image_path`). No
-            // gallery add/delete/reorder routes exist — see
-            // SupplierProductImageController's docblock for why.
+            // field the web form has (`primary_image_path`), plus
+            // delete/reorder over the existing primary image and
+            // product_images rows — see SupplierProductImageController.
             Route::post('products/{product}/images', [SupplierProductImageController::class, 'store'])
                 ->middleware('throttle:api-upload')->name('products.images.store');
+            // `order` before `{image}` so the static segment wins.
+            Route::patch('products/{product}/images/order', [SupplierProductImageController::class, 'reorder'])
+                ->middleware('throttle:api-decision')->name('products.images.reorder');
+            Route::delete('products/{product}/images/{image}', [SupplierProductImageController::class, 'destroy'])
+                ->middleware('throttle:api-decision')->name('products.images.destroy');
 
             // Fleet (this task): vehicles + drivers, API counterpart of the
             // exporter panel's Vehicles/Drivers resources. Sits under

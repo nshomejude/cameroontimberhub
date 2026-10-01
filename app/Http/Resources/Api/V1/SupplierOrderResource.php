@@ -96,8 +96,14 @@ class SupplierOrderResource extends JsonResource
      * verbatim from the `conversations/{id}/orders/{order}` route group in
      * `routes/api.php` (`confirm`, `production`, `ship`, `tracking`,
      * `deliver`, `documents`, `proforma`, `payment-request`,
-     * `payment-record`) — copied, not guessed. No conversation, no actions:
-     * an order without a thread yet gets `actions: []`, not broken paths.
+     * `payment-record`) — copied, not guessed.
+     *
+     * No conversation: an accepted quote does not guarantee a thread, and the
+     * released app only renders server `actions`. Such an order gets the SAME
+     * action objects for `confirm`/`production`/`ship`/`tracking`/`deliver`,
+     * pointed at the reference-based `supplier/orders/{reference}/...` routes
+     * (SupplierOrderFulfilmentController, same field names). The
+     * conversation-only actions (documents, proforma, payments) are omitted.
      *
      * @return list<array<string, mixed>>
      */
@@ -108,11 +114,10 @@ class SupplierOrderResource extends JsonResource
 
         $conversationId = $order->relationLoaded('conversation') ? $order->conversation?->id : null;
 
-        if ($conversationId === null) {
-            return [];
-        }
-
-        $base = "conversations/{$conversationId}/orders/{$order->getKey()}";
+        $threadless = $conversationId === null;
+        $base = $threadless
+            ? 'supplier/orders/'.rawurlencode((string) $order->reference_code)
+            : "conversations/{$conversationId}/orders/{$order->getKey()}";
         $actions = [];
 
         if ($order->status === OrderStatus::Awarded) {
@@ -165,7 +170,13 @@ class SupplierOrderResource extends JsonResource
                     ['name' => 'tracking_url', 'label' => 'Carrier tracking link', 'type' => 'text', 'required' => false],
                 ],
             ];
+        }
 
+        if ($threadless) {
+            return $actions;
+        }
+
+        if (! $order->status->isTerminal()) {
             $actions[] = [
                 'key' => 'add_documents',
                 'label' => 'Attach a document',

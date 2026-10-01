@@ -148,7 +148,7 @@ class Product extends Model
     // ---- Presentation helpers -------------------------------------------
 
     /** Resolve a path under public/img, or null when the file is absent. */
-    private function publicImage(?string $path): ?string
+    public function publicImage(?string $path): ?string
     {
         $path = $path ? ltrim($path, '/') : null;
 

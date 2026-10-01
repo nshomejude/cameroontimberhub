@@ -455,6 +455,15 @@ Route::middleware(['auth', 'buyer'])->prefix('account')->name('account.')->group
         ->name('orders.trade-assurance.confirm');
 });
 
+// Account deletion (store requirement). Outside the `buyer` group on purpose:
+// company members delete their account here too. Staff get a 403-style
+// refusal from DeleteAccount. A settings page links to `account.delete`.
+Route::middleware(['auth'])->prefix('account')->name('account.')->group(function () {
+    Route::get('/delete', [\App\Http\Controllers\Public\AccountDeletionController::class, 'show'])->name('delete');
+    Route::post('/delete', [\App\Http\Controllers\Public\AccountDeletionController::class, 'destroy'])
+        ->middleware('throttle:5,1')->name('destroy');
+});
+
 // In-thread commerce: RFQ composer, quotation accept/decline/withdraw, and the
 // negotiation ledger.
 //
