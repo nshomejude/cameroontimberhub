@@ -183,7 +183,14 @@ class ContactController extends Controller
 
         $data['subject'] = mb_substr($subject, 0, 200);
 
-        Mail::to(config('mail.from.address'))->send(new ContactMessageMail($data));
+        // The message is already persisted (contact_messages): a mail failure
+        // is logged and swallowed rather than 500ing the visitor.
+        $inbox = config('contact.inbox') ?: config('mail.from.address');
+        $intake->safely(
+            fn () => Mail::to($inbox)->send(new ContactMessageMail($data)),
+            'Contact form mail failed',
+            ['email' => $data['email']],
+        );
 
         return back()->with('contact_sent', true);
     }

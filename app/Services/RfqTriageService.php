@@ -4,11 +4,15 @@ namespace App\Services;
 
 use App\Enums\ConsentPurpose;
 use App\Enums\RfqStatus;
+use App\Mail\BuyerRfqRejectedMail;
+use App\Mail\BuyerRfqRoutedMail;
 use App\Models\Company;
 use App\Models\Rfq;
 use App\Models\RfqCompany;
 use App\Models\User;
 use App\Notifications\RfqRoutedToExporter;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
 use RuntimeException;
 
@@ -53,9 +57,17 @@ class RfqTriageService
         $this->transition($rfq, RfqStatus::Approved, $actor);
     }
 
+    /**
+     * Reject and tell the buyer, politely and with the reason. Not sent for
+     * spam-flagged or never-verified RFQs (no confirmed human to tell).
+     */
     public function reject(Rfq $rfq, string $reason, User $actor): void
     {
         $this->transition($rfq, RfqStatus::Rejected, $actor, $reason);
+
+        if (! $rfq->is_spam && $rfq->email_verified_at !== null && filled($rfq->buyer_email)) {
+            $this->mailBuyer(fn () => Mail::to($rfq->buyer_email)->queue(new BuyerRfqRejectedMail($rfq, $reason)), $rfq);
+        }
     }
 
     public function markSpam(Rfq $rfq, User $actor): void
@@ -85,25 +97,49 @@ class RfqTriageService
      */
     public function route(Rfq $rfq, array $companyIds, User $actor, LeadFlowService $leads): int
     {
+        return $this->routeDetailed($rfq, $companyIds, $actor, $leads)->routed;
+    }
+
+    /**
+     * route(), but reporting every requested company that was NOT routed and
+     * why, so the admin UI can warn rather than toast "Routed to 0". When at
+     * least one new routing is created the buyer is emailed once.
+     *
+     * @param  list<int>  $companyIds
+     */
+    public function routeDetailed(Rfq $rfq, array $companyIds, User $actor, LeadFlowService $leads): RfqRoutingResult
+    {
         if ($rfq->status !== RfqStatus::Approved) {
             throw new RuntimeException('Only approved RFQs can be routed.');
         }
 
         if ($rfq->consents()->where('purpose', ConsentPurpose::RfqExporterSharing->value)->exists()
             && ! $rfq->hasActiveConsent(ConsentPurpose::RfqExporterSharing)) {
-            return 0;
+            return new RfqRoutingResult(0, array_map(fn ($id) => [
+                'company_id' => (int) $id,
+                'company' => Company::find($id)?->legal_name,
+                'reason' => RfqRoutingResult::REASON_CONSENT_REVOKED,
+            ], array_values($companyIds)));
         }
 
         $routed = 0;
+        $skipped = [];
         foreach ($companyIds as $companyId) {
             $company = Company::find($companyId);
 
             // leads_receive entitlement (docs/PRICING_SPEC.md §5) -- a
             // company whose plan does not include lead delivery is skipped
-            // silently here (not an error): the caller passed a candidate
-            // list, this is the entitlement filter on top of it, exactly
-            // like the pre-existing consent guard above it in this method.
-            if (! $company || ! $company->hasFeature('leads_receive')) {
+            // here (not an error), but reported back in the result so the
+            // admin sees it instead of a silent "Routed to 0".
+            if (! $company) {
+                $skipped[] = ['company_id' => (int) $companyId, 'company' => null, 'reason' => RfqRoutingResult::REASON_NOT_FOUND];
+
+                continue;
+            }
+
+            if (! $company->hasFeature('leads_receive')) {
+                $skipped[] = ['company_id' => (int) $companyId, 'company' => $company->legal_name, 'reason' => RfqRoutingResult::REASON_NO_ENTITLEMENT];
+
                 continue;
             }
 
@@ -116,9 +152,31 @@ class RfqTriageService
                 $leads->createFromRouting($routing);
                 Notification::send($routing->company->users, new RfqRoutedToExporter($rfq, $routing->company));
                 $routed++;
+            } else {
+                $skipped[] = ['company_id' => (int) $companyId, 'company' => $company->legal_name, 'reason' => RfqRoutingResult::REASON_ALREADY_ROUTED];
             }
         }
 
-        return $routed;
+        if ($routed > 0 && filled($rfq->buyer_email)) {
+            $this->mailBuyer(fn () => Mail::to($rfq->buyer_email)->queue(
+                new BuyerRfqRoutedMail($rfq, $routed, app(BuyerRfqAccess::class)->responsesUrl($rfq)),
+            ), $rfq);
+        }
+
+        return new RfqRoutingResult($routed, $skipped);
+    }
+
+    /** Buyer emails are best-effort: the triage action itself has succeeded. */
+    private function mailBuyer(callable $send, Rfq $rfq): void
+    {
+        try {
+            $send();
+        } catch (\Throwable $e) {
+            Log::channel('errors')->error('Buyer RFQ status mail failed', [
+                'rfq_id' => $rfq->getKey(),
+                'exception' => $e::class,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 }

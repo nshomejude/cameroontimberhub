@@ -898,6 +898,24 @@ return [
         'activity_order_status' => 'Commande :status',
     ],
 
+    'rfq_followup' => [
+        'next_title' => 'Et ensuite ?',
+        'next_1' => "Cliquez sur le lien de confirmation que nous venons de vous envoyer (vérifiez vos dossiers spam ou promotions si vous ne le voyez pas).",
+        'next_2' => "Notre équipe examine votre demande confirmée — vous aurez de nos nouvelles sous 24 heures.",
+        'next_3' => "Les exportateurs vérifiés correspondants la reçoivent et vous répondent par e-mail avec leurs offres.",
+        'spam_hint' => "Vous n'avez pas reçu l'e-mail ? Vérifiez vos spams ou demandez un nouveau lien ci-dessous.",
+        'resend_title' => 'Renvoyer le lien de confirmation',
+        'resend_reference' => 'Référence de la demande',
+        'resend_email' => 'E-mail utilisé pour la demande',
+        'resend_submit' => 'Envoyer un nouveau lien',
+        'resend_generic' => "Si cette référence et cet e-mail correspondent à une demande non confirmée, un nouveau lien de confirmation est en route. Il est valable 48 heures.",
+        'link_invalid_title' => 'Ce lien a expiré ou est invalide',
+        'link_invalid_body' => "Les liens de confirmation sont valables 48 heures et doivent être ouverts tels quels. Votre demande est toujours enregistrée — demandez un nouveau lien ci-dessous.",
+        'link_invalid_inquiry_body' => "Les liens de confirmation sont valables 48 heures. Votre message n'a pas encore été transmis — renvoyez-le depuis la page du fournisseur.",
+        'back_to_supplier' => 'Retour à :company',
+        'browse_exporters' => 'Parcourir les exportateurs',
+    ],
+
     'rfq_wizard' => [
         'title' => 'Demander un devis',
         'title_step' => 'Demander un devis — étape :n sur :total',

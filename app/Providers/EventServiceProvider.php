@@ -23,7 +23,6 @@ use App\Listeners\NotifyExporterOfVerification;
 use App\Listeners\OpenComplianceCaseOnOrderAwarded;
 use App\Listeners\RecordTransactedPriceObservations;
 use App\Listeners\RecordLotEventOnShipmentCheckpoint;
-use App\Listeners\SendBuyerRfqAcknowledgement;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 
@@ -44,9 +43,10 @@ class EventServiceProvider extends ServiceProvider
             NotifyExporterOfRfq::class,
         ],
 
-        RfqApproved::class => [
-            SendBuyerRfqAcknowledgement::class,
-        ],
+        // The empty SendBuyerRfqAcknowledgement stub was removed: buyer
+        // status emails are sent directly by RfqTriageService::route() /
+        // reject() (the paths the admin panel actually uses).
+        RfqApproved::class => [],
 
         // These events are dispatched for future listeners (analytics, webhooks, etc.).
         DocumentApproved::class  => [],

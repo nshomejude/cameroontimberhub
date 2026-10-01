@@ -17,7 +17,9 @@ use App\Services\RfqWizard;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Http\Response;
 use Illuminate\View\View;
 
 /**
@@ -229,13 +231,47 @@ class RfqController extends Controller
      * the request has entered the moderation queue. Still not "sent to N
      * suppliers" — routing is an admin action taken after approval.
      */
-    public function verify(Request $request, Rfq $rfq, IntakeService $intake): View
+    public function verify(Request $request, Rfq $rfq, IntakeService $intake): View|Response
     {
-        abort_unless($request->query('h') === sha1($rfq->buyer_email), 403);
+        // Checked here rather than via the `signed` middleware so an expired
+        // or tampered link gets a recovery page (still a 403) offering a
+        // fresh link, instead of a bare error.
+        if (! $request->hasValidSignature() || $request->query('h') !== sha1($rfq->buyer_email)) {
+            return response()->view('public.rfq.link-invalid', ['kind' => 'rfq'], 403);
+        }
 
         $intake->verifyRfq($rfq);
 
         return view('public.rfq.verified', ['rfq' => $rfq->fresh()->load('items.species')]);
+    }
+
+    /**
+     * Re-send the confirmation link for an unverified RFQ, given its reference
+     * and the buyer email it was submitted with. Enumeration-safe: the same
+     * flash message is returned whether or not anything matched, and a
+     * per-RFQ limiter stops the form being used to mail-bomb a buyer.
+     */
+    public function resend(Request $request, IntakeService $intake): RedirectResponse
+    {
+        $data = $request->validate([
+            'reference' => ['required', 'string', 'max:40'],
+            'email' => ['required', 'email', 'max:180'],
+        ]);
+
+        $rfq = Rfq::query()
+            ->where('reference_code', strtoupper(trim($data['reference'])))
+            ->where('buyer_email', strtolower(trim($data['email'])))
+            ->whereNull('email_verified_at')
+            ->where('is_spam', false)
+            ->first();
+
+        if ($rfq && RateLimiter::attempt('rfq-resend:'.$rfq->getKey(), 3, fn () => true, 3600)) {
+            $intake->safely(fn () => $intake->sendRfqVerificationMail($rfq), 'RFQ verification resend failed', ['rfq_id' => $rfq->getKey()]);
+        }
+
+        return redirect()->route('rfq.thanks')
+            ->with('rfq_submitted', ['reference' => $data['reference'], 'email' => $data['email']])
+            ->with('rfq_resend_status', __('messages.rfq_followup.resend_generic'));
     }
 
     /* ------------------------------------------------------------- internals */

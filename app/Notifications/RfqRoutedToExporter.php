@@ -2,7 +2,9 @@
 
 namespace App\Notifications;
 
+use App\Filament\Exporter\Resources\Leads\LeadResource;
 use App\Models\Company;
+use App\Models\Lead;
 use App\Models\NotificationPreference;
 use App\Models\Rfq;
 use App\Notifications\Channels\ExpoPushChannel;
@@ -51,8 +53,24 @@ class RfqRoutedToExporter extends Notification implements ShouldQueue
         return (new MailMessage)
             ->subject(__('notifications.rfq_routed_to_exporter.subject', ['reference' => $this->rfq->reference_code]))
             ->line(__('notifications.rfq_routed_to_exporter.line_1'))
-            ->action(__('notifications.rfq_routed_to_exporter.action'), url('/dashboard'))
+            ->action(__('notifications.rfq_routed_to_exporter.action'), $this->leadUrl())
             ->line(__('notifications.rfq_routed_to_exporter.line_2', ['reference' => $this->rfq->reference_code]));
+    }
+
+    /**
+     * Deep link to this RFQ's lead in the exporter panel (the lead is created
+     * by LeadFlowService::createFromRouting() before this fires); falls back
+     * to the leads inbox if it cannot be found.
+     */
+    public function leadUrl(): string
+    {
+        $lead = Lead::where('rfq_id', $this->rfq->getKey())
+            ->where('company_id', $this->company->getKey())
+            ->first();
+
+        return $lead
+            ? LeadResource::getUrl('edit', ['record' => $lead], panel: 'exporter')
+            : LeadResource::getUrl('index', panel: 'exporter');
     }
 
     /** @return array<string, mixed> */
