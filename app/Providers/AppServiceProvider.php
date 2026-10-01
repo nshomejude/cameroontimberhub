@@ -274,6 +274,19 @@ class AppServiceProvider extends ServiceProvider
             Limit::perHour(3)->by('api-rfq-user:'.($request->user()?->getAuthIdentifier() ?? $request->ip())),
         ]);
 
+        // Supplier catalogue/fleet record creation. These used to borrow
+        // `api-rfq` (3/hour) which made a supplier's first catalogue upload
+        // impossible; a listing is a cheap row, not an outbound mail.
+        RateLimiter::for('api-product-write', fn (Request $request) => [
+            Limit::perHour(120)->by('api-product-write-user:'.($request->user()?->getAuthIdentifier() ?? $request->ip())),
+        ]);
+
+        // Supplier file uploads (product photos, company logo/cover,
+        // compliance documents) — bounded for storage cost, not 3/hour.
+        RateLimiter::for('api-upload', fn (Request $request) => [
+            Limit::perHour(60)->by('api-upload-user:'.($request->user()?->getAuthIdentifier() ?? $request->ip())),
+        ]);
+
         // Re-sending a verification link costs an outbound mail to an address
         // the platform has not yet proven it owns, so the budget is tighter
         // than RFQ creation itself and keyed per RFQ as well as per account:

@@ -16,7 +16,7 @@ function supplierProductApiUser(): array
 {
     $user = User::factory()->create();
     $company = Company::factory()->publiclyVisible()->create();
-    $company->users()->attach($user);
+    $company->users()->attach($user, ['role' => 'owner']);
 
     return [$user, $company];
 }
@@ -156,7 +156,11 @@ it('404s updating another company product', function () {
 
 it('submits a draft product to active', function () {
     [$user, $company] = supplierProductApiUser();
-    $product = Product::factory()->for($company)->create(['status' => 'draft']);
+    $product = Product::factory()->for($company)->create([
+        'status' => 'draft',
+        'description' => 'Kiln-dried Iroko boards, FAS grade, ready for export.',
+        'primary_image_path' => 'products/iroko.jpg',
+    ]);
 
     $this->actingAs($user, 'sanctum')
         ->postJson("/api/v1/supplier/products/{$product->id}/submit")

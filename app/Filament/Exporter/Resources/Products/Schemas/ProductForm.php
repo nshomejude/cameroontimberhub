@@ -2,6 +2,7 @@
 
 namespace App\Filament\Exporter\Resources\Products\Schemas;
 
+use App\Domain\Catalog\ProductPublishingRules;
 use App\Enums\PriceUnit;
 use App\Enums\ProductStatus;
 use App\Enums\ProductType;
@@ -86,14 +87,16 @@ class ProductForm
                             ->maxLength(160)
                             ->columnSpanFull()
                             ->helperText(__('messages.filament.product.tagline_help')),
-                        Textarea::make('description')->label(__('messages.filament.product.description'))->rows(5)->columnSpanFull(),
+                        Textarea::make('description')->label(__('messages.filament.product.description'))->rows(5)->columnSpanFull()
+                            ->helperText(__('At least :min characters and a primary image are required to publish.', ['min' => ProductPublishingRules::MIN_DESCRIPTION_LENGTH])),
                     ]),
 
                 Section::make(__('messages.filament.product.section_pricing'))
                     ->columns(3)
                     ->schema([
-                        TextInput::make('price_amount')->numeric()->label(__('messages.filament.product.price')),
-                        TextInput::make('price_currency')->label(__('messages.filament.product.price_currency'))->maxLength(3)->default('XAF'),
+                        TextInput::make('price_amount')->numeric()->minValue(0)->maxValue(999999999999)->label(__('messages.filament.product.price')),
+                        TextInput::make('price_currency')->label(__('messages.filament.product.price_currency'))->length(3)->regex('/^[A-Za-z]{3}$/')->default('XAF')
+                            ->dehydrateStateUsing(fn (?string $state): ?string => $state === null ? null : mb_strtoupper($state)),
                         Select::make('price_unit')->label(__('messages.filament.product.price_unit'))->options(PriceUnit::options())->default('m3'),
                         TextInput::make('moq_quantity')->numeric()->label(__('messages.filament.product.minimum_order')),
                         Select::make('moq_unit')->label(__('messages.filament.product.moq_unit'))->options(PriceUnit::options())->default('m3'),
@@ -108,9 +111,11 @@ class ProductForm
                     ->schema([
                         TextInput::make('thickness_mm')->numeric()->label(__('messages.filament.product.thickness_mm')),
                         TextInput::make('width_min_mm')->numeric()->label(__('messages.filament.product.width_min_mm')),
-                        TextInput::make('width_max_mm')->numeric()->label(__('messages.filament.product.width_max_mm')),
+                        TextInput::make('width_max_mm')->numeric()->label(__('messages.filament.product.width_max_mm'))
+                            ->gte(fn (Get $get): ?string => filled($get('width_min_mm')) ? 'width_min_mm' : null),
                         TextInput::make('length_min_m')->numeric()->label(__('messages.filament.product.length_min_m')),
-                        TextInput::make('length_max_m')->numeric()->label(__('messages.filament.product.length_max_m')),
+                        TextInput::make('length_max_m')->numeric()->label(__('messages.filament.product.length_max_m'))
+                            ->gte(fn (Get $get): ?string => filled($get('length_min_m')) ? 'length_min_m' : null),
                         TextInput::make('moisture_content')
                             ->label(__('messages.filament.product.moisture_content'))
                             ->maxLength(60)
@@ -164,6 +169,8 @@ class ProductForm
                             ->label(__('messages.filament.product.primary_image'))
                             ->image()->imageEditor()
                             ->disk('public')->directory('products')
+                            ->maxSize(5120)
+                            ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
                             ->columnSpanFull(),
                     ]),
 
