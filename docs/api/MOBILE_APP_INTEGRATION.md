@@ -55,7 +55,7 @@ Sanctum bearer tokens. Send `Authorization: Bearer <token>` on authenticated cal
 
 ```json
 {
-  "account_type": "buyer",                 // optional, "buyer" (default) or "supplier"
+  "account_type": "buyer",                 // optional, default "buyer" — see accepted values below
   "name": "Amara Okafor",
   "email": "amara@buildright.ng",
   "password": "your-password",
@@ -83,7 +83,8 @@ can be opened from the phone's mail app. To resend it:
 `202 { "data": { "email_verified": false, "message": "..." } }`.
 Re-fetch `GET /auth/me` to pick up `email_verified: true`.
 
-For `account_type: "supplier"`, add the company fields (mirrors the web
+For a company-forming `account_type` (`supplier`, `processor`, `artisan`,
+`logistics_partner`), add the company fields (mirrors the web
 supplier-registration flow — same `RegisterAccount` action, no second write
 path):
 
@@ -94,7 +95,7 @@ path):
   "email": "sam@timberco.cm",
   "password": "your-password",
   "terms_accepted": true,                  // required
-  "company_name": "Sam Timber Co",         // required for account_type: supplier
+  "company_name": "Sam Timber Co",         // required for company-forming account types
   "company_phone": "+237...",              // optional
   "company_city": "Douala",                // optional
   "company_country": "CM",                 // optional, defaults to "CM"
@@ -121,11 +122,24 @@ identity info immediately and does not need a second call:
 }
 ```
 
-Only `buyer` and `supplier` are accepted here — the other web-only
-account-forming types (`processor`, `artisan`, `carbon_developer`,
-`logistics_partner`, `carbon_buyer`) are `422` on this endpoint. Omitting
-`account_type` registers a buyer, exactly as before this change — existing
-clients need no update.
+**Accepted `account_type` values** (same list as the web register form —
+both use `RegisterAccount::rules()`):
+
+| Value | Company created? |
+|---|---|
+| `buyer` (default when omitted/empty) | no |
+| `supplier` | yes — `company_name` required |
+| `processor` | yes — `company_name` required |
+| `artisan` | yes — `company_name` required |
+| `logistics_partner` | yes — `company_name` required |
+
+`carbon_developer` and `carbon_buyer` are **not accepted at launch** (carbon
+credits are not live yet): they return `422` with
+`error.details.account_type = ["Carbon accounts are coming soon and cannot be registered yet."]`.
+They are re-enabled server-side by `SIGNUP_CARBON_ENABLED=true`
+(`config('timber.signup.carbon_enabled')`), after which `carbon_developer`
+is company-forming and `carbon_buyer` is not. Any other value is a `422`.
+Omitting `account_type` registers a buyer — existing clients need no update.
 
 ### Log in
 

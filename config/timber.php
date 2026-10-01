@@ -23,4 +23,21 @@ return [
             : null,
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Self-service signup options
+    |--------------------------------------------------------------------------
+    |
+    | The carbon account types (carbon_developer, carbon_buyer) are dormant at
+    | launch: there is no credits ledger and carbon projects cannot progress
+    | past Submitted. While this flag is false they are shown as "Coming soon"
+    | on the web register page and rejected (422) by web and API registration.
+    | Existing users already holding these roles are unaffected.
+    |
+    */
+
+    'signup' => [
+        'carbon_enabled' => (bool) env('SIGNUP_CARBON_ENABLED', false),
+    ],
+
 ];

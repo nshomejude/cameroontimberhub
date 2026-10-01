@@ -149,6 +149,7 @@ it('requires and records terms acceptance on API registration', function () {
 });
 
 it('creates a missing account role instead of failing registration', function () {
+    config(['timber.signup.carbon_enabled' => true]);
     Role::where('name', 'carbon_buyer')->delete();
     app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
 

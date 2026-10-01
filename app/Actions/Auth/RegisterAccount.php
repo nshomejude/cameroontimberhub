@@ -53,6 +53,26 @@ class RegisterAccount
         return is_string($email) ? strtolower(trim($email)) : $email;
     }
 
+    /** Carbon account types, dormant until config('timber.signup.carbon_enabled'). */
+    public const CARBON_TYPES = ['carbon_developer', 'carbon_buyer'];
+
+    public static function carbonSignupEnabled(): bool
+    {
+        return (bool) config('timber.signup.carbon_enabled', false);
+    }
+
+    /**
+     * Account types a new user may self-register as right now.
+     *
+     * @return list<string>
+     */
+    public static function selectableTypes(): array
+    {
+        $types = ['buyer', 'supplier', 'processor', 'artisan', 'logistics_partner'];
+
+        return self::carbonSignupEnabled() ? [...$types, ...self::CARBON_TYPES] : $types;
+    }
+
     public static function rules(bool $forApi = false): array
     {
         $excludeUnlessCompanyForming = Rule::excludeIf(
@@ -60,9 +80,17 @@ class RegisterAccount
         );
 
         $rules = [
-            'account_type' => ['required', Rule::in([
-                'buyer', 'supplier', 'processor', 'artisan', 'carbon_developer', 'carbon_buyer', 'logistics_partner',
-            ])],
+            'account_type' => ['required', 'string', function (string $attribute, mixed $value, \Closure $fail): void {
+                if (in_array($value, self::CARBON_TYPES, true) && ! self::carbonSignupEnabled()) {
+                    $fail(__('Carbon accounts are coming soon and cannot be registered yet.'));
+
+                    return;
+                }
+
+                if (! in_array($value, self::selectableTypes(), true)) {
+                    $fail(__('validation.in', ['attribute' => $attribute]));
+                }
+            }],
             'name' => ['required', 'string', 'min:2', 'max:120'],
             'email' => ['required', 'email:rfc', 'max:180', function (string $attribute, mixed $value, \Closure $fail): void {
                 // Case-insensitive uniqueness: legacy rows may be mixed-case.

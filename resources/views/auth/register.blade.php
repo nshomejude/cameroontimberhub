@@ -164,6 +164,22 @@
                                                 ['carbon_developer', __('messages.register.account_type_carbon_developer'), __('messages.register.account_type_carbon_developer_hint'), 'globe-alt'],
                                                 ['carbon_buyer', __('messages.register.account_type_carbon_buyer'), __('messages.register.account_type_carbon_buyer_hint'), 'banknotes'],
                                             ] as [$value, $label, $hint, $icon])
+                                                @if (! in_array($value, \App\Actions\Auth\RegisterAccount::selectableTypes(), true))
+                                                    {{-- Dormant account type (config timber.signup.carbon_enabled): shown, not selectable, not submitted. --}}
+                                                    <div class="flex cursor-not-allowed items-start gap-3 rounded-xl border border-dashed border-sand-300 bg-sand-50 px-4 py-3.5 opacity-70" aria-disabled="true" data-coming-soon="{{ $value }}">
+                                                        <input type="radio" value="{{ $value }}" disabled
+                                                               class="mt-1 h-4 w-4 shrink-0 border-sand-400" aria-label="{{ $label }} ({{ __('Coming soon') }})">
+                                                        <span>
+                                                            <span class="flex flex-wrap items-center gap-1.5 text-[1.0625rem] font-semibold text-ink-soft">
+                                                                <x-dynamic-component :component="'heroicon-o-'.$icon" class="h-4 w-4" aria-hidden="true" />
+                                                                {{ $label }}
+                                                                <span class="rounded-full bg-sand-200 px-2 py-0.5 text-xs font-medium text-ink-soft">{{ __('Coming soon') }}</span>
+                                                            </span>
+                                                            <span class="mt-0.5 block text-[0.9375rem] text-ink-soft">{{ $hint }}</span>
+                                                        </span>
+                                                    </div>
+                                                    @continue
+                                                @endif
                                                 <label class="flex cursor-pointer items-start gap-3 rounded-xl border px-4 py-3.5 transition focus-within:ring-2 focus-within:ring-forest-100"
                                                        :class="accountType === '{{ $value }}'
                                                            ? 'border-forest-700 bg-forest-50'

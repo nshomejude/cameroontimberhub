@@ -183,6 +183,7 @@ it('registers a logistics_partner (transport) account with a company and returns
 });
 
 it('accepts every RegisterAccount account type the web signup flow supports', function () {
+    config(['timber.signup.carbon_enabled' => true]);
     $this->withoutMiddleware(\Illuminate\Routing\Middleware\ThrottleRequests::class);
 
     foreach (['buyer', 'supplier', 'processor', 'artisan', 'carbon_developer', 'carbon_buyer', 'logistics_partner'] as $i => $type) {
@@ -389,3 +390,21 @@ it('still lets a buyer reach every buyer-only route (regression)', function () {
     $this->actingAs($buyer, 'sanctum')->getJson('/api/v1/orders')->assertOk();
     $this->actingAs($buyer, 'sanctum')->getJson('/api/v1/dashboard')->assertOk();
 });
+
+it('rejects carbon account types with a clear 422 while carbon signup is disabled', function (string $type) {
+    config(['timber.signup.carbon_enabled' => false]);
+    $this->withoutMiddleware(\Illuminate\Routing\Middleware\ThrottleRequests::class);
+
+    $this->postJson('/api/v1/auth/register', [
+        'account_type' => $type,
+        'terms_accepted' => true,
+        'name' => 'Carbon Tester',
+        'email' => "carbon-{$type}@example.com",
+        'password' => 'correct-horse-battery-staple',
+        'company_name' => 'Carbon Co',
+    ])->assertStatus(422)
+        ->assertJsonValidationErrors('account_type', 'error.details')
+        ->assertJsonFragment(['Carbon accounts are coming soon and cannot be registered yet.']);
+
+    expect(\App\Models\User::where('email', "carbon-{$type}@example.com")->exists())->toBeFalse();
+})->with(['carbon_developer', 'carbon_buyer']);
