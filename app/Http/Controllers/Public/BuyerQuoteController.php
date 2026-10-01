@@ -79,12 +79,11 @@ class BuyerQuoteController extends Controller
         $quote->load(['company', 'items.species', 'rfq.items.species']);
 
         // Pre-commit disclosure (billing engine M7, plan §15): the
-        // marketplace commission a protected order would carry, computed
+        // marketplace commission the resulting order would carry, computed
         // read-only from the supplier's current plan tier — never charged
-        // here. The order created on accept is placed under Trade Assurance
-        // (timber.commission.protect_all_orders), which is when the
-        // supplier is actually charged; the label tells the buyer it is
-        // supplier-paid and not added to their total.
+        // here (the supplier is charged when they confirm the order). The
+        // label tells the buyer it is supplier-paid and not added to their
+        // total.
         $commissionPreview = $commission->previewForQuote($quote);
 
         return view('public.rfq.quote', [

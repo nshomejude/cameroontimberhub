@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use App\Enums\TradeAssuranceMilestoneStatus;
-use App\Services\Commission\CommissionCalculator;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -17,28 +16,16 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * money moves through this model or its milestones; real fund custody would
  * require a licensed financial partner and is out of scope for Phase 1.
  *
- * This is also, per billing engine M7 (plan §15), the moment an order becomes
- * a "protected trade" — the presence of a live agreement IS the protected-
- * trade flag `CommissionCalculator` gates on. Creating one is therefore the
- * point marketplace commission gets recorded on the order (`charge()` is
- * idempotent, so a re-created agreement never double-charges).
+ * Not tied to marketplace commission: per the 2026-10-01 owner decision
+ * commission is charged on every platform order when the supplier confirms
+ * it (`OrderService::transition()` → `CommissionCalculator::charge()`),
+ * whether or not an agreement exists.
  */
 class TradeAssuranceAgreement extends Model
 {
     use HasFactory;
 
     protected $guarded = ['id'];
-
-    protected static function booted(): void
-    {
-        static::created(function (self $agreement): void {
-            $order = $agreement->order;
-
-            if ($order) {
-                app(CommissionCalculator::class)->charge($order);
-            }
-        });
-    }
 
     /* --------------------------------------------------------- relations */
 
@@ -65,8 +52,6 @@ class TradeAssuranceAgreement extends Model
      *
      * Idempotent: an order has at most one agreement (unique index on
      * `order_id`), so a second call returns the existing agreement untouched.
-     * `OrderService::createFromQuote()` calls this for every new order while
-     * `timber.commission.protect_all_orders` is on.
      */
     public static function createDefaultMilestones(Order $order, ?User $createdBy = null): self
     {

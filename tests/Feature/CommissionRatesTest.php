@@ -26,7 +26,7 @@ use Livewire\Livewire;
 /*
  * PRICING_SPEC §15 marketplace commission, end to end: the seeded rates,
  * tier/plan mapping, USD and XAF caps, seeder/migration idempotency, the
- * auto-protected order flow, pre-acceptance cancellation, dispute credit,
+ * charge-on-confirm flow, cancellation, dispute credit,
  * the supplier API disclosure and the admin report.
  */
 
@@ -50,8 +50,11 @@ function ratesSupplier(?string $slug, string $countryCode = 'CM'): Company
     return $company->refresh();
 }
 
-/** A real order from $supplier via the accept path (auto-protected), subtotal = $quantity × $unitPrice. */
-function ratesOrder(Company $supplier, string $currency, float $unitPrice, int $quantity = 100, string $destination = 'CM'): Order
+/**
+ * A real order from $supplier via the accept path, subtotal = $quantity × $unitPrice,
+ * confirmed by the supplier (which is when commission is charged) unless $confirm is false.
+ */
+function ratesOrder(Company $supplier, string $currency, float $unitPrice, int $quantity = 100, string $destination = 'CM', bool $confirm = true): Order
 {
     $rfq = Rfq::factory()->approved()->create(['buyer_country_code' => $destination, 'destination_country_code' => $destination]);
     $rfq->items()->create(['species_text' => 'Sapele', 'form' => 'sawn', 'quantity' => $quantity, 'unit' => 'm3']);
@@ -72,8 +75,13 @@ function ratesOrder(Company $supplier, string $currency, float $unitPrice, int $
     $quote->load('items')->recalculateTotals()->save();
 
     app(QuoteService::class)->accept($quote->fresh());
+    $order = Order::where('quote_id', $quote->getKey())->firstOrFail();
 
-    return Order::where('quote_id', $quote->getKey())->firstOrFail();
+    if ($confirm) {
+        app(OrderService::class)->confirm($order);
+    }
+
+    return $order->refresh();
 }
 
 /* ------------------------------------------------------------------ seeder */
@@ -233,26 +241,29 @@ it('keeps a cap with no cap_currency in the order currency (pre-existing behavio
 
 /* ------------------------------------------------- order lifecycle credits */
 
-it('credits the whole commission back when the order is cancelled before supplier acceptance', function () {
+it('charges nothing on an order cancelled before supplier acceptance', function () {
+    $this->seed(CommissionRuleSeeder::class);
+    $order = ratesOrder(ratesSupplier('free'), 'USD', 100.00, confirm: false);
+
+    expect($order->is_commission_charged)->toBeFalse();
+
+    app(OrderService::class)->cancel($order, 'Buyer changed plans');
+
+    expect($order->refresh()->is_commission_charged)->toBeFalse()
+        ->and($order->commission_credited_amount)->toBe('0.00')
+        ->and(app(CommissionCalculator::class)->creditableAmount($order))->toBe('0.00');
+});
+
+it('releases the commission when a confirmed order is cancelled before shipping', function () {
     $this->seed(CommissionRuleSeeder::class);
     $order = ratesOrder(ratesSupplier('free'), 'USD', 100.00);
 
     expect($order->commission_amount)->toBe('300.00');
 
-    app(OrderService::class)->cancel($order, 'Buyer changed plans');
+    app(OrderService::class)->cancel($order, 'Supplier ran out of stock');
 
     expect($order->refresh()->commission_credited_amount)->toBe('300.00')
         ->and(app(CommissionCalculator::class)->creditableAmount($order))->toBe('0.00');
-});
-
-it('keeps the commission when the order is cancelled after the supplier confirmed it', function () {
-    $this->seed(CommissionRuleSeeder::class);
-    $order = ratesOrder(ratesSupplier('free'), 'USD', 100.00);
-
-    app(OrderService::class)->confirm($order);
-    app(OrderService::class)->cancel($order->refresh(), 'Supplier ran out of stock');
-
-    expect($order->refresh()->commission_credited_amount)->toBe('0.00');
 });
 
 it('credits commission as part of a dispute decision, refusing an over-credit', function () {

@@ -72,11 +72,6 @@ return [
     | Rates and caps live in `commission_rules` (/admin → Commission rules),
     | never here. This block only holds the plumbing around them:
     |
-    | protect_all_orders: every order created from an accepted quote is placed
-    | under Trade Assurance (tracking milestones, NOT escrow) — that is what
-    | makes it a "protected trade" on which commission is charged. Off = no
-    | order is ever protected, so no commission is ever charged.
-    |
     | usd_to_xaf / usd_to_eur / usd_to_gbp / usd_to_cny: units of that
     | currency per 1 USD, used ONLY to express a rule's fixed cap (e.g. the
     | §15 "$5,000" cap, stored with cap_currency = USD) in the order's own
@@ -87,7 +82,6 @@ return [
     */
 
     'commission' => [
-        'protect_all_orders' => (bool) env('COMMISSION_PROTECT_ALL_ORDERS', true),
         'usd_to_xaf' => (float) env('COMMISSION_USD_TO_XAF', 600),
         'usd_to_eur' => filled(env('COMMISSION_USD_TO_EUR'))
             ? (float) env('COMMISSION_USD_TO_EUR')

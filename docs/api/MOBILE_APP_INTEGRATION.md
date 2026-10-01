@@ -562,7 +562,7 @@ Quote payload fields to drive UI: `status` / `status_label`, `is_expired`, `is_a
 | GET | `/orders/{reference}/shipments` | 🔑 | Shipment + checkpoint tracking timeline (`ShipmentTrackingResource`): `id`, `waybill_number`, `carrier_status` / `carrier_status_label` (see Logistics), `current_status`, `checkpoints[]` (`id`, `status`, `location`, `notes`, `has_photo`, `photo_url`, `occurred_at`, `recorded_at`). |
 | GET | `/orders/{reference}/shipments/{shipment}/checkpoints/{checkpoint}/photo` | 🔑 | Streams the checkpoint proof photo (image bytes with its real `Content-Type`, `Cache-Control: private`). Use the `photo_url` from the timeline (only set when `has_photo`). Buyer of the order only; anything else `404`. |
 
-Order lifecycle is in `status` / `status_label` plus the timestamp fields (`awarded_at`, `confirmed_at`, `production_started_at`, `shipped_at`, `delivered_at`, `completed_at`, `cancelled_at`) and `etd` / `eta` / `expected_delivery_at`. `has_trade_assurance` (bool|null) tells you whether to show the trade-assurance tab — every new order is now placed under Trade Assurance automatically, so expect `true` for orders created from this release on.
+Order lifecycle is in `status` / `status_label` plus the timestamp fields (`awarded_at`, `confirmed_at`, `production_started_at`, `shipped_at`, `delivered_at`, `completed_at`, `cancelled_at`) and `etd` / `eta` / `expected_delivery_at`. `has_trade_assurance` (bool|null) tells you whether to show the trade-assurance tab.
 
 ### Trade Assurance (milestone escrow-style protection)
 
@@ -713,15 +713,16 @@ fractions (`"0.0250"` = 2.5%); amounts are decimal strings in the record's
 
 - `SupplierOrderResource.commission`: `{ "is_charged": true, "rate": "0.0250",
   "amount": "250.00", "credited_amount": "0.00", "net_amount": "250.00",
-  "currency": "USD" }` — the frozen snapshot taken when the order was created
-  (a later rate change never alters it). `is_charged: false` (rate/amount
-  `null`, net `"0.00"`) = no commission applies. `credited_amount` grows when
-  the order is cancelled before the supplier confirms (full credit) or a
-  dispute decision credits part of it.
+  "currency": "USD" }` — the frozen snapshot taken when the supplier
+  confirmed the order (a later rate change never alters it). `is_charged:
+  false` (rate/amount `null`, net `"0.00"`) = not confirmed yet, or no
+  commission rule applies. `credited_amount` grows when a confirmed order is
+  cancelled (full credit) or a dispute decision credits part of it.
 - `SupplierQuoteResource.commission_preview`: `{ "rate": "0.0400",
   "amount": "400.00", "currency": "USD", "is_international": true }` — what an
   order from this quote would carry at the supplier's current plan tier
-  (`rate: null` = none). Show it next to the quote total before submitting.
+  (`rate: null` = none); it is charged when the supplier confirms the
+  resulting order. Show it next to the quote total before submitting.
 
 **Fulfilment and chat.** Accepting a quote does **not** create a conversation,
 so an order may have `conversation_id: null` (e.g. accepted from the buyer's

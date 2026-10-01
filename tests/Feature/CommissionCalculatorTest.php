@@ -8,8 +8,8 @@ use App\Models\Quote;
 use App\Models\QuoteItem;
 use App\Models\Rfq;
 use App\Models\RfqCompany;
-use App\Models\TradeAssuranceAgreement;
 use App\Services\Commission\CommissionCalculator;
+use App\Services\OrderService;
 use App\Services\QuoteService;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Support\Facades\Mail;
@@ -56,7 +56,8 @@ function commissionOrder(Company $supplier, string $buyerCountry = 'CM', float $
     app(QuoteService::class)->accept($quote);
     $order = Order::where('quote_id', $quote->getKey())->firstOrFail();
 
-    TradeAssuranceAgreement::createDefaultMilestones($order);
+    // Commission is charged when the supplier confirms (owner decision 2026-10-01).
+    app(OrderService::class)->confirm($order);
 
     return $order->refresh();
 }
@@ -152,13 +153,12 @@ it('bounds the commission by cap_percent', function () {
 
 /* ---------------------------------------------------------------- charge() */
 
-it('charges commission on a protected order at award (idempotent, snapshotted)', function () {
+it('charges commission when the supplier confirms the order (idempotent, snapshotted)', function () {
     $rule = commissionRule(['domestic_rate' => 0.03, 'international_rate' => 0.05]);
     $supplier = commissionSupplier('sell', 'professional', 'CM');
     $order = commissionOrder($supplier, 'CM');
 
-    // commissionOrder() already created the Trade Assurance agreement, which
-    // triggers charge() via TradeAssuranceAgreement::booted(). Assert it fired.
+    // commissionOrder() confirmed the order, which charges commission.
     expect($order->is_commission_charged)->toBeTrue()
         ->and($order->commission_amount)->toBe('300.00')
         ->and($order->commission_rule_id)->toBe($rule->id);
@@ -176,8 +176,7 @@ it('charges commission on a protected order at award (idempotent, snapshotted)',
     expect($order->refresh()->commission_amount)->toBe('300.00');
 });
 
-it('does not charge commission on a non-protected order', function () {
-    config(['timber.commission.protect_all_orders' => false]);
+it('does not charge commission before the supplier confirms, and needs no Trade Assurance agreement', function () {
     commissionRule();
     $rfq = Rfq::factory()->approved()->create(['buyer_country_code' => 'CM', 'destination_country_code' => 'CM']);
     $rfq->items()->create(['species_text' => 'Sapele', 'form' => 'sawn', 'quantity' => 100, 'unit' => 'm3']);
@@ -191,11 +190,16 @@ it('does not charge commission on a non-protected order', function () {
     app(QuoteService::class)->accept($quote);
     $order = Order::where('quote_id', $quote->getKey())->firstOrFail();
 
-    // No TradeAssuranceAgreement created -> not a protected trade -> never charged.
-    app(CommissionCalculator::class)->charge($order);
-
+    // Awarded only: nothing charged yet.
     expect($order->refresh()->is_commission_charged)->toBeFalse()
         ->and($order->commission_amount)->toBeNull();
+
+    // Confirmed without any Trade Assurance agreement: charged.
+    app(OrderService::class)->confirm($order);
+
+    expect($order->tradeAssuranceAgreement()->exists())->toBeFalse()
+        ->and($order->refresh()->is_commission_charged)->toBeTrue()
+        ->and($order->commission_amount)->toBe('300.00');
 });
 
 it('never charges commission on an order cancelled before it becomes a protected trade', function () {

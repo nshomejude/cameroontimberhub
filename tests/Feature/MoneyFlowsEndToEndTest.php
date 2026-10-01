@@ -21,7 +21,6 @@ use App\Models\Rfq;
 use App\Models\RfqCompany;
 use App\Models\Subscription;
 use App\Models\TaxRule;
-use App\Models\TradeAssuranceAgreement;
 use App\Models\User;
 use App\Services\Commission\CommissionCalculator;
 use App\Services\OrderService;
@@ -933,60 +932,63 @@ it('quote accept -> order totals equal the quote line items (bcmath) plus shippi
     'USD cents, half-up per line' => ['USD', [['3.33', '10.01'], ['2.5', '10.01']], '120.50', '15.25', '58.36'],
 ]);
 
-it('trade-assured order: commission is charged once at the rule rate, rounded to whole francs for XAF', function () {
+it('commission is charged once, when the supplier confirms, at the rule rate, rounded to whole francs for XAF', function () {
     $rule = mfCommissionRule();
     $supplier = mfSupplier();
     // 3% of 1,234,567 = 37,037.01 -> 37,037 XAF
     $order = mfOrderFromQuote($supplier, 'XAF', [[1, 1234567]]);
 
-    TradeAssuranceAgreement::createDefaultMilestones($order);
+    // Awarded only: not charged yet (owner decision 2026-10-01).
+    expect($order->fresh()->is_commission_charged)->toBeFalse();
+
+    app(OrderService::class)->confirm($order->fresh());
     $order->refresh();
 
     expect($order->is_commission_charged)->toBeTrue()
         ->and($order->commission_rule_id)->toBe($rule->id)
         ->and((string) $order->commission_amount)->toBe('37037.00');
 
-    // Charging again (re-created agreement / retry) never double-charges,
-    // and a later rule edit cannot rewrite the snapshot.
+    // Charging again (retry) never double-charges, and a later rule edit
+    // cannot rewrite the snapshot.
     mfCommissionRule(['name' => 'Newer, higher', 'domestic_rate' => '0.1000', 'effective_from' => now()->toDateString()]);
     app(CommissionCalculator::class)->charge($order->fresh());
-    TradeAssuranceAgreement::where('order_id', $order->id)->delete();
-    TradeAssuranceAgreement::createDefaultMilestones($order->fresh());
 
     expect((string) $order->fresh()->commission_amount)->toBe('37037.00');
 });
 
-it('trade-assured USD international order: commission uses the international rate at 2dp', function () {
+it('USD international order: commission uses the international rate at 2dp', function () {
     mfCommissionRule();
     $supplier = mfSupplier('CM');
     // 5% of 10,000.10 = 500.005 -> 500.01
     $order = mfOrderFromQuote($supplier, 'USD', [[1, '10000.10']], '0', '0', 'FR');
 
-    TradeAssuranceAgreement::createDefaultMilestones($order);
+    app(OrderService::class)->confirm($order->fresh());
 
     expect((string) $order->fresh()->commission_amount)->toBe('500.01');
 });
 
-it('no commission when no rule exists, or when the order is not trade-assured', function () {
+it('no commission when no rule exists; with a rule, every confirmed order is charged — Trade Assurance not required', function () {
     $supplier = mfSupplier();
-    $protected = mfOrderFromQuote($supplier, 'XAF', [[10, 100000]]);
-    TradeAssuranceAgreement::createDefaultMilestones($protected);
+    $noRule = mfOrderFromQuote($supplier, 'XAF', [[10, 100000]]);
+    app(OrderService::class)->confirm($noRule->fresh());
+
+    expect($noRule->fresh()->is_commission_charged)->toBeFalse()
+        ->and((float) $noRule->fresh()->commission_amount)->toBe(0.0);
 
     mfCommissionRule();
-    $unprotected = mfOrderFromQuote($supplier, 'XAF', [[10, 100000]]);
-    app(CommissionCalculator::class)->charge($unprotected);
+    $plain = mfOrderFromQuote($supplier, 'XAF', [[10, 100000]]);
+    expect($plain->tradeAssuranceAgreement()->exists())->toBeFalse();
 
-    foreach ([$protected->fresh(), $unprotected->fresh()] as $order) {
-        expect($order->is_commission_charged)->toBeFalse()
-            ->and((float) $order->commission_amount)->toBe(0.0);
-    }
+    app(OrderService::class)->confirm($plain->fresh());
+
+    expect($plain->fresh()->is_commission_charged)->toBeTrue()
+        ->and((string) $plain->fresh()->commission_amount)->toBe('30000.00');
 });
 
 it('dispute resolved with a refund: commission credit is bounded by what was charged', function () {
     mfCommissionRule();
     $supplier = mfSupplier();
     $order = mfOrderFromQuote($supplier, 'XAF', [[10, 100000]]); // 1,000,000 -> 30,000 commission
-    TradeAssuranceAgreement::createDefaultMilestones($order);
 
     $orders = app(OrderService::class);
     $orders->confirm($order->fresh());
@@ -1017,12 +1019,14 @@ it('dispute resolved with a refund: commission credit is bounded by what was cha
 it('cancelling an order before shipping leaves no net commission', function (string $stage) {
     mfCommissionRule();
     $order = mfOrderFromQuote(mfSupplier(), 'XAF', [[10, 100000]]);
-    TradeAssuranceAgreement::createDefaultMilestones($order);
-    expect($order->fresh()->is_commission_charged)->toBeTrue();
 
     $orders = app(OrderService::class);
     if (in_array($stage, ['confirmed', 'in_production'], true)) {
         $orders->confirm($order->fresh());
+        expect($order->fresh()->is_commission_charged)->toBeTrue();
+    } else {
+        // Cancelled before supplier acceptance: never charged at all (§15).
+        expect($order->fresh()->is_commission_charged)->toBeFalse();
     }
     if ($stage === 'in_production') {
         $orders->startProduction($order->fresh());
@@ -1038,7 +1042,7 @@ it('cancelling an order before shipping leaves no net commission', function (str
 
 it('cancelling an order that was never charged commission records no commission at all', function () {
     $order = mfOrderFromQuote(mfSupplier(), 'XAF', [[10, 100000]]);
-    TradeAssuranceAgreement::createDefaultMilestones($order); // no rule -> no charge
+    app(OrderService::class)->confirm($order->fresh()); // no rule -> no charge
     mfCommissionRule(); // a rule appearing later must not matter
 
     app(OrderService::class)->cancel($order->fresh(), 'Buyer withdrew');

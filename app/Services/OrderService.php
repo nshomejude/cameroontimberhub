@@ -12,7 +12,6 @@ use App\Models\Product;
 use App\Models\Quote;
 use App\Models\QuoteItem;
 use App\Models\Receipt;
-use App\Models\TradeAssuranceAgreement;
 use App\Models\User;
 use App\Services\Commission\CommissionCalculator;
 use Illuminate\Database\Eloquent\Model;
@@ -147,23 +146,6 @@ class OrderService
 
             $this->issueReceipt($order);
 
-            // PRICING_SPEC §15: every platform order is a protected trade
-            // (Trade Assurance milestone tracking — NOT escrow), which is
-            // what snapshots the marketplace commission onto it
-            // (TradeAssuranceAgreement::booted() → CommissionCalculator::charge()).
-            // Never allowed to block the trade itself: a failure is logged and
-            // rolled back to its own savepoint, and the order still stands.
-            if (config('timber.commission.protect_all_orders')) {
-                try {
-                    DB::transaction(fn () => TradeAssuranceAgreement::createDefaultMilestones($order, $actor));
-                } catch (Throwable $e) {
-                    Log::error('Order created but could not be placed under Trade Assurance / charged commission.', [
-                        'order_id' => $order->getKey(),
-                        'exception' => $e->getMessage(),
-                    ]);
-                }
-            }
-
             $log = activity('order')->performedOn($order)->event('created')
                 ->withProperties([
                     'quote_id' => $quote->getKey(),
@@ -275,10 +257,18 @@ class OrderService
 
         $order->update($data);
 
+        // PRICING_SPEC §15 (owner decision 2026-10-01): marketplace commission
+        // is charged on EVERY platform order, once, when the supplier
+        // confirms it (awarded -> confirmed) — so an order cancelled before
+        // supplier acceptance is never charged. charge() is idempotent.
+        if ($to === OrderStatus::Confirmed) {
+            $this->chargeCommission($order);
+        }
+
         // Only pre-shipment states can reach Cancelled (see TRANSITIONS), so
-        // the trade never happened: release any marketplace commission the
-        // trade-assurance agreement recorded, leaving the order's net
-        // commission at zero. The charged snapshot itself stays immutable.
+        // the trade never happened: release any marketplace commission
+        // charged at confirmation, leaving the order's net commission at
+        // zero. The charged snapshot itself stays immutable.
         if ($to === OrderStatus::Cancelled) {
             $this->releaseCommission($order);
         }
@@ -288,19 +278,6 @@ class OrderService
         // checkpoints have something to attach to. No-op if one exists.
         if ($to === OrderStatus::Shipped) {
             app(ShipmentService::class)->ensureForOrder($order);
-        }
-
-        // §15: no commission on an order cancelled before the supplier
-        // accepted (confirmed) it — credit back what award snapshotted.
-        if ($to === OrderStatus::Cancelled && $from === OrderStatus::Awarded) {
-            try {
-                app(CommissionCalculator::class)->voidForPreAcceptanceCancellation($order);
-            } catch (Throwable $e) {
-                Log::error('Order cancelled but its commission could not be credited back.', [
-                    'order_id' => $order->getKey(),
-                    'exception' => $e->getMessage(),
-                ]);
-            }
         }
 
         $log = activity('order')->performedOn($order)->event('status_changed')
@@ -313,6 +290,23 @@ class OrderService
         $log->log("Order status -> {$to->value}");
 
         return $order->refresh();
+    }
+
+    /**
+     * Never allowed to block the confirmation itself: a failure is logged
+     * and rolled back to its own savepoint, and the order stays confirmed
+     * (staff can re-run `CommissionCalculator::charge()` — it is idempotent).
+     */
+    private function chargeCommission(Order $order): void
+    {
+        try {
+            DB::transaction(fn () => app(CommissionCalculator::class)->charge($order));
+        } catch (Throwable $e) {
+            Log::error('Order confirmed but marketplace commission could not be charged.', [
+                'order_id' => $order->getKey(),
+                'exception' => $e->getMessage(),
+            ]);
+        }
     }
 
     private function releaseCommission(Order $order): void

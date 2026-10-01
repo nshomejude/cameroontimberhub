@@ -53,13 +53,10 @@ class CommissionCalculator
 
     public const UNLISTED_PLAN_TIER = 'free';
 
-    /** Reason recorded when an order is cancelled before the supplier confirmed it (§15). */
     private bool $memoizeRules = false;
 
     /** @var array<string, ?CommissionRule> */
     private array $ruleMemo = [];
-
-    public const PRE_ACCEPTANCE_CANCEL_REASON = 'Order cancelled before supplier acceptance — no commission (PRICING_SPEC §15)';
 
     /**
      * The most specific active rule for $segment / $planTier at $at, or null
@@ -219,21 +216,18 @@ class CommissionCalculator
     }
 
     /**
-     * Snapshot the commission on the order (idempotent). No-op when already
-     * charged, when the order is not a protected trade (a
-     * `TradeAssuranceAgreement` exists — plan §15: commission applies to
-     * protected-trade orders only), or when there is no active rule for the
-     * supplier's segment — cancel-before-charge naturally means no
-     * commission, since this is the only place `is_commission_charged` is
-     * ever set true.
+     * Snapshot the commission on the order (idempotent). Owner decision
+     * 2026-10-01: commission applies to EVERY platform order (no Trade
+     * Assurance requirement) and `OrderService::transition()` calls this
+     * when the supplier confirms the order (awarded -> confirmed), so an
+     * order cancelled before supplier acceptance is never charged (§15).
+     * No-op when already charged or when no active rule applies to the
+     * supplier's segment/tier — this is the only place
+     * `is_commission_charged` is ever set true.
      */
     public function charge(Order $order): void
     {
         if ($order->is_commission_charged) {
-            return;
-        }
-
-        if (! $order->tradeAssuranceAgreement()->exists()) {
             return;
         }
 
@@ -309,24 +303,6 @@ class CommissionCalculator
         $room = bcsub($charged, $credited, 2);
 
         return bccomp($room, '0', 2) > 0 ? $room : '0.00';
-    }
-
-    /**
-     * PRICING_SPEC §15: "No marketplace commission is charged on a
-     * transaction that is cancelled before supplier acceptance". Commission
-     * is snapshotted when the order becomes a protected trade (at award), so
-     * a cancel from `Awarded` (the supplier never confirmed) credits back
-     * whatever is still outstanding. No-op when nothing is left to credit.
-     */
-    public function voidForPreAcceptanceCancellation(Order $order): void
-    {
-        $room = $this->creditableAmount($order);
-
-        if (bccomp($room, '0', 2) <= 0) {
-            return;
-        }
-
-        $this->credit($order, $room, self::PRE_ACCEPTANCE_CANCEL_REASON);
     }
 
     /**
