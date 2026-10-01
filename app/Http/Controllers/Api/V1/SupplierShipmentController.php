@@ -3,12 +3,15 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Domain\Logistics\Commands\RecordCheckpointCommand;
+use App\Enums\CompanyStatus;
 use App\Enums\OrderStatus;
+use App\Enums\OrganisationType;
 use App\Enums\TrackingCheckpointStatus;
 use App\Exceptions\Api\ApiException;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Api\V1\SupplierShipmentResource;
 use App\Models\CheckpointUpdate;
+use App\Models\Company;
 use App\Models\Shipment;
 use App\Services\ShipmentService;
 use App\Services\SupplierApiScope;
@@ -45,6 +48,43 @@ class SupplierShipmentController extends Controller
             ->paginate(15);
 
         return SupplierShipmentResource::collection($page);
+    }
+
+    /**
+     * GET supplier/carriers?q= — logistics companies a supplier can pick as a
+     * shipment carrier (the same set ShipmentService::selectableCarriers()
+     * accepts, minus companies an admin has shut down). Pending carriers are
+     * listed too; `verified` lets the app label them.
+     */
+    public function carriers(Request $request): JsonResponse
+    {
+        $data = $request->validate(['q' => ['nullable', 'string', 'max:100']]);
+        $own = $this->scope->company($request->user());
+
+        $page = Company::query()
+            ->where('type', OrganisationType::Logistics->value)
+            ->whereNotIn('status', [CompanyStatus::Suspended->value, CompanyStatus::Rejected->value, CompanyStatus::Archived->value])
+            ->when($own !== null, fn ($q) => $q->whereKeyNot($own->getKey()))
+            ->when(filled($data['q'] ?? null), function ($q) use ($data) {
+                $term = '%'.str_replace(['%', '_'], ['\\%', '\\_'], mb_strtolower($data['q'])).'%';
+                $q->where(fn ($w) => $w->whereRaw('lower(legal_name) like ?', [$term])
+                    ->orWhereRaw('lower(trade_name) like ?', [$term])
+                    ->orWhereRaw('lower(city) like ?', [$term]));
+            })
+            ->orderByRaw("CASE WHEN status = 'verified' THEN 0 ELSE 1 END")
+            ->orderBy('legal_name')
+            ->paginate(20, ['id', 'legal_name', 'trade_name', 'city', 'region', 'status']);
+
+        return response()->json([
+            'data' => $page->getCollection()->map(fn (Company $c) => [
+                'id' => $c->getKey(),
+                'name' => $c->name,
+                'city' => $c->city,
+                'region' => $c->region,
+                'verified' => $c->status === CompanyStatus::Verified,
+            ])->values(),
+            'meta' => ['current_page' => $page->currentPage(), 'last_page' => $page->lastPage(), 'total' => $page->total()],
+        ]);
     }
 
     public function show(Request $request, int $shipment): SupplierShipmentResource

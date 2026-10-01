@@ -766,6 +766,7 @@ Route::prefix('v1')->name('api.v1.')->middleware([AssignRequestId::class, 'throt
             Route::post('orders/{reference}/shipments', [SupplierShipmentController::class, 'storeForOrder'])
                 ->middleware('throttle:api-decision')->name('orders.shipments.store');
             Route::get('shipments', [SupplierShipmentController::class, 'index'])->name('shipments.index');
+            Route::get('carriers', [SupplierShipmentController::class, 'carriers'])->name('carriers.index');
             Route::get('shipments/{shipment}', [SupplierShipmentController::class, 'show'])
                 ->whereNumber('shipment')->name('shipments.show');
             Route::patch('shipments/{shipment}', [SupplierShipmentController::class, 'update'])

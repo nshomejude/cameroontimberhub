@@ -457,3 +457,24 @@ it('assigns a carrier from the exporter ShipmentResource action (supplier only)'
     $this->actingAs($carrierUser);
     Livewire::test(ListShipments::class)->assertTableActionHidden('assign', $shipment);
 });
+
+/* ------------------------------------------------------- carrier picker */
+
+it('lists selectable logistics carriers for the supplier, searchable, excluding shut-down companies', function () {
+    ['supplier' => $supplier] = shipmentApiFixture();
+    $verified = Company::factory()->create(['type' => OrganisationType::Logistics, 'legal_name' => 'Douala Haulage SARL', 'status' => \App\Enums\CompanyStatus::Verified]);
+    $pending = Company::factory()->create(['type' => OrganisationType::Logistics, 'legal_name' => 'Kribi Trucks', 'status' => \App\Enums\CompanyStatus::Pending]);
+    $suspended = Company::factory()->create(['type' => OrganisationType::Logistics, 'legal_name' => 'Banned Lines', 'status' => \App\Enums\CompanyStatus::Suspended]);
+    Company::factory()->create(['legal_name' => 'Not A Hauler']);
+
+    $ids = collect($this->actingAs($supplier, 'sanctum')->getJson('/api/v1/supplier/carriers')
+        ->assertOk()->json('data'))->pluck('id');
+
+    expect($ids)->toContain($verified->getKey(), $pending->getKey())
+        ->not->toContain($suspended->getKey());
+
+    $this->actingAs($supplier, 'sanctum')->getJson('/api/v1/supplier/carriers?q=douala')
+        ->assertOk()->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.id', $verified->getKey())
+        ->assertJsonPath('data.0.verified', true);
+});
