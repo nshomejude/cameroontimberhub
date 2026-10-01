@@ -6,6 +6,7 @@ use App\Models\CommissionRule;
 use App\Models\Order;
 use App\Models\Quote;
 use DateTimeInterface;
+use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
 /**
@@ -255,6 +256,17 @@ class CommissionCalculator
      * resolution). Guards against crediting more than was actually charged.
      */
     public function credit(Order $order, float|string $amount, string $reason): void
+    {
+        DB::transaction(function () use ($order, $amount, $reason): void {
+            // Re-read under lock so two concurrent credits cannot both fit
+            // in the same remaining room.
+            $locked = Order::whereKey($order->getKey())->lockForUpdate()->firstOrFail();
+            $this->creditLocked($locked, $amount, $reason);
+            $order->setRawAttributes($locked->getAttributes(), true);
+        });
+    }
+
+    private function creditLocked(Order $order, float|string $amount, string $reason): void
     {
         $amount = $this->scale2((string) $amount, (string) $order->currency->value);
         $charged = $this->scale2((string) ($order->commission_amount ?? '0'), (string) $order->currency->value);

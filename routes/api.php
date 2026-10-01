@@ -413,8 +413,16 @@ Route::prefix('v1')->name('api.v1.')->middleware([AssignRequestId::class, 'throt
         Route::prefix('referrals')->name('referrals.')->group(function (): void {
             Route::get('me', [ReferralController::class, 'me'])->name('me');
             Route::get('earnings', [ReferralController::class, 'earnings'])->name('earnings');
+            Route::patch('payout-settings', [ReferralController::class, 'updatePayoutSettings'])
+                ->middleware('throttle:10,1')->name('payout-settings.update');
             Route::get('/', [ReferralController::class, 'index'])->name('index');
         });
+
+        // Plan checkout price breakdown (subtotal / tax / provider fee /
+        // total per payment method) — disclosed before the user authorises;
+        // the payment itself starts on the web checkout (`checkout_url`).
+        Route::get('billing/checkout/{plan}', [\App\Http\Controllers\Api\V1\BillingCheckoutController::class, 'show'])
+            ->name('billing.checkout');
 
         // Expo push-token registration for the mobile app — own prefix,
         // right after `notifications` for the same reason that group sits

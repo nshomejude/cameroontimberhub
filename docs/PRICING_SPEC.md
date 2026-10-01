@@ -634,3 +634,15 @@ The following catalogue is the canonical launch price register. Product codes sh
 
 
 > **Note:** Commercial governance statement: This specification is the pricing source of truth for product, engineering, finance, sales and operations until superseded by an approved pricing version. No public page, sales quotation or application flow should introduce a different standard price without a recorded pricing version or enterprise contract.
+
+
+## Implementation notes
+
+### Payment-provider fees (§19 / §20 "Payment fees")
+
+- **Configuration** — per provider in `config/payments.php` (`fee_percent` as a percent, `fee_fixed` in the provider's currency, `fee_bearer` = `buyer` | `platform`), env-backed (`PAYPAL_FEE_*`, `STRIPE_FEE_*`, `MTN_MOMO_FEE_*`, `ORANGE_MONEY_FEE_*`). Admin overrides live on the provider's `payment_settings` row (Admin → Payment settings → *Edit fees*, `payments.manage`, activity-logged) and win over env column by column. Launch defaults: PayPal 4.4% + 0.30 USD borne by the **buyer**; Stripe 3.4% + 0.30 borne by the platform; MTN MoMo / Orange Money 0, platform.
+- **Math** — `App\Services\Payments\ProviderFeeCalculator` (pure, bcmath strings; XAF/XOF 0dp, others 2dp). Buyer-borne: `total = (price + fixed) / (1 − percent/100)` rounded **up**, `fee = total − price`, so the platform always nets the list price (e.g. $29 → fee $1.65, total $30.65). Platform-borne: `total = price`, `fee = price × percent + fixed` (half-up), recorded as a platform cost.
+- **Disclosure before authorisation** — the web checkout (`/billing/checkout/{plan}`) shows *Subtotal · {Provider} processing fee · Total* for the selected method when a fee is passed through (PayPal), and a per-method note visible without JavaScript; mobile money shows the plain price. The mobile app gets the same numbers from `GET /api/v1/billing/checkout/{plan}`.
+- **Persistence** — each `payments` row snapshots `base_amount` (price incl. any tax — what the platform is owed), `provider_fee_amount`, `provider_fee_bearer`; `amount` stays exactly what the payer is charged, is what PayPal's order is created for, and is what the captured amount is verified against. Revenue-share maths (referral commission) uses `Payment::baseAmount()` / `subtotalAmount()` (pre-tax), never `amount`.
+- **Documents & reporting** — the subscription invoice carries the fee as its own untaxed line (lines = plan subtotal + fee; subtotal + tax = total = amount charged); the success page and `/billing` payment history show it; the receipt amount is the total paid. Admin → Commission report → *Payment provider fees* shows fees collected from buyers vs absorbed by the platform, per provider and currency (never summed across currencies).
+- **Not converted** — a fixed fee in one currency is never FX-converted: a charge in a different currency than the provider's fee currency gets the percentage only (unreachable today: USD plans → PayPal, XAF plans → mobile money).

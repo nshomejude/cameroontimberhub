@@ -128,5 +128,41 @@
                 <button type="submit" class="{{ $btn }}">{{ __('messages.account_center.save_preferences') }}</button>
             </form>
         </x-account.panel>
+
+        {{-- Referral payouts --}}
+        <x-account.panel id="referral-payouts" :title="__('messages.account_center.payout_title')" :subtitle="__('messages.account_center.payout_subtitle')">
+            <form method="POST" action="{{ route('account.settings.referral-payout') }}" class="space-y-4">
+                @csrf
+                @method('PUT')
+                <p class="text-[1.0625rem] text-ink-soft">
+                    @if ($payoutProfile?->maskedPaypalEmail())
+                        {{ __('messages.account_center.payout_current', ['email' => $payoutProfile->maskedPaypalEmail()]) }}
+                    @else
+                        {{ __('messages.account_center.payout_none') }}
+                    @endif
+                </p>
+                @unless ($paypalPayoutsAvailable)
+                    <p class="text-[0.9375rem] text-ink-soft">{{ __('messages.account_center.payout_paypal_unavailable') }}</p>
+                @endunless
+                <div>
+                    <label for="paypal_payout_email" class="{{ $label }}">{{ __('messages.account_center.payout_field_email') }}</label>
+                    <input id="paypal_payout_email" name="paypal_payout_email" type="email" maxlength="254" autocomplete="off"
+                           value="{{ old('paypal_payout_email') }}" class="{{ $field }}">
+                    <p class="mt-1 text-[0.9375rem] text-ink-soft">{{ __('messages.account_center.payout_field_hint') }}</p>
+                    @error('paypal_payout_email', 'payout') <p class="{{ $error }}">{{ $message }}</p> @enderror
+                </div>
+                <button type="submit" class="{{ $btn }}">{{ __('messages.account_center.payout_save') }}</button>
+            </form>
+
+            <h3 class="mt-6 text-[0.9375rem] font-bold uppercase tracking-[0.12em] text-ink-soft">{{ __('messages.account_center.payout_earnings') }}</h3>
+            @forelse ($referralEarnings as $earning)
+                <div class="mt-2 flex flex-wrap items-center justify-between gap-2 border-b border-sand-200 py-2 text-[1.0625rem] last:border-0">
+                    <span class="text-ink">{{ $earning->amountLabel() }} <span class="text-ink-soft">· {{ $earning->source_reference }}</span></span>
+                    <span class="text-ink-soft">{{ \App\Models\ReferralEarning::payoutStatusLabel($earning->payoutStatus()) }}</span>
+                </div>
+            @empty
+                <p class="mt-2 text-[1.0625rem] text-ink-soft">{{ __('messages.account_center.payout_earnings_empty') }}</p>
+            @endforelse
+        </x-account.panel>
     </div>
 </x-layouts.account>

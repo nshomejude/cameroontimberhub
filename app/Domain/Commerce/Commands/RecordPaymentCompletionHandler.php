@@ -30,7 +30,12 @@ final class RecordPaymentCompletionHandler implements HandlesCommand
         /** @var RecordPaymentCompletionCommand $command */
         $payment = Payment::findOrFail($command->paymentId);
 
-        $payment->markCompleted($command->providerReference);
+        // Only the call that actually completes the payment records the
+        // event: a replayed webhook / double return leg is a no-op here, not
+        // just downstream.
+        if (! $payment->markCompleted($command->providerReference)) {
+            return $payment;
+        }
 
         $this->recordOutboxEvent(new PaymentCompleted(
             paymentId: $payment->getKey(),

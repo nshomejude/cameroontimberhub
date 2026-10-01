@@ -26,6 +26,10 @@ Schedule::command('subscriptions:process-renewals')->dailyAt('02:30')->withoutOv
 // engine M6). Stub until price versioning (M9) lands.
 Schedule::command('subscriptions:notify-price-changes')->dailyAt('08:00');
 
+// Referral commission payouts: re-check in-flight PayPal payouts (webhook
+// safety net) and safely retry submissions whose outcome was unknown.
+Schedule::command('referrals:refresh-payouts')->hourlyAt(17)->withoutOverlapping();
+
 // Agent Ingestion Gateway: drop Idempotency-Key replay records past their
 // 7-day window (docs/api/AGENT_INGESTION.md).
 Schedule::command('agent:prune-idempotency-keys')->dailyAt('03:40');

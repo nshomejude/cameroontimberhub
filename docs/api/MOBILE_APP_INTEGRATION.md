@@ -764,6 +764,34 @@ is `409` `order_transition_not_allowed` (`order_action_not_allowed` for
 `{ company_id, organisation_type, plan: {slug,name,segment,price_amount,price_currency,billing_period,features}|null, subscription: {id,status,starts_at,ends_at,renews_at,trial_ends_at,on_trial}|null, effective_plan: (as above), pricing_url }`.
 Upgrading stays on the web (`pricing_url`).
 
+`GET /billing/checkout/{plan_slug}` (any signed-in user) — the price
+breakdown to show **before** the user authorises a plan payment (pricing spec
+§20: a processing fee passed through to the payer must be disclosed first).
+404 for inactive / non-self-serve (e.g. enterprise) plans.
+
+```json
+{ "data": {
+  "plan": "exporter-professional", "plan_name": "Exporter Professional", "billing_period": "monthly",
+  "currency": "USD", "price": "29.00",
+  "tax": null,                       // or { "label", "rate": "0.1925", "amount" } when a tax rule applies
+  "providers": [{
+    "provider": "paypal", "label": "PayPal", "configured": true,
+    "subtotal": "29.00",             // price incl. any tax — what the platform nets
+    "provider_fee": "1.65", "provider_fee_bearer": "buyer", "provider_fee_passed_through": true,
+    "provider_fee_percent": "4.4", "provider_fee_fixed": "0.30",
+    "total": "30.65"                 // exactly what the payer is charged
+  }],
+  "checkout_url": "https://www.cameroontimberhub.com/billing/checkout/exporter-professional"
+} }
+```
+
+Show *Subtotal / PayPal processing fee / Total* as separate lines only when
+`provider_fee_passed_through` is true for the method the user picked; mobile
+money (`mtn_momo`, `orange_money`) is fee-free (`provider_fee: "0.00"`,
+`total == subtotal`). Amounts are decimal strings; XAF has no minor unit.
+The payment itself still starts on the web (`checkout_url`), which charges the
+same `total`.
+
 **Artisan portfolio.** `PATCH /company` `gallery[]` items accept, besides
 `image_path`/`caption`: `description` (max 2000), `is_portfolio` (bool),
 `materials_used` (max 255), `completed_on` (date, not in the future). Items
@@ -921,6 +949,35 @@ sole owner of a company that still has other members.
 Web: `GET /account/delete` (route `account.delete`, confirmation page for
 settings pages to link to) and `POST /account/delete` (`password`, `confirm`)
 do the same through `App\Actions\Account\DeleteAccount`.
+
+### Referrals — "Refer & earn" and commission payouts
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/referrals/me` | Code, share URL, stats, terms and `payout` (below). |
+| GET | `/referrals` | People the user referred (masked names). |
+| GET | `/referrals/earnings` | The user's commissions, newest first, with payout status. |
+| PATCH | `/referrals/payout-settings` | Body: `paypal_payout_email` (email, or `null` / `""` to remove). Throttled 10/min. |
+
+`payout` block (in `/referrals/me` and the PATCH response) — the email is **never** returned in full:
+
+```json
+{ "paypal_email_masked": "je*********@example.com", "has_paypal_email": true,
+  "paypal_available": true, "paypal_currencies": ["USD", "EUR", "GBP"] }
+```
+
+`paypal_available: false` means PayPal payouts are not switched on yet (commissions are paid manually by MoMo / bank). Commissions in a currency outside `paypal_currencies` (e.g. XAF) are always paid manually. `422` with `error.details.paypal_payout_email` for an invalid email.
+
+Each `/referrals/earnings` item adds to `id, source_reference, amount_label, status, status_label, at`:
+
+| Field | Values |
+|---|---|
+| `payout_status` | `awaiting_approval` (commission not yet approved), `awaiting_payout`, `processing` (payout requested / sent to PayPal), `unclaimed` (PayPal holds it — the user must sign up / log in to PayPal with the payout email within 30 days), `failed` (check the payout email; it will be retried), `paid`, `cancelled` |
+| `payout_status_label` | Display text for `payout_status`. |
+| `payout_method` | `paypal` / `manual` once paid, else `null`. |
+| `paid_at` | ISO-8601 or `null`. |
+
+Notifications: `referral_payout_updated` (database + push, `screen: "referral"`, `payout_status`: `paid` / `failed` / `unclaimed`) and an email.
 
 ### Released-app compatibility notes
 

@@ -7,7 +7,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\Api\V1\ReferralEarningResource;
 use App\Http\Resources\Api\V1\ReferralResource;
 use App\Models\ReferralEarning;
+use App\Models\ReferralPayoutProfile;
 use App\Models\User;
+use App\Services\Referrals\ReferralPayoutService;
 use App\Services\Referrals\ReferralService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -20,7 +22,10 @@ use Illuminate\Support\Collection;
  */
 class ReferralController extends Controller
 {
-    public function __construct(private readonly ReferralService $referrals) {}
+    public function __construct(
+        private readonly ReferralService $referrals,
+        private readonly ReferralPayoutService $payouts,
+    ) {}
 
     /** GET /api/v1/referrals/me */
     public function me(Request $request): JsonResponse
@@ -50,6 +55,7 @@ class ReferralController extends Controller
                     'pending_label' => self::sumLabel($earnings->filter(fn ($e) => in_array($e->status, [ReferralEarningStatus::Pending, ReferralEarningStatus::Approved], true))),
                     'paid_label' => self::sumLabel($earnings->where('status', ReferralEarningStatus::Paid)),
                 ],
+                'payout' => $this->payoutBlock($user),
                 'terms' => [
                     'summary' => $settings->enabled
                         ? "Earn {$percentText}% of a referred company's first subscription payment. Paid once per company; renewals are not included."
@@ -94,10 +100,41 @@ class ReferralController extends Controller
     {
         return ReferralEarningResource::collection(
             ReferralEarning::where('referrer_user_id', $request->user()->id)
+                ->with('latestPayout')
                 ->orderByDesc('created_at')->orderByDesc('id')
                 ->limit(200)
                 ->get()
         );
+    }
+
+    /**
+     * PATCH /api/v1/referrals/payout-settings — where commissions are paid.
+     * `paypal_payout_email: null` (or "") removes it. The email is only ever
+     * returned masked.
+     */
+    public function updatePayoutSettings(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'paypal_payout_email' => ['present', 'nullable', 'string', 'max:254', 'email:rfc'],
+        ]);
+
+        $this->payouts->setPaypalEmail($request->user(), $data['paypal_payout_email'] ?? null);
+
+        return response()->json(['data' => $this->payoutBlock($request->user())]);
+    }
+
+    /** @return array{paypal_email_masked: ?string, has_paypal_email: bool, paypal_available: bool, paypal_currencies: list<string>} */
+    private function payoutBlock(User $user): array
+    {
+        $profile = ReferralPayoutProfile::forUser($user);
+        $masked = $profile?->maskedPaypalEmail();
+
+        return [
+            'paypal_email_masked' => $masked,
+            'has_paypal_email' => $masked !== null,
+            'paypal_available' => $this->payouts->paypalConfigured(),
+            'paypal_currencies' => ReferralPayoutService::paypalCurrencies(),
+        ];
     }
 
     /** @param Collection<int, ReferralEarning> $earnings */

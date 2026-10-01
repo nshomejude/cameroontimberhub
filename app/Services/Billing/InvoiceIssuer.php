@@ -2,6 +2,8 @@
 
 namespace App\Services\Billing;
 
+use App\Enums\CreditNoteStatus;
+use App\Enums\InvoiceStatus;
 use App\Models\Company;
 use App\Models\CreditNote;
 use App\Models\Invoice;
@@ -60,12 +62,23 @@ class InvoiceIssuer
                 $taxLabel = $tax['tax_label'] ?? null;
                 $taxRuleId = $tax['rule_id'] ?? null;
             } else {
-                $subtotal = $this->scale2((string) $payment->amount);
+                $subtotal = $payment->baseAmount();
                 $taxAmount = $this->scale2('0');
                 $total = $subtotal;
                 $taxRate = null;
                 $taxLabel = null;
                 $taxRuleId = null;
+            }
+
+            // A provider fee passed through to the payer (PayPal) is billed
+            // as its own untaxed line: subtotal and total grow by the fee so
+            // the invoice total equals exactly what the payer was charged.
+            $planSubtotal = $subtotal;
+            $fee = $payment->providerFeePassedThrough() ? $this->scale2((string) $payment->provider_fee_amount) : null;
+
+            if ($fee !== null) {
+                $subtotal = bcadd($subtotal, $fee, 2);
+                $total = bcadd($total, $fee, 2);
             }
 
             $invoice = Invoice::create([
@@ -74,7 +87,7 @@ class InvoiceIssuer
                 'payment_id' => $payment->getKey(),
                 'subscription_id' => $subscription?->getKey(),
                 'tax_rule_id' => $taxRuleId,
-                'status' => \App\Enums\InvoiceStatus::Paid,
+                'status' => InvoiceStatus::Paid,
                 'currency' => strtoupper((string) $payment->currency),
                 'subtotal_amount' => $subtotal,
                 'tax_amount' => $taxAmount,
@@ -93,10 +106,20 @@ class InvoiceIssuer
             $invoice->lines()->create([
                 'description' => $description,
                 'quantity' => 1,
-                'unit_amount' => $subtotal,
-                'line_total' => $subtotal,
+                'unit_amount' => $planSubtotal,
+                'line_total' => $planSubtotal,
                 'sort' => 0,
             ]);
+
+            if ($fee !== null) {
+                $invoice->lines()->create([
+                    'description' => __('messages.billing.provider_fee_line', ['provider' => $payment->provider->label()]),
+                    'quantity' => 1,
+                    'unit_amount' => $fee,
+                    'line_total' => $fee,
+                    'sort' => 1,
+                ]);
+            }
 
             activity('invoice')
                 ->performedOn($invoice)
@@ -171,7 +194,7 @@ class InvoiceIssuer
                 'invoice_id' => $invoice->getKey(),
                 'company_id' => $invoice->company_id,
                 'issued_by' => $by->getKey(),
-                'status' => \App\Enums\CreditNoteStatus::Issued,
+                'status' => CreditNoteStatus::Issued,
                 'currency' => $invoice->currency->value,
                 'subtotal_amount' => $subtotal,
                 'tax_amount' => $taxAmount,
