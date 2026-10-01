@@ -2,10 +2,17 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
+/**
+ * Entry point for `php artisan db:seed`.
+ *
+ * Production-safe: reference data (roles, plans, tax rules, document types,
+ * species, CMS pages, glossary) always runs; the demo dataset — including the
+ * well-known `admin@cameroontimberhub.test` / "password" super admin — runs
+ * ONLY outside production. Create real staff with `php artisan admin:create`.
+ */
 class DatabaseSeeder extends Seeder
 {
     use WithoutModelEvents;
@@ -15,29 +22,14 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->call(RolesAndPermissionsSeeder::class);
+        $this->call(ReferenceDataSeeder::class);
 
-        // Local/dev super admin for the /admin Filament panel (password: "password").
-        User::factory()->create([
-            'name' => 'Platform Admin',
-            'email' => 'admin@cameroontimberhub.test',
-        ])->assignRole('super_admin');
+        if (app()->isProduction()) {
+            $this->command?->warn('Production environment: skipping DemoDataSeeder (no default admin, no demo data). Use `php artisan admin:create`.');
 
-        $this->call([
-            PlanSeeder::class,
-            TaxRuleSeeder::class,
-            DocumentTypeSeeder::class,
-            SpeciesSeeder::class,
-            PageSeeder::class,
-            GlossaryTermSeeder::class,
-            DemoCompanySeeder::class,
-            ProductSeeder::class,
-            DomesticMarketDemoSeeder::class,
-            DomesticServiceDemoSeeder::class,
-            QuoteSeeder::class,
-            OrderSeeder::class,
-            MessagingSeeder::class,
-            CompanyCoordinatesSeeder::class,
-        ]);
+            return;
+        }
+
+        $this->call(DemoDataSeeder::class);
     }
 }
