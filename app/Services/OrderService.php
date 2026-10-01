@@ -13,6 +13,7 @@ use App\Models\Quote;
 use App\Models\QuoteItem;
 use App\Models\Receipt;
 use App\Models\User;
+use App\Services\Commission\CommissionCalculator;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -255,6 +256,14 @@ class OrderService
 
         $order->update($data);
 
+        // Only pre-shipment states can reach Cancelled (see TRANSITIONS), so
+        // the trade never happened: release any marketplace commission the
+        // trade-assurance agreement recorded, leaving the order's net
+        // commission at zero. The charged snapshot itself stays immutable.
+        if ($to === OrderStatus::Cancelled) {
+            $this->releaseCommission($order);
+        }
+
         // Every ship path (panel, chat, API, staff) lands here: guarantee the
         // order has a waybill-bearing Shipment so buyer tracking and carrier
         // checkpoints have something to attach to. No-op if one exists.
@@ -272,6 +281,23 @@ class OrderService
         $log->log("Order status -> {$to->value}");
 
         return $order->refresh();
+    }
+
+    private function releaseCommission(Order $order): void
+    {
+        if (! $order->is_commission_charged) {
+            return;
+        }
+
+        $remaining = bcsub(
+            (string) ($order->commission_amount ?? '0'),
+            (string) ($order->commission_credited_amount ?? '0'),
+            2,
+        );
+
+        if (bccomp($remaining, '0', 2) > 0) {
+            app(CommissionCalculator::class)->credit($order, $remaining, 'Order cancelled before shipping');
+        }
     }
 
     public function confirm(Order $order, ?User $actor = null): Order
