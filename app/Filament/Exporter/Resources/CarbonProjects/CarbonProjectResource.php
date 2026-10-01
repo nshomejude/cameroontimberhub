@@ -59,9 +59,13 @@ class CarbonProjectResource extends Resource
         return self::currentCompanyIsCarbonDeveloper();
     }
 
+    /**
+     * New projects only while the carbon module is switched on
+     * (timber.signup.carbon_enabled); existing ones stay viewable/editable.
+     */
     public static function canCreate(): bool
     {
-        return self::currentCompanyIsCarbonDeveloper();
+        return (bool) config('timber.signup.carbon_enabled', false) && self::currentCompanyIsCarbonDeveloper();
     }
 
     public static function canEdit($record): bool

@@ -23,7 +23,7 @@ class RfqTriageService
 {
     /** @var array<string, list<string>> */
     public const TRANSITIONS = [
-        'new' => ['in_review', 'approved', 'rejected', 'spam'],
+        'new' => ['in_review', 'approved', 'rejected', 'spam', 'closed'],
         'in_review' => ['approved', 'rejected', 'spam', 'closed'],
         'approved' => ['closed', 'rejected'],
         'rejected' => ['closed'],
@@ -59,11 +59,12 @@ class RfqTriageService
      * is the system (auto-approval of a clean, verified RFQ). Staff can
      * still route additional companies manually afterwards.
      */
-    public function approve(Rfq $rfq, ?User $actor): void
+    /** @return int number of companies the RFQ was auto-routed to */
+    public function approve(Rfq $rfq, ?User $actor): int
     {
         $this->transition($rfq, RfqStatus::Approved, $actor);
 
-        app(RfqOpenRequestService::class)->autoRoute($rfq->refresh(), $actor);
+        return app(RfqOpenRequestService::class)->autoRoute($rfq->refresh(), $actor);
     }
 
     /**
