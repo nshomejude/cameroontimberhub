@@ -39,6 +39,10 @@ Schedule::command('ops:error-digest')->dailyAt('07:00')->withoutOverlapping();
 // relay is starving. Never gates — always exits 0.
 Schedule::command('ops:queue-health')->everyFifteenMinutes()->withoutOverlapping();
 
+// Scheduler heartbeat: proves cron → schedule:run is alive. /up/health
+// reports `scheduler: false` (503) once it is > 3 minutes stale.
+Schedule::command('ops:scheduler-heartbeat')->everyMinute();
+
 // Reputation recompute (production-readiness plan Task C1): rebuilds every
 // trading company's reputation figures from real order / RFQ / dispute rows.
 Schedule::command('reputation:recompute')->dailyAt('03:00');
