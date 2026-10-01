@@ -54,7 +54,7 @@ class RfqsTable
 
                     Action::make('approve')->label('Approve')->icon('heroicon-o-check-circle')->color('success')->requiresConfirmation()
                         ->visible(fn (Rfq $r): bool => in_array($r->status, [RfqStatus::New, RfqStatus::InReview], true) && static::canTriage())
-                        ->action(fn (Rfq $record) => static::run(fn () => app(RfqTriageService::class)->approve($record, auth()->user()), 'RFQ approved — you can now route it')),
+                        ->action(fn (Rfq $record) => static::run(fn () => app(RfqTriageService::class)->approve($record, auth()->user()), 'RFQ approved — sent to matching suppliers; you can route more')),
 
                     Action::make('aiSuggestions')->label('AI suggestions')->icon('heroicon-o-sparkles')->color('gray')
                         ->visible(fn (Rfq $r): bool => $r->status === RfqStatus::Approved && static::canRoute())

@@ -40,4 +40,24 @@ return [
         'carbon_enabled' => (bool) env('SIGNUP_CARBON_ENABLED', false),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | RFQ "open request" distribution
+    |--------------------------------------------------------------------------
+    |
+    | auto_approve_low_risk: a buyer-verified RFQ whose RfqRiskService score is
+    | 0 (no heuristic flags) is approved without waiting for staff.
+    | auto_route_on_approval: on approval (staff or auto) the RFQ is routed to
+    | every matching, leads-entitled supplier (RfqMatchingService), at most
+    | auto_route_max of them. Staff can still route more by hand, and
+    | suppliers can pick open requests off their "Buyer requests" board.
+    |
+    */
+
+    'rfq' => [
+        'auto_approve_low_risk' => (bool) env('RFQ_AUTO_APPROVE_LOW_RISK', true),
+        'auto_route_on_approval' => (bool) env('RFQ_AUTO_ROUTE_ON_APPROVAL', true),
+        'auto_route_max' => (int) env('RFQ_AUTO_ROUTE_MAX', 30),
+    ],
+
 ];

@@ -7,7 +7,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\StoreSupplierQuoteRequest;
 use App\Http\Resources\Api\V1\SupplierQuoteResource;
 use App\Models\Company;
+use App\Models\Rfq;
 use App\Services\QuoteService;
+use App\Services\RfqOpenRequestService;
 use App\Services\SupplierApiScope;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -49,10 +51,19 @@ class SupplierQuoteController extends Controller
     public function store(StoreSupplierQuoteRequest $request, string $reference): JsonResponse
     {
         $user = $request->user();
-        $rfq = $this->scope->routedRfq($user, $reference);
 
         /** @var Company $company */
         $company = $this->scope->company($user);
+
+        // An RFQ on the caller's open-requests board (not routed yet) is
+        // self-routed first (RfqOpenRequestService::selfRoute()); anything
+        // else not routed to the caller still 404s via routedRfq().
+        $boardRfq = Rfq::where('reference_code', $reference)->first();
+        if ($boardRfq !== null && $company !== null) {
+            app(RfqOpenRequestService::class)->selfRoute($boardRfq, $company, $user);
+        }
+
+        $rfq = $this->scope->routedRfq($user, $reference);
 
         $data = $request->validated();
 

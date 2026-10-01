@@ -123,6 +123,8 @@ it('shows only verified RFQs in the admin queue', function () {
 });
 
 it('routes an approved RFQ to an exporter, creating one lead, idempotently', function () {
+    // Manual routing under test; approval-time auto-routing is covered in RfqOpenRequestTest.
+    config(['timber.rfq.auto_route_on_approval' => false]);
     Notification::fake();
     $plan = Plan::factory()->create(['features' => ['leads_receive' => true]]);
     $company = Company::factory()->publiclyVisible()->create(['plan_id' => $plan->id]);

@@ -106,6 +106,13 @@ Cron (as `timberhub`, file: `deploy/cron`): `* * * * * cd /home/timberhub/htdocs
 
 Queue worker (unit file: `deploy/systemd/timberhub-queue.service`): `systemctl status timberhub-queue.service` — must be `active (running)`. Logs: `journalctl -u timberhub-queue -n 100`.
 
+### RFQ "open request" distribution (config `timber.rfq.*`)
+
+- **Auto-approve** (`RFQ_AUTO_APPROVE_LOW_RISK`, default `true`): when a buyer confirms their email and `RfqRiskService` raised no flags (spam_score 0), the RFQ is approved without staff. Flagged RFQs stay `new` for triage.
+- **Auto-route on approval** (`RFQ_AUTO_ROUTE_ON_APPROVAL`, default `true`): every approval (staff or auto) routes the RFQ to all matching suppliers from `RfqMatchingService` (verified, handle the species, RFQ-type targeting, plan `leads_receive` on), at most `RFQ_AUTO_ROUTE_MAX` (default 30). Suppliers get `RfqRoutedToExporter`, the buyer gets the "sent to N suppliers" email. Staff can still route extra companies from Admin → RFQs (already-routed companies are skipped). Failures are logged to the `errors` channel and never undo the approval.
+- **Buyer requests board**: suppliers also see matching approved RFQs not routed to them (exporter panel → Buyer requests; API `GET /api/v1/supplier/rfq-board`) without buyer contact details; quoting self-routes them.
+- **Who receives leads** is controlled only by the plan's "Receive RFQ leads" toggle in Admin → Plans (Free plan: on at launch). Turning it off stops routing and empties that plan's board. To pause all automatic distribution set `RFQ_AUTO_ROUTE_ON_APPROVAL=false` and/or `RFQ_AUTO_APPROVE_LOW_RISK=false`, then `config:cache`.
+
 ---
 
 ## 5a. Go-live checklist

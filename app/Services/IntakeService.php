@@ -197,6 +197,15 @@ class IntakeService
             $rfq->update(['email_verified_at' => now()]);
             $rfq->load('items');
             $this->risk->evaluate($rfq);
+
+            // A clean (risk score 0), verified RFQ goes straight out to the
+            // matching suppliers — see RfqOpenRequestService and
+            // `timber.rfq.auto_approve_low_risk`. Never blocks verification.
+            $this->safely(
+                fn () => app(RfqOpenRequestService::class)->autoApproveIfClean($rfq->refresh()),
+                'RFQ auto-approval failed',
+                ['rfq_id' => $rfq->getKey()],
+            );
         }
     }
 

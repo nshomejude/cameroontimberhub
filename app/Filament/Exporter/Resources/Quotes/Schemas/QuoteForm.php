@@ -30,6 +30,8 @@ class QuoteForm
                         Select::make('rfq_id')
                             ->label('Request for quotation')
                             ->options(fn (): array => self::quotableRfqs())
+                            // Preselected when arriving from the "Buyer requests" board.
+                            ->default(fn (): ?int => request()->integer('rfq') ?: null)
                             ->required()
                             ->searchable()
                             ->disabledOn('edit'),

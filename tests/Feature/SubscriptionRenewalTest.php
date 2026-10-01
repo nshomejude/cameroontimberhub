@@ -1,10 +1,13 @@
 <?php
 
+use App\Enums\CompanyUserRole;
+use App\Enums\PaymentStatus;
 use App\Enums\SubscriptionStatus;
 use App\Models\Company;
 use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\Subscription;
+use App\Models\User;
 use App\Notifications\SubscriptionLapsedToFree;
 use App\Notifications\SubscriptionPastDue;
 use App\Notifications\SubscriptionRenewalReminder;
@@ -45,8 +48,8 @@ function retireAutoFreeSub(Company $company): void
 /** A company with no attached user can never be notified — give it one. */
 function withNotifiableUser(Company $company): Company
 {
-    $company->users()->attach(\App\Models\User::factory()->create()->id, [
-        'role' => \App\Enums\CompanyUserRole::Owner->value,
+    $company->users()->attach(User::factory()->create()->id, [
+        'role' => CompanyUserRole::Owner->value,
         'is_primary' => true,
     ]);
 
@@ -135,7 +138,7 @@ it('lapses a PastDue subscription past grace_until to the segment Free plan', fu
     expect($sub->status)->toBe(SubscriptionStatus::Expired)
         ->and($company->plan_id)->toBe($freePlanId)
         ->and($activeSub->plan_id)->toBe($freePlanId)
-        ->and($company->hasFeature('leads_receive'))->toBeFalse();
+        ->and($company->hasFeature('verified_badge'))->toBeFalse();
 
     Notification::assertSentTimes(SubscriptionLapsedToFree::class, 1);
 });
@@ -176,7 +179,7 @@ it('paying during grace reactivates the company to Active with a fresh renews_at
     $payment = Payment::factory()->create([
         'company_id' => $company->id,
         'plan_id' => $plan->id,
-        'status' => \App\Enums\PaymentStatus::Completed,
+        'status' => PaymentStatus::Completed,
         'amount' => 50000,
         'currency' => 'XAF',
     ]);
@@ -217,7 +220,7 @@ it('falls back to the segment Free plan for an Expired subscription too (Company
         'ends_at' => now()->subDay(),
     ]);
 
-    expect($company->fresh()->hasFeature('leads_receive'))->toBeFalse()
+    expect($company->fresh()->hasFeature('verified_badge'))->toBeFalse()
         ->and($company->fresh()->effectivePlan()?->slug)->toBe('free');
 });
 
