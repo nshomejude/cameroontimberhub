@@ -4,13 +4,18 @@ namespace App\Filament\Exporter\Resources\Products\Pages;
 
 use App\Domain\Catalog\Commands\PublishProductCommand;
 use App\Enums\ProductStatus;
+use App\Filament\Exporter\Resources\Products\Pages\Concerns\ShowsPublicVisibilityBanner;
 use App\Filament\Exporter\Resources\Products\ProductResource;
+use App\Models\Company;
 use App\Support\Bus\CommandBus;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;
 
 class CreateProduct extends CreateRecord
 {
+    use ShowsPublicVisibilityBanner;
+
     protected static string $resource = ProductResource::class;
 
     /**
@@ -39,10 +44,25 @@ class CreateProduct extends CreateRecord
     protected function handleRecordCreation(array $data): Model
     {
         if (($data['status'] ?? null) === ProductStatus::Active->value) {
+            $company = Company::findOrFail($data['company_id']);
+            if (($reason = ProductResource::publishBlockReason($company, $data)) !== null) {
+                Notification::make()->danger()->title($reason)->send();
+                $this->halt();
+            }
+
             return app(CommandBus::class)->dispatch(new PublishProductCommand($data));
         }
 
         return parent::handleRecordCreation($data);
+    }
+
+    protected function getCreatedNotification(): ?Notification
+    {
+        if ($this->record->status === ProductStatus::Active) {
+            return ProductResource::publishedNotification($this->record->company);
+        }
+
+        return parent::getCreatedNotification();
     }
 
     protected function getRedirectUrl(): string

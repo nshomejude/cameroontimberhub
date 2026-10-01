@@ -7,6 +7,7 @@ use App\Http\Resources\Api\V1\SupplierProductResource;
 use App\Services\SupplierApiScope;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * Product photo upload over token auth.
@@ -37,8 +38,9 @@ use Illuminate\Http\Request;
  * 10 MB ceiling is applied here — the same number this codebase already uses
  * for `CompanyDocumentController`'s uploads (`StoreCompanyDocumentRequest`) —
  * rather than leaving multipart uploads completely unbounded from the API.
- * This is a documented DEVIATION from the web form (which has no cap at all),
- * not a limit read off the Filament component.
+ * Both surfaces now share a 5 MB cap and jpg/png/webp types (the web form
+ * gained `->maxSize(5120)->acceptedFileTypes(...)`), and replacing an image
+ * deletes the previous file from the public disk.
  */
 class SupplierProductImageController extends Controller
 {
@@ -47,14 +49,21 @@ class SupplierProductImageController extends Controller
     public function store(Request $request, int|string $product): JsonResponse
     {
         $record = $this->scope->product($request->user(), $product);
+        SupplierProductController::assertCanManage($request, $record);
 
         $request->validate([
-            'image' => ['required', 'image', 'max:10240'],
+            'image' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
         ]);
 
+        $previous = $record->primary_image_path;
         $path = $request->file('image')->store('products', 'public');
 
         $record->update(['primary_image_path' => $path]);
+
+        // Replacing the primary image must not orphan the old file.
+        if (filled($previous) && $previous !== $path && ! str_starts_with($previous, 'http')) {
+            Storage::disk('public')->delete($previous);
+        }
 
         return response()->json([
             'message' => 'Image uploaded.',

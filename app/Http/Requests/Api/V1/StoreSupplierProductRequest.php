@@ -5,6 +5,8 @@ namespace App\Http\Requests\Api\V1;
 use App\Enums\PriceUnit;
 use App\Enums\ProductStatus;
 use App\Enums\ProductType;
+use App\Domain\Catalog\ProductPublishingRules;
+use App\Services\SupplierApiScope;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -24,9 +26,16 @@ use Illuminate\Validation\Rule;
  */
 class StoreSupplierProductRequest extends FormRequest
 {
+    /**
+     * Only owner/manager members may write listings — see
+     * {@see ProductPublishingRules::canManageProducts()}.
+     */
     public function authorize(): bool
     {
-        return $this->user() !== null;
+        $user = $this->user();
+
+        return $user !== null
+            && ProductPublishingRules::canManageProducts($user, app(SupplierApiScope::class)->company($user));
     }
 
     /** @return array<string, mixed> */
@@ -42,17 +51,17 @@ class StoreSupplierProductRequest extends FormRequest
             'tagline' => ['nullable', 'string', 'max:160'],
             'description' => ['nullable', 'string'],
 
-            'price_amount' => ['nullable', 'numeric', 'min:0'],
-            'price_currency' => ['nullable', 'string', 'max:3'],
+            'price_amount' => ['nullable', 'numeric', 'min:0', 'max:999999999999'],
+            'price_currency' => ['nullable', 'string', 'size:3', 'regex:/^[A-Za-z]{3}$/'],
             'price_unit' => ['nullable', Rule::in(array_column(PriceUnit::cases(), 'value'))],
             'moq_quantity' => ['nullable', 'numeric', 'min:0'],
             'moq_unit' => ['nullable', Rule::in(array_column(PriceUnit::cases(), 'value'))],
 
             'thickness_mm' => ['nullable', 'numeric', 'min:0'],
             'width_min_mm' => ['nullable', 'numeric', 'min:0'],
-            'width_max_mm' => ['nullable', 'numeric', 'min:0'],
+            'width_max_mm' => ['nullable', 'numeric', 'min:0', Rule::when($this->filled('width_min_mm'), 'gte:width_min_mm')],
             'length_min_m' => ['nullable', 'numeric', 'min:0'],
-            'length_max_m' => ['nullable', 'numeric', 'min:0'],
+            'length_max_m' => ['nullable', 'numeric', 'min:0', Rule::when($this->filled('length_min_m'), 'gte:length_min_m')],
             'moisture_content' => ['nullable', 'string', 'max:60'],
             'origin' => ['nullable', 'string', 'max:120'],
             'certification' => ['nullable', 'string', 'max:150'],

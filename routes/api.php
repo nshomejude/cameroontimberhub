@@ -522,7 +522,7 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
             ->name('company.documents.index');
 
         Route::post('company/documents', [CompanyDocumentController::class, 'store'])
-            ->middleware('throttle:api-rfq')->name('company.documents.store');
+            ->middleware('throttle:api-upload')->name('company.documents.store');
 
         Route::get('company/documents/{document}/download', [CompanyDocumentController::class, 'download'])
             ->name('company.documents.download');
@@ -544,7 +544,7 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
             ->middleware('throttle:api-decision')->name('company.update');
         Route::post('company/images/{field}', [CompanyProfileController::class, 'uploadImage'])
             ->whereIn('field', ['logo', 'cover'])
-            ->middleware('throttle:api-rfq')->name('company.images.upload');
+            ->middleware('throttle:api-upload')->name('company.images.upload');
 
         // The caller's own company onboarding checklist (this task) — API
         // counterpart of the exporter panel's OnboardingChecklist page.
@@ -590,7 +590,7 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
             Route::get('products/options', [SupplierProductController::class, 'options'])->name('products.options');
             Route::get('products', [SupplierProductController::class, 'index'])->name('products.index');
             Route::post('products', [SupplierProductController::class, 'store'])
-                ->middleware('throttle:api-rfq')->name('products.store');
+                ->middleware('throttle:api-product-write')->name('products.store');
             Route::get('products/{product}', [SupplierProductController::class, 'show'])->name('products.show');
             Route::patch('products/{product}', [SupplierProductController::class, 'update'])
                 ->middleware('throttle:api-decision')->name('products.update');
@@ -604,7 +604,7 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
             // gallery add/delete/reorder routes exist — see
             // SupplierProductImageController's docblock for why.
             Route::post('products/{product}/images', [SupplierProductImageController::class, 'store'])
-                ->middleware('throttle:api-rfq')->name('products.images.store');
+                ->middleware('throttle:api-upload')->name('products.images.store');
 
             // Fleet (this task): vehicles + drivers, API counterpart of the
             // exporter panel's Vehicles/Drivers resources. Sits under
@@ -618,14 +618,14 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
             Route::prefix('fleet')->name('fleet.')->group(function (): void {
                 Route::get('vehicles', [FleetVehicleController::class, 'index'])->name('vehicles.index');
                 Route::post('vehicles', [FleetVehicleController::class, 'store'])
-                    ->middleware('throttle:api-rfq')->name('vehicles.store');
+                    ->middleware('throttle:api-product-write')->name('vehicles.store');
                 Route::get('vehicles/{vehicle}', [FleetVehicleController::class, 'show'])->name('vehicles.show');
                 Route::patch('vehicles/{vehicle}', [FleetVehicleController::class, 'update'])
                     ->middleware('throttle:api-decision')->name('vehicles.update');
 
                 Route::get('drivers', [FleetDriverController::class, 'index'])->name('drivers.index');
                 Route::post('drivers', [FleetDriverController::class, 'store'])
-                    ->middleware('throttle:api-rfq')->name('drivers.store');
+                    ->middleware('throttle:api-product-write')->name('drivers.store');
                 Route::get('drivers/{driver}', [FleetDriverController::class, 'show'])->name('drivers.show');
                 Route::patch('drivers/{driver}', [FleetDriverController::class, 'update'])
                     ->middleware('throttle:api-decision')->name('drivers.update');

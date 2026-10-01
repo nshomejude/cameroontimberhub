@@ -386,6 +386,46 @@ class Company extends Model
     }
 
     /**
+     * Human-readable list of what is keeping this company out of
+     * {@see scopePubliclyVisible()} — one entry per failed condition, in the
+     * same order, so suppliers can see WHY their published listings are not
+     * reaching buyers. An empty array means the company is publicly visible.
+     *
+     * Must stay in lock-step with scopePubliclyVisible(): every condition
+     * there has exactly one entry here.
+     *
+     * @return list<string>
+     */
+    public function publicVisibilityGaps(): array
+    {
+        $gaps = [];
+
+        if ($this->status !== CompanyStatus::Verified) {
+            $gaps[] = __('Company verification (current status: :status)', ['status' => $this->status?->label() ?? '—']);
+        }
+        if ($this->logo_path === null) {
+            $gaps[] = __('A company logo');
+        }
+        if ($this->description === null) {
+            $gaps[] = __('A company description');
+        }
+        if ($this->region === null) {
+            $gaps[] = __('A region');
+        }
+        if (! $this->species()->exists()) {
+            $gaps[] = __('At least one species on the company profile');
+        }
+        if (! $this->contacts()->exists()) {
+            $gaps[] = __('At least one company contact');
+        }
+        if (! $this->activeBadges()->exists()) {
+            $gaps[] = __('An active verification badge');
+        }
+
+        return $gaps;
+    }
+
+    /**
      * Directory facet: narrow to one or more commercial roles. An empty list is
      * a no-op so the scope can be chained unconditionally.
      *

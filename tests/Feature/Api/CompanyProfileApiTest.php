@@ -218,3 +218,33 @@ it('rejects a non-image upload for the logo field', function () {
         ])
         ->assertStatus(422);
 });
+
+/* --------------------------------------------------------------- region / gallery validation */
+
+it('normalises region case and rejects an unknown region', function () {
+    [$user] = companyProfileApiSupplier(['region' => 'Centre']);
+
+    $this->actingAs($user, 'sanctum')->patchJson('/api/v1/company', ['region' => 'littoral'])
+        ->assertOk()
+        ->assertJsonPath('data.region', 'Littoral');
+
+    $this->actingAs($user, 'sanctum')->patchJson('/api/v1/company', ['region' => 'Atlantis'])
+        ->assertStatus(422);
+});
+
+it('still accepts a legacy free-text region the company already holds', function () {
+    [$user] = companyProfileApiSupplier(['region' => 'Douala area']);
+
+    $this->actingAs($user, 'sanctum')->patchJson('/api/v1/company', ['region' => 'Douala area'])
+        ->assertOk();
+});
+
+it('rejects gallery image paths outside the gallery directory', function (string $path) {
+    [$user] = companyProfileApiSupplier();
+
+    $response = $this->actingAs($user, 'sanctum')->patchJson('/api/v1/company', [
+        'gallery' => [['image_path' => $path]],
+    ])->assertStatus(422);
+
+    expect($response->json('error.details'))->toHaveKey('gallery.0.image_path');
+})->with(['companies/logos/x.png', 'companies/gallery/../../.env', 'https://evil.test/x.png']);

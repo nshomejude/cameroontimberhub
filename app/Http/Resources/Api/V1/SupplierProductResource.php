@@ -2,10 +2,13 @@
 
 namespace App\Http\Resources\Api\V1;
 
+use App\Domain\Catalog\ProductPublishingRules;
 use App\Enums\ProductStatus;
+use App\Models\Company;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use WeakMap;
 
 /**
  * A supplier's own view of one of their products — unlike the public
@@ -15,11 +18,11 @@ use Illuminate\Http\Resources\Json\JsonResource;
  *
  * `actions` mirrors the exact same rules the exporter panel enforces today:
  *
- *  - `can_edit` — `ProductResource::canEdit()` has no status gate at all
- *    (`return (bool) auth()->user()?->companies()->exists();`), so this is
- *    always true for a listing the caller owns. There is no "locked while
+ *  - `can_edit` — true when the caller's company role may manage listings
+ *    (owner/manager, `ProductPublishingRules::canManageProducts()`), the
+ *    same gate as `ProductResource::canEdit()`. There is no "locked while
  *    under review" state on the web to mirror — there is no review state at
- *    all (see {@see \App\Enums\ProductStatus}).
+ *    all (see {@see ProductStatus}).
  *  - `can_submit` — true only when the listing is not already `active` and
  *    not `archived`, the same population `SupplierProductController::submit()`
  *    accepts (see that method's docblock for why "already active" and
@@ -83,11 +86,45 @@ class SupplierProductResource extends JsonResource
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
 
+            'visibility' => $this->visibility(),
+
             'actions' => [
-                'can_edit' => true,
-                'can_submit' => ! in_array($this->status, [ProductStatus::Active, ProductStatus::Archived], true),
-                'can_archive' => true,
+                'can_edit' => $canManage = ProductPublishingRules::canManageProducts($request->user(), $this->company_id),
+                'can_submit' => $canManage && ! in_array($this->status, [ProductStatus::Active, ProductStatus::Archived], true),
+                'can_archive' => $canManage,
             ],
         ];
     }
+
+    /**
+     * Whether buyers can actually see this listing, and if not, why. A
+     * listing is public only when it is active AND its company passes
+     * Company::scopePubliclyVisible().
+     *
+     * @return array{public: bool, missing: list<string>}
+     */
+    private function visibility(): array
+    {
+        $missing = [];
+        if ($this->status !== ProductStatus::Active) {
+            $missing[] = __('The product is not published');
+        }
+
+        $company = $this->company;
+        if ($company !== null) {
+            self::$companyGaps ??= new WeakMap;
+            self::$companyGaps[$company] ??= $company->publicVisibilityGaps();
+            $missing = [...$missing, ...self::$companyGaps[$company]];
+        }
+
+        return ['public' => $missing === [], 'missing' => $missing];
+    }
+
+    /**
+     * Memo keyed by the (eager-loaded, shared) Company instance so a page of
+     * listings computes the gaps once; a WeakMap never outlives the models.
+     *
+     * @var WeakMap<Company, list<string>>|null
+     */
+    private static ?WeakMap $companyGaps = null;
 }

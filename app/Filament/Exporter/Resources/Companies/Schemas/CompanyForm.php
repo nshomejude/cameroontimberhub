@@ -2,6 +2,7 @@
 
 namespace App\Filament\Exporter\Resources\Companies\Schemas;
 
+use App\Support\CameroonGeography;
 use App\Models\Company;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Repeater;
@@ -38,7 +39,15 @@ class CompanyForm
                 Section::make('Location')
                     ->columns(3)
                     ->schema([
-                        TextInput::make('region')->required()->maxLength(120),
+                        Select::make('region')
+                            ->required()
+                            ->native(false)
+                            ->searchable()
+                            // The 10 canonical regions, plus any legacy free-text value already stored.
+                            ->options(fn (?Company $record): array => collect(CameroonGeography::regionNames())
+                                ->when(filled($record?->region), fn ($c) => $c->push($record->region))
+                                ->unique()->mapWithKeys(fn (string $r): array => [$r => $r])->all())
+                            ->in(fn (?Company $record): array => array_values(array_filter([...CameroonGeography::regionNames(), $record?->region]))),
                         TextInput::make('city')->maxLength(120),
                         TextInput::make('country_code')->default('CM')->maxLength(2),
                         TextInput::make('address_line')->maxLength(255)->columnSpanFull(),
