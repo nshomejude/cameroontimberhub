@@ -74,6 +74,12 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
         };
     }
 
+    /** Queued, so a mail outage cannot break registration (see QueuedVerifyEmail). */
+    public function sendEmailVerificationNotification(): void
+    {
+        $this->notify(new \App\Notifications\Auth\QueuedVerifyEmail);
+    }
+
     /** Whether this user holds any platform staff role (see STAFF_ROLES). */
     public function isStaff(): bool
     {

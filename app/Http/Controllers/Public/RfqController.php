@@ -260,7 +260,7 @@ class RfqController extends Controller
 
         $rfq = Rfq::query()
             ->where('reference_code', strtoupper(trim($data['reference'])))
-            ->where('buyer_email', strtolower(trim($data['email'])))
+            ->whereRaw('lower(buyer_email) = ?', [strtolower(trim($data['email']))])
             ->whereNull('email_verified_at')
             ->where('is_spam', false)
             ->first();

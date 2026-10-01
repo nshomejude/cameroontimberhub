@@ -33,7 +33,7 @@ class ExporterPanelProvider extends PanelProvider
             ->path('dashboard')
             ->authGuard('web')
             ->brandName('Cameroon Timber Hub')
-            ->login()
+            ->login(\App\Filament\Auth\WebLoginRedirect::class)
             // Dismissible "verify your email" nudge for unverified owners.
             ->renderHook(
                 \Filament\View\PanelsRenderHook::CONTENT_START,

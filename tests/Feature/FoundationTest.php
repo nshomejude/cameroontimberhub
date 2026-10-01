@@ -31,9 +31,9 @@ it('redirects guests from the admin panel to the admin login', function () {
     $this->get('/admin')->assertRedirect('/admin/login');
 });
 
-it('serves both panel login pages', function () {
-    $this->get('/admin/login')->assertOk();
-    $this->get('/dashboard/login')->assertOk();
+it('hands both panel login pages to the web login (which runs the 2FA challenge)', function () {
+    $this->get('/admin/login')->assertRedirect(route('login'));
+    $this->get('/dashboard/login')->assertRedirect(route('login'));
 });
 
 it('seeds the canonical RBAC roles and permissions', function () {
