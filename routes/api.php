@@ -148,6 +148,10 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
             Route::post('logout', [AuthController::class, 'logout'])->name('logout');
             Route::get('me', [AuthController::class, 'me'])->name('me');
             Route::patch('me', [AuthController::class, 'updateMe'])->name('me.update');
+            // In-app account deletion (App Store / Play requirement) — see
+            // AccountDeletionController / Actions\Account\DeleteAccount.
+            Route::delete('me', [\App\Http\Controllers\Api\V1\AccountDeletionController::class, 'destroy'])
+                ->middleware('throttle:5,1')->name('me.destroy');
             Route::post('password', [AuthController::class, 'updatePassword'])->name('password.update');
             Route::post('email/verification-notification', [AuthController::class, 'sendVerificationEmail'])
                 ->middleware('throttle:6,1')->name('verification.send');

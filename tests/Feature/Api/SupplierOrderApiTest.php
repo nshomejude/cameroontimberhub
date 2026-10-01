@@ -104,15 +104,29 @@ it('shows the buyer identity on a supplier own order', function () {
         ->assertJsonPath('data.buyer_name', $order->buyer_name);
 });
 
-it('returns an empty actions array and no conversation id when the order has no conversation', function () {
+it('offers reference-based fulfilment actions when the order has no conversation', function () {
     [$user, $company] = supplierOrderApiUser();
     $order = awardedOrderFor($company);
 
-    $this->actingAs($user, 'sanctum')
+    $response = $this->actingAs($user, 'sanctum')
         ->getJson('/api/v1/supplier/orders/'.$order->reference_code)
         ->assertOk()
-        ->assertJsonPath('data.conversation_id', null)
-        ->assertJsonPath('data.actions', []);
+        ->assertJsonPath('data.conversation_id', null);
+
+    $actions = collect($response->json('data.actions'))->keyBy('key');
+
+    expect($actions->keys()->all())->toBe(['confirm', 'tracking'])
+        ->and($actions['confirm'])->toMatchArray(['label' => 'Confirm order', 'method' => 'POST', 'path' => 'supplier/orders/'.$order->reference_code.'/confirm'])
+        ->and($actions['tracking']['path'])->toBe('supplier/orders/'.$order->reference_code.'/tracking')
+        ->and($actions['tracking']['fields'])->not->toBeEmpty();
+
+    // The emitted path really works: POSTing it confirms the order.
+    $this->actingAs($user, 'sanctum')->postJson('/api/v1/'.$actions['confirm']['path'])->assertOk();
+    expect($order->fresh()->status->value)->toBe('confirmed');
+
+    $keys = collect($this->actingAs($user, 'sanctum')
+        ->getJson('/api/v1/supplier/orders/'.$order->reference_code)->json('data.actions'))->pluck('key')->all();
+    expect($keys)->toBe(['production', 'ship', 'tracking']);
 });
 
 it('offers confirm but not ship on a freshly awarded order', function () {
