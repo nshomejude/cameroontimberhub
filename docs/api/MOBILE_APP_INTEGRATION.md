@@ -585,6 +585,9 @@ company's reference is always a `404`.
 | POST | `/supplier/orders/{reference}/ship` | -> `shipped`. Optional tracking fields: `carrier`, `tracking_number`, `tracking_url`, `shipping_method`, `vessel_name`, `voyage_number`, `container_number`, `port_of_loading`, `port_of_discharge`, `etd`, `eta`. |
 | POST | `/supplier/orders/{reference}/tracking` | Update the same tracking fields without moving the status (at least one required). |
 | POST | `/supplier/orders/{reference}/deliver` | `shipped` -> `delivered`. Optional `received_by`, `location`, `proof[]` (multipart, up to 5 PDF/JPG/PNG/WEBP). |
+| POST | `/supplier/orders/{reference}/documents` | Attach shipping papers. Multipart: `documents[]` (1–10 PDF/JPG/PNG/WEBP), optional `kind` (`OrderDocumentKind`, default `other`), `label`. Buyer is notified. `throttle:api-upload`. |
+| POST | `/supplier/orders/{reference}/payments` | Record an OFF-platform payment: `amount` (cumulative total received to date, >= 0), optional `method` (free-text name only — never account details). `409 order_action_not_allowed` when above the order total or the order is cancelled. |
+| POST | `/supplier/orders/{reference}/cancel` | Cancel with a required `reason` (max 500). `409 order_transition_not_allowed` for completed/cancelled orders. |
 
 **Fulfilment and chat.** Accepting a quote does **not** create a conversation,
 so an order may have `conversation_id: null` (e.g. accepted from the buyer's
@@ -596,9 +599,42 @@ when it has none they go through the same path as the web exporter panel's
 Orders table. Prefer these reference-based endpoints in the app; the
 `conversations/{id}/orders/{order}/*` routes (and `actions[]` paths) remain for
 in-thread UI and for the actions only available there (`proforma`,
-`payment-request`, `payment-record`, document upload). An illegal transition
+`payment-request`). An illegal transition
 is `409` `order_transition_not_allowed` (`order_action_not_allowed` for
-`tracking`). Rate-limited (`throttle:api-decision`).
+`tracking`, `documents`, `payments`). Rate-limited (`throttle:api-decision`;
+`documents` uses `throttle:api-upload`).
+
+### Supplier — leads, capacities, lot transformations
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/supplier/leads` | The lead pipeline of the caller's companies (same scope as the web "Leads" page), newest first, 15/page. Query: `status` (`new\|contacted\|won\|lost\|dormant`), `source` (`rfq\|inquiry\|manual`), `rfq_type` (`export\|domestic_manufacturing\|transport`). Item: `id`, `source`, `status {value,label}`, `buyer_name`, `buyer_email`, `buyer_country_code`, `value_amount`, `value_currency`, `notes` (private to the company), `rfq {reference_code,type,title}\|null`, `last_activity_at`, `created_at`. |
+| GET | `/supplier/leads/{id}` | One lead (`404` if not yours). |
+| PATCH | `/supplier/leads/{id}` | Any of `status` (any value above — no transition restrictions, same as the web form), `notes`, `value_amount`. Stamps `last_activity_at`. No create/delete (leads come from RFQs/inquiries). |
+| GET / POST | `/supplier/capacities` | Declared capacities of the caller's company (any company type). POST body: `capability` (free text, max 150 — e.g. "Kiln drying", "Trucking — Douala corridor"), `quantity` (>= 0.01), `unit` (max 30, e.g. `m3`, `ton`, `TEU`), `period` (`day\|week\|month\|quarter\|year`) — all required. `201`. |
+| GET / PATCH / DELETE | `/supplier/capacities/{id}` | One capacity; PATCH takes any subset of the fields above; DELETE `204`. `404` if not yours. |
+| GET | `/supplier/lot-transformations` | Read-only mass-balance ledger where the caller's company is the PROCESSOR (written when a transformation job completes), newest `processed_at` first. Item: `id`, `transformation_type`, `input_volume_m3`, `output_volume_m3`, `loss_volume_m3`, `transformation_ratio`, `processed_at`, `notes`, `created_at`. |
+| GET | `/supplier/lot-transformations/{id}` | Same plus `input_lots[]` / `output_lots[]` (`id`, `lot_number`, `quantity_m3`). |
+
+### Company context — organisation type, plan & subscription
+
+`GET /company`, `GET /auth/me` (`data.company`) and `GET /dashboard`
+(`data.company`) all carry:
+
+- `organisation_type`: `{ "value": "processor", "label": "Processor" }` (or `null`).
+- `plan`: the plan whose features apply **right now** (`null` when none):
+  `{ slug, name, segment, features: {...raw map, e.g. leads_receive, max_gallery, verified_badge, featured, api}, leads_receive: bool, max_gallery: int, is_free: bool, expires_at: ISO-8601|null }`.
+  Gate UI on these (e.g. hide the Leads tab when `plan.leads_receive` is false).
+
+`GET /company/subscription` (read-only, mirrors the web "Subscription" page):
+`{ company_id, organisation_type, plan: {slug,name,segment,price_amount,price_currency,billing_period,features}|null, subscription: {id,status,starts_at,ends_at,renews_at,trial_ends_at,on_trial}|null, effective_plan: (as above), pricing_url }`.
+Upgrading stays on the web (`pricing_url`).
+
+**Artisan portfolio.** `PATCH /company` `gallery[]` items accept, besides
+`image_path`/`caption`: `description` (max 2000), `is_portfolio` (bool),
+`materials_used` (max 255), `completed_on` (date, not in the future). Items
+with `is_portfolio: true` appear on the public `/companies/{slug}/portfolio`
+page (artisan companies). `GET /company` returns the same fields per item.
 
 ### Fleet (logistics) — a company's own vehicles + drivers
 
@@ -695,7 +731,7 @@ Request pipeline (authenticated, any company member):
 | GET | `/transformation/requests` | Paginated list. Query: `box` = `sent` (requests your company made) or `received` (requests made to your company). **Default:** `received` when your company's `type` is a provider type (processor/manufacturer/artisan), otherwise `sent`. `status` = `pending\|quoted\|accepted\|in_progress\|completed\|declined\|cancelled` (optional; unknown values are ignored). `per_page` 1–50 (default 15). |
 | POST | `/transformation/requests` | Create. Body: `provider_slug`, `service` (`sawing\|drying\|planing\|moulding\|veneer\|other`), `volume_m3`, optional `species_slug`, `input_description`, `target_spec`, `deadline`, `notes`. |
 | GET | `/transformation/requests/{reference}` | One request (`404` for non-participants). |
-| POST | `.../{reference}/accept`, `/decline` (`reason`), `/quote` (`amount`, `currency`, `lead_time_days?`, `notes?`), `/start`, `/complete` (`input_volume_m3?`, `output_volume_m3?`, `notes?`) | Provider side. |
+| POST | `.../{reference}/accept`, `/decline` (`reason`), `/quote` (`amount`, `currency` = `XAF\|EUR\|USD`, case-insensitive, `lead_time_days?`, `notes?`), `/start`, `/complete` (`input_volume_m3?`, `output_volume_m3?`, `notes?`) | Provider side. |
 | POST | `.../{reference}/accept-quote`, `/decline-quote`, `/cancel` | Requester side. |
 
 Each item carries server-computed `actions[]` for the caller — render only those.

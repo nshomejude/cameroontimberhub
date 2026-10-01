@@ -106,6 +106,11 @@ it('runs the full happy path from creation to a recorded LotTransformation', fun
 
     Notification::assertSentTo($providerCompany->users, TransformationRequestCreatedNotification::class);
 
+    // A currency outside the web form's list (XAF/EUR/USD) is refused.
+    $this->actingAs($providerUser, 'sanctum')
+        ->postJson("/api/v1/transformation/requests/{$reference}/quote", ['amount' => 500000, 'currency' => 'GBP'])
+        ->assertUnprocessable()->assertJsonValidationErrors('currency', 'error.details');
+
     // Provider quotes.
     $quote = $this->actingAs($providerUser, 'sanctum')
         ->postJson("/api/v1/transformation/requests/{$reference}/quote", [

@@ -96,6 +96,10 @@ class UpdateCompanyProfileRequest extends FormRequest
             'gallery' => ['sometimes', 'array'],
             'gallery.*.image_path' => ['required', 'string', 'max:255', 'starts_with:companies/gallery/', 'not_regex:/\.\./'],
             'gallery.*.caption' => ['nullable', 'string', 'max:255'],
+            'gallery.*.description' => ['nullable', 'string', 'max:2000'],
+            'gallery.*.is_portfolio' => ['nullable', 'boolean'],
+            'gallery.*.materials_used' => ['nullable', 'string', 'max:255'],
+            'gallery.*.completed_on' => ['nullable', 'date', 'before_or_equal:today'],
         ];
     }
 }

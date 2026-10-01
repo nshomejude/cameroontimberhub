@@ -5,6 +5,7 @@ namespace App\Filament\Exporter\Resources\LotTransformations;
 use App\Filament\Exporter\Resources\LotTransformations\Pages\ListLotTransformations;
 use App\Filament\Exporter\Resources\LotTransformations\Pages\ViewLotTransformation;
 use App\Models\LotTransformation;
+use App\Services\TransformationRequestService;
 use BackedEnum;
 use Filament\Actions\ViewAction;
 use Filament\Infolists\Components\TextEntry;
@@ -57,7 +58,9 @@ class LotTransformationResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        $companyId = auth()->user()?->companies()->first()?->getKey();
+        // Same company resolver as the transformation-request flow that writes these rows.
+        $user = auth()->user();
+        $companyId = $user ? app(TransformationRequestService::class)->company($user)?->getKey() : null;
 
         return parent::getEloquentQuery()->when(
             $companyId !== null,

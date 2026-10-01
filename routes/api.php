@@ -8,6 +8,10 @@ use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CompanyDocumentController;
 use App\Http\Controllers\Api\V1\CompanyOnboardingController;
 use App\Http\Controllers\Api\V1\CompanyProfileController;
+use App\Http\Controllers\Api\V1\CompanySubscriptionController;
+use App\Http\Controllers\Api\V1\SupplierCapacityController;
+use App\Http\Controllers\Api\V1\SupplierLeadController;
+use App\Http\Controllers\Api\V1\SupplierLotTransformationController;
 use App\Http\Controllers\Api\V1\CompanyVerificationController;
 use App\Http\Controllers\Api\V1\CertificateController;
 use App\Http\Controllers\Api\V1\TraceabilityController;
@@ -576,6 +580,10 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
         Route::get('company/onboarding', [CompanyOnboardingController::class, 'index'])
             ->name('company.onboarding');
 
+        // Read-only plan/subscription status (exporter SubscriptionStatus page).
+        Route::get('company/subscription', CompanySubscriptionController::class)
+            ->name('company.subscription');
+
         // RFQ inbox (this task): RFQs routed to the caller's company. Lives
         // under a `supplier/` sub-prefix — NOT bare `rfqs`/`orders` — so it
         // never collides with the buyer group's identically-named routes at
@@ -626,7 +634,33 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
                 Route::post('orders/{reference}/ship', [SupplierOrderFulfilmentController::class, 'ship'])->name('orders.ship');
                 Route::post('orders/{reference}/tracking', [SupplierOrderFulfilmentController::class, 'updateTracking'])->name('orders.tracking');
                 Route::post('orders/{reference}/deliver', [SupplierOrderFulfilmentController::class, 'deliver'])->name('orders.deliver');
+                // Off-platform payment + cancel, same threaded/threadless split.
+                Route::post('orders/{reference}/payments', [SupplierOrderFulfilmentController::class, 'recordPayment'])->name('orders.payments.store');
+                Route::post('orders/{reference}/cancel', [SupplierOrderFulfilmentController::class, 'cancel'])->name('orders.cancel');
             });
+            Route::post('orders/{reference}/documents', [SupplierOrderFulfilmentController::class, 'attachDocuments'])
+                ->middleware('throttle:api-upload')->name('orders.documents.store');
+
+            // Lead pipeline (SupplierLeadController): list/view/update only, like the exporter LeadResource.
+            Route::get('leads', [SupplierLeadController::class, 'index'])->name('leads.index');
+            Route::get('leads/{lead}', [SupplierLeadController::class, 'show'])->whereNumber('lead')->name('leads.show');
+            Route::patch('leads/{lead}', [SupplierLeadController::class, 'update'])
+                ->whereNumber('lead')->middleware('throttle:api-decision')->name('leads.update');
+
+            // Declared capacities (SupplierCapacityController), exporter CapacityResource counterpart.
+            Route::get('capacities', [SupplierCapacityController::class, 'index'])->name('capacities.index');
+            Route::post('capacities', [SupplierCapacityController::class, 'store'])
+                ->middleware('throttle:api-product-write')->name('capacities.store');
+            Route::get('capacities/{capacity}', [SupplierCapacityController::class, 'show'])->whereNumber('capacity')->name('capacities.show');
+            Route::patch('capacities/{capacity}', [SupplierCapacityController::class, 'update'])
+                ->whereNumber('capacity')->middleware('throttle:api-decision')->name('capacities.update');
+            Route::delete('capacities/{capacity}', [SupplierCapacityController::class, 'destroy'])
+                ->whereNumber('capacity')->middleware('throttle:api-decision')->name('capacities.destroy');
+
+            // Read-only processor mass-balance ledger (SupplierLotTransformationController).
+            Route::get('lot-transformations', [SupplierLotTransformationController::class, 'index'])->name('lot-transformations.index');
+            Route::get('lot-transformations/{transformation}', [SupplierLotTransformationController::class, 'show'])
+                ->whereNumber('transformation')->name('lot-transformations.show');
 
             // Product management (this task): full CRUD + submit-for-publish
             // over the caller's own company's catalogue listings, API
