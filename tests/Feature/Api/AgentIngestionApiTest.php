@@ -201,6 +201,19 @@ it('prohibits status / verification fields', function () {
         ->assertJsonStructure(['error' => ['details' => ['status', 'is_featured']]]);
 });
 
+it('audit P2: an agent cannot add products to another agent source\'s supplier', function () {
+    $a = agentKey(name: 'Hermes');
+    $id = $this->postJson('/api/v1/agent/suppliers', agentSupplierPayload(), agentHeaders($a['token']))->assertCreated()->json('data.id');
+    expect(Company::findOrFail($id)->source)->not->toBeNull();
+
+    $b = agentKey(name: 'Other Bot');
+
+    $this->postJson("/api/v1/agent/suppliers/{$id}/products", agentProductPayload(), agentHeaders($b['token']))
+        ->assertNotFound();
+
+    expect(Product::count())->toBe(0);
+});
+
 it('refuses to touch a human-owned company that matches (supplier_owned)', function () {
     $key = agentKey();
     $human = Company::factory()->create(['registration_number' => 'RC/DLA/2020/B/123', 'status' => CompanyStatus::Verified]);
@@ -210,8 +223,10 @@ it('refuses to touch a human-owned company that matches (supplier_owned)', funct
         ->assertJsonPath('error.code', 'supplier_owned')
         ->assertJsonPath('error.details.existing_id', $human->id);
 
+    // Audit P2: the product endpoint is scoped to the agent's own source, so
+    // a human-owned company id is indistinguishable from a missing one.
     $this->postJson("/api/v1/agent/suppliers/{$human->id}/products", agentProductPayload(), agentHeaders($key['token']))
-        ->assertStatus(409)->assertJsonPath('error.code', 'supplier_owned');
+        ->assertNotFound()->assertJsonMissingPath('error.details.existing_id');
 
     expect(Company::count())->toBe(1);
 });
