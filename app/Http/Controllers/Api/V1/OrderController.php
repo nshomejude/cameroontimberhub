@@ -7,10 +7,13 @@ use App\Domain\Trade\Queries\ListBuyerOrdersQuery;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Api\V1\OrderResource;
 use App\Http\Resources\Api\V1\ShipmentTrackingResource;
+use App\Models\Shipment;
 use App\Services\BuyerApiScope;
+use App\Services\ShipmentService;
 use App\Support\Bus\QueryBus;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Buyer orders over token auth — the API counterpart of `/account/orders`.
@@ -29,6 +32,7 @@ class OrderController extends Controller
     public function __construct(
         private readonly BuyerApiScope $scope,
         private readonly QueryBus $queryBus,
+        private readonly ShipmentService $shipments,
     ) {}
 
     public function index(Request $request): AnonymousResourceCollection
@@ -66,5 +70,19 @@ class OrderController extends Controller
         ));
 
         return ShipmentTrackingResource::collection($shipments);
+    }
+
+    /**
+     * GET orders/{reference}/shipments/{shipment}/checkpoints/{checkpoint}/photo —
+     * streams a checkpoint proof photo to the order's buyer. Same
+     * BuyerApiScope boundary as the tracking list: another buyer's order,
+     * a shipment of another order or a photo-less checkpoint all 404.
+     */
+    public function checkpointPhoto(Request $request, string $reference, int $shipment, int $checkpoint): Response
+    {
+        $order = $this->scope->order($request->user(), $reference);
+        $record = Shipment::query()->where('order_id', $order->getKey())->whereKey($shipment)->firstOrFail();
+
+        return $this->shipments->photoResponse($record, $checkpoint);
     }
 }

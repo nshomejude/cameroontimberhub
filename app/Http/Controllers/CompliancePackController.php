@@ -23,7 +23,7 @@ class CompliancePackController extends Controller
 {
     public function download(Request $request, TimberLot $timberLot, ComplianceEvidencePackService $packs): Response
     {
-        abort_unless($this->authorized($request->user(), $timberLot), 403);
+        abort_unless($this->authorized($request->user(), $timberLot), 404);
 
         $timberLot->loadMissing(['company', 'species', 'product']);
 

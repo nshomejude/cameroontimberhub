@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Api\V1;
 
+use App\Support\CameroonGeography;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 /**
  * A supplier's own company-profile edit over the API — the `PATCH`
@@ -29,6 +31,36 @@ class UpdateCompanyProfileRequest extends FormRequest
         return $this->user() !== null;
     }
 
+    /**
+     * Normalise `region` case-insensitively onto the canonical
+     * CameroonGeography region name ("littoral" -> "Littoral").
+     */
+    protected function prepareForValidation(): void
+    {
+        if (is_string($region = $this->input('region'))) {
+            foreach (CameroonGeography::regionNames() as $name) {
+                if (mb_strtolower(trim($region)) === mb_strtolower($name)) {
+                    $this->merge(['region' => $name]);
+                    break;
+                }
+            }
+        }
+    }
+
+    /**
+     * Allowed regions: the 10 canonical ones, plus whatever legacy free-text
+     * value the caller's company already holds (so re-saving an untouched
+     * profile never fails).
+     *
+     * @return list<string>
+     */
+    private function allowedRegions(): array
+    {
+        $current = $this->user()?->companies()->first()?->region;
+
+        return array_values(array_unique(array_filter([...CameroonGeography::regionNames(), $current])));
+    }
+
     /** @return array<string, mixed> */
     public function rules(): array
     {
@@ -37,7 +69,7 @@ class UpdateCompanyProfileRequest extends FormRequest
             'trade_name' => ['sometimes', 'nullable', 'string', 'max:255'],
             'description' => ['sometimes', 'required', 'string', 'min:50'],
 
-            'region' => ['sometimes', 'required', 'string', 'max:120'],
+            'region' => ['sometimes', 'required', 'string', 'max:120', Rule::in($this->allowedRegions())],
             'city' => ['sometimes', 'nullable', 'string', 'max:120'],
             'country_code' => ['sometimes', 'nullable', 'string', 'max:2'],
             'address_line' => ['sometimes', 'nullable', 'string', 'max:255'],
@@ -62,8 +94,12 @@ class UpdateCompanyProfileRequest extends FormRequest
             'contacts.*.is_public' => ['sometimes', 'boolean'],
 
             'gallery' => ['sometimes', 'array'],
-            'gallery.*.image_path' => ['required', 'string'],
+            'gallery.*.image_path' => ['required', 'string', 'max:255', 'starts_with:companies/gallery/', 'not_regex:/\.\./'],
             'gallery.*.caption' => ['nullable', 'string', 'max:255'],
+            'gallery.*.description' => ['nullable', 'string', 'max:2000'],
+            'gallery.*.is_portfolio' => ['nullable', 'boolean'],
+            'gallery.*.materials_used' => ['nullable', 'string', 'max:255'],
+            'gallery.*.completed_on' => ['nullable', 'date', 'before_or_equal:today'],
         ];
     }
 }

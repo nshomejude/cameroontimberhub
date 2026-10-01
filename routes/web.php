@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\DemoLoginController;
+use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
@@ -14,6 +15,7 @@ use App\Http\Controllers\Public\BuyerQuoteController;
 use App\Http\Controllers\Public\CarbonProjectsController;
 use App\Http\Controllers\Public\CertificateVerificationController;
 use App\Http\Controllers\Public\ChatCommerceController;
+use App\Http\Controllers\Public\CheckpointPhotoController;
 use App\Http\Controllers\Public\CheckpointTrackingController;
 use App\Http\Controllers\Public\CompanyController;
 use App\Http\Controllers\Public\ContactController;
@@ -182,6 +184,9 @@ Route::get('/request-quote/manufacturing', [RfqController::class, 'createManufac
 Route::get('/request-quote/transport', [RfqController::class, 'createTransport'])->name('rfq.create.transport');
 Route::post('/request-quote', [RfqController::class, 'store'])->middleware('throttle:rfq-submit')->name('rfq.store');
 Route::get('/request-quote/thanks', [RfqController::class, 'thanks'])->name('rfq.thanks');
+// Re-send an expired/lost confirmation link (reference + email). The response
+// is identical whether or not a match exists, so it cannot enumerate RFQs.
+Route::post('/request-quote/resend', [RfqController::class, 'resend'])->middleware('throttle:6,60')->name('rfq.resend');
 // Wizard steps. Each is a real GET URL so refresh and browser back/forward work
 // without JavaScript; the POST banks the step in the session and redirects.
 Route::get('/request-quote/step/{step}', [RfqController::class, 'step'])->name('rfq.step');
@@ -191,7 +196,9 @@ Route::post('/request-quote/step/{step}', [RfqController::class, 'storeStep'])
 // Session-backed RFQ shortlist ("Add to RFQ List" on a product page).
 Route::post('/rfq-list/{slug}', [RfqListController::class, 'store'])->middleware('throttle:session-write')->name('rfq-list.store');
 Route::delete('/rfq-list/{slug}', [RfqListController::class, 'destroy'])->middleware('throttle:session-write')->name('rfq-list.destroy');
-Route::get('/rfq/{rfq}/verify', [RfqController::class, 'verify'])->middleware('signed')->name('rfq.verify');
+// Signature is checked in the controller (not the `signed` middleware) so an
+// expired or mangled link renders a recovery page instead of a bare 403.
+Route::get('/rfq/{rfq}/verify', [RfqController::class, 'verify'])->name('rfq.verify');
 
 // Buyer-facing quote responses. Deliberately NOT behind `auth` or `signed`
 // middleware: RFQ intake is account-free, so access is decided per-request by
@@ -252,12 +259,24 @@ Route::get('/shipments/{shipment:waybill_number}/waybill', [ShipmentWaybillContr
     ->name('shipments.waybill.show');
 
 // Offline-capable field checkpoint capture for logistics/drivers (blueprint
-// §45-46). Same no-auth, waybill_number-token access pattern as the waybill
-// route directly above — a driver in the field has no account either.
+// §45-46). Writing a checkpoint (incl. "delivered") requires a logged-in
+// member of the carrier or the order's supplier company — a guest is sent
+// to login and returned here (intended URL). Reading stays public via the
+// waybill page above and /track/{token}.
+// The POST deliberately has no `auth` middleware: a guest redirect would be
+// followed by fetch() as a 200 and the OfflineQueue would drop the item —
+// the controller answers a guest with a JSON 401 instead (stays queued).
 Route::get('/logistics/shipments/{shipment:waybill_number}/checkpoint', [LogisticsCheckpointController::class, 'create'])
-    ->name('logistics.checkpoints.create');
+    ->middleware('auth')->name('logistics.checkpoints.create');
 Route::post('/logistics/shipments/{shipment:waybill_number}/checkpoint', [LogisticsCheckpointController::class, 'store'])
     ->middleware('throttle:checkpoint-record')->name('logistics.checkpoints.store');
+
+// Checkpoint proof photos for the buyer order page and the exporter shipment
+// view: a 30-minute temporary signed URL minted only after those pages have
+// authorised the viewer (see CheckpointPhotoController). Never linked from
+// the public /track/{token} page.
+Route::get('/shipments/{shipment}/checkpoints/{checkpoint}/photo', CheckpointPhotoController::class)
+    ->whereNumber(['shipment', 'checkpoint'])->middleware('signed')->name('shipments.checkpoints.photo');
 
 // The staff-facing printable certificate document. Authorization is checked
 // inside the controller against the certificates.manage permission.
@@ -266,7 +285,7 @@ Route::get('/certificates/{certificateNumber}', [CertificateVerificationControll
 
 // Public company inquiry intake + email verification.
 Route::post('/companies/{company:slug}/inquiries', [InquiryController::class, 'store'])->middleware('throttle:inquiry-submit')->name('inquiry.store');
-Route::get('/inquiry/{inquiry}/verify', [InquiryController::class, 'verify'])->middleware('signed')->name('inquiry.verify');
+Route::get('/inquiry/{inquiry}/verify', [InquiryController::class, 'verify'])->name('inquiry.verify');
 
 // Static marketing pages (CMS-backed via the pages table).
 Route::get('/about', [PageController::class, 'show'])->defaults('slug', 'about')->name('about');
@@ -301,7 +320,12 @@ Route::get('/exporters/{species}', [ProgrammaticExporterController::class, 'show
 // Public buyer/supplier authentication (hand-rolled; no starter kit).
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'create'])->name('login');
-    Route::post('/login', [LoginController::class, 'store'])->middleware('throttle:6,1')->name('login.store');
+    Route::post('/login', [LoginController::class, 'store'])->middleware('throttle:web-login')->name('login.store');
+    // Second step of a password login for an account with confirmed 2FA
+    // (blueprint §39). Guest-only: nobody is signed in until the code passes.
+    Route::get('/login/two-factor', [LoginController::class, 'showTwoFactor'])->name('login.two-factor');
+    Route::post('/login/two-factor', [LoginController::class, 'storeTwoFactor'])
+        ->middleware('throttle:web-login-2fa')->name('login.two-factor.store');
     // One-click demo logins. POST-only and CSRF-protected on purpose: a GET
     // would let a link, a prefetch or a crawler authenticate someone. The
     // persona segment is constrained to the three literal keys in
@@ -327,6 +351,17 @@ Route::middleware('guest')->group(function () {
 
 Route::post('/logout', [LoginController::class, 'destroy'])->middleware('auth')->name('logout');
 
+// Email verification (MustVerifyEmail). Login is NOT blocked for unverified
+// accounts; verification unlocks guest-RFQ adoption and starting new
+// conversations. The verify link is signed and does not require a session,
+// so a link opened from the mobile app's mail (or another browser) works.
+Route::get('/email/verify', [EmailVerificationController::class, 'notice'])
+    ->middleware('auth')->name('verification.notice');
+Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
+    ->middleware(['signed', 'throttle:6,1'])->name('verification.verify');
+Route::post('/email/verification-notification', [EmailVerificationController::class, 'send'])
+    ->middleware(['auth', 'throttle:6,1'])->name('verification.send');
+
 // TOTP-based multi-factor authentication (blueprint §39). Self-service
 // enrolment/management is available to every signed-in user; the step-up
 // re-verify challenge is used both by RequiresRecentTwoFactor-gated routes
@@ -334,7 +369,8 @@ Route::post('/logout', [LoginController::class, 'destroy'])->middleware('auth')-
 Route::middleware(['auth'])->prefix('security/two-factor')->name('two-factor.')->group(function () {
     Route::get('/', [App\Http\Controllers\Auth\TwoFactorController::class, 'show'])->name('show');
     Route::post('/enable', [App\Http\Controllers\Auth\TwoFactorController::class, 'enable'])->name('enable');
-    Route::post('/confirm', [App\Http\Controllers\Auth\TwoFactorController::class, 'confirm'])->name('confirm');
+    Route::post('/confirm', [App\Http\Controllers\Auth\TwoFactorController::class, 'confirm'])
+        ->middleware('throttle:two-factor-confirm')->name('confirm');
     Route::post('/disable', [App\Http\Controllers\Auth\TwoFactorController::class, 'disable'])->name('disable');
     Route::post('/recovery-codes', [App\Http\Controllers\Auth\TwoFactorController::class, 'regenerateRecoveryCodes'])->name('recovery-codes');
     Route::get('/challenge', [App\Http\Controllers\Auth\TwoFactorController::class, 'showChallenge'])->name('challenge.show');
@@ -384,6 +420,30 @@ Route::middleware(['auth', 'buyer'])->prefix('account')->name('account.')->group
     Route::get('/orders', [AccountController::class, 'orders'])->name('orders');
     Route::get('/receipts', [AccountController::class, 'receipts'])->name('receipts');
 
+    // Buyer withdraws a still-open RFQ (RfqCancellationService).
+    Route::post('/requests/{reference}/cancel', [AccountController::class, 'cancelRfq'])
+        ->middleware('throttle:10,1')->name('rfqs.cancel');
+
+    Route::get('/disputes', [AccountController::class, 'disputes'])->name('disputes');
+
+    // Settings: profile, password, notification preferences (2FA links out
+    // to the shared /security/two-factor screen).
+    Route::get('/settings', [App\Http\Controllers\Public\AccountSettingsController::class, 'show'])->name('settings');
+    Route::put('/settings/profile', [App\Http\Controllers\Public\AccountSettingsController::class, 'updateProfile'])->name('settings.profile');
+    Route::put('/settings/password', [App\Http\Controllers\Public\AccountSettingsController::class, 'updatePassword'])
+        ->middleware('throttle:6,1')->name('settings.password');
+    Route::put('/settings/notifications', [App\Http\Controllers\Public\AccountSettingsController::class, 'updatePreferences'])->name('settings.preferences');
+    Route::put('/settings/referral-payout', [App\Http\Controllers\Public\AccountSettingsController::class, 'updateReferralPayout'])
+        ->middleware('throttle:10,1')->name('settings.referral-payout');
+
+    Route::get('/notifications', [App\Http\Controllers\Public\AccountNotificationController::class, 'index'])->name('notifications');
+    Route::post('/notifications/read-all', [App\Http\Controllers\Public\AccountNotificationController::class, 'readAll'])->name('notifications.read-all');
+    Route::post('/notifications/{id}/read', [App\Http\Controllers\Public\AccountNotificationController::class, 'read'])->name('notifications.read');
+
+    Route::get('/saved', [App\Http\Controllers\Public\SavedSupplierController::class, 'index'])->name('saved');
+    Route::post('/saved/{slug}', [App\Http\Controllers\Public\SavedSupplierController::class, 'store'])->name('saved.store');
+    Route::delete('/saved/{slug}', [App\Http\Controllers\Public\SavedSupplierController::class, 'destroy'])->name('saved.destroy');
+
     // Messaging. `/messages/new` and `/messages/start` are declared before the
     // `{conversation}` binding so the static segments win. Every screen resolves
     // the thread through MessagingService, which 404s a non-participant.
@@ -403,6 +463,15 @@ Route::middleware(['auth', 'buyer'])->prefix('account')->name('account.')->group
         ->name('orders.trade-assurance');
     Route::post('/orders/{order}/trade-assurance/{milestone}/confirm', [TradeAssuranceController::class, 'confirm'])
         ->name('orders.trade-assurance.confirm');
+});
+
+// Account deletion (store requirement). Outside the `buyer` group on purpose:
+// company members delete their account here too. Staff get a 403-style
+// refusal from DeleteAccount. A settings page links to `account.delete`.
+Route::middleware(['auth'])->prefix('account')->name('account.')->group(function () {
+    Route::get('/delete', [\App\Http\Controllers\Public\AccountDeletionController::class, 'show'])->name('delete');
+    Route::post('/delete', [\App\Http\Controllers\Public\AccountDeletionController::class, 'destroy'])
+        ->middleware('throttle:5,1')->name('destroy');
 });
 
 // In-thread commerce: RFQ composer, quotation accept/decline/withdraw, and the

@@ -7,12 +7,14 @@ use App\Domain\Commerce\Commands\RecordPaymentCompletionCommand;
 use App\Enums\PaymentProvider;
 use App\Enums\PaymentStatus;
 use App\Models\Payment;
+use App\Services\Referrals\ReferralPayoutService;
 use App\Support\Bus\CommandBus;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\URL;
 use Throwable;
 
 /**
@@ -49,15 +51,24 @@ class PayPalGateway implements PaymentGatewayContract
                     'intent' => 'CAPTURE',
                     'purchase_units' => [
                         [
+                            // custom_id ties the PayPal order back to this
+                            // Payment; verified again on capture.
+                            'custom_id' => (string) $payment->getKey(),
+                            // `amount` is the payer total INCLUDING any
+                            // passed-through PayPal fee (base_amount +
+                            // provider_fee_amount, disclosed at checkout);
+                            // captureMatches() verifies the capture against it.
                             'amount' => [
                                 'currency_code' => $payment->currency,
-                                'value' => number_format((float) $payment->amount, 2, '.', ''),
+                                'value' => self::formatAmount($payment->amount),
                             ],
                         ],
                     ],
                     'application_context' => [
-                        'return_url' => route('payments.paypal.return', $payment),
-                        'cancel_url' => route('payments.paypal.cancel', $payment),
+                        // Signed: the return/cancel legs are public browser
+                        // redirects, so only links we minted may act.
+                        'return_url' => URL::temporarySignedRoute('payments.paypal.return', now()->addDay(), ['payment' => $payment->getKey()]),
+                        'cancel_url' => URL::temporarySignedRoute('payments.paypal.cancel', now()->addDay(), ['payment' => $payment->getKey()]),
                     ],
                 ]);
 
@@ -88,11 +99,19 @@ class PayPalGateway implements PaymentGatewayContract
 
     public function handleReturn(Request $request, Payment $payment): Response
     {
-        $orderId = $request->query('token') ?? $payment->provider_reference;
+        // Only ever capture the order WE created for this payment. The
+        // `token` query param is attacker-controlled: capturing it blindly
+        // would let a cheap order A complete an expensive payment B.
+        $orderId = (string) $payment->provider_reference;
+        $token = $request->query('token');
 
-        if (! $orderId) {
-            $payment->markFailed();
+        if ($orderId === '' || ($token !== null && (! is_string($token) || ! hash_equals($orderId, $token)))) {
+            Log::warning('PayPal return token does not match the payment order', ['payment_id' => $payment->id]);
 
+            return response()->view('payments.paypal.failed', ['payment' => $payment], 400);
+        }
+
+        if (! $payment->isPending()) {
             return response()->view('payments.paypal.failed', ['payment' => $payment], 400);
         }
 
@@ -108,7 +127,12 @@ class PayPalGateway implements PaymentGatewayContract
             $data = $response->json();
 
             if ($response->successful() && ($data['status'] ?? null) === 'COMPLETED') {
-                $captureId = $data['purchase_units'][0]['payments']['captures'][0]['id'] ?? $orderId;
+                $capture = $data['purchase_units'][0]['payments']['captures'][0] ?? [];
+                $captureId = $capture['id'] ?? $orderId;
+
+                if (! $this->captureMatches($payment, $capture, $data['purchase_units'][0] ?? [])) {
+                    return response()->view('payments.paypal.failed', ['payment' => $payment], 400);
+                }
 
                 // Completion goes through the CommandBus (billing engine M2) so
                 // markCompleted() + the PaymentCompleted outbox event are one
@@ -188,6 +212,15 @@ class PayPalGateway implements PaymentGatewayContract
         $eventType = $payload['event_type'];
         $resource = $payload['resource'];
 
+        // Referral commission payouts (Payouts API) share this verified
+        // webhook; they never touch a checkout Payment.
+        if (is_string($eventType) && str_starts_with($eventType, 'PAYMENT.PAYOUTS')) {
+            $result = app(ReferralPayoutService::class)
+                ->handlePayPalWebhook($eventType, is_array($resource) ? $resource : []);
+
+            return $this->jsonResponse(['status' => $result]);
+        }
+
         $orderId = $resource['supplementary_data']['related_ids']['order_id']
             ?? $resource['id']
             ?? null;
@@ -202,7 +235,14 @@ class PayPalGateway implements PaymentGatewayContract
             return $this->jsonResponse(['status' => 'ignored']);
         }
 
-        if ($eventType === 'PAYMENT.CAPTURE.COMPLETED' || $eventType === 'CHECKOUT.ORDER.APPROVED') {
+        // Only a completed capture settles a payment — CHECKOUT.ORDER.APPROVED
+        // means the payer approved but no funds have moved yet (the return
+        // leg captures). The captured amount must match ours.
+        if ($eventType === 'PAYMENT.CAPTURE.COMPLETED') {
+            if (! $this->captureMatches($payment, $resource)) {
+                return $this->jsonResponse(['status' => 'rejected']);
+            }
+
             $captureId = $resource['id'] ?? $orderId;
             app(CommandBus::class)->dispatch(new RecordPaymentCompletionCommand(
                 paymentId: $payment->getKey(),
@@ -213,6 +253,47 @@ class PayPalGateway implements PaymentGatewayContract
         }
 
         return $this->jsonResponse(['status' => 'ok']);
+    }
+
+    /**
+     * Verify a capture really pays for this payment: same amount and
+     * currency, and (when PayPal echoes it) our custom_id. Logs critical and
+     * returns false on any mismatch so the caller does not complete.
+     *
+     * @param  array<string, mixed>  $capture
+     * @param  array<string, mixed>  $purchaseUnit
+     */
+    private function captureMatches(Payment $payment, array $capture, array $purchaseUnit = []): bool
+    {
+        $value = $capture['amount']['value'] ?? null;
+        $currency = $capture['amount']['currency_code'] ?? null;
+        $customId = $capture['custom_id'] ?? $purchaseUnit['custom_id'] ?? null;
+
+        $amountOk = $value !== null
+            && self::formatAmount($value) === self::formatAmount($payment->amount)
+            && is_string($currency)
+            && strtoupper($currency) === strtoupper((string) $payment->currency);
+        $customOk = $customId === null || (string) $customId === (string) $payment->getKey();
+
+        if ($amountOk && $customOk) {
+            return true;
+        }
+
+        Log::critical('PayPal capture does not match payment — not completing', [
+            'payment_id' => $payment->id,
+            'expected_amount' => self::formatAmount($payment->amount),
+            'expected_currency' => $payment->currency,
+            'captured_amount' => $value,
+            'captured_currency' => $currency,
+            'custom_id' => $customId,
+        ]);
+
+        return false;
+    }
+
+    private static function formatAmount(mixed $amount): string
+    {
+        return number_format((float) $amount, 2, '.', '');
     }
 
     private function jsonResponse(array $data, int $status = 200): Response
@@ -240,5 +321,35 @@ class PayPalGateway implements PaymentGatewayContract
         }
 
         return $response->json('access_token');
+    }
+
+    // ------------------------------------------------------------------
+    // Payouts API (referral commission payouts — ReferralPayoutService).
+    // Reuses this gateway's credentials, environment and OAuth token.
+    // ------------------------------------------------------------------
+
+    /**
+     * POST /v1/payments/payouts. PayPal rejects a re-used `sender_batch_id`
+     * (30-day window), so re-submitting the same payout can never pay twice;
+     * PayPal-Request-Id additionally makes an exact retry idempotent.
+     *
+     * @param  array<string, mixed>  $body
+     */
+    public function createPayout(array $body, string $requestId): \Illuminate\Http\Client\Response
+    {
+        return Http::withToken($this->getAccessToken())
+            ->acceptJson()
+            ->withHeaders(['PayPal-Request-Id' => $requestId])
+            ->timeout(30)
+            ->post($this->baseUrl().'/v1/payments/payouts', $body);
+    }
+
+    /** GET /v1/payments/payouts/{payout_batch_id} — batch header + items. */
+    public function getPayoutBatch(string $payoutBatchId): \Illuminate\Http\Client\Response
+    {
+        return Http::withToken($this->getAccessToken())
+            ->acceptJson()
+            ->timeout(30)
+            ->get($this->baseUrl().'/v1/payments/payouts/'.rawurlencode($payoutBatchId));
     }
 }

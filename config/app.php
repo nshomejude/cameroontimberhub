@@ -55,6 +55,12 @@ return [
     'url' => env('APP_URL', 'http://localhost'),
 
     /*
+    | Reverse proxies whose X-Forwarded-* headers are trusted (see
+    | App\Http\Middleware\TrustProxies). Comma-separated IPs/CIDRs, or '*'.
+    */
+    'trusted_proxies' => env('TRUSTED_PROXIES', '127.0.0.1,::1'),
+
+    /*
     |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
@@ -77,6 +83,12 @@ return [
     | set to any locale for which you plan to have translation strings.
     |
     */
+
+    /*
+    | Version label recorded on users.terms_version when an account accepts
+    | the terms of service at registration. Bump when the terms change.
+    */
+    'terms_version' => env('TERMS_VERSION', '2026-10'),
 
     'locale' => env('APP_LOCALE', 'en'),
 

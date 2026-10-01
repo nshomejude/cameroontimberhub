@@ -107,7 +107,10 @@ it('submits a request to pay and records the provider reference on success', fun
         'provider_reference' => null,
     ]);
 
-    $response = $this->post(route('payments.mtn-momo.submit', $payment), [
+    $owner = User::factory()->create();
+    $payment->company->users()->attach($owner);
+
+    $response = $this->actingAs($owner)->post(route('payments.mtn-momo.submit', $payment), [
         'phone' => '677123456',
     ]);
 
@@ -144,7 +147,10 @@ it('marks the payment failed when the request to pay call fails', function () {
         'provider_reference' => null,
     ]);
 
-    $response = $this->post(route('payments.mtn-momo.submit', $payment), [
+    $owner = User::factory()->create();
+    $payment->company->users()->attach($owner);
+
+    $response = $this->actingAs($owner)->post(route('payments.mtn-momo.submit', $payment), [
         'phone' => '677123456',
     ]);
 
@@ -171,7 +177,10 @@ it('marks the payment failed gracefully when the token request throws', function
         'provider_reference' => null,
     ]);
 
-    $response = $this->post(route('payments.mtn-momo.submit', $payment), [
+    $owner = User::factory()->create();
+    $payment->company->users()->attach($owner);
+
+    $response = $this->actingAs($owner)->post(route('payments.mtn-momo.submit', $payment), [
         'phone' => '677123456',
     ]);
 
@@ -179,6 +188,57 @@ it('marks the payment failed gracefully when the token request throws', function
 
     $payment->refresh();
     expect($payment->status)->toBe(PaymentStatus::Failed);
+});
+
+function fakeMtnStatus(string $referenceId, string $status, ?string $amount = null): void
+{
+    Http::fake([
+        '*/collection/token/' => Http::response(['access_token' => 'fake-token'], 200),
+        "*/collection/v1_0/requesttopay/{$referenceId}" => Http::response(array_filter([
+            'status' => $status,
+            'amount' => $amount,
+        ]), 200),
+    ]);
+}
+
+it('ignores a spoofed SUCCESSFUL callback when MTN reports the request still pending', function () {
+    fakeMtnMomoConfig();
+    fakeMtnStatus('ref-spoof', 'PENDING');
+
+    $payment = Payment::factory()->create([
+        'provider' => PaymentProvider::MtnMomo,
+        'status' => PaymentStatus::Pending,
+        'provider_reference' => 'ref-spoof',
+    ]);
+
+    $this->postJson(route('payments.mtn-momo.webhook'), [
+        'referenceId' => 'ref-spoof',
+        'status' => 'SUCCESSFUL',
+    ])->assertOk();
+
+    expect($payment->fresh()->status)->toBe(PaymentStatus::Pending);
+    Http::assertSent(fn ($request) => $request->method() === 'GET'
+        && str_ends_with($request->url(), '/collection/v1_0/requesttopay/ref-spoof'));
+});
+
+it('refuses to complete when MTN confirms SUCCESSFUL for a different amount', function () {
+    fakeMtnMomoConfig();
+
+    $payment = Payment::factory()->create([
+        'provider' => PaymentProvider::MtnMomo,
+        'status' => PaymentStatus::Pending,
+        'provider_reference' => 'ref-amt',
+        'amount' => 5000,
+    ]);
+
+    fakeMtnStatus('ref-amt', 'SUCCESSFUL', '1');
+
+    $this->postJson(route('payments.mtn-momo.webhook'), [
+        'referenceId' => 'ref-amt',
+        'status' => 'SUCCESSFUL',
+    ])->assertStatus(409);
+
+    expect($payment->fresh()->status)->toBe(PaymentStatus::Pending);
 });
 
 it('marks a matching payment completed via webhook', function () {
@@ -189,6 +249,8 @@ it('marks a matching payment completed via webhook', function () {
         'status' => PaymentStatus::Pending,
         'provider_reference' => 'ref-123',
     ]);
+
+    fakeMtnStatus('ref-123', 'SUCCESSFUL', (string) $payment->amount);
 
     $response = $this->postJson(route('payments.mtn-momo.webhook'), [
         'referenceId' => 'ref-123',
@@ -209,6 +271,8 @@ it('marks a matching payment failed via webhook', function () {
         'status' => PaymentStatus::Pending,
         'provider_reference' => 'ref-456',
     ]);
+
+    fakeMtnStatus('ref-456', 'FAILED');
 
     $response = $this->postJson(route('payments.mtn-momo.webhook'), [
         'referenceId' => 'ref-456',

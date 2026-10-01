@@ -11,6 +11,7 @@ use App\Enums\ProductType;
 use App\Models\Concerns\HasDocuments;
 use App\Models\Concerns\HasSlug;
 use App\Models\Concerns\HasVerification;
+use App\Support\CategoryMigrationMap;
 use App\Support\ProductIdentifier;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -30,6 +31,14 @@ class Product extends Model
 
     protected $guarded = ['id'];
 
+    /** NOT NULL columns whose explicit null is replaced by the DB default on save. */
+    public const NOT_NULL_DEFAULTS = [
+        'price_currency' => 'XAF',
+        'price_unit' => 'm3',
+        'moq_unit' => 'm3',
+        'origin' => 'Cameroon',
+    ];
+
     protected static function booted(): void
     {
         // Assign the public identifier (gap-plan §1.1) on create. Never
@@ -38,6 +47,41 @@ class Product extends Model
         static::creating(function (Product $product): void {
             if (blank($product->public_id)) {
                 $product->public_id = ProductIdentifier::forProduct($product);
+            }
+        });
+
+        static::saving(function (Product $product): void {
+            // These columns are NOT NULL with DB defaults; an explicit null
+            // from a cleared form field or API payload would otherwise 500.
+            foreach (self::NOT_NULL_DEFAULTS as $column => $default) {
+                if ($product->getAttributes()[$column] ?? null) {
+                    continue;
+                }
+                if (array_key_exists($column, $product->getAttributes())) {
+                    $product->setAttribute($column, $default);
+                }
+            }
+
+            if (is_string($product->getAttributes()['price_currency'] ?? null)) {
+                $product->setAttribute('price_currency', mb_strtoupper($product->getAttributes()['price_currency']));
+            }
+
+            // New listings never received a category — derive the form-kind
+            // category from product_type, exactly as
+            // products:backfill-categories does for legacy rows. Only when
+            // category_id was not supplied at all on create (an explicit
+            // null is respected), or when product_type changes on a row that
+            // still has none.
+            $shouldDerive = $product->exists
+                ? $product->isDirty('product_type') && $product->category_id === null
+                : ! array_key_exists('category_id', $product->getAttributes());
+
+            if ($shouldDerive && $product->product_type !== null) {
+                $slug = CategoryMigrationMap::MAP[$product->product_type->value] ?? null;
+                if ($slug !== null) {
+                    $product->category_id = Category::query()
+                        ->where('kind', 'form')->where('slug', $slug)->value('id');
+                }
             }
         });
     }
@@ -57,6 +101,10 @@ class Product extends Model
             'specifications' => 'array',
             'key_benefits' => 'array',
             'custom_attributes' => 'array',
+            // Agent Ingestion Gateway provenance (docs/api/AGENT_INGESTION.md).
+            'ingested_at' => 'datetime',
+            'ingestion_meta' => 'array',
+            'needs_review' => 'boolean',
         ];
     }
 
@@ -100,7 +148,7 @@ class Product extends Model
     // ---- Presentation helpers -------------------------------------------
 
     /** Resolve a path under public/img, or null when the file is absent. */
-    private function publicImage(?string $path): ?string
+    public function publicImage(?string $path): ?string
     {
         $path = $path ? ltrim($path, '/') : null;
 

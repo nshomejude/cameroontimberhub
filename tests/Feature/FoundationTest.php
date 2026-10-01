@@ -31,29 +31,44 @@ it('redirects guests from the admin panel to the admin login', function () {
     $this->get('/admin')->assertRedirect('/admin/login');
 });
 
-it('serves both panel login pages', function () {
-    $this->get('/admin/login')->assertOk();
-    $this->get('/dashboard/login')->assertOk();
+it('hands both panel login pages to the web login (which runs the 2FA challenge)', function () {
+    $this->get('/admin/login')->assertRedirect(route('login'));
+    $this->get('/dashboard/login')->assertRedirect(route('login'));
 });
 
 it('seeds the canonical RBAC roles and permissions', function () {
     $this->seed(RolesAndPermissionsSeeder::class);
 
-    // 28 + support.manage (support tickets — live chat with support).
-    expect(Permission::count())->toBe(29);
-    expect(Role::findByName('super_admin', 'web')->permissions)->toHaveCount(29);
-    expect(Role::findByName('admin', 'web')->permissions)->toHaveCount(24);
-    expect(Role::findByName('verification_officer', 'web')->permissions)->toHaveCount(8);
+    // 28 + support.manage (support tickets — live chat with support)
+    // + agent-submissions.moderate (agent ingestion moderation queue).
+    expect(Permission::count())->toBe(30);
+    expect(Role::findByName('super_admin', 'web')->permissions)->toHaveCount(30);
+    expect(Role::findByName('admin', 'web')->permissions)->toHaveCount(25);
+    expect(Role::findByName('admin', 'web')->hasPermissionTo('plans.manage'))->toBeFalse();
+    expect(Role::findByName('verification_officer', 'web')->permissions)->toHaveCount(9);
     expect(Role::findByName('content_manager', 'web')->permissions)->toHaveCount(4);
     // Admin governance segregation of duties (blueprint §88, §89).
     expect(Role::findByName('compliance_officer', 'web')->permissions)->toHaveCount(4);
-    expect(Role::findByName('billing_officer', 'web')->permissions)->toHaveCount(3);
+    // + billing.view, support.manage.
+    expect(Role::findByName('billing_officer', 'web')->permissions)->toHaveCount(5);
     // Payment/gateway-credential authority (billing engine M12).
     // + pricing.manage (billing engine M5 — admin Tax Rules resource).
-    expect(Role::findByName('finance_officer', 'web')->permissions)->toHaveCount(3);
+    // + payments.view, support.manage.
+    expect(Role::findByName('finance_officer', 'web')->permissions)->toHaveCount(5);
     // Support ticket answerers: no other authority.
     expect(Role::findByName('support_officer', 'web')->permissions)->toHaveCount(1);
-    expect(Role::findByName('moderator', 'web')->permissions)->toHaveCount(1);
+    // support.manage + products.manage, inquiries.review, companies.view,
+    // agent-submissions.moderate.
+    expect(Role::findByName('moderator', 'web')->permissions)->toHaveCount(5);
+});
+
+it('re-runs the RBAC seeder idempotently', function () {
+    $this->seed(RolesAndPermissionsSeeder::class);
+    $this->seed(RolesAndPermissionsSeeder::class);
+
+    expect(Permission::count())->toBe(30);
+    expect(Role::where('name', 'moderator')->count())->toBe(1);
+    expect(Role::findByName('moderator', 'web')->permissions)->toHaveCount(5);
 });
 
 it('gates panel access by role and company membership', function () {

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\ShipmentCarrierStatus;
 use App\Models\Concerns\HasCheckpointUpdates;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -31,6 +32,14 @@ class Shipment extends Model
 
     protected $guarded = ['id'];
 
+    protected function casts(): array
+    {
+        return [
+            'carrier_status' => ShipmentCarrierStatus::class,
+            'carrier_responded_at' => 'datetime',
+        ];
+    }
+
     public function getRouteKeyName(): string
     {
         return 'waybill_number';
@@ -39,6 +48,22 @@ class Shipment extends Model
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class);
+    }
+
+    /** The company physically moving this shipment (nullable — not assigned yet). */
+    public function carrierCompany(): BelongsTo
+    {
+        return $this->belongsTo(Company::class, 'carrier_company_id');
+    }
+
+    public function vehicle(): BelongsTo
+    {
+        return $this->belongsTo(Vehicle::class);
+    }
+
+    public function driver(): BelongsTo
+    {
+        return $this->belongsTo(Driver::class);
     }
 
     /** TimberLots carried on this shipment (blueprint §10 wiring), with the m3 quantity on this leg. */

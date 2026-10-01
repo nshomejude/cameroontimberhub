@@ -12,6 +12,7 @@ use App\Http\Requests\Api\V1\ReplyDisputeRequest;
 use App\Http\Resources\Api\V1\DisputeResource;
 use App\Models\Dispute;
 use App\Services\BuyerApiScope;
+use App\Services\DisputeNotifier;
 use App\Services\DisputeService;
 use App\Support\Bus\CommandBus;
 use App\Support\Bus\QueryBus;
@@ -41,15 +42,10 @@ use RuntimeException;
  * second way to open a dispute. `reply()` has no Command yet, so it still
  * calls `DisputeService::reply()` directly, exactly like the web controller.
  *
- * Evidence-with-file-upload and appeal are NOT exposed here for this pass —
- * multipart evidence upload is left to the web for now (mobile evidence
- * submission is a reasonable native-app feature but adds real scope: file
- * validation/streaming over the API), and appeal is a rare, late-lifecycle
- * action better added as a small follow-up than bundled into this first cut.
- * `reply()` covers the buyer's evidence/response text, matching the web
- * route's `POST .../reply` action exactly (text-only; `submitEvidence()`'s
- * description-only path is intentionally left to a follow-up too, so as not
- * to duplicate two very similar text-reply endpoints in the first pass).
+ * `evidence()` (multipart, optional `file`) and `appeal()` mirror the web
+ * `submitEvidence()`/`appeal()` actions exactly — same validation, same
+ * DisputeService::submitEvidence() / Dispute::appeal() write paths.
+ * `buyerIndex()` lists the buyer's disputes across all of their orders.
  */
 class DisputeController extends Controller
 {
@@ -59,6 +55,80 @@ class DisputeController extends Controller
         private readonly QueryBus $queryBus,
         private readonly CommandBus $commandBus,
     ) {}
+
+    /**
+     * `GET /disputes` — every dispute on any of the buyer's own orders,
+     * newest first, paginated. Scoped by `orders.user_id` (the same buyer
+     * boundary BuyerApiScope::orders() uses), never by a request parameter.
+     * `order_reference` is added so the client can deep-link to the per-order
+     * dispute endpoints.
+     */
+    public function buyerIndex(Request $request): AnonymousResourceCollection
+    {
+        $disputes = Dispute::query()
+            ->forBuyer($request->user())
+            ->paginate(20)
+            ->withQueryString();
+
+        return DisputeResource::collection($disputes);
+    }
+
+    /**
+     * Multipart evidence upload — the API counterpart of the web
+     * `submitEvidence()`: same validation, same DisputeService::submitEvidence()
+     * write path (which re-checks MIME/extension/size and party membership).
+     */
+    public function evidence(Request $request, string $orderReference, int $dispute): JsonResponse
+    {
+        $model = $this->resolve($request, $orderReference, $dispute);
+
+        $data = $request->validate([
+            'description' => ['required', 'string', 'max:2000'],
+            'file' => ['nullable', 'file', 'max:'.(DisputeService::MAX_BYTES / 1024)],
+        ]);
+
+        try {
+            $this->disputes->submitEvidence($model, $request->user(), $data['description'], $request->file('file'));
+        } catch (RuntimeException $e) {
+            throw new ConflictException($e->getMessage(), 'dispute_not_actionable', $e);
+        }
+
+        return response()->json([
+            'message' => 'Evidence submitted.',
+            'data' => new DisputeResource($model->refresh()->load(['evidence', 'messages.user', 'messages.company', 'raisedByUser', 'raisedByCompany', 'respondentCompany'])),
+        ], 201);
+    }
+
+    /** Appeal a resolved dispute — same Dispute::appeal() the web controller calls. */
+    public function appeal(Request $request, string $orderReference, int $dispute): JsonResponse
+    {
+        $model = $this->resolve($request, $orderReference, $dispute);
+
+        try {
+            $model->appeal($request->user());
+        } catch (RuntimeException $e) {
+            throw new ConflictException($e->getMessage(), 'dispute_not_actionable', $e);
+        }
+
+        app(DisputeNotifier::class)->appealed($model);
+
+        return response()->json([
+            'message' => 'Dispute appealed.',
+            'data' => new DisputeResource($model->refresh()->load(['raisedByUser', 'raisedByCompany', 'respondentCompany'])),
+        ]);
+    }
+
+    private function resolve(Request $request, string $orderReference, int $dispute): Dispute
+    {
+        $order = $this->scope->order($request->user(), $orderReference);
+
+        /** @var Dispute $model */
+        $model = Dispute::query()->where('order_id', $order->getKey())->findOrFail($dispute);
+
+        abort_unless($model->isParty($request->user()), 404);
+
+        return $model;
+    }
 
     public function index(Request $request, string $orderReference): AnonymousResourceCollection
     {
@@ -79,7 +149,7 @@ class DisputeController extends Controller
         /** @var Dispute $model */
         $model = Dispute::query()->where('order_id', $order->getKey())->findOrFail($dispute);
 
-        abort_unless($model->isParty($request->user()), 403);
+        abort_unless($model->isParty($request->user()), 404);
 
         $model->load(['evidence.submittedByUser', 'evidence.submittedByCompany', 'messages.user', 'messages.company', 'raisedByUser', 'raisedByCompany', 'respondentCompany']);
 
@@ -104,11 +174,10 @@ class DisputeController extends Controller
         // Notify the OTHER party, mirroring how reply() notifies below —
         // wired here rather than inside OpenDisputeCommand's handler for the
         // same additive reasoning documented on reply()'s notify call.
-        $otherParty = (int) $dispute->raised_by_user_id === (int) $request->user()->getKey()
-            ? $dispute->respondentUser
-            : $dispute->raisedByUser;
-
-        $otherParty?->notify(new \App\Notifications\DisputeOpenedNotification($dispute));
+        // DisputeNotifier re-derives parties from the order (the respondent
+        // is usually a COMPANY, so respondentUser alone missed its members)
+        // and also alerts staff holding disputes.manage.
+        app(DisputeNotifier::class)->opened($dispute, $request->user());
 
         return response()->json([
             'message' => 'Dispute opened.',
@@ -123,7 +192,7 @@ class DisputeController extends Controller
         /** @var Dispute $model */
         $model = Dispute::query()->where('order_id', $order->getKey())->findOrFail($dispute);
 
-        abort_unless($model->isParty($request->user()), 403);
+        abort_unless($model->isParty($request->user()), 404);
 
         try {
             $this->disputes->reply($model, $request->user(), $request->validated('body'));
@@ -136,12 +205,7 @@ class DisputeController extends Controller
         // in-flight change from another agent (a can_reply/isReplyable guard)
         // when this was built, so the notification is added additively at
         // the controller layer instead of touching that method's body.
-        $body = $request->validated('body');
-        $otherParty = (int) $model->raised_by_user_id === (int) $request->user()->getKey()
-            ? $model->respondentUser
-            : $model->raisedByUser;
-
-        $otherParty?->notify(new \App\Notifications\DisputeReplyNotification($model, $body));
+        app(DisputeNotifier::class)->replied($model, $request->user(), $request->validated('body'));
 
         return response()->json([
             'message' => 'Response sent.',

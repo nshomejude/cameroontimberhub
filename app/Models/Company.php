@@ -13,6 +13,7 @@ use App\Enums\ProductType;
 use App\Enums\SubscriptionStatus;
 use App\Enums\SupplierType;
 use App\Enums\VerificationTier;
+use App\Filament\Exporter\Pages\OnboardingChecklist;
 use App\Models\Concerns\HasCapacities;
 use App\Models\Concerns\HasSlug;
 use App\Models\Concerns\HasVerification;
@@ -94,6 +95,10 @@ class Company extends Model
             'delivery_days_max' => 'integer',
             'latitude' => 'decimal:6',
             'longitude' => 'decimal:6',
+            // Agent Ingestion Gateway provenance (docs/api/AGENT_INGESTION.md).
+            'ingested_at' => 'datetime',
+            'ingestion_meta' => 'array',
+            'needs_review' => 'boolean',
         ];
     }
 
@@ -382,6 +387,100 @@ class Company extends Model
     }
 
     /**
+     * Whether buyers may open a conversation with this company. Deliberately
+     * looser than publiclyVisible(): new suppliers awaiting verification must
+     * still be reachable (most companies are pending at launch). Only
+     * companies an admin has shut down are refused.
+     */
+    public function canReceiveMessages(): bool
+    {
+        return ! in_array($this->status, [CompanyStatus::Suspended, CompanyStatus::Rejected, CompanyStatus::Archived], true);
+    }
+
+    /**
+     * Statuses that RECEIVE buyer requests (auto-routing, manual routing,
+     * the open-requests board). Owner decision: quote requests reach
+     * suppliers pending verification too, but they cannot act on them until
+     * verified — see canRespondToBuyers().
+     *
+     * @var list<CompanyStatus>
+     */
+    public const BUYER_REQUEST_STATUSES = [CompanyStatus::Verified, CompanyStatus::Pending];
+
+    /** Machine code / message used wherever an unverified supplier tries to act. */
+    public const VERIFICATION_REQUIRED_CODE = 'company_verification_required';
+
+    public const VERIFICATION_REQUIRED_MESSAGE = 'Complete your company verification to respond to buyer requests.';
+
+    /** Whether buyer requests (RFQs/leads) may be routed or shown to this company. */
+    public function canReceiveBuyerRequests(): bool
+    {
+        return in_array($this->status, self::BUYER_REQUEST_STATUSES, true);
+    }
+
+    /**
+     * THE single rule for acting on a buyer request: quoting, expressing
+     * interest, moving a lead, seeing buyer contact details or contacting
+     * the buyer. Only a Verified company may.
+     */
+    public function canRespondToBuyers(): bool
+    {
+        return $this->status === CompanyStatus::Verified;
+    }
+
+    /** @param  Builder<Company>  $query */
+    public function scopeReceivingBuyerRequests(Builder $query): Builder
+    {
+        return $query->whereIn('status', array_map(fn (CompanyStatus $s) => $s->value, self::BUYER_REQUEST_STATUSES));
+    }
+
+    /** Instance form of {@see scopePubliclyVisible()} — one query, same rules. */
+    public function isPubliclyVisible(): bool
+    {
+        return static::query()->publiclyVisible()->whereKey($this->getKey())->exists();
+    }
+
+    /**
+     * Human-readable list of what is keeping this company out of
+     * {@see scopePubliclyVisible()} — one entry per failed condition, in the
+     * same order, so suppliers can see WHY their published listings are not
+     * reaching buyers. An empty array means the company is publicly visible.
+     *
+     * Must stay in lock-step with scopePubliclyVisible(): every condition
+     * there has exactly one entry here.
+     *
+     * @return list<string>
+     */
+    public function publicVisibilityGaps(): array
+    {
+        $gaps = [];
+
+        if ($this->status !== CompanyStatus::Verified) {
+            $gaps[] = __('Company verification (current status: :status)', ['status' => $this->status?->label() ?? '—']);
+        }
+        if ($this->logo_path === null) {
+            $gaps[] = __('A company logo');
+        }
+        if ($this->description === null) {
+            $gaps[] = __('A company description');
+        }
+        if ($this->region === null) {
+            $gaps[] = __('A region');
+        }
+        if (! $this->species()->exists()) {
+            $gaps[] = __('At least one species on the company profile');
+        }
+        if (! $this->contacts()->exists()) {
+            $gaps[] = __('At least one company contact');
+        }
+        if (! $this->activeBadges()->exists()) {
+            $gaps[] = __('An active verification badge');
+        }
+
+        return $gaps;
+    }
+
+    /**
      * Directory facet: narrow to one or more commercial roles. An empty list is
      * a no-op so the scope can be chained unconditionally.
      *
@@ -577,7 +676,7 @@ class Company extends Model
      * read from the `profile_completion` column, which is never written
      * anywhere in the app and therefore always sits at its default of 0 for
      * real companies. This mirrors, weight-for-weight, the six meaningful
-     * steps in {@see \App\Filament\Exporter\Pages\OnboardingChecklist::getChecklist()}
+     * steps in {@see OnboardingChecklist::getChecklist()}
      * so the checklist page and any percentage shown elsewhere never
      * disagree about what "profile complete" means:
      *

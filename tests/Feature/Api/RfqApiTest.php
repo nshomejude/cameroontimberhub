@@ -303,6 +303,20 @@ it('422s an unknown species_slug with a mappable field key and writes nothing', 
     Mail::assertNothingSent();
 });
 
+/** Released app: sends a slug derived from free text alongside species_text. */
+it('drops an unknown species_slug when species_text is also given', function () {
+    $buyer = User::factory()->create();
+
+    $this->actingAs($buyer, 'sanctum')
+        ->postJson('/api/v1/rfqs', apiRfqPayload([
+            'items' => [['species_slug' => 'red-wood-mix', 'species_text' => 'Red wood mix', 'form' => 'sawn', 'quantity' => 5, 'unit' => 'm3']],
+        ]))
+        ->assertCreated();
+
+    $item = Rfq::firstOrFail()->items()->firstOrFail();
+    expect($item->species_id)->toBeNull()->and($item->species_text)->toBe('Red wood mix');
+});
+
 /** An unpublished species answers exactly as a nonexistent one — no draft-row oracle. */
 it('422s an unpublished species_slug just as it does an unknown one', function () {
     $buyer = User::factory()->create();
@@ -491,4 +505,30 @@ it('rate-limits resend-verification per RFQ', function () {
     }
 
     $this->actingAs($buyer, 'sanctum')->postJson($url)->assertStatus(429);
+});
+
+/* ------------------------------------------------------------- RFQ type */
+
+it('accepts a transport / manufacturing type and defaults to export', function () {
+    // A fresh buyer per request: RFQ creation is rate limited per user.
+    $this->actingAs(User::factory()->create(), 'sanctum')
+        ->postJson('/api/v1/rfqs', apiRfqPayload(['type' => 'transport']))
+        ->assertCreated()
+        ->assertJsonPath('data.type', 'transport');
+
+    $this->actingAs(User::factory()->create(), 'sanctum')
+        ->postJson('/api/v1/rfqs', apiRfqPayload(['type' => 'domestic_manufacturing']))
+        ->assertCreated()
+        ->assertJsonPath('data.type', 'domestic_manufacturing');
+
+    $this->actingAs(User::factory()->create(), 'sanctum')
+        ->postJson('/api/v1/rfqs', apiRfqPayload())
+        ->assertCreated()
+        ->assertJsonPath('data.type', 'export');
+
+    $this->actingAs(User::factory()->create(), 'sanctum')
+        ->postJson('/api/v1/rfqs', apiRfqPayload(['type' => 'teleport']))
+        ->assertStatus(422);
+
+    expect(Rfq::where('type', 'transport')->count())->toBe(1);
 });

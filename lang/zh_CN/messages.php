@@ -1122,7 +1122,7 @@ return [
         'subtotal' => '小计',
         'shipping' => '运费',
         'tax' => '税费',
-        'marketplace_commission' => '市场平台佣金（:rate%，仅当此订单通过交易保障方式进行时收取）',
+        'marketplace_commission' => '市场平台佣金（:rate%）——由供应商承担，不计入您的总额',
         'terms' => '条款',
         'supplier_notes' => '供应商备注',
         'no_supplier_notes' => '供应商未在此报价中添加任何备注。',

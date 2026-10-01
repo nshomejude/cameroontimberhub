@@ -74,7 +74,19 @@
     :image="$product->primaryImageUrl()"
     type="product"
     :breadcrumbs="$breadcrumbs"
-    :schema="$schema">
+    :schema="$isPreview ?? false ? null : $schema"
+    :noindex="$isPreview ?? false">
+
+    @if ($isPreview ?? false)
+        <div role="alert" data-testid="product-preview-banner" class="border-b border-amber-300 bg-amber-50 px-4 py-3 text-[1.0625rem] text-amber-900">
+            <div class="mx-auto max-w-7xl">
+                <strong>{{ __('Preview — not visible to buyers.') }}</strong>
+                @if (! empty($previewReasons))
+                    {{ __('Missing:') }} {{ implode('; ', $previewReasons) }}
+                @endif
+            </div>
+        </div>
+    @endif
 
     <div class="bg-white pb-28 lg:pb-0">
 

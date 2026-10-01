@@ -62,6 +62,23 @@
             </div>
         </section>
 
+        @if (session('rfq_resend_status'))
+            <p role="status" class="mt-6 rounded-xl border border-forest-200 bg-forest-50 px-4 py-3 text-[1.0625rem] text-forest-900 dark:border-forest-900 dark:bg-forest-950 dark:text-forest-200">
+                {{ session('rfq_resend_status') }}
+            </p>
+        @endif
+
+        <section class="mt-6 rounded-2xl border border-sand-200 bg-white px-5 py-6 dark:border-[#3a352e] dark:bg-[#1f1d18] sm:px-8">
+            <h2 class="font-display text-xl font-semibold text-forest-950 dark:text-sand-100">{{ __('messages.rfq_followup.next_title') }}</h2>
+            <ol class="mt-3 list-decimal space-y-1 pl-5 text-[1.0625rem] text-ink-soft dark:text-[#b3ab9b]">
+                <li>{{ __('messages.rfq_followup.next_1') }}</li>
+                <li>{{ __('messages.rfq_followup.next_2') }}</li>
+                <li>{{ __('messages.rfq_followup.next_3') }}</li>
+            </ol>
+            <p class="mt-5 text-[1.0625rem] text-ink-soft dark:text-[#b3ab9b]">{{ __('messages.rfq_followup.spam_hint') }}</p>
+            @include('public.rfq.partials.resend-form', ['reference' => $reference, 'email' => $email])
+        </section>
+
         <x-rfq.timeline :steps="$timeline" class="mt-6" />
 
         <p class="mt-6 rounded-xl bg-sand-100 px-4 py-3 text-[1.0625rem] text-ink-soft dark:bg-[#26241e] dark:text-[#b3ab9b]">

@@ -6,6 +6,7 @@ use App\Actions\Auth\RegisterAccount;
 use App\Http\Controllers\Auth\Concerns\ProvidesAuthPageStats;
 use App\Http\Controllers\Auth\Concerns\RedirectsAfterAuth;
 use App\Http\Controllers\Controller;
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -29,6 +30,8 @@ class RegisterController extends Controller
 
     public function store(Request $request, RegisterAccount $register): RedirectResponse
     {
+        $request->merge(['email' => RegisterAccount::normaliseEmail($request->input('email'))]);
+
         $data = $request->validate(RegisterAccount::rules(), [], [
             'terms' => 'terms of service',
         ]);
@@ -36,6 +39,9 @@ class RegisterController extends Controller
         // Account creation itself lives in RegisterAccount, shared with the
         // mobile API, so there is exactly one place accounts come into being.
         $user = $register($data);
+
+        // Sends the email-verification link (MustVerifyEmail).
+        event(new Registered($user));
 
         Auth::login($user);
         $request->session()->regenerate();

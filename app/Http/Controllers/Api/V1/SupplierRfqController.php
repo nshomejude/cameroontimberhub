@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Enums\RfqCompanyStatus;
+use App\Enums\RfqType;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Api\V1\SupplierRfqResource;
 use App\Services\SupplierApiScope;
@@ -36,12 +37,14 @@ class SupplierRfqController extends Controller
      * Paginated, newest-first, optionally filtered by the CALLER'S OWN
      * routing status (`?status=sent|viewed|responded|declined` —
      * `RfqCompanyStatus`'s real values; there is no "quoted" status, a
-     * responded routing is what a submitted quote produces).
+     * responded routing is what a submitted quote produces), and by RFQ
+     * kind (`?type=export|domestic_manufacturing|transport` — `RfqType`).
      */
     public function index(Request $request): AnonymousResourceCollection
     {
         $request->validate([
             'status' => ['nullable', Rule::enum(RfqCompanyStatus::class)],
+            'type' => ['nullable', Rule::enum(RfqType::class)],
         ]);
 
         $user = $request->user();
@@ -52,6 +55,7 @@ class SupplierRfqController extends Controller
                 'routings',
                 fn (Builder $r) => $r->where('company_id', $companyId)->where('status', $request->string('status')),
             ))
+            ->when($request->filled('type'), fn (Builder $q) => $q->ofType(RfqType::from((string) $request->string('type'))))
             ->with([
                 'items.species:id,slug,common_name',
                 'routings' => fn ($r) => $r->where('company_id', $companyId),

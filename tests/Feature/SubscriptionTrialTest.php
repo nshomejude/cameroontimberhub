@@ -1,11 +1,13 @@
 <?php
 
+use App\Enums\CompanyUserRole;
 use App\Enums\PaymentStatus;
 use App\Enums\SubscriptionStatus;
 use App\Models\Company;
 use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\Subscription;
+use App\Models\User;
 use App\Notifications\TrialEndedUnpaid;
 use App\Services\SubscriptionService;
 use Database\Seeders\PlanSeeder;
@@ -27,8 +29,8 @@ beforeEach(function () {
 /** A company with no attached user can never be notified — give it one. */
 function withTrialNotifiableUser(Company $company): Company
 {
-    $company->users()->attach(\App\Models\User::factory()->create()->id, [
-        'role' => \App\Enums\CompanyUserRole::Owner->value,
+    $company->users()->attach(User::factory()->create()->id, [
+        'role' => CompanyUserRole::Owner->value,
         'is_primary' => true,
     ]);
 
@@ -107,7 +109,7 @@ it('lapses an unpaid trial to the segment Free plan once trial_ends_at has passe
 
     expect($sub->status)->toBe(SubscriptionStatus::Expired)
         ->and($company->plan_id)->toBe($freePlanId)
-        ->and($company->hasFeature('leads_receive'))->toBeFalse();
+        ->and($company->hasFeature('verified_badge'))->toBeFalse();
 
     Notification::assertSentTimes(TrialEndedUnpaid::class, 1);
 });

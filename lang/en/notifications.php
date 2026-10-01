@@ -93,6 +93,130 @@ return [
         'line_2' => 'Reference: :reference',
     ],
 
+    // ----- app/Notifications/RfqWithdrawnNotification -----
+    'rfq_withdrawn' => [
+        'subject' => 'Buyer request withdrawn — :reference',
+        'line_1' => 'The buyer has withdrawn request :reference. No quote is needed any more.',
+        'line_2' => 'Any draft quote you prepared for it can be discarded.',
+        'title' => 'Request withdrawn',
+        'body' => 'The buyer withdrew request :reference.',
+    ],
+
+    // ----- app/Notifications/DisputeDecisionNotification -----
+    'dispute_decision' => [
+        'resolved' => [
+            'subject' => 'Dispute decided — order :order',
+            'title' => 'Dispute decided',
+            'line' => 'Our team has decided the dispute on order :order.',
+        ],
+        'appeal_decided' => [
+            'subject' => 'Appeal decided — order :order',
+            'title' => 'Appeal decided',
+            'line' => 'Our team has re-reviewed the appealed dispute on order :order and issued a new decision.',
+        ],
+        'closed' => [
+            'subject' => 'Dispute closed — order :order',
+            'title' => 'Dispute closed',
+            'line' => 'The dispute on order :order is now closed.',
+        ],
+        'notes' => 'Decision: :notes',
+        'action' => 'View dispute',
+    ],
+
+    // ----- app/Notifications/DisputeOpenedStaffNotification -----
+    'dispute_opened_staff' => [
+        'subject' => 'New dispute on order :order',
+        'title' => 'New dispute to review',
+        'line' => 'A :category dispute was opened on order :order and needs staff attention.',
+        'action' => 'Open disputes',
+    ],
+
+    'dispute_appealed_staff' => [
+        'subject' => 'Dispute appealed on order :order',
+        'title' => 'Dispute appeal to review',
+        'line' => 'A party appealed the decision on the :category dispute for order :order. Move it back to review and re-decide it.',
+        'action' => 'Open disputes',
+    ],
+
+    // ----- app/Notifications/MessageReceivedNotification (mail, coalesced) -----
+    'message_received_mail' => [
+        'subject' => 'New message from :sender',
+        'someone' => 'Someone',
+        'line_1' => ':sender sent you a message on Cameroon Timber Hub:',
+        'action' => 'Open the conversation',
+        'line_2' => 'To avoid flooding your inbox we send at most one email per conversation every :minutes minutes — open the conversation to see everything.',
+    ],
+
+    // ----- app/Notifications/LeadReceivedNotification -----
+    'lead_received' => [
+        'subject' => 'New buyer inquiry from :name',
+        'line_1' => ':name has sent your company a confirmed inquiry.',
+        'action' => 'View the lead',
+        'line_2' => 'Reply quickly — buyers usually contact several suppliers.',
+    ],
+
+    // ----- app/Notifications/ShipmentAssignedNotification -----
+    'shipment_assigned' => [
+        'subject' => 'You were assigned as carrier for shipment :waybill',
+        'line_1' => ':supplier assigned your company as carrier for shipment :waybill (:origin → :destination).',
+        'action' => 'View the shipment',
+        'line_2' => 'If your company did not agree to move this shipment, contact the supplier or Cameroon Timber Hub support.',
+    ],
+
+    'shipment_booking_requested' => [
+        'subject' => 'Booking request for shipment :waybill',
+        'line_1' => ':supplier asked your company to carry shipment :waybill (:origin → :destination).',
+        'action' => 'Accept or decline',
+        'line_2' => 'Please accept or decline this booking so the supplier can plan the shipment.',
+    ],
+
+    'shipment_booking_accepted' => [
+        'subject' => ':carrier accepted the booking for shipment :waybill',
+        'line_1' => ':carrier accepted your booking request for shipment :waybill (order :order).',
+        'action' => 'View the shipment',
+    ],
+
+    'shipment_booking_declined' => [
+        'subject' => ':carrier declined the booking for shipment :waybill',
+        'line_1' => ':carrier declined your booking request for shipment :waybill (order :order).',
+        'reason' => 'Reason: :reason',
+        'action' => 'Choose another carrier',
+    ],
+
+    // ----- app/Notifications/ShipmentDeliveredNotification -----
+    'shipment_delivered' => [
+        'supplier' => [
+            'subject' => 'Shipment :waybill delivered (order :order)',
+            'line_1' => 'The carrier recorded shipment :waybill for order :order as delivered.',
+            'action' => 'View the shipment',
+            'line_2' => 'The order status has not changed — mark the order delivered once you have confirmed it.',
+        ],
+        'buyer' => [
+            'subject' => 'Goods delivered — please confirm (order :order)',
+            'line_1' => 'Shipment :waybill for your order :order was recorded as delivered.',
+            'action' => 'Confirm receipt',
+            'line_2' => 'Please check the goods and confirm receipt on your order.',
+        ],
+    ],
+
+    // ----- app/Mail/BuyerRfqRoutedMail + BuyerRfqRejectedMail -----
+    'buyer_rfq_routed' => [
+        'subject' => 'Your request :reference was sent to suppliers',
+        'heading' => 'Your request is with suppliers',
+        'intro' => 'Good news — your request :reference has been reviewed and sent to :count verified supplier(s).',
+        'next' => 'Suppliers reply with quotes by email. You can follow responses using the button below.',
+        'action' => 'View responses',
+        'salutation' => 'Thanks,',
+    ],
+    'buyer_rfq_rejected' => [
+        'subject' => 'Update on your request :reference',
+        'heading' => 'We could not route your request',
+        'intro' => 'Thank you for your request :reference. After review, we are unable to send it to suppliers at this time.',
+        'reason' => 'Reason: :reason',
+        'next' => 'If you believe this is a mistake or can add more detail, simply reply to this email or submit a new request.',
+        'salutation' => 'Kind regards,',
+    ],
+
     // ----- app/Notifications/SubscriptionRenewalReminder (billing engine M6) -----
     'subscription_renewal' => [
         'subject' => 'Your :plan plan renews soon',
@@ -136,6 +260,28 @@ return [
     // documented fallback (same limitation `lang/en/notifications.php`'s
     // header already notes for mail).
     'push' => [
+        'commission_statement_issued' => [
+            'title' => 'Commission statement :number issued',
+            'body' => 'Your marketplace commission statement for :period is :amount, due by :due.',
+        ],
+        'commission_statement_due_soon' => [
+            'title' => 'Commission statement :number due soon',
+            'body' => ':amount is still due on commission statement :number. Please pay by :due.',
+        ],
+        'commission_statement_overdue' => [
+            'title' => 'Commission statement :number is overdue',
+            'body' => ':amount on commission statement :number was due on :due and is now overdue. Please pay and report your deposit.',
+        ],
+        'commission_deposit_confirmed' => [
+            'title' => 'Commission deposit confirmed',
+            'body' => 'We received :amount (ref. :reference) for statement :number. Remaining balance: :balance.',
+        ],
+        'commission_deposit_rejected' => [
+            'title' => 'Commission deposit rejected',
+            'body' => 'Your deposit (ref. :reference) for statement :number could not be confirmed: :reason',
+        ],
+        'commission_pay_hint' => 'Pay by MTN Mobile Money, Orange Money or bank deposit using the details on the statement, then report the deposit with its transaction reference.',
+        'commission_action' => 'View statement',
         'quote_received' => [
             'title' => 'New quote received',
             'body' => ':supplier submitted a quote for RFQ :rfq.',
@@ -199,6 +345,19 @@ return [
             'title' => 'Referral commission earned',
             'body' => 'You earned :amount from a referral\'s first subscription payment.',
         ],
+        'referral_payout_paid' => [
+            'title' => 'Referral commission paid',
+            'body' => 'Your referral commission of :amount (:reference) has been paid.',
+        ],
+        'referral_payout_failed' => [
+            'title' => 'Referral commission payout failed',
+            'body' => 'We could not pay your referral commission of :amount (:reference) to :email. Please check your PayPal payout email; we will retry.',
+        ],
+        'referral_payout_unclaimed' => [
+            'title' => 'Claim your referral commission',
+            'body' => 'Your referral commission of :amount (:reference) was sent to :email but is unclaimed. Sign up or log in to PayPal with that email within 30 days to receive it.',
+        ],
+        'referral_payout_action' => 'Review payout settings',
         'payment_confirmed' => [
             'title' => 'Payment recorded',
             'body' => 'A payment was recorded on order :order.',

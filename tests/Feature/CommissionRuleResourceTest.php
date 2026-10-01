@@ -48,3 +48,39 @@ it('creates a commission rule, storing rates as fractions and stamping created_b
         ->and((string) $rule->international_rate)->toBe('0.0500')
         ->and($rule->created_by)->toBe($user->id);
 });
+
+it('stores a fixed cap with its currency (the §15 $5,000 cap is USD)', function () {
+    $user = User::factory()->create();
+    $user->givePermissionTo('pricing.manage');
+    $this->actingAs($user);
+
+    Livewire::test(CreateCommissionRule::class)
+        ->fillForm([
+            'name' => 'Capped tier',
+            'segment' => 'sell',
+            'plan_tier' => 'free',
+            'domestic_rate' => 3.0,
+            'international_rate' => 5.0,
+            'cap_amount' => 5000,
+            'cap_currency' => 'USD',
+            'cap_percent' => 5.0,
+            'is_active' => false,
+        ])
+        ->call('create')
+        ->assertHasNoFormErrors();
+
+    $rule = CommissionRule::firstWhere('name', 'Capped tier');
+
+    expect($rule->cap_amount)->toBe('5000.00')
+        ->and($rule->cap_currency)->toBe('USD')
+        ->and($rule->cap_percent)->toBe('0.0500');
+});
+
+it('blocks editing the cap currency of an active rule in place', function () {
+    $rule = CommissionRule::create([
+        'name' => 'Active', 'segment' => 'sell', 'domestic_rate' => 0.03, 'international_rate' => 0.05,
+        'cap_amount' => 5000, 'cap_currency' => 'USD', 'is_active' => true,
+    ]);
+
+    expect(fn () => $rule->update(['cap_currency' => 'XAF']))->toThrow(RuntimeException::class);
+});

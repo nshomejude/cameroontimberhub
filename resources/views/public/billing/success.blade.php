@@ -12,9 +12,19 @@
                 <dt class="text-ink-soft dark:text-[#b3ab9b]">{{ __('messages.billing.plan') }}</dt>
                 <dd class="font-medium text-forest-900 dark:text-sand-100">{{ $plan?->name }}</dd>
             </div>
+            @if ($payment->providerFeePassedThrough())
+                <div class="flex justify-between px-5 py-3">
+                    <dt class="text-ink-soft dark:text-[#b3ab9b]">{{ __('messages.billing.tax_subtotal') }}</dt>
+                    <dd class="font-medium text-forest-900 dark:text-sand-100">{{ \App\Services\Payments\ProviderFeeCalculator::format($payment->baseAmount(), $payment->currency) }}</dd>
+                </div>
+                <div class="flex justify-between px-5 py-3">
+                    <dt class="text-ink-soft dark:text-[#b3ab9b]">{{ __('messages.billing.provider_fee_line', ['provider' => $payment->provider->label()]) }}</dt>
+                    <dd class="font-medium text-forest-900 dark:text-sand-100">{{ \App\Services\Payments\ProviderFeeCalculator::format($payment->provider_fee_amount, $payment->currency) }}</dd>
+                </div>
+            @endif
             <div class="flex justify-between px-5 py-3">
                 <dt class="text-ink-soft dark:text-[#b3ab9b]">{{ __('messages.billing.amount_paid') }}</dt>
-                <dd class="font-medium text-forest-900 dark:text-sand-100">{{ number_format((float) $payment->amount) }} {{ $payment->currency }}</dd>
+                <dd class="font-medium text-forest-900 dark:text-sand-100">{{ \App\Services\Payments\ProviderFeeCalculator::format($payment->amount, $payment->currency) }}</dd>
             </div>
             @if ($subscription?->renews_at)
                 <div class="flex justify-between px-5 py-3">

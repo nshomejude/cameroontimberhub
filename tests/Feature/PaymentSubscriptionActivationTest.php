@@ -182,6 +182,11 @@ it('MTN MoMo: a SUCCESSFUL webhook completes the payment and writes a payment.co
     $plan = Plan::factory()->create();
     $payment = payForPlan($company, $plan, ['provider' => PaymentProvider::MtnMomo, 'provider_reference' => 'mtn-ok']);
 
+    Http::fake([
+        '*/collection/token/' => Http::response(['access_token' => 't'], 200),
+        '*/collection/v1_0/requesttopay/mtn-ok' => Http::response(['status' => 'SUCCESSFUL', 'amount' => (string) $payment->amount], 200),
+    ]);
+
     $this->postJson(route('payments.mtn-momo.webhook'), ['referenceId' => 'mtn-ok', 'status' => 'SUCCESSFUL'])->assertOk();
 
     expect($payment->fresh()->status)->toBe(PaymentStatus::Completed)
@@ -195,6 +200,11 @@ it('MTN MoMo: a FAILED webhook fails the payment and never creates a subscriptio
     mtnConfig();
     $company = Company::factory()->create();
     $payment = payForPlan($company, Plan::factory()->create(), ['provider' => PaymentProvider::MtnMomo, 'provider_reference' => 'mtn-bad']);
+
+    Http::fake([
+        '*/collection/token/' => Http::response(['access_token' => 't'], 200),
+        '*/collection/v1_0/requesttopay/mtn-bad' => Http::response(['status' => 'FAILED'], 200),
+    ]);
 
     $this->postJson(route('payments.mtn-momo.webhook'), ['referenceId' => 'mtn-bad', 'status' => 'FAILED'])->assertOk();
     relayOutbox();
@@ -218,6 +228,11 @@ it('Orange Money: a SUCCESS webhook completes the payment and writes a payment.c
     $company = Company::factory()->create();
     $payment = payForPlan($company, Plan::factory()->create(), ['provider' => PaymentProvider::OrangeMoney, 'provider_reference' => 'om-ok']);
 
+    Http::fake([
+        'api.orange.com/oauth/v3/token' => Http::response(['access_token' => 't'], 200),
+        'api.orange.com/orange-money-webpay/*/transactionstatus' => Http::response(['status' => 'SUCCESS', 'amount' => (string) $payment->amount], 200),
+    ]);
+
     $this->postJson(route('payments.orange-money.notify'), ['pay_token' => 'om-ok', 'status' => 'SUCCESS'])->assertOk();
 
     expect($payment->fresh()->status)->toBe(PaymentStatus::Completed)
@@ -231,6 +246,11 @@ it('Orange Money: a FAILED webhook fails the payment and never creates a subscri
     orangeConfig();
     $company = Company::factory()->create();
     $payment = payForPlan($company, Plan::factory()->create(), ['provider' => PaymentProvider::OrangeMoney, 'provider_reference' => 'om-bad']);
+
+    Http::fake([
+        'api.orange.com/oauth/v3/token' => Http::response(['access_token' => 't'], 200),
+        'api.orange.com/orange-money-webpay/*/transactionstatus' => Http::response(['status' => 'FAILED'], 200),
+    ]);
 
     $this->postJson(route('payments.orange-money.notify'), ['pay_token' => 'om-bad', 'status' => 'FAILED'])->assertOk();
     relayOutbox();
@@ -261,7 +281,7 @@ it('PayPal: a verified capture-completed webhook completes the payment and write
 
     $this->postJson(route('payments.paypal.webhook'), [
         'event_type' => 'PAYMENT.CAPTURE.COMPLETED',
-        'resource' => ['id' => 'PP-CAP-1', 'supplementary_data' => ['related_ids' => ['order_id' => 'PP-ORDER-1']]],
+        'resource' => ['id' => 'PP-CAP-1', 'amount' => ['currency_code' => 'USD', 'value' => '50000.00'], 'supplementary_data' => ['related_ids' => ['order_id' => 'PP-ORDER-1']]],
     ])->assertOk();
 
     expect($payment->fresh()->status)->toBe(PaymentStatus::Completed)

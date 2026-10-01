@@ -86,6 +86,52 @@ class BadgeService
         return $badge;
     }
 
+    /**
+     * Desk verification: issue a badge WITHOUT approved backing documents.
+     * For companies that cannot upload evidence themselves (e.g. unclaimed
+     * agent-sourced listings) after staff checked them out-of-band. Requires a
+     * written reason; the badge is flagged `issued_manually` and expires after
+     * twelve months so it must be re-checked.
+     */
+    public function issueManually(Company $company, BadgeType $type, User $issuer, string $reason): VerificationBadge
+    {
+        if ($type === BadgeType::PremiumMember) {
+            throw new \InvalidArgumentException('Premium Member is plan-gated and cannot be desk-issued.');
+        }
+        $reason = trim($reason);
+        if ($reason === '') {
+            throw new \InvalidArgumentException('A reason is required to desk-issue a badge.');
+        }
+
+        $company->verificationBadges()
+            ->where('badge_type', $type->value)
+            ->where('status', BadgeStatus::Active->value)
+            ->update([
+                'status' => BadgeStatus::Revoked->value,
+                'revoked_at' => now(),
+                'revoked_reason' => 'Reissued',
+                'revoked_by' => $issuer->getKey(),
+            ]);
+
+        $badge = $company->verificationBadges()->create([
+            'badge_type' => $type,
+            'status' => BadgeStatus::Active,
+            'issued_at' => now(),
+            'valid_until' => now()->addYear()->toDateString(),
+            'verified_by' => $issuer->getKey(),
+            'is_public' => true,
+            'issued_manually' => true,
+            'manual_reason' => $reason,
+            'reference_code' => $this->uniqueReference(),
+        ]);
+
+        activity('compliance')->performedOn($badge)->causedBy($issuer)->event('badge_issued_manually')
+            ->withProperties(['source' => 'desk_verified', 'reason' => $reason, 'badge_type' => $type->value])
+            ->log("Badge {$type->value} desk-issued");
+
+        return $badge;
+    }
+
     public function revoke(VerificationBadge $badge, string $reason, ?User $actor): void
     {
         $badge->update([

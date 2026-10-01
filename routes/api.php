@@ -1,50 +1,67 @@
 <?php
 
+use App\Http\Controllers\Api\V1\Agent\AgentProductController;
+use App\Http\Controllers\Api\V1\Agent\AgentReferenceController;
+use App\Http\Controllers\Api\V1\Agent\AgentSupplierController;
 use App\Http\Controllers\Api\V1\AnnouncementController;
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\CertificateController;
+use App\Http\Controllers\Api\V1\ChatCommerceController;
+use App\Http\Controllers\Api\V1\ChatOrderController;
 use App\Http\Controllers\Api\V1\CompanyDocumentController;
 use App\Http\Controllers\Api\V1\CompanyOnboardingController;
 use App\Http\Controllers\Api\V1\CompanyProfileController;
+use App\Http\Controllers\Api\V1\CompanySubscriptionController;
+use App\Http\Controllers\Api\V1\SupplierCapacityController;
+use App\Http\Controllers\Api\V1\SupplierCommissionController;
+use App\Http\Controllers\Api\V1\SupplierLeadController;
+use App\Http\Controllers\Api\V1\SupplierLotTransformationController;
+use App\Http\Controllers\Api\V1\CompanyReviewController;
 use App\Http\Controllers\Api\V1\CompanyVerificationController;
-use App\Http\Controllers\Api\V1\CertificateController;
-use App\Http\Controllers\Api\V1\TraceabilityController;
-use App\Http\Controllers\Api\V1\FleetDriverController;
-use App\Http\Controllers\Api\V1\FleetVehicleController;
-use App\Http\Controllers\Api\V1\LocalMarketController;
-use App\Http\Controllers\Api\V1\NearbyController;
-use App\Http\Controllers\Api\V1\TransformationNetworkController;
-use App\Http\Controllers\Api\V1\TransformationRequestController;
-use App\Http\Controllers\Api\V1\ChatCommerceController;
-use App\Http\Controllers\Api\V1\ChatOrderController;
+use App\Http\Controllers\Api\V1\ContactController;
 use App\Http\Controllers\Api\V1\ConversationController;
-use App\Http\Controllers\Api\V1\DeviceTokenController;
-use App\Http\Controllers\Api\V1\NotificationController;
-use App\Http\Controllers\Api\V1\ReferralController;
-use App\Http\Controllers\Api\V1\NotificationPreferenceController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\DemoLoginController;
+use App\Http\Controllers\Api\V1\DeviceTokenController;
 use App\Http\Controllers\Api\V1\DisputeController;
 use App\Http\Controllers\Api\V1\FavoriteController;
 use App\Http\Controllers\Api\V1\FeedController;
+use App\Http\Controllers\Api\V1\FleetDriverController;
+use App\Http\Controllers\Api\V1\FleetVehicleController;
 use App\Http\Controllers\Api\V1\FollowController;
+use App\Http\Controllers\Api\V1\LocalMarketController;
+use App\Http\Controllers\Api\V1\NearbyController;
+use App\Http\Controllers\Api\V1\NotificationController;
+use App\Http\Controllers\Api\V1\NotificationPreferenceController;
 use App\Http\Controllers\Api\V1\OrderController;
 use App\Http\Controllers\Api\V1\OrderDocumentController;
 use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\QuoteController;
 use App\Http\Controllers\Api\V1\ReceiptController;
-use App\Http\Controllers\Api\V1\CompanyReviewController;
+use App\Http\Controllers\Api\V1\ReferralController;
 use App\Http\Controllers\Api\V1\ReorderController;
 use App\Http\Controllers\Api\V1\RfqController;
 use App\Http\Controllers\Api\V1\SearchController;
+use App\Http\Controllers\Api\V1\SearchSuggestController;
 use App\Http\Controllers\Api\V1\SpeciesController;
+use App\Http\Controllers\Api\V1\StaffSupportTicketController;
 use App\Http\Controllers\Api\V1\SupplierController;
 use App\Http\Controllers\Api\V1\SupplierOrderController;
+use App\Http\Controllers\Api\V1\SupplierOrderFulfilmentController;
 use App\Http\Controllers\Api\V1\SupplierProductController;
-use App\Http\Controllers\Api\V1\TwoFactorController;
 use App\Http\Controllers\Api\V1\SupplierProductImageController;
 use App\Http\Controllers\Api\V1\SupplierQuoteController;
+use App\Http\Controllers\Api\V1\SupplierRfqBoardController;
 use App\Http\Controllers\Api\V1\SupplierRfqController;
+use App\Http\Controllers\Api\V1\SupplierShipmentController;
+use App\Http\Controllers\Api\V1\SupportTicketController;
+use App\Http\Controllers\Api\V1\TraceabilityController;
 use App\Http\Controllers\Api\V1\TradeAssuranceController;
+use App\Http\Controllers\Api\V1\TransformationNetworkController;
+use App\Http\Controllers\Api\V1\TransformationRequestController;
+use App\Http\Controllers\Api\V1\TwoFactorController;
+use App\Http\Middleware\AssignRequestId;
+use App\Http\Middleware\RecordApiKeyUsage;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -58,8 +75,9 @@ use Illuminate\Support\Facades\Route;
 | could bypass anti-spam, the verification gate, the state machines or the
 | authorisation rules.
 |
-| v1 is browse + RFQ + quotes + orders + Trade Assurance view/confirm +
-| documents + receipts. Reorder stays on the web for now.
+| v1 covers browse, RFQs, quotes, orders (incl. reorder), Trade Assurance,
+| disputes, reviews, documents + receipts, and the supplier/logistics
+| fulfilment surfaces below.
 |
 */
 
@@ -101,7 +119,7 @@ use Illuminate\Support\Facades\Route;
 // envelope for every v1 response (including a 429 from the limiter below).
 // It is also on the `web` group (see bootstrap/app.php) for admin-action
 // correlation.
-Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignRequestId::class, 'throttle:api-key', \App\Http\Middleware\RecordApiKeyUsage::class])->group(function (): void {
+Route::prefix('v1')->name('api.v1.')->middleware([AssignRequestId::class, 'throttle:api-key', RecordApiKeyUsage::class])->group(function (): void {
 
     /* ------------------------------------------------------------- auth */
 
@@ -143,13 +161,20 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
             Route::post('logout', [AuthController::class, 'logout'])->name('logout');
             Route::get('me', [AuthController::class, 'me'])->name('me');
             Route::patch('me', [AuthController::class, 'updateMe'])->name('me.update');
+            // In-app account deletion (App Store / Play requirement) — see
+            // AccountDeletionController / Actions\Account\DeleteAccount.
+            Route::delete('me', [\App\Http\Controllers\Api\V1\AccountDeletionController::class, 'destroy'])
+                ->middleware('throttle:5,1')->name('me.destroy');
             Route::post('password', [AuthController::class, 'updatePassword'])->name('password.update');
+            Route::post('email/verification-notification', [AuthController::class, 'sendVerificationEmail'])
+                ->middleware('throttle:6,1')->name('verification.send');
 
             // Self-service 2FA management, mobile counterpart of the web
             // Auth\TwoFactorController (see that class's docblock).
             Route::get('two-factor', [TwoFactorController::class, 'show'])->name('two-factor.show');
             Route::post('two-factor/enable', [TwoFactorController::class, 'enable'])->name('two-factor.enable');
-            Route::post('two-factor/confirm', [TwoFactorController::class, 'confirm'])->name('two-factor.confirm');
+            Route::post('two-factor/confirm', [TwoFactorController::class, 'confirm'])
+                ->middleware('throttle:two-factor-confirm')->name('two-factor.confirm');
             Route::post('two-factor/disable', [TwoFactorController::class, 'disable'])->name('two-factor.disable');
         });
     });
@@ -165,6 +190,11 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
     Route::get('suppliers', [SupplierController::class, 'index'])->name('suppliers.index');
     Route::get('suppliers/{slug}', [SupplierController::class, 'show'])->name('suppliers.show');
 
+    // Type-ahead: own 120/min limiter instead of the 60/min anonymous api-key one.
+    Route::get('search/suggest', SearchSuggestController::class)
+        ->withoutMiddleware('throttle:api-key')
+        ->middleware(['throttle:search-suggest', 'cache.headers:public;max_age=60;etag'])
+        ->name('search.suggest');
     Route::get('search', SearchController::class)->name('search');
 
     // Nearest sellers for buyers (public) — see NearbyController.
@@ -204,7 +234,7 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
 
     // Public contact details (config/contact.php essentials) for the app's
     // "Contact us" screen. No auth.
-    Route::get('contact', \App\Http\Controllers\Api\V1\ContactController::class)->name('contact');
+    Route::get('contact', ContactController::class)->name('contact');
 
     /* --------------------------------------------- any authenticated user */
 
@@ -213,18 +243,18 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
         // own tickets only (others' 404). Staff inbox is gated in-controller
         // by the `support.manage` permission (403 otherwise).
         Route::prefix('support/tickets')->name('support.tickets.')->group(function (): void {
-            Route::get('/', [\App\Http\Controllers\Api\V1\SupportTicketController::class, 'index'])->name('index');
-            Route::post('/', [\App\Http\Controllers\Api\V1\SupportTicketController::class, 'store'])
+            Route::get('/', [SupportTicketController::class, 'index'])->name('index');
+            Route::post('/', [SupportTicketController::class, 'store'])
                 ->middleware('throttle:api-decision')->name('store');
-            Route::get('{reference}', [\App\Http\Controllers\Api\V1\SupportTicketController::class, 'show'])->name('show');
-            Route::post('{reference}/reply', [\App\Http\Controllers\Api\V1\SupportTicketController::class, 'reply'])
+            Route::get('{reference}', [SupportTicketController::class, 'show'])->name('show');
+            Route::post('{reference}/reply', [SupportTicketController::class, 'reply'])
                 ->middleware('throttle:api-decision')->name('reply');
         });
 
-        Route::prefix('staff/support/tickets')->name('staff.support.tickets.')->group(function (): void {
-            Route::get('/', [\App\Http\Controllers\Api\V1\StaffSupportTicketController::class, 'index'])->name('index');
-            Route::get('{reference}', [\App\Http\Controllers\Api\V1\StaffSupportTicketController::class, 'show'])->name('show');
-            Route::post('{reference}/reply', [\App\Http\Controllers\Api\V1\StaffSupportTicketController::class, 'reply'])
+        Route::prefix('staff/support/tickets')->name('staff.support.tickets.')->middleware('api.staff.2fa')->group(function (): void {
+            Route::get('/', [StaffSupportTicketController::class, 'index'])->name('index');
+            Route::get('{reference}', [StaffSupportTicketController::class, 'show'])->name('show');
+            Route::post('{reference}/reply', [StaffSupportTicketController::class, 'reply'])
                 ->middleware('throttle:api-decision')->name('reply');
         });
 
@@ -250,6 +280,13 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
         // 403, for a non-participant's id) via MessagingService::find().
         Route::get('conversations', [ConversationController::class, 'index'])->name('conversations.index');
 
+        // Start (or reuse) a thread with a supplier company — API counterpart
+        // of the web `messages.start` route, same `message-start` budget.
+        // Buyer-only: MessagingService::start() always seats the caller as
+        // the BUYER side. See ConversationController::store().
+        Route::post('conversations', [ConversationController::class, 'store'])
+            ->middleware(['api.buyer', 'throttle:message-start'])->name('conversations.store');
+
         Route::get('conversations/{id}', [ConversationController::class, 'show'])->name('conversations.show');
 
         Route::get('conversations/{id}/messages', [ConversationController::class, 'messages'])->name('conversations.messages');
@@ -261,6 +298,11 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
             ->middleware('throttle:api-decision')->name('conversations.messages.store');
 
         Route::post('conversations/{id}/read', [ConversationController::class, 'markRead'])->name('conversations.read');
+
+        // Chat paperclip: the caller's own orders/quotes/RFQs/receipts that
+        // involve this thread's counterparty. Read-only.
+        Route::get('conversations/{id}/attachables', [\App\Http\Controllers\Api\V1\ConversationAttachablesController::class, 'index'])
+            ->name('conversations.attachables');
 
         /*
          * ---------------------------------------------- in-thread commerce
@@ -356,6 +398,11 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
         Route::get('following', [FollowController::class, 'following'])->name('following.index');
         Route::get('followers', [FollowController::class, 'followers'])->name('followers.index');
 
+        // Supply-chain partners, read-only, derived from completed orders
+        // (no invitation flow exists — POST is deliberately not routed).
+        Route::get('supply-chain/relationships', [\App\Http\Controllers\Api\V1\SupplyChainRelationshipController::class, 'index'])
+            ->name('supply-chain.relationships.index');
+
         // "Things I follow" — see FeedController's docblock for exactly
         // what real event sources back this today (published products from
         // followed companies only; Announcements excluded — no
@@ -367,9 +414,16 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
         Route::prefix('referrals')->name('referrals.')->group(function (): void {
             Route::get('me', [ReferralController::class, 'me'])->name('me');
             Route::get('earnings', [ReferralController::class, 'earnings'])->name('earnings');
+            Route::patch('payout-settings', [ReferralController::class, 'updatePayoutSettings'])
+                ->middleware('throttle:10,1')->name('payout-settings.update');
             Route::get('/', [ReferralController::class, 'index'])->name('index');
         });
 
+        // Plan checkout price breakdown (subtotal / tax / provider fee /
+        // total per payment method) — disclosed before the user authorises;
+        // the payment itself starts on the web checkout (`checkout_url`).
+        Route::get('billing/checkout/{plan}', [\App\Http\Controllers\Api\V1\BillingCheckoutController::class, 'show'])
+            ->name('billing.checkout');
 
         // Expo push-token registration for the mobile app — own prefix,
         // right after `notifications` for the same reason that group sits
@@ -388,16 +442,16 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
         // the read-only `transformation` group's routes.
         Route::prefix('transformation/requests')->name('transformation-requests.')->group(function (): void {
             Route::get('/', [TransformationRequestController::class, 'index'])->name('index');
-            Route::post('/', [TransformationRequestController::class, 'store'])->name('store');
+            Route::post('/', [TransformationRequestController::class, 'store'])->middleware('throttle:api-decision')->name('store');
             Route::get('{reference}', [TransformationRequestController::class, 'show'])->name('show');
-            Route::post('{reference}/accept', [TransformationRequestController::class, 'accept'])->name('accept');
-            Route::post('{reference}/decline', [TransformationRequestController::class, 'decline'])->name('decline');
-            Route::post('{reference}/quote', [TransformationRequestController::class, 'quote'])->name('quote');
-            Route::post('{reference}/start', [TransformationRequestController::class, 'startJob'])->name('start');
-            Route::post('{reference}/complete', [TransformationRequestController::class, 'completeJob'])->name('complete');
-            Route::post('{reference}/accept-quote', [TransformationRequestController::class, 'acceptQuote'])->name('accept-quote');
-            Route::post('{reference}/decline-quote', [TransformationRequestController::class, 'declineQuote'])->name('decline-quote');
-            Route::post('{reference}/cancel', [TransformationRequestController::class, 'cancel'])->name('cancel');
+            Route::post('{reference}/accept', [TransformationRequestController::class, 'accept'])->middleware('throttle:api-decision')->name('accept');
+            Route::post('{reference}/decline', [TransformationRequestController::class, 'decline'])->middleware('throttle:api-decision')->name('decline');
+            Route::post('{reference}/quote', [TransformationRequestController::class, 'quote'])->middleware('throttle:api-decision')->name('quote');
+            Route::post('{reference}/start', [TransformationRequestController::class, 'startJob'])->middleware('throttle:api-decision')->name('start');
+            Route::post('{reference}/complete', [TransformationRequestController::class, 'completeJob'])->middleware('throttle:api-decision')->name('complete');
+            Route::post('{reference}/accept-quote', [TransformationRequestController::class, 'acceptQuote'])->middleware('throttle:api-decision')->name('accept-quote');
+            Route::post('{reference}/decline-quote', [TransformationRequestController::class, 'declineQuote'])->middleware('throttle:api-decision')->name('decline-quote');
+            Route::post('{reference}/cancel', [TransformationRequestController::class, 'cancel'])->middleware('throttle:api-decision')->name('cancel');
         });
     });
 
@@ -420,6 +474,10 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
 
         Route::get('rfqs/{reference}/quotes', [RfqController::class, 'quotes'])->name('rfqs.quotes');
 
+        // Buyer withdraws their own still-open RFQ; routed suppliers are told.
+        Route::post('rfqs/{reference}/cancel', [RfqController::class, 'cancel'])
+            ->middleware('throttle:api-decision')->name('rfqs.cancel');
+
         Route::get('quotes/{reference}', [QuoteController::class, 'show'])->name('quotes.show');
 
         Route::post('quotes/{reference}/accept', [QuoteController::class, 'accept'])
@@ -441,6 +499,8 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
         // BuyerApiScope::order() boundary as show()/trade-assurance above.
         Route::get('orders/{reference}/shipments', [OrderController::class, 'shipmentTracking'])
             ->name('orders.shipments');
+        Route::get('orders/{reference}/shipments/{shipment}/checkpoints/{checkpoint}/photo', [OrderController::class, 'checkpointPhoto'])
+            ->whereNumber(['shipment', 'checkpoint'])->name('orders.shipments.checkpoints.photo');
 
         Route::get('orders/{orderReference}/trade-assurance', [TradeAssuranceController::class, 'show'])
             ->name('orders.trade-assurance.show');
@@ -463,6 +523,15 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
 
         Route::post('orders/{orderReference}/disputes/{dispute}/reply', [DisputeController::class, 'reply'])
             ->middleware('throttle:api-decision')->name('orders.disputes.reply');
+
+        Route::post('orders/{orderReference}/disputes/{dispute}/evidence', [DisputeController::class, 'evidence'])
+            ->middleware('throttle:order-upload')->name('orders.disputes.evidence');
+
+        Route::post('orders/{orderReference}/disputes/{dispute}/appeal', [DisputeController::class, 'appeal'])
+            ->middleware('throttle:api-decision')->name('orders.disputes.appeal');
+
+        // The buyer's disputes across every order, newest first.
+        Route::get('disputes', [DisputeController::class, 'buyerIndex'])->name('disputes.index');
 
         // Order documents (proof of delivery, invoice, packing list, ...):
         // stays inside this same buyer-only `orders/{orderReference}/...`
@@ -519,7 +588,7 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
             ->name('company.documents.index');
 
         Route::post('company/documents', [CompanyDocumentController::class, 'store'])
-            ->middleware('throttle:api-rfq')->name('company.documents.store');
+            ->middleware('throttle:api-upload')->name('company.documents.store');
 
         Route::get('company/documents/{document}/download', [CompanyDocumentController::class, 'download'])
             ->name('company.documents.download');
@@ -541,12 +610,16 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
             ->middleware('throttle:api-decision')->name('company.update');
         Route::post('company/images/{field}', [CompanyProfileController::class, 'uploadImage'])
             ->whereIn('field', ['logo', 'cover'])
-            ->middleware('throttle:api-rfq')->name('company.images.upload');
+            ->middleware('throttle:api-upload')->name('company.images.upload');
 
         // The caller's own company onboarding checklist (this task) — API
         // counterpart of the exporter panel's OnboardingChecklist page.
         Route::get('company/onboarding', [CompanyOnboardingController::class, 'index'])
             ->name('company.onboarding');
+
+        // Read-only plan/subscription status (exporter SubscriptionStatus page).
+        Route::get('company/subscription', CompanySubscriptionController::class)
+            ->name('company.subscription');
 
         // RFQ inbox (this task): RFQs routed to the caller's company. Lives
         // under a `supplier/` sub-prefix — NOT bare `rfqs`/`orders` — so it
@@ -559,6 +632,13 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
         Route::prefix('supplier')->name('supplier.')->group(function (): void {
             Route::get('rfqs', [SupplierRfqController::class, 'index'])->name('rfqs.index');
             Route::get('rfqs/{reference}', [SupplierRfqController::class, 'show'])->name('rfqs.show');
+
+            // Open buyer requests board: approved RFQs matching the caller's
+            // company that are not routed to it yet (buyer contact hidden).
+            // express-interest self-routes so the supplier can quote.
+            Route::get('rfq-board', [SupplierRfqBoardController::class, 'index'])->name('rfq-board.index');
+            Route::post('rfq-board/{reference}/express-interest', [SupplierRfqBoardController::class, 'expressInterest'])
+                ->middleware('throttle:api-decision')->name('rfq-board.express-interest');
 
             // Quote submission (this task): wraps QuoteService::open()/submit(),
             // the exact same write path the exporter "Create Quote" form uses.
@@ -578,6 +658,64 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
             Route::get('orders', [SupplierOrderController::class, 'index'])->name('orders.index');
             Route::get('orders/{reference}', [SupplierOrderController::class, 'show'])->name('orders.show');
 
+            // Documents + shipments for the supplier's own order — same
+            // resources as the buyer's `orders/{orderReference}/documents`
+            // and `orders/{reference}/shipments`, scoped to the supplying
+            // company (another company's reference 404s).
+            Route::get('orders/{reference}/documents', [SupplierOrderController::class, 'documents'])->name('orders.documents.index');
+            Route::get('orders/{reference}/documents/{document}/download', [SupplierOrderController::class, 'downloadDocument'])
+                ->name('orders.documents.download');
+            Route::get('orders/{reference}/shipments', [SupplierOrderController::class, 'shipments'])->name('orders.shipments');
+
+            // Fulfilment by order reference (no conversation id needed): an
+            // accepted quote does NOT guarantee a chat thread, so these
+            // delegate to OrderLifecycleService when the order has one and to
+            // the exporter Orders-table path (OrderService / CommandBus) when
+            // it does not. See SupplierOrderFulfilmentController.
+            Route::middleware('throttle:api-decision')->group(function (): void {
+                Route::post('orders/{reference}/confirm', [SupplierOrderFulfilmentController::class, 'confirm'])->name('orders.confirm');
+                Route::post('orders/{reference}/production', [SupplierOrderFulfilmentController::class, 'startProduction'])->name('orders.production');
+                Route::post('orders/{reference}/ship', [SupplierOrderFulfilmentController::class, 'ship'])->name('orders.ship');
+                Route::post('orders/{reference}/tracking', [SupplierOrderFulfilmentController::class, 'updateTracking'])->name('orders.tracking');
+                Route::post('orders/{reference}/deliver', [SupplierOrderFulfilmentController::class, 'deliver'])->name('orders.deliver');
+                // Off-platform payment + cancel, same threaded/threadless split.
+                Route::post('orders/{reference}/payments', [SupplierOrderFulfilmentController::class, 'recordPayment'])->name('orders.payments.store');
+                Route::post('orders/{reference}/cancel', [SupplierOrderFulfilmentController::class, 'cancel'])->name('orders.cancel');
+            });
+            Route::post('orders/{reference}/documents', [SupplierOrderFulfilmentController::class, 'attachDocuments'])
+                ->middleware('throttle:api-upload')->name('orders.documents.store');
+
+            // Lead pipeline (SupplierLeadController): list/view/update only, like the exporter LeadResource.
+            Route::get('leads', [SupplierLeadController::class, 'index'])->name('leads.index');
+            Route::get('leads/{lead}', [SupplierLeadController::class, 'show'])->whereNumber('lead')->name('leads.show');
+            Route::patch('leads/{lead}', [SupplierLeadController::class, 'update'])
+                ->whereNumber('lead')->middleware('throttle:api-decision')->name('leads.update');
+
+            // Marketplace commission statements + manual deposit reporting
+            // (SupplierCommissionController; owner decision 2026-10-01 —
+            // MoMo / bank deposit, verified by finance). `summary` is a
+            // static segment, registered before the `{number}` routes.
+            Route::get('commission/summary', [SupplierCommissionController::class, 'summary'])->name('commission.summary');
+            Route::get('commission/statements', [SupplierCommissionController::class, 'index'])->name('commission.statements.index');
+            Route::get('commission/statements/{number}', [SupplierCommissionController::class, 'show'])->name('commission.statements.show');
+            Route::post('commission/statements/{number}/deposits', [SupplierCommissionController::class, 'storeDeposit'])
+                ->middleware('throttle:api-upload')->name('commission.statements.deposits.store');
+
+            // Declared capacities (SupplierCapacityController), exporter CapacityResource counterpart.
+            Route::get('capacities', [SupplierCapacityController::class, 'index'])->name('capacities.index');
+            Route::post('capacities', [SupplierCapacityController::class, 'store'])
+                ->middleware('throttle:api-product-write')->name('capacities.store');
+            Route::get('capacities/{capacity}', [SupplierCapacityController::class, 'show'])->whereNumber('capacity')->name('capacities.show');
+            Route::patch('capacities/{capacity}', [SupplierCapacityController::class, 'update'])
+                ->whereNumber('capacity')->middleware('throttle:api-decision')->name('capacities.update');
+            Route::delete('capacities/{capacity}', [SupplierCapacityController::class, 'destroy'])
+                ->whereNumber('capacity')->middleware('throttle:api-decision')->name('capacities.destroy');
+
+            // Read-only processor mass-balance ledger (SupplierLotTransformationController).
+            Route::get('lot-transformations', [SupplierLotTransformationController::class, 'index'])->name('lot-transformations.index');
+            Route::get('lot-transformations/{transformation}', [SupplierLotTransformationController::class, 'show'])
+                ->whereNumber('transformation')->name('lot-transformations.show');
+
             // Product management (this task): full CRUD + submit-for-publish
             // over the caller's own company's catalogue listings, API
             // counterpart of `Filament\Exporter\Resources\Products\ProductResource`
@@ -587,7 +725,7 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
             Route::get('products/options', [SupplierProductController::class, 'options'])->name('products.options');
             Route::get('products', [SupplierProductController::class, 'index'])->name('products.index');
             Route::post('products', [SupplierProductController::class, 'store'])
-                ->middleware('throttle:api-rfq')->name('products.store');
+                ->middleware('throttle:api-product-write')->name('products.store');
             Route::get('products/{product}', [SupplierProductController::class, 'show'])->name('products.show');
             Route::patch('products/{product}', [SupplierProductController::class, 'update'])
                 ->middleware('throttle:api-decision')->name('products.update');
@@ -597,11 +735,16 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
                 ->middleware('throttle:api-decision')->name('products.destroy');
 
             // Product photo upload (this task): mirrors the ONE real image
-            // field the web form has (`primary_image_path`). No
-            // gallery add/delete/reorder routes exist — see
-            // SupplierProductImageController's docblock for why.
+            // field the web form has (`primary_image_path`), plus
+            // delete/reorder over the existing primary image and
+            // product_images rows — see SupplierProductImageController.
             Route::post('products/{product}/images', [SupplierProductImageController::class, 'store'])
-                ->middleware('throttle:api-rfq')->name('products.images.store');
+                ->middleware('throttle:api-upload')->name('products.images.store');
+            // `order` before `{image}` so the static segment wins.
+            Route::patch('products/{product}/images/order', [SupplierProductImageController::class, 'reorder'])
+                ->middleware('throttle:api-decision')->name('products.images.reorder');
+            Route::delete('products/{product}/images/{image}', [SupplierProductImageController::class, 'destroy'])
+                ->middleware('throttle:api-decision')->name('products.images.destroy');
 
             // Fleet (this task): vehicles + drivers, API counterpart of the
             // exporter panel's Vehicles/Drivers resources. Sits under
@@ -615,18 +758,78 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
             Route::prefix('fleet')->name('fleet.')->group(function (): void {
                 Route::get('vehicles', [FleetVehicleController::class, 'index'])->name('vehicles.index');
                 Route::post('vehicles', [FleetVehicleController::class, 'store'])
-                    ->middleware('throttle:api-rfq')->name('vehicles.store');
+                    ->middleware('throttle:api-product-write')->name('vehicles.store');
                 Route::get('vehicles/{vehicle}', [FleetVehicleController::class, 'show'])->name('vehicles.show');
                 Route::patch('vehicles/{vehicle}', [FleetVehicleController::class, 'update'])
                     ->middleware('throttle:api-decision')->name('vehicles.update');
 
                 Route::get('drivers', [FleetDriverController::class, 'index'])->name('drivers.index');
                 Route::post('drivers', [FleetDriverController::class, 'store'])
-                    ->middleware('throttle:api-rfq')->name('drivers.store');
+                    ->middleware('throttle:api-product-write')->name('drivers.store');
                 Route::get('drivers/{driver}', [FleetDriverController::class, 'show'])->name('drivers.show');
                 Route::patch('drivers/{driver}', [FleetDriverController::class, 'update'])
                     ->middleware('throttle:api-decision')->name('drivers.update');
+
+                // Delete (409 while assigned to an in-transit shipment).
+                Route::delete('vehicles/{vehicle}', [FleetVehicleController::class, 'destroy'])
+                    ->middleware('throttle:api-decision')->name('vehicles.destroy');
+                Route::delete('drivers/{driver}', [FleetDriverController::class, 'destroy'])
+                    ->middleware('throttle:api-decision')->name('drivers.destroy');
             });
+
+            /* ---- Logistics: shipments + waybills (SupplierShipmentController) ----
+             * Kept as a separate block from the supplier order-action routes
+             * (`orders/{reference}/{confirm|...}`) to ease merging. Visibility:
+             * member of the carrier company OR the order's supplier company.
+             */
+            Route::post('orders/{reference}/shipments', [SupplierShipmentController::class, 'storeForOrder'])
+                ->middleware('throttle:api-decision')->name('orders.shipments.store');
+            Route::get('shipments', [SupplierShipmentController::class, 'index'])->name('shipments.index');
+            Route::get('carriers', [SupplierShipmentController::class, 'carriers'])->name('carriers.index');
+            Route::get('shipments/{shipment}', [SupplierShipmentController::class, 'show'])
+                ->whereNumber('shipment')->name('shipments.show');
+            Route::patch('shipments/{shipment}', [SupplierShipmentController::class, 'update'])
+                ->whereNumber('shipment')->middleware('throttle:api-decision')->name('shipments.update');
+            Route::post('shipments/{shipment}/checkpoints', [SupplierShipmentController::class, 'storeCheckpoint'])
+                ->whereNumber('shipment')->middleware('throttle:api-decision')->name('shipments.checkpoints.store');
+            Route::get('shipments/{shipment}/checkpoints/{checkpoint}/photo', [SupplierShipmentController::class, 'checkpointPhoto'])
+                ->whereNumber(['shipment', 'checkpoint'])->name('shipments.checkpoints.photo');
+            // Carrier booking acceptance (owner decision): only for a pending booking request.
+            Route::post('shipments/{shipment}/accept', [SupplierShipmentController::class, 'accept'])
+                ->whereNumber('shipment')->middleware('throttle:api-decision')->name('shipments.accept');
+            Route::post('shipments/{shipment}/decline', [SupplierShipmentController::class, 'decline'])
+                ->whereNumber('shipment')->middleware('throttle:api-decision')->name('shipments.decline');
+            /* ---- end logistics block ---- */
         });
     });
+
+    /* ------------------------------------------------- agent ingestion */
+
+    // Agent Ingestion Gateway (docs/api/AGENT_INGESTION.md): machine
+    // principals (e.g. Hermes) add suppliers/products for staff review.
+    // Agent keys are minted with `php artisan agent:create-key`, confined
+    // to this prefix by EnforceApiKeyPolicy, and everything they write is
+    // hidden (draft + needs_review) until staff approve it in the admin.
+    Route::prefix('agent')->name('agent.')
+        ->middleware(['auth:sanctum', 'agent.token', 'throttle:api-agent'])
+        ->group(function (): void {
+            Route::get('reference', AgentReferenceController::class)
+                ->middleware('agent.token:agent:read')->name('reference');
+
+            Route::get('suppliers', [AgentSupplierController::class, 'lookup'])
+                ->middleware('agent.token:agent:read')->name('suppliers.lookup');
+            Route::get('suppliers/{supplier}', [AgentSupplierController::class, 'show'])
+                ->whereNumber('supplier')->middleware('agent.token:agent:read')->name('suppliers.show');
+
+            Route::middleware(['agent.token:agent:ingest', 'agent.idempotent'])->group(function (): void {
+                Route::post('suppliers/batch', [AgentSupplierController::class, 'batch'])->name('suppliers.batch');
+                Route::post('suppliers', [AgentSupplierController::class, 'store'])->name('suppliers.store');
+                Route::post('suppliers/{supplier}/products', [AgentProductController::class, 'store'])
+                    ->whereNumber('supplier')->name('suppliers.products.store');
+                Route::post('suppliers/{supplier}/logo', [AgentSupplierController::class, 'logo'])
+                    ->whereNumber('supplier')->name('suppliers.logo');
+                Route::post('products/{product}/image', [AgentProductController::class, 'image'])
+                    ->whereNumber('product')->name('products.image');
+            });
+        });
 });

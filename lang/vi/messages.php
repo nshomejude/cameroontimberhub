@@ -1112,7 +1112,7 @@ return [
         'subtotal' => 'Tạm tính',
         'shipping' => 'Vận chuyển',
         'tax' => 'Thuế',
-        'marketplace_commission' => 'Hoa hồng chợ giao dịch (:rate%, nếu đơn hàng này thực hiện dưới Trade Assurance)',
+        'marketplace_commission' => 'Hoa hồng chợ giao dịch (:rate%) — do nhà cung cấp trả, không cộng vào tổng của bạn',
         'terms' => 'Điều khoản',
         'supplier_notes' => 'Ghi chú của nhà cung cấp',
         'no_supplier_notes' => 'Nhà cung cấp chưa thêm ghi chú nào cho báo giá này.',

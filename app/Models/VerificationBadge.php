@@ -24,6 +24,7 @@ class VerificationBadge extends Model
             'valid_until' => 'date',
             'revoked_at' => 'datetime',
             'is_public' => 'boolean',
+            'issued_manually' => 'boolean',
         ];
     }
 

@@ -66,6 +66,12 @@ class MtnMomoGateway implements PaymentGatewayContract
             ], 503);
         }
 
+        // Re-submitting a settled/failed payment would overwrite its
+        // provider_reference and re-push a charge.
+        if (! $payment->isPending()) {
+            return response()->view('payments.mtn-momo.failed', ['payment' => $payment], 409);
+        }
+
         return match ($this->requestToPay($payment, $data['phone'])) {
             'pending' => response()->view('payments.mtn-momo.pending', ['payment' => $payment], 200),
             default => response()->view('payments.mtn-momo.failed', ['payment' => $payment], 502),
@@ -108,7 +114,7 @@ class MtnMomoGateway implements PaymentGatewayContract
                 'Ocp-Apim-Subscription-Key' => $config['subscription_key'],
                 'Content-Type' => 'application/json',
             ])->post("{$baseUrl}/collection/v1_0/requesttopay", [
-                'amount' => (string) $payment->amount,
+                'amount' => PaymentAmount::forProvider($payment), // XAF: "50000", never "50000.00"
                 'currency' => $config['currency'],
                 'externalId' => (string) $payment->id,
                 'payer' => [
@@ -151,13 +157,11 @@ class MtnMomoGateway implements PaymentGatewayContract
     }
 
     /**
-     * NOTE: MTN MoMo has no widely-adopted webhook-signature standard the
-     * way Stripe does. Until real webhook-secret / IP-allowlist details are
-     * available from MTN's merchant portal, we only validate the payload
-     * shape and log anything unexpected rather than trusting it blindly.
-     * A production hardening pass should add IP allowlisting and/or a
-     * shared-secret header check once MTN provides one for this merchant
-     * account.
+     * MTN MoMo callbacks are unauthenticated by design (no signature, no
+     * shared secret). The payload is therefore only a *hint*: its `status`
+     * is never trusted. We re-query `GET /collection/v1_0/requesttopay/{ref}`
+     * (OAuth + subscription-key authenticated) and act only on the status
+     * MTN itself reports, and only complete when the amount matches ours.
      */
     public function handleWebhook(Request $request): Response
     {
@@ -168,9 +172,8 @@ class MtnMomoGateway implements PaymentGatewayContract
         }
 
         $referenceId = $request->input('referenceId') ?? $request->input('externalId');
-        $status = $request->input('status');
 
-        if (! $referenceId || ! $status) {
+        if (! is_string($referenceId) || $referenceId === '') {
             Log::warning('MTN MoMo webhook received with missing required fields', [
                 'payload' => $request->all(),
             ]);
@@ -190,9 +193,25 @@ class MtnMomoGateway implements PaymentGatewayContract
             return $this->jsonResponse(['message' => 'No matching payment.'], 404);
         }
 
-        $normalizedStatus = strtoupper((string) $status);
+        $confirmed = $this->fetchRequestToPayStatus($payment);
+
+        if ($confirmed === null) {
+            return $this->jsonResponse(['message' => 'Unable to verify transaction status.'], 502);
+        }
+
+        $normalizedStatus = strtoupper((string) ($confirmed['status'] ?? ''));
 
         if ($normalizedStatus === 'SUCCESSFUL') {
+            if (! PaymentAmount::matches($payment, $confirmed['amount'] ?? null)) {
+                Log::critical('MTN MoMo confirmed SUCCESSFUL with a mismatched amount — refusing to complete', [
+                    'payment_id' => $payment->id,
+                    'expected' => (string) $payment->amount,
+                    'confirmed' => $confirmed['amount'] ?? null,
+                ]);
+
+                return $this->jsonResponse(['message' => 'Amount mismatch.'], 409);
+            }
+
             // Mirror StripeGateway: funnel completion through the CommandBus so
             // Payment::markCompleted() + the PaymentCompleted outbox event
             // happen in one transaction (billing engine M2). Idempotent
@@ -211,6 +230,50 @@ class MtnMomoGateway implements PaymentGatewayContract
         }
 
         return $this->jsonResponse(['message' => 'ok']);
+    }
+
+    /**
+     * Server-to-server status check: `GET /collection/v1_0/requesttopay/{referenceId}`.
+     * Returns the decoded body, or null when MTN could not be reached.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function fetchRequestToPayStatus(Payment $payment): ?array
+    {
+        $config = GatewayCredentials::for(PaymentProvider::MtnMomo);
+        $baseUrl = $this->baseUrl($config['environment']);
+
+        try {
+            $token = $this->fetchAccessToken($baseUrl, $config);
+
+            if (! $token) {
+                return null;
+            }
+
+            $response = Http::withHeaders([
+                'Authorization' => "Bearer {$token}",
+                'X-Target-Environment' => $config['target_environment'],
+                'Ocp-Apim-Subscription-Key' => $config['subscription_key'],
+            ])->get("{$baseUrl}/collection/v1_0/requesttopay/".rawurlencode((string) $payment->provider_reference));
+
+            if (! $response->successful() || ! is_array($response->json())) {
+                Log::warning('MTN MoMo requesttopay status check failed', [
+                    'payment_id' => $payment->id,
+                    'status' => $response->status(),
+                ]);
+
+                return null;
+            }
+
+            return $response->json();
+        } catch (\Throwable $e) {
+            Log::error('MTN MoMo requesttopay status exception', [
+                'payment_id' => $payment->id,
+                'message' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
     }
 
     /**

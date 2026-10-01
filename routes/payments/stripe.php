@@ -16,14 +16,18 @@ Route::get('/payments/stripe/success/{payment}', function (Payment $payment) {
         ->with('status', 'Payment session complete — we will confirm shortly.');
 })->name('payments.stripe.success');
 
-Route::get('/payments/stripe/cancel/{payment}', function (Payment $payment) {
+// Public browser redirect from Stripe — only the temporary signed link
+// minted at checkout may fail the (still pending) payment.
+Route::get('/payments/stripe/cancel/{payment}', function (Request $request, Payment $payment) {
+    abort_unless($request->hasValidSignature(), 403);
+
     $payment->markFailed();
 
     return redirect('/')
         ->with('status', 'Payment was cancelled.');
 })->name('payments.stripe.cancel');
 
-Route::withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class)
+Route::withoutMiddleware(\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class)
     ->post('/payments/stripe/webhook', function (Request $request) {
         /** @var PaymentGatewayContract $gateway */
         $gateway = app(config('payments.providers.'.PaymentProvider::Stripe->value));

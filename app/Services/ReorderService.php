@@ -408,7 +408,7 @@ class ReorderService
                     'quantity' => $quantity,
                     'unit' => $item->unit,
                     'unit_price' => $price,
-                    'line_total' => Quote::lineTotal($quantity, $price),
+                    'line_total' => Quote::lineTotal($quantity, $price, $quote->currency),
                 ]);
             }
 

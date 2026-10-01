@@ -82,6 +82,88 @@ return [
         'line_2' => 'Référence : :reference',
     ],
 
+    'rfq_withdrawn' => [
+        'subject' => 'Demande acheteur retirée — :reference',
+        'line_1' => 'L\'acheteur a retiré la demande :reference. Aucun devis n\'est plus nécessaire.',
+        'line_2' => 'Vous pouvez abandonner tout brouillon de devis préparé pour cette demande.',
+        'title' => 'Demande retirée',
+        'body' => 'L\'acheteur a retiré la demande :reference.',
+    ],
+
+    'message_received_mail' => [
+        'subject' => 'Nouveau message de :sender',
+        'someone' => 'Quelqu\'un',
+        'line_1' => ':sender vous a envoyé un message sur Cameroon Timber Hub :',
+        'action' => 'Ouvrir la conversation',
+        'line_2' => 'Pour ne pas encombrer votre boîte, nous envoyons au plus un e-mail par conversation toutes les :minutes minutes — ouvrez la conversation pour tout voir.',
+    ],
+
+    'lead_received' => [
+        'subject' => 'Nouvelle demande acheteur de :name',
+        'line_1' => ':name a envoyé une demande confirmée à votre société.',
+        'action' => 'Voir la piste',
+        'line_2' => 'Répondez rapidement — les acheteurs contactent souvent plusieurs fournisseurs.',
+    ],
+
+    'shipment_assigned' => [
+        'subject' => 'Vous avez été désigné transporteur de l\'expédition :waybill',
+        'line_1' => ':supplier a désigné votre société comme transporteur de l\'expédition :waybill (:origin → :destination).',
+        'action' => 'Voir l\'expédition',
+        'line_2' => 'Si votre société n\'a pas accepté ce transport, contactez le fournisseur ou le support Cameroon Timber Hub.',
+    ],
+
+    'shipment_booking_requested' => [
+        'subject' => 'Demande de réservation pour l\'expédition :waybill',
+        'line_1' => ':supplier demande à votre société de transporter l\'expédition :waybill (:origin → :destination).',
+        'action' => 'Accepter ou refuser',
+        'line_2' => 'Merci d\'accepter ou de refuser cette réservation afin que le fournisseur puisse planifier l\'expédition.',
+    ],
+
+    'shipment_booking_accepted' => [
+        'subject' => ':carrier a accepté la réservation de l\'expédition :waybill',
+        'line_1' => ':carrier a accepté votre demande de réservation pour l\'expédition :waybill (commande :order).',
+        'action' => 'Voir l\'expédition',
+    ],
+
+    'shipment_booking_declined' => [
+        'subject' => ':carrier a refusé la réservation de l\'expédition :waybill',
+        'line_1' => ':carrier a refusé votre demande de réservation pour l\'expédition :waybill (commande :order).',
+        'reason' => 'Motif : :reason',
+        'action' => 'Choisir un autre transporteur',
+    ],
+
+    'shipment_delivered' => [
+        'supplier' => [
+            'subject' => 'Expédition :waybill livrée (commande :order)',
+            'line_1' => 'Le transporteur a enregistré l\'expédition :waybill de la commande :order comme livrée.',
+            'action' => 'Voir l\'expédition',
+            'line_2' => 'Le statut de la commande n\'a pas changé — marquez-la livrée une fois la livraison confirmée.',
+        ],
+        'buyer' => [
+            'subject' => 'Marchandises livrées — merci de confirmer (commande :order)',
+            'line_1' => 'L\'expédition :waybill de votre commande :order a été enregistrée comme livrée.',
+            'action' => 'Confirmer la réception',
+            'line_2' => 'Vérifiez les marchandises et confirmez la réception sur votre commande.',
+        ],
+    ],
+
+    'buyer_rfq_routed' => [
+        'subject' => 'Votre demande :reference a été transmise aux fournisseurs',
+        'heading' => 'Votre demande est chez les fournisseurs',
+        'intro' => 'Bonne nouvelle — votre demande :reference a été examinée et transmise à :count fournisseur(s) vérifié(s).',
+        'next' => 'Les fournisseurs répondent par e-mail avec leurs offres. Suivez les réponses avec le bouton ci-dessous.',
+        'action' => 'Voir les réponses',
+        'salutation' => 'Merci,',
+    ],
+    'buyer_rfq_rejected' => [
+        'subject' => 'Mise à jour de votre demande :reference',
+        'heading' => 'Nous ne pouvons pas transmettre votre demande',
+        'intro' => 'Merci pour votre demande :reference. Après examen, nous ne pouvons pas la transmettre aux fournisseurs pour le moment.',
+        'reason' => 'Motif : :reason',
+        'next' => 'Si vous pensez qu\'il s\'agit d\'une erreur ou pouvez apporter plus de détails, répondez simplement à cet e-mail ou soumettez une nouvelle demande.',
+        'salutation' => 'Cordialement,',
+    ],
+
     'subscription_renewal' => [
         'subject' => 'Votre offre :plan se renouvelle bientôt',
         'line_1' => 'Votre abonnement :plan doit être renouvelé le :date pour :amount.',
@@ -106,6 +188,28 @@ return [
     ],
 
     'push' => [
+        'commission_statement_issued' => [
+            'title' => 'Relevé de commission :number émis',
+            'body' => 'Votre relevé de commission de la place de marché pour :period s\'élève à :amount, à régler avant le :due.',
+        ],
+        'commission_statement_due_soon' => [
+            'title' => 'Relevé de commission :number bientôt échu',
+            'body' => ':amount reste dû sur le relevé de commission :number. Merci de régler avant le :due.',
+        ],
+        'commission_statement_overdue' => [
+            'title' => 'Relevé de commission :number en retard',
+            'body' => ':amount sur le relevé de commission :number était dû le :due et est maintenant en retard. Merci de régler et de déclarer votre dépôt.',
+        ],
+        'commission_deposit_confirmed' => [
+            'title' => 'Dépôt de commission confirmé',
+            'body' => 'Nous avons reçu :amount (réf. :reference) pour le relevé :number. Solde restant : :balance.',
+        ],
+        'commission_deposit_rejected' => [
+            'title' => 'Dépôt de commission refusé',
+            'body' => 'Votre dépôt (réf. :reference) pour le relevé :number n\'a pas pu être confirmé : :reason',
+        ],
+        'commission_pay_hint' => 'Payez par MTN Mobile Money, Orange Money ou dépôt bancaire avec les coordonnées du relevé, puis déclarez le dépôt avec sa référence de transaction.',
+        'commission_action' => 'Voir le relevé',
         'quote_received' => [
             'title' => 'Nouveau devis reçu',
             'body' => ':supplier a soumis un devis pour la demande :rfq.',

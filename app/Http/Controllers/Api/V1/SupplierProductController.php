@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Domain\Catalog\Commands\PublishProductCommand;
+use App\Domain\Catalog\ProductPublishingRules;
 use App\Enums\PriceUnit;
 use App\Enums\ProductStatus;
 use App\Enums\ProductType;
+use App\Exceptions\Api\ApiException;
 use App\Exceptions\Api\ConflictException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\StoreSupplierProductRequest;
@@ -20,6 +22,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 /**
  * A supplier's own catalogue management over token auth — the API
@@ -57,7 +60,7 @@ class SupplierProductController extends Controller
 
         $products = $this->scope->products($request->user())
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')))
-            ->with(['species'])
+            ->with(['species', 'company'])
             ->paginate(15);
 
         return SupplierProductResource::collection($products);
@@ -73,6 +76,7 @@ class SupplierProductController extends Controller
         $data['status'] = $data['status'] ?? ProductStatus::Draft->value;
 
         if ($data['status'] === ProductStatus::Active->value) {
+            $this->assertPublishable($company, null, $data);
             $product = $this->commandBus->dispatch(new PublishProductCommand($data));
         } else {
             $product = Product::create($data);
@@ -102,7 +106,12 @@ class SupplierProductController extends Controller
         $isBecomingActive = ($data['status'] ?? null) === ProductStatus::Active->value
             && $record->status !== ProductStatus::Active;
 
+        if (($data['status'] ?? null) === ProductStatus::Active->value && $record->status === ProductStatus::Archived) {
+            throw new ConflictException('An archived product cannot be published — restore it to draft first.', 'product_archived');
+        }
+
         if ($isBecomingActive) {
+            $this->assertPublishable($record->company, $record, $data);
             $record = $this->commandBus->dispatch(new PublishProductCommand($data, $record->getKey()));
         } else {
             $record->update($data);
@@ -127,6 +136,7 @@ class SupplierProductController extends Controller
     public function submit(Request $request, int|string $product): SupplierProductResource
     {
         $record = $this->scope->product($request->user(), $product);
+        $this->assertCanManage($request, $record);
 
         if ($record->status === ProductStatus::Active) {
             throw new ConflictException('This product is already active.', 'product_already_active');
@@ -135,6 +145,8 @@ class SupplierProductController extends Controller
         if ($record->status === ProductStatus::Archived) {
             throw new ConflictException('An archived product cannot be submitted — restore it to draft first.', 'product_archived');
         }
+
+        $this->assertPublishable($record->company, $record, []);
 
         $updated = $this->commandBus->dispatch(new PublishProductCommand(
             ['status' => ProductStatus::Active->value, 'company_id' => $record->company_id],
@@ -154,9 +166,39 @@ class SupplierProductController extends Controller
     public function destroy(Request $request, int|string $product): JsonResponse
     {
         $record = $this->scope->product($request->user(), $product);
+        $this->assertCanManage($request, $record);
         $record->delete();
 
         return response()->json(['message' => 'Product deleted.']);
+    }
+
+    /**
+     * 403 unless the caller's company role may manage listings (owner /
+     * manager) — see ProductPublishingRules::canManageProducts().
+     */
+    public static function assertCanManage(Request $request, Product $record): void
+    {
+        if (! ProductPublishingRules::canManageProducts($request->user(), $record->company_id)) {
+            throw new ApiException(403, 'product_management_forbidden', 'Your company role does not allow managing products.');
+        }
+    }
+
+    /**
+     * Publish gate: 409 when the company is suspended/rejected/archived,
+     * 422 (field errors) when the listing misses the quality minimum.
+     *
+     * @param  array<string, mixed>  $changes
+     */
+    private function assertPublishable(Company $company, ?Product $record, array $changes): void
+    {
+        if (($reason = ProductPublishingRules::companyPublishBlock($company)) !== null) {
+            throw new ConflictException($reason, 'company_cannot_publish');
+        }
+
+        $gaps = ProductPublishingRules::qualityGaps(ProductPublishingRules::mergedAttributes($record, $changes));
+        if ($gaps !== []) {
+            throw ValidationException::withMessages($gaps);
+        }
     }
 
     /**

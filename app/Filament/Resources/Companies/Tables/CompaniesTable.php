@@ -2,13 +2,16 @@
 
 namespace App\Filament\Resources\Companies\Tables;
 
+use App\Actions\Agent\ModerateAgentSubmission;
 use App\Actions\Company\RequestCompanySuspension;
 use App\Domain\Commerce\Commands\AssignSubscriptionCommand;
+use App\Enums\BadgeType;
 use App\Enums\CompanyStatus;
 use App\Enums\SupplierType;
 use App\Models\Company;
 use App\Models\CompanySuspensionRequest;
 use App\Models\Plan;
+use App\Services\BadgeService;
 use App\Services\CompanyStatusService;
 use App\Support\Bus\CommandBus;
 use Filament\Actions\Action;
@@ -20,6 +23,7 @@ use Filament\Actions\EditAction;
 use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreBulkAction;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
 use Filament\Tables\Columns\IconColumn;
@@ -78,6 +82,8 @@ class CompaniesTable
                     ->placeholder('')
                     ->state(fn (Company $record): ?string => $record->is_featured && ! $record->hasFeature('featured') ? 'Featured without plan' : null)
                     ->toggleable(),
+                TextColumn::make('source')->label('Source')->badge()->placeholder('—')->toggleable(isToggledHiddenByDefault: true),
+                IconColumn::make('needs_review')->label('Needs review')->boolean()->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('created_at')->date('d M Y')->sortable()->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
@@ -89,6 +95,16 @@ class CompaniesTable
                     ->multiple()
                     ->options(SupplierType::options()),
                 TernaryFilter::make('is_featured')->label('Featured'),
+                // Agent Ingestion Gateway moderation queue (docs/api/AGENT_INGESTION.md).
+                TernaryFilter::make('agent_submissions')->label('Agent submissions')
+                    ->placeholder('All companies')
+                    ->trueLabel('Agent-sourced, awaiting review')
+                    ->falseLabel('Agent-sourced, reviewed')
+                    ->queries(
+                        true: fn ($q) => $q->where('source', 'like', 'agent:%')->where('needs_review', true),
+                        false: fn ($q) => $q->where('source', 'like', 'agent:%')->where('needs_review', false),
+                        blank: fn ($q) => $q,
+                    ),
                 TrashedFilter::make(),
             ])
             ->defaultSort('created_at', 'desc')
@@ -138,6 +154,27 @@ class CompaniesTable
         $reason = fn () => [Textarea::make('reason')->required()->maxLength(500)];
 
         return [
+            ...static::agentModerationActions(),
+
+            // Desk verification — the only badge path for companies that cannot
+            // upload documents (unclaimed agent-sourced listings).
+            Action::make('issueDeskBadge')->label('Issue badge (desk-verified)')
+                ->icon('heroicon-o-shield-check')->color('success')
+                ->modalDescription('Issues a badge without approved documents. Only use after verifying the company out-of-band; the reason is recorded in the audit log. Expires in 12 months.')
+                ->visible(fn (Company $r): bool => (bool) auth()->user()?->can('verification.review')
+                    && ! in_array($r->status, [CompanyStatus::Archived, CompanyStatus::Rejected, CompanyStatus::Suspended], true))
+                ->schema([
+                    Select::make('badge_type')->label('Badge')->required()
+                        ->default(BadgeType::VerifiedCompany->value)
+                        ->options(collect(BadgeType::options())->except(BadgeType::PremiumMember->value)->all()),
+                    Textarea::make('reason')->label('How was this company verified?')->required()->minLength(10)->maxLength(1000),
+                ])
+                ->action(function (Company $record, array $data) use ($notify): void {
+                    abort_unless((bool) auth()->user()?->can('verification.review'), 403);
+                    app(BadgeService::class)->issueManually($record, BadgeType::from($data['badge_type']), auth()->user(), $data['reason']);
+                    $notify('Badge issued (desk-verified)');
+                }),
+
             Action::make('approve')
                 ->icon('heroicon-o-check-circle')->color('success')->requiresConfirmation()
                 ->visible(fn (Company $r): bool => $r->status === CompanyStatus::Pending && $canManage())
@@ -218,6 +255,64 @@ class CompaniesTable
                         actingUserId: auth()->user()?->getKey(),
                     ));
                     $notify('Plan assigned');
+                }),
+        ];
+    }
+
+    /**
+     * Agent Ingestion Gateway moderation (see ModerateAgentSubmission). Only
+     * shown on agent-sourced companies.
+     *
+     * @return array<Action>
+     */
+    protected static function agentModerationActions(): array
+    {
+        $moderate = fn (): ModerateAgentSubmission => app(ModerateAgentSubmission::class);
+        // Dedicated moderation permission (verification officers, moderators)
+        // OR full company authority.
+        $canManage = fn (): bool => (bool) (auth()->user()?->can('agent-submissions.moderate')
+            || auth()->user()?->can('companies.manage'));
+        $isAgent = fn (Company $r): bool => str_starts_with((string) $r->source, 'agent:');
+
+        return [
+            Action::make('agentApprove')->label('Approve listing')
+                ->icon('heroicon-o-check-badge')->color('success')->requiresConfirmation()
+                ->modalDescription('Clears the review flag and sends the company into the normal verification queue. It stays hidden until verified.')
+                ->visible(fn (Company $r): bool => $isAgent($r) && $r->needs_review && $canManage())
+                ->action(function (Company $record) use ($moderate): void {
+                    $moderate()->approve($record, auth()->user());
+                    Notification::make()->title('Agent submission approved — now pending verification')->success()->send();
+                }),
+
+            Action::make('agentPublishProducts')->label('Publish products')
+                ->icon('heroicon-o-rocket-launch')->color('info')->requiresConfirmation()
+                ->visible(fn (Company $r): bool => $isAgent($r) && $canManage())
+                ->action(function (Company $record) use ($moderate): void {
+                    if ($record->status !== CompanyStatus::Verified) {
+                        Notification::make()->title('Verify the company before publishing its products.')->warning()->send();
+
+                        return;
+                    }
+                    $count = $moderate()->publishProducts($record, auth()->user());
+                    Notification::make()->title("Published {$count} product(s)")->success()->send();
+                }),
+
+            Action::make('agentReject')->label('Reject submission')
+                ->icon('heroicon-o-no-symbol')->color('danger')
+                ->schema([Textarea::make('reason')->maxLength(500)])
+                ->visible(fn (Company $r): bool => $isAgent($r) && $r->status !== CompanyStatus::Archived && $canManage())
+                ->action(function (Company $record, array $data) use ($moderate): void {
+                    $moderate()->reject($record, auth()->user(), $data['reason'] ?? null);
+                    Notification::make()->title('Agent submission rejected and archived')->success()->send();
+                }),
+
+            Action::make('agentAttachOwner')->label('Attach owner (claim)')
+                ->icon('heroicon-o-user-plus')->color('gray')
+                ->schema([TextInput::make('email')->email()->required()])
+                ->visible(fn (Company $r): bool => $isAgent($r) && $canManage())
+                ->action(function (Company $record, array $data) use ($moderate): void {
+                    $moderate()->attachOwner($record, $data['email'], auth()->user());
+                    Notification::make()->title('Owner attached — agents can no longer modify this company')->success()->send();
                 }),
         ];
     }

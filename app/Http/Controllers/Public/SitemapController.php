@@ -174,20 +174,35 @@ class SitemapController extends Controller
      */
     public function robots(): Response
     {
-        $lines = [
-            'User-agent: *',
-            'Allow: /',
+        // Private / transactional / token-bearing paths. /verify (the form)
+        // stays crawlable; /verify/{token}, /track/{token} etc. do not, so
+        // receipt and tracking tokens never end up in a search index.
+        $private = [
             'Disallow: /admin',
             'Disallow: /dashboard',
             'Disallow: /account',
+            'Disallow: /api/',
+            'Disallow: /payments/',
+            'Disallow: /docs/api',
+            'Disallow: /verify/',
+            'Disallow: /track/',
+        ];
+
+        $lines = [
+            'User-agent: *',
+            'Allow: /',
+            ...$private,
             '',
             '# AI / answer-engine crawlers are welcome. This content is published',
             '# to be read, cited and answered from.',
         ];
 
+        // A crawler obeys only its most specific group, so each named group
+        // repeats the private-path rules.
         foreach (self::AI_CRAWLERS as $agent) {
             $lines[] = 'User-agent: '.$agent;
             $lines[] = 'Allow: /';
+            array_push($lines, ...$private);
             $lines[] = '';
         }
 

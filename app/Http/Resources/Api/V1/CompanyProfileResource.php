@@ -11,8 +11,9 @@ use Illuminate\Support\Facades\Storage;
  * The caller's own company profile — the API counterpart of the exporter
  * panel's "Edit company" form
  * ({@see \App\Filament\Exporter\Resources\Companies\Schemas\CompanyForm}).
- * Exposes every field that form edits, nothing more (no plan/subscription
- * internals, no verification workflow state — see
+ * Exposes every field that form edits, plus the read-only gating context
+ * (`organisation_type`, effective `plan` — see CompanyContextPayload; no
+ * billing internals), and no verification workflow state — see
  * {@see \App\Http\Controllers\Api\V1\CompanyVerificationController} for
  * that).
  *
@@ -86,11 +87,19 @@ class CompanyProfileResource extends JsonResource
                     'id' => $g->id,
                     'image_url' => Storage::disk('public')->url($g->image_path),
                     'caption' => $g->caption,
+                    'description' => $g->description,
+                    'is_portfolio' => (bool) $g->is_portfolio,
+                    'materials_used' => $g->materials_used,
+                    'completed_on' => $g->completed_on?->toDateString(),
                 ])->values(),
             ),
 
             'profile_completion' => (int) $this->profile_completion,
             'max_gallery_images' => $this->maxGalleryImages(),
+
+            // App gating context (organisation type + effective plan), see CompanyContextPayload.
+            'organisation_type' => CompanyContextPayload::organisationType($this->resource),
+            'plan' => CompanyContextPayload::plan($this->resource),
         ];
     }
 }

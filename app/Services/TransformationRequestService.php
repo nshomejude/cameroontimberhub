@@ -45,6 +45,9 @@ use Illuminate\Support\Facades\DB;
  */
 class TransformationRequestService
 {
+    /** Quote currencies offered by the exporter "Send quote" form and accepted by the API. */
+    public const QUOTE_CURRENCIES = ['XAF', 'EUR', 'USD'];
+
     private const TRANSITIONS = [
         'pending' => ['quoted', 'accepted', 'declined', 'cancelled'],
         'quoted' => ['accepted', 'declined', 'cancelled'],
@@ -124,7 +127,7 @@ class TransformationRequestService
 
         $provider = Company::query()
             ->where('slug', $data['provider_slug'])
-            ->whereIn('type', [OrganisationType::Processor->value, OrganisationType::Manufacturer->value])
+            ->whereIn('type', OrganisationType::transformationProviderValues())
             ->where('status', CompanyStatus::Verified->value)
             ->first();
 

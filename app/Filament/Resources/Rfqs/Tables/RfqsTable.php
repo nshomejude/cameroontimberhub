@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Rfqs\Tables;
 
+use App\Enums\OrganisationType;
 use App\Enums\RfqStatus;
 use App\Models\Company;
 use App\Models\Rfq;
@@ -53,7 +54,14 @@ class RfqsTable
 
                     Action::make('approve')->label('Approve')->icon('heroicon-o-check-circle')->color('success')->requiresConfirmation()
                         ->visible(fn (Rfq $r): bool => in_array($r->status, [RfqStatus::New, RfqStatus::InReview], true) && static::canTriage())
-                        ->action(fn (Rfq $record) => static::run(fn () => app(RfqTriageService::class)->approve($record, auth()->user()), 'RFQ approved — you can now route it')),
+                        ->action(function (Rfq $record): void {
+                            $routed = 0;
+                            static::run(function () use ($record, &$routed): void {
+                                $routed = app(RfqTriageService::class)->approve($record, auth()->user());
+                            }, fn (): string => $routed > 0
+                                ? "RFQ approved — auto-routed to {$routed} matching supplier(s); you can route more"
+                                : 'RFQ approved — no supplier matched automatically; route it manually');
+                        }),
 
                     Action::make('aiSuggestions')->label('AI suggestions')->icon('heroicon-o-sparkles')->color('gray')
                         ->visible(fn (Rfq $r): bool => $r->status === RfqStatus::Approved && static::canRoute())
@@ -68,16 +76,30 @@ class RfqsTable
                         ->visible(fn (Rfq $r): bool => $r->status === RfqStatus::Approved && static::canRoute())
                         ->schema([
                             Select::make('companies')->label('Companies')->multiple()->required()->searchable()
-                                ->options(fn () => Company::where('status', 'verified')->orderBy('legal_name')->get()
-                                    ->mapWithKeys(fn (Company $company) => [
-                                        $company->id => $company->type instanceof \App\Enums\OrganisationType
-                                            ? "{$company->legal_name} ({$company->type->label()})"
-                                            : $company->legal_name,
-                                    ])),
+                                ->options(fn (Rfq $record) => static::routingOptions($record))
+                                ->helperText(fn (Rfq $record): ?string => $record->type?->targetOrganisationTypes() !== null
+                                    ? "Suggested: companies suited to a {$record->type->label()} request are listed first."
+                                    : null),
                         ])
                         ->action(function (Rfq $record, array $data): void {
-                            $count = app(RfqTriageService::class)->route($record, $data['companies'], auth()->user(), app(LeadFlowService::class));
-                            Notification::make()->title("Routed to {$count} company/companies")->success()->send();
+                            try {
+                                $result = app(RfqTriageService::class)->routeDetailed($record, $data['companies'], auth()->user(), app(LeadFlowService::class));
+                            } catch (\RuntimeException $e) {
+                                Notification::make()->title($e->getMessage())->danger()->send();
+
+                                return;
+                            }
+                            $selected = count($data['companies']);
+
+                            // Anything short of "every selected company got it"
+                            // is a warning listing who was skipped and why.
+                            $notification = Notification::make()->title("Routed to {$result->routed} of {$selected} company/companies");
+                            if ($result->routed < $selected || $result->routed === 0) {
+                                $notification->warning()->body('Not routed: '.$result->skippedSummary())->persistent();
+                            } else {
+                                $notification->success();
+                            }
+                            $notification->send();
                         }),
 
                     Action::make('reject')->label('Reject')->icon('heroicon-o-x-circle')->color('danger')
@@ -96,10 +118,53 @@ class RfqsTable
             ]);
     }
 
-    protected static function run(callable $callback, string $message): void
+    /**
+     * Verified and pending-verification companies (Company::BUYER_REQUEST_STATUSES)
+     * for the manual routing selector. For RFQ types with
+     * target organisation types (RfqType::targetOrganisationTypes()) the
+     * suitable companies come first in a "Suggested" group; the rest stay
+     * selectable under "Other companies" so staff can still override.
+     *
+     * @return array<int|string, mixed>
+     */
+    public static function routingOptions(Rfq $rfq): array
     {
-        $callback();
-        Notification::make()->title($message)->success()->send();
+        $label = fn (Company $company): string => $company->type instanceof OrganisationType
+            ? "{$company->legal_name} ({$company->type->label()})"
+            : $company->legal_name;
+
+        $companies = Company::query()->receivingBuyerRequests()->orderBy('legal_name')->get();
+        $targetTypes = $rfq->type?->targetOrganisationTypes();
+
+        if ($targetTypes === null) {
+            return $companies->mapWithKeys(fn (Company $c) => [$c->id => $label($c)])->all();
+        }
+
+        [$suggested, $others] = $companies->partition(fn (Company $c) => in_array($c->type, $targetTypes, true));
+
+        return array_filter([
+            'Suggested for '.$rfq->type->label() => $suggested->mapWithKeys(fn (Company $c) => [$c->id => $label($c)])->all(),
+            'Other companies' => $others->mapWithKeys(fn (Company $c) => [$c->id => $label($c)])->all(),
+        ]);
+    }
+
+    /**
+     * Run a triage transition; an illegal transition (RuntimeException from
+     * RfqTriageService) becomes a danger toast instead of a 500.
+     *
+     * @param  string|\Closure(): string  $message
+     */
+    protected static function run(callable $callback, string|\Closure $message): void
+    {
+        try {
+            $callback();
+        } catch (\RuntimeException $e) {
+            Notification::make()->title($e->getMessage())->danger()->send();
+
+            return;
+        }
+
+        Notification::make()->title($message instanceof \Closure ? $message() : $message)->success()->send();
     }
 
     protected static function canTriage(): bool

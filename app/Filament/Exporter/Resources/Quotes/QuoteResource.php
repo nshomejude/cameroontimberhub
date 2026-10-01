@@ -18,15 +18,14 @@ use Illuminate\Database\Eloquent\Builder;
 
 class QuoteResource extends Resource
 {
-
     public static function getNavigationLabel(): string
     {
         return __('messages.filament.xnav.quotes');
     }
+
     protected static ?string $model = Quote::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentCurrencyDollar;
-
 
     protected static ?string $recordTitleAttribute = 'reference_code';
 
@@ -37,9 +36,10 @@ class QuoteResource extends Resource
         return (bool) auth()->user()?->companies()->exists();
     }
 
+    /** Pending-verification companies cannot quote (Company::canRespondToBuyers()). */
     public static function canCreate(): bool
     {
-        return (bool) auth()->user()?->companies()->exists();
+        return (bool) auth()->user()?->companies()->first()?->canRespondToBuyers();
     }
 
     /** Only a draft is editable — a submitted quote is the buyer's copy. */

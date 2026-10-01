@@ -7,6 +7,7 @@ use App\Enums\DisputeCategory;
 use App\Http\Controllers\Controller;
 use App\Models\Dispute;
 use App\Models\Order;
+use App\Services\DisputeNotifier;
 use App\Services\DisputeService;
 use App\Support\Bus\CommandBus;
 use Illuminate\Http\RedirectResponse;
@@ -30,13 +31,14 @@ class DisputeController extends Controller
     public function __construct(
         private readonly DisputeService $disputes,
         private readonly CommandBus $commandBus,
+        private readonly DisputeNotifier $notifier,
     ) {}
 
     public function index(Request $request, Order $order): View
     {
         $user = $request->user();
 
-        abort_unless($this->disputes->isOrderParty($order, $user), 403);
+        abort_unless($this->disputes->isOrderParty($order, $user), 404);
 
         $order->load(['disputes.raisedByUser', 'disputes.raisedByCompany', 'disputes.respondentCompany']);
 
@@ -49,7 +51,7 @@ class DisputeController extends Controller
 
     public function store(Request $request, Order $order): RedirectResponse
     {
-        abort_unless($this->disputes->isOrderParty($order, $request->user()), 403);
+        abort_unless($this->disputes->isOrderParty($order, $request->user()), 404);
 
         $data = $request->validate([
             'category' => ['required', 'string', 'in:'.implode(',', DisputeCategory::values())],
@@ -67,6 +69,8 @@ class DisputeController extends Controller
             return back()->with('error', $e->getMessage());
         }
 
+        $this->notifier->opened($dispute, $request->user());
+
         return redirect()
             ->route('disputes.show', ['order' => $order->getKey(), 'dispute' => $dispute->getKey()])
             ->with('status', 'Dispute opened.');
@@ -74,10 +78,7 @@ class DisputeController extends Controller
 
     public function show(Request $request, Order $order, Dispute $dispute): View
     {
-        $user = $request->user();
-
-        abort_unless($dispute->order_id === $order->getKey(), 404);
-        abort_unless($dispute->isParty($user), 403);
+        $this->assertDisputeParty($request, $order, $dispute);
 
         $dispute->load(['evidence.submittedByUser', 'evidence.submittedByCompany', 'messages.user', 'messages.company', 'raisedByUser', 'respondentCompany']);
 
@@ -89,7 +90,7 @@ class DisputeController extends Controller
 
     public function submitEvidence(Request $request, Order $order, Dispute $dispute): RedirectResponse
     {
-        abort_unless($dispute->order_id === $order->getKey(), 404);
+        $this->assertDisputeParty($request, $order, $dispute);
 
         $data = $request->validate([
             'description' => ['required', 'string', 'max:2000'],
@@ -107,7 +108,7 @@ class DisputeController extends Controller
 
     public function reply(Request $request, Order $order, Dispute $dispute): RedirectResponse
     {
-        abort_unless($dispute->order_id === $order->getKey(), 404);
+        $this->assertDisputeParty($request, $order, $dispute);
 
         $data = $request->validate([
             'body' => ['required', 'string', 'max:4000'],
@@ -119,12 +120,14 @@ class DisputeController extends Controller
             return back()->with('error', $e->getMessage());
         }
 
+        $this->notifier->replied($dispute, $request->user(), $data['body']);
+
         return back()->with('status', 'Response sent.');
     }
 
     public function appeal(Request $request, Order $order, Dispute $dispute): RedirectResponse
     {
-        abort_unless($dispute->order_id === $order->getKey(), 404);
+        $this->assertDisputeParty($request, $order, $dispute);
 
         try {
             $dispute->appeal($request->user());
@@ -132,6 +135,19 @@ class DisputeController extends Controller
             return back()->with('error', $e->getMessage());
         }
 
+        $this->notifier->appealed($dispute);
+
         return back()->with('status', 'Dispute appealed.');
+    }
+
+    /**
+     * Another tenant's dispute is indistinguishable from a missing one (404),
+     * and the party check runs before any write — DisputeService used to
+     * persist evidence before its own model-level party check threw.
+     */
+    private function assertDisputeParty(Request $request, Order $order, Dispute $dispute): void
+    {
+        abort_unless($dispute->order_id === $order->getKey(), 404);
+        abort_unless($dispute->isParty($request->user()), 404);
     }
 }

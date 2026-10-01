@@ -43,6 +43,23 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Memoised token lookup shared by EnforceApiKeyPolicy and auth:sanctum.
+        \Laravel\Sanctum\Sanctum::usePersonalAccessTokenModel(\App\Models\PersonalAccessToken::class);
+
+        // Boot-time production guard: never refuse to boot (that would turn a
+        // config slip into an outage), but shout on the log so it is noticed.
+        // `php artisan launch:check` is the full, blocking gate.
+        if ($this->app->isProduction()) {
+            $problems = array_filter([
+                config('app.debug') ? 'APP_DEBUG=true' : null,
+                in_array(config('mail.default'), ['log', 'array'], true) ? 'MAIL_MAILER='.config('mail.default') : null,
+            ]);
+
+            if ($problems !== [] && $this->firstUnsafeConfigReportThisHour()) {
+                Log::critical('Unsafe production configuration: '.implode(', ', $problems).'. Run `php artisan launch:check`.');
+            }
+        }
+
         // Production-readiness Task A5: surface N+1 lazy loads everywhere.
         // Throws only in local dev (a developer sees and fixes it on the spot);
         // in CI and production it logs to the `errors` channel so a missed
@@ -98,7 +115,22 @@ class AppServiceProvider extends ServiceProvider
         // Wizard step saves write only to the session, so they get their own,
         // much looser limiter — the strict rfq-submit budget above is reserved
         // for the one POST that actually creates an RFQ.
-        RateLimiter::for('rfq-step', fn (Request $request) => Limit::perHour(120)->by('rfq-step-ip:'.$request->ip()));
+        // Web login: 6/min per (email, IP) pair so one attacker cannot lock a
+        // victim out from elsewhere, plus a looser per-IP ceiling against
+        // credential stuffing across many addresses. The two-factor step of
+        // a web login shares the same shape keyed by the pending login.
+        RateLimiter::for('web-login', fn (Request $request) => [
+            Limit::perMinute(6)->by('web-login:'.strtolower(trim((string) $request->input('email'))).'|'.$request->ip()),
+            Limit::perMinute(30)->by('web-login-ip:'.$request->ip()),
+        ]);
+        RateLimiter::for('web-login-2fa', fn (Request $request) => [
+            Limit::perMinute(6)->by('web-login-2fa:'.$request->session()->get('login.two_factor.id', 'none').'|'.$request->ip()),
+        ]);
+        RateLimiter::for('two-factor-confirm', fn (Request $request) => [
+            Limit::perMinute(6)->by('two-factor-confirm:'.($request->user()?->getAuthIdentifier() ?? $request->ip())),
+        ]);
+
+        RateLimiter::for('rfq-step',fn (Request $request) => Limit::perHour(120)->by('rfq-step-ip:'.$request->ip()));
 
         // Public receipt verification is open to anyone, so it is the one place
         // a stranger could grind receipt numbers. Budget is per-IP and tight
@@ -158,6 +190,9 @@ class AppServiceProvider extends ServiceProvider
             Limit::perHour(30)->by('demo-login-ip-hour:'.$request->ip()),
         ]);
 
+        // Instant search fires on (debounced) keystrokes: generous, but bounded.
+        RateLimiter::for('search-suggest', fn (Request $request) => Limit::perMinute(120)
+            ->by($request->user() ? 'search-suggest-user:'.$request->user()->getAuthIdentifier() : 'search-suggest-ip:'.$request->ip()));
         RateLimiter::for('inquiry-submit', fn (Request $request) => Limit::perHour(8)->by('inquiry-ip:'.$request->ip()));
 
         // Content-Security-Policy violation beacons (Task A3). Unauthenticated
@@ -274,6 +309,19 @@ class AppServiceProvider extends ServiceProvider
             Limit::perHour(3)->by('api-rfq-user:'.($request->user()?->getAuthIdentifier() ?? $request->ip())),
         ]);
 
+        // Supplier catalogue/fleet record creation. These used to borrow
+        // `api-rfq` (3/hour) which made a supplier's first catalogue upload
+        // impossible; a listing is a cheap row, not an outbound mail.
+        RateLimiter::for('api-product-write', fn (Request $request) => [
+            Limit::perHour(120)->by('api-product-write-user:'.($request->user()?->getAuthIdentifier() ?? $request->ip())),
+        ]);
+
+        // Supplier file uploads (product photos, company logo/cover,
+        // compliance documents) — bounded for storage cost, not 3/hour.
+        RateLimiter::for('api-upload', fn (Request $request) => [
+            Limit::perHour(60)->by('api-upload-user:'.($request->user()?->getAuthIdentifier() ?? $request->ip())),
+        ]);
+
         // Re-sending a verification link costs an outbound mail to an address
         // the platform has not yet proven it owns, so the budget is tighter
         // than RFQ creation itself and keyed per RFQ as well as per account:
@@ -314,6 +362,16 @@ class AppServiceProvider extends ServiceProvider
         // with a Log::warning. No caching: Laravel resolves a named limiter's
         // Limit once per request, so this adds at most one indexed lookup +
         // one eager-load per request.
+        // Agent Ingestion Gateway (docs/api/AGENT_INGESTION.md): per-token
+        // budget for machine principals, on top of the api-key limiter.
+        RateLimiter::for('api-agent', function (Request $request) {
+            $tokenId = $request->user()?->currentAccessToken()?->getKey();
+
+            return $tokenId
+                ? Limit::perMinute(600)->by('api-agent:'.$tokenId)
+                : Limit::perMinute(30)->by('api-agent-ip:'.$request->ip());
+        });
+
         RateLimiter::for('api-key', function (Request $request) {
             $token = $request->user()?->currentAccessToken();
 
@@ -321,7 +379,7 @@ class AppServiceProvider extends ServiceProvider
                 return Limit::perMinute(60)->by('api-key-ip:'.$request->ip());
             }
 
-            $tier = $this->resolveApiKeyRateLimitTier((int) $token->getKey());
+            $tier = $this->resolveApiKeyRateLimitTier((int) $token->getKey(), $request);
 
             return Limit::perMinute($this->apiKeyTierToPerMinute($tier))->by('api-key:'.$token->getKey());
         });
@@ -332,14 +390,19 @@ class AppServiceProvider extends ServiceProvider
      * precedence. Never throws — any failure logs and returns the config
      * default tier.
      */
-    private function resolveApiKeyRateLimitTier(int $tokenId): string
+    private function resolveApiKeyRateLimitTier(int $tokenId, ?Request $request = null): string
     {
         $default = (string) config('api.rate_limit_tiers.default', 'basic');
 
         try {
-            $meta = \App\Models\ApiKeyMeta::query()
-                ->where('personal_access_token_id', $tokenId)
-                ->first(['company_id', 'rate_limit_tier']);
+            // Reuse the row EnforceApiKeyPolicy already fetched this request.
+            $prefetched = $request?->attributes->get(\App\Http\Middleware\EnforceApiKeyPolicy::META_ATTRIBUTE);
+
+            $meta = is_array($prefetched) && (int) $prefetched['token_id'] === $tokenId
+                ? $prefetched['meta']
+                : \App\Models\ApiKeyMeta::query()
+                    ->where('personal_access_token_id', $tokenId)
+                    ->first(['company_id', 'rate_limit_tier']);
 
             $planTier = $meta?->company?->activeSubscription?->plan?->apiRateLimitTier();
 
@@ -413,5 +476,18 @@ class AppServiceProvider extends ServiceProvider
                 $activity->properties = $properties->merge($context);
             }
         });
+    }
+
+    /**
+     * Throttles the boot-time unsafe-config alert to once an hour so it does
+     * not flood the log on every request. Logs anyway if the cache is down.
+     */
+    private function firstUnsafeConfigReportThisHour(): bool
+    {
+        try {
+            return \Illuminate\Support\Facades\Cache::add('ops:unsafe-config-reported', true, 3600);
+        } catch (\Throwable) {
+            return true;
+        }
     }
 }

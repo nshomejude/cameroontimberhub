@@ -414,9 +414,9 @@ it('rejects an unsigned or tampered request for the order screen', function () {
 
     $url = orderAccess()->orderUrl($rfq);
 
-    $this->get(route('buyer.rfq.order', ['rfq' => $rfq->getKey()]))->assertForbidden();
-    $this->get($url.'x')->assertForbidden();
-    $this->get(str_replace('signature=', 'signature=deadbeef', $url))->assertForbidden();
+    $this->get(route('buyer.rfq.order', ['rfq' => $rfq->getKey()]))->assertNotFound();
+    $this->get($url.'x')->assertNotFound();
+    $this->get(str_replace('signature=', 'signature=deadbeef', $url))->assertNotFound();
 });
 
 it('does not let one buyer reach another buyer order', function () {
@@ -429,7 +429,7 @@ it('does not let one buyer reach another buyer order', function () {
 
     // The signature covers the RFQ id, so swapping it kills the link...
     $swapped = str_replace('/rfq/'.$mine->getKey().'/', '/rfq/'.$theirs->getKey().'/', $mineUrl);
-    $this->get($swapped)->assertForbidden();
+    $this->get($swapped)->assertNotFound();
 
     // ...and the legitimate link never leaks the other order.
     $this->get($mineUrl)->assertOk()->assertDontSee($secret->reference_code);
@@ -448,7 +448,7 @@ it('lets the signed-in RFQ owner reach their order without a signature', functio
     // A different signed-in user is still refused.
     $this->actingAs(User::factory()->create())
         ->get(route('buyer.rfq.order', ['rfq' => $rfq->getKey()]))
-        ->assertForbidden();
+        ->assertNotFound();
 });
 
 /* --------------------------------------------------------------- screens */
@@ -507,7 +507,7 @@ it('refuses an unsigned request for the receipt screen', function () {
     [$rfq, $company] = orderContext();
     awardOrder(orderQuote($rfq, $company));
 
-    $this->get(route('buyer.rfq.order.receipt', ['rfq' => $rfq->getKey()]))->assertForbidden();
+    $this->get(route('buyer.rfq.order.receipt', ['rfq' => $rfq->getKey()]))->assertNotFound();
 });
 
 it('keeps every buyer order screen out of search indexes', function () {

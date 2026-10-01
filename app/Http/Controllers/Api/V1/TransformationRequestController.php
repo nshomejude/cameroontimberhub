@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Enums\TransformationRequestStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Api\V1\TransformationRequestResource;
 use App\Services\TransformationRequestService;
@@ -22,11 +23,21 @@ class TransformationRequestController extends Controller
 
     public function index(Request $request): AnonymousResourceCollection
     {
-        $box = (string) $request->query('box', 'sent');
+        // Default inbox: providers (Processor/Manufacturer/Artisan) see what
+        // was sent TO them; everyone else sees what they sent.
+        $defaultBox = $this->requests->company($request->user())?->type?->isTransformationProvider()
+            ? 'received'
+            : 'sent';
+        $box = (string) $request->query('box', $defaultBox);
 
         $query = $box === 'received'
             ? $this->requests->received($request->user())
             : $this->requests->sent($request->user());
+
+        $status = TransformationRequestStatus::tryFrom((string) $request->query('status', ''));
+        if ($status !== null) {
+            $query->where('status', $status->value);
+        }
 
         $perPage = min(max((int) $request->query('per_page', 15), 1), 50);
 
@@ -81,9 +92,14 @@ class TransformationRequestController extends Controller
 
     public function quote(Request $request, string $reference): TransformationRequestResource
     {
+        // Case-insensitive (the service upper-cases), but only the web form's list.
+        if (is_string($request->input('currency'))) {
+            $request->merge(['currency' => strtoupper($request->input('currency'))]);
+        }
+
         $data = $request->validate([
             'amount' => ['required', 'numeric', 'min:0.01'],
-            'currency' => ['required', 'string', 'size:3'],
+            'currency' => ['required', 'string', \Illuminate\Validation\Rule::in(\App\Services\TransformationRequestService::QUOTE_CURRENCIES)],
             'lead_time_days' => ['nullable', 'integer', 'min:0'],
             'notes' => ['nullable', 'string'],
         ]);

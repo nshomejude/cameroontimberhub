@@ -2,9 +2,14 @@
 
 namespace App\Services;
 
+use App\Enums\ConsentPurpose;
+use App\Enums\OrganisationType;
+use App\Enums\RfqStatus;
+use App\Enums\RfqType;
 use App\Models\Company;
 use App\Models\Rfq;
 use App\Services\Ai\AiGateway;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -55,14 +60,107 @@ class RfqMatchingService
     }
 
     /**
+     * Every company eligible to receive this RFQ, deterministic order, no AI
+     * ranking. This is the population auto-routing on approval sends to
+     * (RfqOpenRequestService::autoRoute()) — the same rules suggestSuppliers()
+     * shortlists from.
+     *
+     * @return Collection<int, Company>
+     */
+    public function eligibleCompanies(Rfq $rfq, int $limit): Collection
+    {
+        return $this->deterministicCandidates($rfq, $limit);
+    }
+
+    /**
+     * The inverse direction of deterministicCandidates(): approved, open RFQs
+     * this company WOULD be a candidate for (same type-targeting and species
+     * rules), that have not been routed to it yet. Backs the supplier "Open
+     * buyer requests" board. A company that is not verified or whose plan
+     * lacks leads_receive gets an empty board — the same eligibility gate.
+     *
+     * @return Builder<Rfq>
+     */
+    public function openRequestsFor(Company $company): Builder
+    {
+        $query = Rfq::query()
+            ->where('status', RfqStatus::Approved->value)
+            ->where('is_spam', false)
+            ->whereNotNull('email_verified_at')
+            ->where('visibility', 'public')
+            ->where(fn (Builder $q) => $q->whereNull('source')->orWhereNotIn('source', self::DIRECTED_SOURCES))
+            ->where(fn (Builder $q) => $q->whereNull('deadline')->orWhereDate('deadline', '>=', now()->toDateString()))
+            ->whereDoesntHave('routings', fn (Builder $r) => $r->where('company_id', $company->getKey()))
+            // Mirrors routeDetailed()'s consent gate: an explicit revocation
+            // removes the RFQ from every board.
+            ->where(fn (Builder $q) => $q
+                ->whereDoesntHave('consents', fn (Builder $c) => $c->where('purpose', ConsentPurpose::RfqExporterSharing->value))
+                ->orWhereHas('consents', fn (Builder $c) => $c->active()->where('purpose', ConsentPurpose::RfqExporterSharing->value)))
+            ->orderByDesc('created_at');
+
+        if (! $company->canReceiveBuyerRequests() || ! $company->hasFeature('leads_receive')) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        $allowedTypes = collect(RfqType::cases())
+            ->filter(fn (RfqType $t) => ($targets = $t->targetOrganisationTypes()) === null
+                || ($company->type !== null && in_array($company->type, $targets, true)))
+            ->map(fn (RfqType $t) => $t->value)
+            ->values()
+            ->all();
+
+        $speciesTypes = collect(RfqType::cases())
+            ->filter(fn (RfqType $t) => $t->requiresSpeciesMatch())
+            ->map(fn (RfqType $t) => $t->value)
+            ->values()
+            ->all();
+
+        $speciesIds = $company->species()->pluck('species.id')->all();
+
+        return $query
+            // A null type is a legacy Export RFQ (always allowed).
+            ->where(fn (Builder $q) => $q->whereIn('type', $allowedTypes)->orWhereNull('type'))
+            ->where(fn (Builder $q) => $q
+                ->whereNotIn('type', $speciesTypes)
+                ->orWhereDoesntHave('items', fn (Builder $i) => $i->whereNotNull('species_id'))
+                ->orWhereHas('items', fn (Builder $i) => $i->whereIn('species_id', $speciesIds ?: [0])));
+    }
+
+    /**
+     * RFQ sources aimed at ONE named supplier (a chat thread's quote request,
+     * a reorder) — never auto-approved, auto-routed or put on the board.
+     */
+    public const DIRECTED_SOURCES = ['chat', 'reorder'];
+
+    /** Whether the RFQ is an open-market request (public, not supplier-directed). */
+    public function isOpenMarket(Rfq $rfq): bool
+    {
+        return $rfq->visibility === 'public' && ! in_array($rfq->source, self::DIRECTED_SOURCES, true);
+    }
+
+    /** Whether this RFQ is currently on the company's open-requests board. */
+    public function isOpenRequestFor(Rfq $rfq, Company $company): bool
+    {
+        return $this->openRequestsFor($company)->whereKey($rfq->getKey())->exists();
+    }
+
+    /**
      * The REAL candidate query: verified companies handling the species
      * requested by the RFQ's items, that are actually entitled to receive
      * leads. Reuses Company::scopeHandlingSpecies() and hasFeature() —
      * the same facets RfqTriageService::route() enforces — rather than
      * reimplementing the matching rules here.
      */
+    /**
+     * By RFQ type: Export = species-led (original behaviour, any type);
+     * DomesticManufacturing = Manufacturer/Artisan/Processor handling the
+     * species; Transport = Logistics companies, no species requirement,
+     * those with active fleet vehicles first (RFQs carry no region field).
+     */
     private function deterministicCandidates(Rfq $rfq, int $limit): Collection
     {
+        $type = $rfq->type ?? RfqType::Export;
+
         $speciesSlugs = $rfq->items->pluck('species')
             ->filter()
             ->pluck('slug')
@@ -70,10 +168,19 @@ class RfqMatchingService
             ->values()
             ->all();
 
-        $query = Company::query()->where('status', 'verified');
+        $query = Company::query()->receivingBuyerRequests();
 
-        if ($speciesSlugs !== []) {
+        if (($targetTypes = $type->targetOrganisationTypes()) !== null) {
+            $query->whereIn('type', array_map(fn (OrganisationType $t) => $t->value, $targetTypes));
+        }
+
+        if ($speciesSlugs !== [] && $type->requiresSpeciesMatch()) {
             $query->handlingSpecies($speciesSlugs);
+        }
+
+        if ($type === RfqType::Transport) {
+            $query->withCount(['vehicles as active_vehicles_count' => fn ($v) => $v->where('is_active', true)])
+                ->orderByDesc('active_vehicles_count');
         }
 
         if ($rfq->destination_country_code) {
@@ -100,7 +207,7 @@ class RfqMatchingService
     /** @param Collection<int, Company> $candidates */
     private function rankWithAi(Rfq $rfq, Collection $candidates): Collection
     {
-        $system = <<<SYS
+        $system = <<<'SYS'
             You help a timber-trade platform's staff shortlist suppliers for a
             buyer's request for quote (RFQ). You do NOT make the routing
             decision — a human always reviews your suggestion before any RFQ

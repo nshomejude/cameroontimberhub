@@ -3,6 +3,8 @@
 namespace App\Http\Resources\Api\V1;
 
 use App\Models\Rfq;
+use App\Models\RfqCompany;
+use App\Services\SupplierApiScope;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -15,7 +17,10 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * row against the RFQ (status sent/viewed/responded/declined, and when it
  * was routed/viewed/responded/declined).
  *
- * Buyer contact fields (`buyer_name`, `buyer_company`, `buyer_email`) are
+ * Buyer contact fields (`buyer_name`, `buyer_company`, `buyer_email`, plus
+ * `notes`/`attachments`) are null and `contact_locked` is true while the
+ * caller's company is not verified (Company::canRespondToBuyers()); once
+ * verified they are
  * deliberately included here, unlike a stranger reading the RFQ — the same
  * way the exporter Leads/Orders tables already show a supplier the buyer's
  * name and email (see LeadsTable/OrdersTable) once an RFQ is routed to them.
@@ -34,16 +39,21 @@ class SupplierRfqResource extends JsonResource
     public function toArray(Request $request): array
     {
         $routing = $this->whenLoaded('routings', fn () => $this->routings->first());
+        $canRespond = $this->canRespond($request);
+        $locked = ! $canRespond;
 
         return [
             'reference' => $this->reference_code,
+            'type' => $this->type?->value,
             'title' => $this->title,
             'project_name' => $this->project_name,
             'status' => $this->status->value,
             'status_label' => $this->status->label(),
-            'buyer_name' => $this->buyer_name,
-            'buyer_company' => $this->buyer_company,
-            'buyer_email' => $this->buyer_email,
+            // Withheld (null) until the company is verified — notes and
+            // attachments may carry contact details too (same as the board).
+            'buyer_name' => $locked ? null : $this->buyer_name,
+            'buyer_company' => $locked ? null : $this->buyer_company,
+            'buyer_email' => $locked ? null : $this->buyer_email,
             'buyer_country_code' => $this->buyer_country_code,
             'destination_country_code' => $this->destination_country_code,
             'incoterm' => $this->incoterm?->value,
@@ -51,11 +61,13 @@ class SupplierRfqResource extends JsonResource
             'target_amount' => $this->target_amount,
             'target_currency' => $this->target_currency,
             'deadline' => $this->deadline?->toDateString(),
-            'notes' => $this->notes,
-            'attachments' => $this->attachments ?? [],
+            'notes' => $locked ? null : $this->notes,
+            'attachments' => $locked ? [] : ($this->attachments ?? []),
+            'can_respond' => $canRespond,
+            'contact_locked' => $locked,
             'created_at' => $this->created_at?->toIso8601String(),
             'items' => RfqItemResource::collection($this->whenLoaded('items')),
-            'routing' => $routing instanceof \App\Models\RfqCompany ? [
+            'routing' => $routing instanceof RfqCompany ? [
                 'status' => $routing->status->value,
                 'status_label' => $routing->status->label(),
                 'routed_at' => $routing->routed_at?->toIso8601String(),
@@ -64,5 +76,13 @@ class SupplierRfqResource extends JsonResource
                 'declined_at' => $routing->declined_at?->toIso8601String(),
             ] : null,
         ];
+    }
+
+    /** Whether the caller's company may act on (and see the buyer behind) this RFQ. */
+    private function canRespond(Request $request): bool
+    {
+        $user = $request->user();
+
+        return $user !== null && (bool) app(SupplierApiScope::class)->company($user)?->canRespondToBuyers();
     }
 }

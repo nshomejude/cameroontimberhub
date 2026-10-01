@@ -191,7 +191,7 @@ it('dispatches webhook deliveries for subscription.activated and payment.complet
 it('Stripe webhook handler dispatches RecordPaymentCompletionCommand and produces the same Payment state as before', function () {
     config(['payments.stripe.webhook_secret' => 'whsec_test']);
 
-    $payment = Payment::factory()->create(['provider' => \App\Enums\PaymentProvider::Stripe]);
+    $payment = Payment::factory()->create(['provider' => \App\Enums\PaymentProvider::Stripe, 'amount' => 50000, 'currency' => 'XAF']);
 
     $payload = json_encode([
         'id' => 'evt_1',
@@ -199,6 +199,9 @@ it('Stripe webhook handler dispatches RecordPaymentCompletionCommand and produce
         'data' => ['object' => [
             'id' => 'cs_test_1',
             'payment_intent' => 'pi_test_1',
+            'payment_status' => 'paid',
+            'amount_total' => 50000, // XAF is zero-decimal on Stripe
+            'currency' => 'xaf',
             'metadata' => ['payment_id' => (string) $payment->id],
         ]],
     ]);

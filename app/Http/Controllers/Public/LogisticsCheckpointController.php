@@ -6,6 +6,7 @@ use App\Domain\Logistics\Commands\RecordCheckpointCommand;
 use App\Enums\TrackingCheckpointStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Shipment;
+use App\Services\ShipmentService;
 use App\Support\Bus\CommandBus;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -26,19 +27,27 @@ use Illuminate\View\View;
  * here needs to know that happened, since a queued+synced request just
  * arrives at `store()` late.
  *
- * Access control mirrors ShipmentWaybillController exactly: no auth, looked
- * up by the unguessable `waybill_number` route key (never the id) — "a
- * printed/scanned waybill has to work for a checkpoint officer or receiving
- * clerk with no account" applies just as much to the driver who dispatched
- * it. An unknown/invalid waybill number 404s via route model binding, the
- * same as every other public token-lookup route in this app.
+ * Access control: the capture page sits behind `auth` (a guest is
+ * redirected to login and back via the intended URL); the POST answers a
+ * guest with a JSON 401 itself (a redirect would be followed by fetch() as
+ * a 200 and the OfflineQueue would drop the item). The user must be a member of
+ * the shipment's carrier company or the order's supplier company
+ * (ShipmentService::canRecordCheckpoints()) — otherwise 403. Holding a
+ * waybill number alone no longer lets anyone mark a shipment delivered.
+ * Reading stays public (waybill page, /track/{token}). An unknown waybill
+ * number still 404s via route model binding.
  */
 class LogisticsCheckpointController extends Controller
 {
-    public function __construct(private readonly CommandBus $commandBus) {}
+    public function __construct(
+        private readonly CommandBus $commandBus,
+        private readonly ShipmentService $shipments,
+    ) {}
 
-    public function create(Shipment $shipment): View
+    public function create(Request $request, Shipment $shipment): View
     {
+        abort_unless($this->shipments->canRecordCheckpoints($request->user(), $shipment), 403);
+
         return view('public.logistics.checkpoint', [
             'shipment' => $shipment,
             'statuses' => TrackingCheckpointStatus::cases(),
@@ -48,6 +57,14 @@ class LogisticsCheckpointController extends Controller
 
     public function store(Request $request, Shipment $shipment): JsonResponse
     {
+        if ($request->user() === null) {
+            return response()->json(['message' => __('logistics.errors.checkpoint_login_required')], 401);
+        }
+
+        if (! $this->shipments->canRecordCheckpoints($request->user(), $shipment)) {
+            return response()->json(['message' => __('logistics.errors.checkpoint_forbidden')], 403);
+        }
+
         // Built and validated manually (rather than $request->validate())
         // and returned as an explicit JsonResponse: bootstrap/app.php's
         // `shouldRenderJsonWhen()` only auto-renders JSON for `api/*`
@@ -69,7 +86,7 @@ class LogisticsCheckpointController extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-                'message' => 'This checkpoint could not be saved. Please check the form and try again.',
+                'message' => __('logistics.errors.checkpoint_invalid'),
                 'errors' => $validator->errors(),
             ], 422);
         }
@@ -85,6 +102,8 @@ class LogisticsCheckpointController extends Controller
             'occurred_at' => $data['occurred_at'] ?? null,
             'recorded_by' => $request->user()?->id,
         ]));
+
+        $this->shipments->notifyCheckpointRecorded($shipment, $checkpoint, $request->user());
 
         return response()->json([
             'saved' => true,

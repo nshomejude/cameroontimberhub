@@ -10,7 +10,7 @@ use Illuminate\Notifications\Notification;
 
 /**
  * Fired at the supplier's company users when a buyer accepts their quote —
- * `ChatCommerceService::acceptQuotation()` is the trigger.
+ * `QuoteService::accept()` is the single trigger (every accept path).
  */
 class QuoteAcceptedNotification extends Notification implements ShouldQueue
 {

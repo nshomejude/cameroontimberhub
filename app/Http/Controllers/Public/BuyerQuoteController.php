@@ -79,19 +79,12 @@ class BuyerQuoteController extends Controller
         $quote->load(['company', 'items.species', 'rfq.items.species']);
 
         // Pre-commit disclosure (billing engine M7, plan §15): the
-        // marketplace commission a protected order would carry, computed
+        // marketplace commission the resulting order would carry, computed
         // read-only from the supplier's current plan tier — never charged
-        // here, and never assumed to apply until an actual Trade Assurance
-        // agreement exists on the resulting order.
-        $supplier = $quote->company;
-        $commissionPreview = $commission->preview(
-            supplierCountry: $supplier?->country_code,
-            destinationCountry: $rfq->destination_country_code ?? $rfq->buyer_country_code,
-            segment: $supplier?->effectivePlan()?->segment,
-            planTier: $supplier?->effectivePlan()?->slug,
-            subtotal: (string) $quote->subtotal_amount,
-            currency: (string) $quote->currency->value,
-        );
+        // here (the supplier is charged when they confirm the order). The
+        // label tells the buyer it is supplier-paid and not added to their
+        // total.
+        $commissionPreview = $commission->previewForQuote($quote);
 
         return view('public.rfq.quote', [
             'rfq' => $rfq,

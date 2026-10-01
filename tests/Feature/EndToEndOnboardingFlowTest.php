@@ -25,6 +25,8 @@ dataset('company_forming_account_types', [
 ]);
 
 it('registers, logs in, creates the right company, and reaches a working dashboard end to end', function (string $accountType, OrganisationType $expectedType) {
+    // carbon_developer is dormant at launch; this covers the flow it gets when re-enabled.
+    config(['timber.signup.carbon_enabled' => true]);
     $email = $accountType.'-'.uniqid().'@example.test';
 
     $response = $this->post(route('register.store'), [

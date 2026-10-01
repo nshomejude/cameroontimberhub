@@ -39,7 +39,7 @@ class LogisticsDirectoryController extends Controller
 
         $filtered = $this->base()
             ->when($region !== '', fn (Builder $q) => $q->where('region', $region))
-            ->with('capacities')
+            ->with(['capacities', 'verification'])
             ->orderBy('legal_name')
             ->get()
             ->filter(fn (Company $company) => $tier === '' || $this->tierOf($company) === $tier)

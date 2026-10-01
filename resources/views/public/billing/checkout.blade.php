@@ -1,5 +1,6 @@
 <x-layouts.app :title="__('messages.billing.checkout_title', ['plan' => $plan->name])" noindex>
-    <div class="mx-auto max-w-xl px-4 py-12">
+    @php($firstConfigured = $providers->firstWhere('configured', true))
+    <div class="mx-auto max-w-xl px-4 py-12" x-data="{ provider: @js(old('provider', $firstConfigured['value'] ?? null)) }">
         <a href="{{ route('pricing') }}" class="text-[0.8125rem] font-medium text-forest-700 hover:text-forest-800">&larr; {{ __('messages.billing.back_to_pricing') }}</a>
 
         <h1 class="mt-4 font-display text-2xl font-semibold text-forest-950 dark:text-sand-100">{{ __('messages.billing.checkout_title', ['plan' => $plan->name]) }}</h1>
@@ -29,6 +30,33 @@
                     <span class="text-[0.8125rem] text-ink-soft dark:text-[#b3ab9b]">{{ $plan->price_currency }} / {{ $plan->billing_period }}</span>
                 </p>
             @endif
+
+            {{-- Provider fee disclosure (pricing spec §19/§20): a fee passed
+                 through to the payer is shown as its own line before they
+                 authorise — only for the method that carries one (PayPal);
+                 mobile money stays fee-free. Visible without JS too. --}}
+            @foreach ($providers->where('fee.passed_through', true) as $feeProvider)
+                @php($fee = $feeProvider['fee'])
+                <dl class="mt-3 space-y-1 border-t border-sand-200 pt-3 text-[0.875rem] dark:border-[#2c2a24]"
+                    data-provider-fee="{{ $feeProvider['value'] }}"
+                    x-show="provider === @js($feeProvider['value'])">
+                    <div class="flex justify-between text-ink-soft dark:text-[#b3ab9b]">
+                        <dt>{{ __('messages.billing.tax_subtotal') }}</dt>
+                        <dd>{{ \App\Services\Payments\ProviderFeeCalculator::format($fee['base'], $fee['currency']) }}</dd>
+                    </div>
+                    <div class="flex justify-between text-ink-soft dark:text-[#b3ab9b]">
+                        <dt>
+                            {{ __('messages.billing.provider_fee_line', ['provider' => $feeProvider['label']]) }}
+                            <span class="text-[0.75rem]">({{ __('messages.billing.provider_fee_rate', ['percent' => $fee['percent'], 'fixed' => \App\Services\Payments\ProviderFeeCalculator::format($fee['fixed'], $fee['currency'])]) }})</span>
+                        </dt>
+                        <dd>{{ \App\Services\Payments\ProviderFeeCalculator::format($fee['fee'], $fee['currency']) }}</dd>
+                    </div>
+                    <div class="flex justify-between border-t border-sand-200 pt-1 font-semibold text-forest-950 dark:border-[#2c2a24] dark:text-sand-100">
+                        <dt>{{ __('messages.billing.tax_total') }}</dt>
+                        <dd>{{ \App\Services\Payments\ProviderFeeCalculator::format($fee['total'], $fee['currency']) }}</dd>
+                    </div>
+                </dl>
+            @endforeach
         </div>
 
         @if ($canStartTrial ?? false)
@@ -68,11 +96,19 @@
                             'border-sand-200 dark:border-[#2c2a24]' => $provider['configured'],
                             'border-sand-200 opacity-50 dark:border-[#2c2a24]' => ! $provider['configured'],
                         ])>
-                            <input type="radio" name="provider" value="{{ $provider['value'] }}" class="mt-1"
+                            <input type="radio" name="provider" value="{{ $provider['value'] }}" class="mt-1" x-model="provider"
                                 @disabled(! $provider['configured'])
-                                @checked($loop->first && $provider['configured'])>
+                                @checked($provider['configured'] && $provider['value'] === old('provider', $firstConfigured['value'] ?? null))>
                             <span>
                                 <span class="block text-[0.875rem] font-medium text-forest-900 dark:text-sand-100">{{ $provider['label'] }}</span>
+                                @if ($provider['fee']['passed_through'])
+                                    <span class="block text-[0.75rem] text-ink-soft dark:text-[#b3ab9b]">{{ __('messages.billing.provider_fee_note', [
+                                        'provider' => $provider['label'],
+                                        'fee' => \App\Services\Payments\ProviderFeeCalculator::format($provider['fee']['fee'], $provider['fee']['currency']),
+                                        'rate' => __('messages.billing.provider_fee_rate', ['percent' => $provider['fee']['percent'], 'fixed' => \App\Services\Payments\ProviderFeeCalculator::format($provider['fee']['fixed'], $provider['fee']['currency'])]),
+                                        'total' => \App\Services\Payments\ProviderFeeCalculator::format($provider['fee']['total'], $provider['fee']['currency']),
+                                    ]) }}</span>
+                                @endif
                                 @unless ($provider['configured'])
                                     <span class="block text-[0.75rem] text-ink-soft dark:text-[#8f887b]">{{ __('messages.billing.method_unavailable') }}</span>
                                 @endunless

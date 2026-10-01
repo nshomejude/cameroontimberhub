@@ -34,6 +34,12 @@
                     Disable two-factor authentication
                 </button>
             </form>
+
+            @if (! empty($continueUrl))
+                <a href="{{ $continueUrl }}" class="mt-6 inline-block rounded-md bg-gray-800 px-4 py-2 text-sm font-medium text-white">
+                    Continue to admin panel
+                </a>
+            @endif
         @elseif (session('two_factor_secret') || $secret)
             <p class="mt-4 text-sm text-gray-600">
                 Scan this QR code with your authenticator app (Google Authenticator, Authy, 1Password, etc.),

@@ -22,7 +22,8 @@ class CommissionRulesTable
                 TextColumn::make('international_rate')
                     ->label('International')
                     ->formatStateUsing(fn ($state) => rtrim(rtrim(number_format(((float) $state) * 100, 4), '0'), '.').'%'),
-                TextColumn::make('cap_amount')->label('Cap amount')->placeholder('—')->numeric(2),
+                TextColumn::make('cap_amount')->label('Cap amount')->placeholder('—')->numeric(2)
+                    ->suffix(fn ($record): string => $record->cap_currency ? ' '.$record->cap_currency : ' (order ccy)'),
                 TextColumn::make('cap_percent')
                     ->label('Cap %')
                     ->placeholder('—')

@@ -45,6 +45,9 @@ class NotificationPreference extends Model
         'order_status_changed',
         'message_received',
         'dispute_reply',
+        'company_verified',
+        'commission_statement',
+        'commission_deposit',
     ];
 
     public static function forUser(User $user): self
@@ -64,8 +67,9 @@ class NotificationPreference extends Model
      * `channel` is either 'database' (gated by `types.{type}`) or 'push'
      * (gated by `channels.push`, regardless of type — a user can mute push
      * entirely while still keeping every type as an in-app/database entry).
-     * Any other channel value is allowed by default (nothing currently
-     * calls this for 'email').
+     * 'mail' is gated by BOTH `channels.email` and `types.{type}` (muting a
+     * type mutes its emails too). Any other channel value is allowed by
+     * default.
      */
     public static function allows(User $user, string $type, string $channel): bool
     {
@@ -74,6 +78,7 @@ class NotificationPreference extends Model
         return match ($channel) {
             'database' => (bool) ($pref->types[$type] ?? true),
             'push' => (bool) ($pref->channels['push'] ?? true),
+            'mail' => (bool) ($pref->channels['email'] ?? true) && (bool) ($pref->types[$type] ?? true),
             default => true,
         };
     }

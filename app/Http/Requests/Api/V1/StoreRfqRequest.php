@@ -2,11 +2,13 @@
 
 namespace App\Http\Requests\Api\V1;
 
+use App\Enums\RfqType;
 use App\Models\Species;
 use App\Services\RfqWizard;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Collection;
+use Illuminate\Validation\Rule;
 
 /**
  * RFQ creation payload for the mobile client.
@@ -29,7 +31,9 @@ use Illuminate\Support\Collection;
  *   - `species_slug` — the catalogue slug the client actually holds, since the
  *     `/species` endpoints are keyed by slug and never expose numeric ids.
  *     Resolved here against PUBLISHED species only; an unknown or unpublished
- *     slug is a 422 on `items.N.species_slug`, never a silently null link.
+ *     slug is a 422 on `items.N.species_slug`, never a silently null link —
+ *     unless the item also carries `species_text`/`species_id`, in which case
+ *     the unknown slug is dropped and those are used (released-app compat).
  *   - `species_id` — kept working for callers that already have an id.
  *   - `species_text` — free text, for timber that is legitimately not in the
  *     catalogue. Still required when neither of the above is given.
@@ -54,6 +58,11 @@ class StoreRfqRequest extends FormRequest
             $rules['buyer_email'],
             $rules['buyer_phone'],
         );
+
+        // Which flow the RFQ belongs to (export / domestic_manufacturing /
+        // transport). The web wizard carries it in session; the API takes it
+        // from the body. Omitted means `export`, the original behavior.
+        $rules['type'] = ['nullable', Rule::enum(RfqType::class)];
 
         $rules['title'] = ['required', 'string', 'min:3', 'max:160'];
 
@@ -114,7 +123,14 @@ class StoreRfqRequest extends FormRequest
                     continue;
                 }
 
-                if (! $resolved->has(strtolower(trim($slug)))) {
+                // Released-app compatibility: the shipped build derives a
+                // slug from the typed name and sends both. When free text
+                // (or an id) is present an unknown slug is simply dropped
+                // (itemsForIntake() falls back to them); only a lone
+                // unresolvable slug is a 422.
+                $hasFallback = filled($item['species_text'] ?? null) || filled($item['species_id'] ?? null);
+
+                if (! $hasFallback && ! $resolved->has(strtolower(trim($slug)))) {
                     // An unpublished species answers exactly as a nonexistent
                     // one does — the catalogue's draft rows are not discoverable
                     // by probing this endpoint.

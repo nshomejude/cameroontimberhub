@@ -48,6 +48,7 @@ class DisputeReplyNotification extends Notification implements ShouldQueue
             'title' => __('notifications.push.dispute_reply.title'),
             'body' => Str::limit($this->body, 140),
             'reference' => $this->dispute->order?->reference_code,
+            'dispute_id' => $this->dispute->getKey(),
             'screen' => 'dispute',
         ];
     }

@@ -45,6 +45,7 @@ class NotificationResource extends JsonResource
         'message_received' => 'chat-bubble-left-right',
         'dispute_reply' => 'exclamation-triangle',
         'dispute_opened' => 'exclamation-triangle',
+        'dispute_resolved' => 'scale',
         'rfq_routed' => 'inbox-arrow-down',
     ];
 

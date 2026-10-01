@@ -5,12 +5,16 @@ namespace App\Services\Referrals;
 use App\Enums\PaymentStatus;
 use App\Enums\ReferralEarningStatus;
 use App\Models\Company;
+use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\ReferralEarning;
 use App\Models\ReferralSetting;
 use App\Models\User;
 use App\Notifications\ReferralCommissionEarnedNotification;
 use App\Notifications\ReferralSignedUpNotification;
+use App\Services\Payments\PaymentAmount;
+use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -23,8 +27,10 @@ use Illuminate\Support\Str;
  *   `referral_code` registration rule; `attachReferrer()` stores it.
  * - Commission: `awardForPayment()` runs off the billing engine's
  *   PaymentCompleted event and creates ONE earning, `rate_percent` of the
- *   referred company's FIRST completed subscription payment. Renewals (any
- *   later completed plan payment) earn nothing while `one_time` is on.
+ *   referred company's FIRST completed subscription payment, computed on the
+ *   price excluding tax and passed-through provider fees (`commissionBase()`).
+ *   Renewals (any later completed plan payment) earn nothing while
+ *   `one_time` is on. Paying it out: ReferralPayoutService.
  */
 class ReferralService
 {
@@ -61,7 +67,7 @@ class ReferralService
                 $owner->forceFill(['referral_code' => $code])->saveQuietly();
 
                 return $code;
-            } catch (\Illuminate\Database\UniqueConstraintViolationException) {
+            } catch (UniqueConstraintViolationException) {
                 continue;
             }
         }
@@ -209,11 +215,20 @@ class ReferralService
                 }
             }
 
-            $rate = (float) $settings->rate_percent;
+            $rate = bcadd((string) $settings->rate_percent, '0', 2);
             $referrer = User::find($company->referred_by_user_id);
             if ($referrer === null) {
                 return null;
             }
+
+            $base = self::commissionBase($payment);
+            if ($base <= 0) {
+                return null;
+            }
+            $amount = PaymentAmount::format(
+                bcdiv(bcmul(number_format($base, 2, '.', ''), $rate, 8), '100', 8),
+                (string) $payment->currency,
+            );
 
             return ReferralEarning::create([
                 'referrer_user_id' => $referrer->id,
@@ -223,9 +238,9 @@ class ReferralService
                 'payment_id' => $payment->id,
                 'source_reference' => 'SUB-PAY-'.$payment->id,
                 'basis' => 'subscription',
-                'base_amount' => $payment->amount,
+                'base_amount' => $base,
                 'rate_percent' => $rate,
-                'amount' => round(((float) $payment->amount) * $rate / 100, 2),
+                'amount' => $amount,
                 'currency' => $payment->currency,
                 'status' => ReferralEarningStatus::Pending,
             ]);
@@ -236,6 +251,36 @@ class ReferralService
         }
 
         return $earning;
+    }
+
+    /**
+     * What the commission is a percentage of: the subscription price the
+     * company actually bought, EXCLUDING tax and EXCLUDING any payment-provider
+     * fee passed through to the buyer.
+     *
+     * - Taxed checkout: `metadata.tax.subtotal` (pre-tax, pre-fee) — the same
+     *   figure as `Payment::subtotalAmount()` from the fee pass-through work.
+     * - Otherwise: `Payment::baseAmount()` / `payments.base_amount` (amount
+     *   before the passed-through fee; falls back to `amount`), minus any tax
+     *   recorded as `metadata.tax.tax_amount` or on the payment's invoice.
+     */
+    public static function commissionBase(Payment $payment): float
+    {
+        $tax = is_array($payment->metadata['tax'] ?? null) ? $payment->metadata['tax'] : [];
+
+        if (isset($tax['subtotal'])) {
+            $subtotal = method_exists($payment, 'subtotalAmount') ? $payment->subtotalAmount() : $tax['subtotal'];
+
+            return round(max(0.0, (float) $subtotal), 2);
+        }
+
+        $gross = method_exists($payment, 'baseAmount')
+            ? (float) $payment->baseAmount()
+            : (float) ($payment->getAttribute('base_amount') ?? $payment->amount);
+
+        $taxAmount = $tax['tax_amount'] ?? Invoice::where('payment_id', $payment->getKey())->value('tax_amount');
+
+        return round(max(0.0, $gross - (float) ($taxAmount ?? 0)), 2);
     }
 
     /**
@@ -254,6 +299,76 @@ class ReferralService
         }
 
         return 'signed_up';
+    }
+
+    /**
+     * The users `$referrer` referred, newest first, each annotated with
+     * `referral_status` (statusFor()) and `referral_earnings` (their
+     * non-cancelled commissions). Backs GET /api/v1/referrals and the
+     * exporter-panel Referrals page.
+     *
+     * @return Collection<int, User>
+     */
+    public function referredUsers(User $referrer, ?int $limit = 200): Collection
+    {
+        $referred = User::where('referred_by_user_id', $referrer->getKey())
+            ->with('companies')
+            ->orderByDesc('referred_at')
+            ->orderByDesc('id')
+            ->when($limit !== null, fn ($q) => $q->limit($limit))
+            ->get();
+
+        $earnings = ReferralEarning::where('referrer_user_id', $referrer->getKey())
+            ->where('status', '!=', ReferralEarningStatus::Cancelled->value)
+            ->get();
+
+        return $referred->each(function (User $u) use ($earnings): void {
+            $company = $u->companies->first();
+            $mine = $earnings->filter(fn (ReferralEarning $e) => $e->referred_user_id === $u->id
+                || ($company && $e->referred_company_id === $company->id))->values();
+
+            $u->setAttribute('referral_status', $this->statusFor($u, $company, $mine->isNotEmpty()));
+            $u->setAttribute('referral_earnings', $mine);
+        });
+    }
+
+    /**
+     * Funnel counts for the referrer's dashboard: everyone who signed up with
+     * the code, and how many of them are (only) verified / qualified.
+     *
+     * @return array{signed_up: int, verified: int, qualified: int}
+     */
+    public function funnelFor(User $referrer): array
+    {
+        $statuses = $this->referredUsers($referrer, null)->pluck('referral_status');
+
+        return [
+            'signed_up' => $statuses->count(),
+            'verified' => $statuses->filter(fn ($s) => $s === 'verified')->count(),
+            'qualified' => $statuses->filter(fn ($s) => $s === 'qualified')->count(),
+        ];
+    }
+
+    /**
+     * Earned / paid / pending (pending or approved, not yet paid) commission
+     * totals per currency, cancelled commissions excluded.
+     *
+     * @return array<string, array{earned: float, paid: float, pending: float}>
+     */
+    public function totalsFor(User $referrer): array
+    {
+        return ReferralEarning::where('referrer_user_id', $referrer->getKey())
+            ->where('status', '!=', ReferralEarningStatus::Cancelled->value)
+            ->get(['amount', 'currency', 'status'])
+            ->groupBy(fn (ReferralEarning $e) => strtoupper((string) $e->currency))
+            ->map(fn (Collection $group) => [
+                'earned' => (float) $group->sum(fn ($e) => (float) $e->amount),
+                'paid' => (float) $group->where('status', ReferralEarningStatus::Paid)->sum(fn ($e) => (float) $e->amount),
+                'pending' => (float) $group->filter(fn ($e) => in_array($e->status, [ReferralEarningStatus::Pending, ReferralEarningStatus::Approved], true))
+                    ->sum(fn ($e) => (float) $e->amount),
+            ])
+            ->sortKeys()
+            ->all();
     }
 
     /** "Jean Dupont" → "Jean D." — never expose a referral's full name. */

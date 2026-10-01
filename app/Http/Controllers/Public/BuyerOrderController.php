@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\Quote;
 use App\Models\Rfq;
 use App\Services\BuyerRfqAccess;
+use App\Services\ShipmentService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -19,7 +20,10 @@ use Illuminate\View\View;
  */
 class BuyerOrderController extends Controller
 {
-    public function __construct(private readonly BuyerRfqAccess $access) {}
+    public function __construct(
+        private readonly BuyerRfqAccess $access,
+        private readonly ShipmentService $shipments,
+    ) {}
 
     /**
      * Screen 1 — "Award Order": review exactly what is about to be committed.
@@ -76,9 +80,10 @@ class BuyerOrderController extends Controller
 
     private function renderOrder(Request $request, Rfq $rfq, Order $order): View
     {
-        $order->load(['items', 'company', 'quote', 'receipt']);
+        $order->load(['items', 'company', 'quote', 'receipt', 'shipments.checkpointUpdates' => fn ($q) => $q->orderBy('occurred_at')->orderBy('id')]);
 
         return view('public.orders.show', [
+            'shipmentService' => $this->shipments,
             'rfq' => $rfq,
             'order' => $order,
             'receipt' => $order->receipt,

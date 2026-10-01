@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Public;
 
 use App\Enums\ProductStatus;
 use App\Http\Controllers\Controller;
+use App\Models\Company;
 use App\Models\Product;
 use App\Services\ProductCatalogueService;
 use App\Services\RfqList;
@@ -54,12 +55,10 @@ class ProductController extends Controller
         ]);
     }
 
-    public function show(string $slug, RfqList $rfqList): View
+    public function show(Request $request, string $slug, RfqList $rfqList): View
     {
         $product = Product::query()
             ->where('slug', $slug)
-            ->where('status', ProductStatus::Active)
-            ->whereHas('company', fn ($c) => $c->publiclyVisible())
             ->with([
                 'company.activeBadges',
                 'company.exportMarkets',
@@ -70,6 +69,22 @@ class ProductController extends Controller
                 'documents',
             ])
             ->firstOrFail();
+
+        // Public gate: active listing of a publicly visible company. Anything
+        // else 404s — except for a signed-in member of the owning company,
+        // who gets a clearly-labelled, noindexed preview of their own listing.
+        $isPublic = $product->status === ProductStatus::Active
+            && Company::query()->whereKey($product->company_id)->publiclyVisible()->exists();
+        $isPreview = false;
+
+        if (! $isPublic) {
+            $user = $request->user();
+            abort_unless(
+                $user !== null && $user->companies()->whereKey($product->company_id)->exists(),
+                404,
+            );
+            $isPreview = true;
+        }
 
         $productsBySupplier = Product::query()
             ->active()
@@ -95,6 +110,11 @@ class ProductController extends Controller
 
         return view('public.products.show', [
             'product' => $product,
+            'isPreview' => $isPreview,
+            'previewReasons' => $isPreview ? array_values(array_filter([
+                $product->status !== ProductStatus::Active ? __('the product is not published') : null,
+                ...$product->company->publicVisibilityGaps(),
+            ])) : [],
             'similar' => $similar,
             'supplierProductCount' => $productsBySupplier,
             'inRfqList' => $rfqList->has($product),

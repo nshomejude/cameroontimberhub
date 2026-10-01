@@ -26,6 +26,20 @@ Schedule::command('subscriptions:process-renewals')->dailyAt('02:30')->withoutOv
 // engine M6). Stub until price versioning (M9) lands.
 Schedule::command('subscriptions:notify-price-changes')->dailyAt('08:00');
 
+// Referral commission payouts: re-check in-flight PayPal payouts (webhook
+// safety net) and safely retry submissions whose outcome was unknown.
+Schedule::command('referrals:refresh-payouts')->hourlyAt(17)->withoutOverlapping();
+
+// Marketplace commission collection (owner decision 2026-10-01: manual MoMo /
+// bank deposit). Monthly statements for the previous month on the 1st; daily
+// due-soon reminders + overdue flagging. Both idempotent.
+Schedule::command('commission:issue-statements')->monthlyOn(1, '01:15')->withoutOverlapping();
+Schedule::command('commission:process-statements')->dailyAt('07:20')->withoutOverlapping();
+
+// Agent Ingestion Gateway: drop Idempotency-Key replay records past their
+// 7-day window (docs/api/AGENT_INGESTION.md).
+Schedule::command('agent:prune-idempotency-keys')->dailyAt('03:40');
+
 // Compliance daily maintenance.
 Schedule::command('compliance:expire-badges')->dailyAt('06:30');
 Schedule::command('compliance:remind-expiring')->dailyAt('07:00');
@@ -38,6 +52,10 @@ Schedule::command('ops:error-digest')->dailyAt('07:00')->withoutOverlapping();
 // `errors` channel when failed_jobs grows or the oldest pending job / outbox
 // relay is starving. Never gates — always exits 0.
 Schedule::command('ops:queue-health')->everyFifteenMinutes()->withoutOverlapping();
+
+// Scheduler heartbeat: proves cron → schedule:run is alive. /up/health
+// reports `scheduler: false` (503) once it is > 3 minutes stale.
+Schedule::command('ops:scheduler-heartbeat')->everyMinute();
 
 // Reputation recompute (production-readiness plan Task C1): rebuilds every
 // trading company's reputation figures from real order / RFQ / dispute rows.

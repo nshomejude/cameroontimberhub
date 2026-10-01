@@ -4,10 +4,13 @@ namespace App\Http\Controllers\Public;
 
 use App\Enums\PaymentProvider;
 use App\Http\Controllers\Controller;
+use App\Models\Company;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\Receipt;
+use App\Services\Payments\ProviderFees;
+use App\Services\SubscriptionService;
 use App\Services\Tax\TaxCalculator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -42,15 +45,6 @@ class BillingCheckoutController extends Controller
             return view('public.billing.needs-company', ['plan' => $plan]);
         }
 
-        $providers = collect($plan->checkoutProviders())
-            ->map(fn ($provider) => [
-                'value' => $provider->value,
-                'label' => $provider->label(),
-                'configured' => app(config("payments.providers.{$provider->value}"))->isConfigured(),
-                'needs_msisdn' => $provider === PaymentProvider::MtnMomo,
-            ])
-            ->values();
-
         // Billing engine M5: subtotal / tax / total breakdown for this plan
         // in the buyer's tax jurisdiction. Ships as a pure display concern —
         // when no active tax_rules row matches (the launch default) the
@@ -61,6 +55,21 @@ class BillingCheckoutController extends Controller
             $company->country_code ?: 'CM',
             $plan->segment,
         );
+
+        // Provider fee disclosure (pricing spec §19/§20): each method carries
+        // its own subtotal / fee / total so a passed-through fee (PayPal) is
+        // shown BEFORE the payer authorises; fee-free methods (mobile money)
+        // show the plain total. Same ProviderFees::breakdown() the POST
+        // checkout uses, so the disclosed total is exactly what is charged.
+        $providers = collect($plan->checkoutProviders())
+            ->map(fn ($provider) => [
+                'value' => $provider->value,
+                'label' => $provider->label(),
+                'configured' => app(config("payments.providers.{$provider->value}"))->isConfigured(),
+                'needs_msisdn' => $provider === PaymentProvider::MtnMomo,
+                'fee' => ProviderFees::breakdown($provider, (string) ($breakdown['total'] ?? $plan->price_amount), (string) $plan->price_currency),
+            ])
+            ->values();
 
         return view('public.billing.checkout', [
             'plan' => $plan,
@@ -89,7 +98,7 @@ class BillingCheckoutController extends Controller
         }
 
         try {
-            app(\App\Services\SubscriptionService::class)->startTrial($company, $plan, $request->user());
+            app(SubscriptionService::class)->startTrial($company, $plan, $request->user());
         } catch (\RuntimeException $e) {
             return back()->withErrors(['trial' => $e->getMessage()]);
         }
@@ -99,7 +108,7 @@ class BillingCheckoutController extends Controller
     }
 
     /** Company not already on an entitled paid subscription and hasn't used its one lifetime trial. */
-    private function trialEligible(\App\Models\Company $company): bool
+    private function trialEligible(Company $company): bool
     {
         if ($company->subscriptions()->whereNotNull('trial_ends_at')->exists()) {
             return false;
@@ -192,6 +201,6 @@ class BillingCheckoutController extends Controller
     {
         $companyIds = $request->user()?->companies()->pluck('companies.id')->all() ?? [];
 
-        abort_unless(in_array($payment->company_id, $companyIds, true), 403);
+        abort_unless(in_array($payment->company_id, $companyIds, true), 404);
     }
 }

@@ -27,8 +27,9 @@ use Illuminate\Support\Facades\Log;
  *          and redirects the payer to the returned payment_url (a real
  *          Orange-hosted domain, hence redirect()->away()).
  *  2. handleWebhook() (routes/payments/orange-money.php, "notify" route)
- *     receives Orange's asynchronous IPN-style notification and marks the
- *     matching Payment completed/failed based on the payload's status.
+ *     receives Orange's asynchronous IPN-style notification, re-queries
+ *     Orange's transactionstatus API, and marks the matching Payment
+ *     completed/failed based on THAT confirmed status (never the payload).
  *  3. returnPage() is the payer-facing landing page after Orange redirects
  *     them back to the browser. It is purely informational — actual status
  *     updates only ever come from handleWebhook(), never from the payer's
@@ -68,7 +69,7 @@ class OrangeMoneyGateway implements PaymentGatewayContract
                 'merchant_key' => $config['merchant_key'],
                 'currency' => $config['currency'],
                 'order_id' => (string) $payment->id,
-                'amount' => (string) $payment->amount,
+                'amount' => PaymentAmount::forProvider($payment),
                 'return_url' => route('payments.orange-money.return', ['payment' => $payment->id]),
                 'cancel_url' => route('payments.orange-money.return', ['payment' => $payment->id]),
                 'notif_url' => route('payments.orange-money.notify'),
@@ -121,12 +122,13 @@ class OrangeMoneyGateway implements PaymentGatewayContract
     }
 
     /**
-     * NOTE: We don't have real Orange merchant-portal webhook credentials
-     * to verify a signature against yet. Until those details are
-     * available, we only validate the payload's required-field shape and
-     * log anything unexpected rather than trusting it blindly. A
-     * production hardening pass should add signature verification and/or
-     * IP allowlisting once Orange provides them for this merchant account.
+     * Orange's notification ("notif_url") is NOT authenticated — anyone who
+     * knows a pay_token could POST {"status":"SUCCESS"}. So the payload is
+     * treated purely as a *hint* that something changed: its `status` field
+     * is never trusted. Instead we re-query Orange's WebPay
+     * `transactionstatus` API (server-to-server, OAuth-authenticated) and
+     * only complete the payment when Orange itself confirms SUCCESS for this
+     * order id + pay_token AND the confirmed amount matches ours.
      */
     public function handleWebhook(Request $request): Response
     {
@@ -137,9 +139,8 @@ class OrangeMoneyGateway implements PaymentGatewayContract
         }
 
         $payToken = $request->input('pay_token') ?? $request->input('order_id');
-        $status = $request->input('status');
 
-        if (! $payToken || ! $status) {
+        if (! is_string($payToken) || $payToken === '') {
             Log::warning('Orange Money webhook received with missing required fields', [
                 'payload' => $request->all(),
             ]);
@@ -159,9 +160,26 @@ class OrangeMoneyGateway implements PaymentGatewayContract
             return response(['message' => 'No matching payment.'], 404);
         }
 
-        $normalizedStatus = strtoupper((string) $status);
+        $confirmed = $this->fetchTransactionStatus($payment);
+
+        if ($confirmed === null) {
+            // Could not verify — let Orange retry later; no state change.
+            return response(['message' => 'Unable to verify transaction status.'], 502);
+        }
+
+        $normalizedStatus = strtoupper((string) ($confirmed['status'] ?? ''));
 
         if ($normalizedStatus === 'SUCCESS') {
+            if (! PaymentAmount::matches($payment, $confirmed['amount'] ?? null)) {
+                Log::critical('Orange Money confirmed SUCCESS with a mismatched amount — refusing to complete', [
+                    'payment_id' => $payment->id,
+                    'expected' => (string) $payment->amount,
+                    'confirmed' => $confirmed['amount'] ?? null,
+                ]);
+
+                return response(['message' => 'Amount mismatch.'], 409);
+            }
+
             // Mirror StripeGateway: completion goes through the CommandBus so
             // markCompleted() + the PaymentCompleted outbox event are one
             // transaction (billing engine M2).
@@ -179,6 +197,51 @@ class OrangeMoneyGateway implements PaymentGatewayContract
         }
 
         return response(['message' => 'ok']);
+    }
+
+    /**
+     * Server-to-server status check (Orange WebPay `POST /transactionstatus`
+     * keyed on order_id + amount + pay_token). Returns the decoded body, or
+     * null when Orange could not be reached / answered with an error.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function fetchTransactionStatus(Payment $payment): ?array
+    {
+        $config = GatewayCredentials::for(PaymentProvider::OrangeMoney);
+        $baseUrl = $this->baseUrl($config['environment']);
+
+        try {
+            $token = $this->fetchAccessToken($baseUrl, $config);
+
+            if (! $token) {
+                return null;
+            }
+
+            $response = Http::withToken($token)->post("{$baseUrl}/transactionstatus", [
+                'order_id' => (string) $payment->id,
+                'amount' => PaymentAmount::forProvider($payment),
+                'pay_token' => (string) $payment->provider_reference,
+            ]);
+
+            if (! $response->successful() || ! is_array($response->json())) {
+                Log::warning('Orange Money transactionstatus failed', [
+                    'payment_id' => $payment->id,
+                    'status' => $response->status(),
+                ]);
+
+                return null;
+            }
+
+            return $response->json();
+        } catch (\Throwable $e) {
+            Log::error('Orange Money transactionstatus exception', [
+                'payment_id' => $payment->id,
+                'message' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
     }
 
     private function baseUrl(string $environment): string

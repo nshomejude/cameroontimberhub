@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\Ops\OpsProbes;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -27,7 +28,14 @@ class HealthController extends Controller
 
                 return (string) Cache::get('health:ping') === $token;
             }),
-            'queue' => $this->safe(fn () => DB::table('jobs')->count() < 10_000), // backlog guard
+            // Backlog guard on the CONFIGURED queue connection (database,
+            // redis, ...), not a hard-coded `jobs` table count.
+            'queue' => $this->safe(fn () => OpsProbes::queueSize() < 10_000),
+            // Cron → schedule:run alive? A stale heartbeat always fails; a
+            // never-recorded one fails only in production (fresh local/test
+            // environments have no cron).
+            'scheduler' => $this->safe(fn () => OpsProbes::schedulerIsFresh()
+                || (OpsProbes::lastSchedulerHeartbeat() === null && ! app()->isProduction())),
         ];
 
         $ok = ! in_array(false, $checks, true);

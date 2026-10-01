@@ -42,6 +42,7 @@ it('registers a buyer with no company', function () {
 });
 
 it('registers a carbon_buyer with no company', function () {
+    config(['timber.signup.carbon_enabled' => true]);
     $email = 'carbonbuyer'.uniqid().'@example.test';
 
     $this->post(route('register.store'), validRegistrationPayload([
@@ -120,6 +121,7 @@ it('registers a logistics_partner with a company of the correct type', function 
 });
 
 it('registers a carbon_developer with a company of the correct type', function () {
+    config(['timber.signup.carbon_enabled' => true]);
     $email = 'carbondev'.uniqid().'@example.test';
 
     $this->post(route('register.store'), validRegistrationPayload([
@@ -135,7 +137,8 @@ it('registers a carbon_developer with a company of the correct type', function (
     expect($user->hasRole('carbon_developer'))->toBeTrue();
 });
 
-it('renders all 7 account type options on the registration form', function () {
+it('renders all 7 account type options on the registration form when carbon signup is enabled', function () {
+    config(['timber.signup.carbon_enabled' => true]);
     $response = $this->get(route('register'));
 
     $response->assertOk();
@@ -143,4 +146,41 @@ it('renders all 7 account type options on the registration form', function () {
     foreach (['buyer', 'supplier', 'processor', 'artisan', 'logistics_partner', 'carbon_developer', 'carbon_buyer'] as $type) {
         $response->assertSee('value="'.$type.'"', false);
     }
+});
+
+it('rejects carbon account types on web registration while carbon signup is disabled', function (string $type) {
+    config(['timber.signup.carbon_enabled' => false]);
+    $email = 'dormant'.uniqid().'@example.test';
+
+    $this->post(route('register.store'), validRegistrationPayload([
+        'account_type' => $type,
+        'email' => $email,
+        'company_name' => 'Dormant Co',
+    ]))->assertSessionHasErrors(['account_type' => 'Carbon accounts are coming soon and cannot be registered yet.']);
+
+    expect(User::where('email', $email)->exists())->toBeFalse();
+})->with(['carbon_developer', 'carbon_buyer']);
+
+it('shows carbon account types as disabled "Coming soon" cards by default', function () {
+    $response = $this->get(route('register'))->assertOk();
+
+    foreach (['carbon_developer', 'carbon_buyer'] as $type) {
+        $response->assertSee('data-coming-soon="'.$type.'"', false);
+        $response->assertDontSee('name="account_type" value="'.$type.'"', false);
+    }
+
+    foreach (['buyer', 'supplier', 'processor', 'artisan', 'logistics_partner'] as $type) {
+        $response->assertSee('name="account_type" value="'.$type.'"', false);
+    }
+
+    $response->assertSee('Coming soon');
+});
+
+it('keeps existing carbon role holders working when carbon signup is disabled', function () {
+    config(['timber.signup.carbon_enabled' => false]);
+    $user = User::factory()->create();
+    $user->assignRole('carbon_buyer');
+
+    expect($user->fresh()->hasRole('carbon_buyer'))->toBeTrue();
+    $this->actingAs($user)->get(route('register'))->assertRedirect();
 });

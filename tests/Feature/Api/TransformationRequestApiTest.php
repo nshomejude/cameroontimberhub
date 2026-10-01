@@ -10,6 +10,7 @@ use App\Notifications\TransformationRequestCompletedNotification;
 use App\Notifications\TransformationRequestCreatedNotification;
 use App\Notifications\TransformationRequestQuotedNotification;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Route;
 
 /** A requester company (any organisation type) + one member user. */
 function xfrRequester(array $attributes = []): array
@@ -105,6 +106,11 @@ it('runs the full happy path from creation to a recorded LotTransformation', fun
     $reference = $create->json('data.reference');
 
     Notification::assertSentTo($providerCompany->users, TransformationRequestCreatedNotification::class);
+
+    // A currency outside the web form's list (XAF/EUR/USD) is refused.
+    $this->actingAs($providerUser, 'sanctum')
+        ->postJson("/api/v1/transformation/requests/{$reference}/quote", ['amount' => 500000, 'currency' => 'GBP'])
+        ->assertUnprocessable()->assertJsonValidationErrors('currency', 'error.details');
 
     // Provider quotes.
     $quote = $this->actingAs($providerUser, 'sanctum')
@@ -322,4 +328,59 @@ it('computes actions[] correctly at each status for each side', function () {
         ->assertOk();
 
     expect($afterQuoteProvider->json('data.actions'))->toBe([]);
+});
+
+it('defaults the box to received for a provider company and sent otherwise', function () {
+    [$requesterUser] = xfrRequester(['type' => 'buyer']);
+    [$providerUser, $providerCompany] = xfrProvider('artisan');
+
+    $reference = $this->actingAs($requesterUser, 'sanctum')
+        ->postJson('/api/v1/transformation/requests', xfrCreatePayload($providerCompany))
+        ->assertCreated()
+        ->json('data.reference');
+
+    $providerDefault = $this->actingAs($providerUser, 'sanctum')
+        ->getJson('/api/v1/transformation/requests')
+        ->assertOk();
+    expect(collect($providerDefault->json('data'))->pluck('reference'))->toContain($reference);
+
+    $requesterDefault = $this->actingAs($requesterUser, 'sanctum')
+        ->getJson('/api/v1/transformation/requests')
+        ->assertOk();
+    expect(collect($requesterDefault->json('data'))->pluck('reference'))->toContain($reference);
+});
+
+it('filters the list by status', function () {
+    [$requesterUser] = xfrRequester();
+    [$providerUser, $providerCompany] = xfrProvider();
+
+    $reference = $this->actingAs($requesterUser, 'sanctum')
+        ->postJson('/api/v1/transformation/requests', xfrCreatePayload($providerCompany))
+        ->assertCreated()
+        ->json('data.reference');
+
+    $pending = $this->actingAs($providerUser, 'sanctum')
+        ->getJson('/api/v1/transformation/requests?status=pending')->assertOk();
+    expect(collect($pending->json('data'))->pluck('reference'))->toContain($reference);
+
+    $quoted = $this->actingAs($providerUser, 'sanctum')
+        ->getJson('/api/v1/transformation/requests?status=quoted')->assertOk();
+    expect($quoted->json('data'))->toBe([]);
+});
+
+it('accepts an artisan as a transformation provider', function () {
+    [$requesterUser] = xfrRequester();
+    [, $artisan] = xfrProvider('artisan');
+
+    $this->actingAs($requesterUser, 'sanctum')
+        ->postJson('/api/v1/transformation/requests', xfrCreatePayload($artisan))
+        ->assertCreated();
+});
+
+it('rate-limits every transformation request write with the shared decision limiter', function () {
+    $writes = collect(Route::getRoutes()->getRoutes())
+        ->filter(fn ($r) => str_starts_with((string) $r->getName(), 'api.v1.transformation-requests.') && in_array('POST', $r->methods(), true));
+
+    expect($writes)->toHaveCount(9);
+    $writes->each(fn ($r) => expect($r->gatherMiddleware())->toContain('throttle:api-decision'));
 });

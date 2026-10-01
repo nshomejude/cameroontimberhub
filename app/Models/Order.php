@@ -6,6 +6,7 @@ use App\Enums\OrderPaymentStatus;
 use App\Enums\OrderStatus;
 use App\Enums\RfqCurrency;
 use App\Enums\RfqIncoterm;
+use App\Support\Money;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -53,6 +54,7 @@ class Order extends Model
             'delivered_at' => 'datetime',
             'completed_at' => 'datetime',
             'cancelled_at' => 'datetime',
+            'commission_charged_at' => 'datetime',
         ];
     }
 
@@ -76,6 +78,12 @@ class Order extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /** Transport bookings with digital waybills (gap-plan 1.5.10). */
+    public function shipments(): HasMany
+    {
+        return $this->hasMany(Shipment::class);
     }
 
     public function items(): HasMany
@@ -267,7 +275,7 @@ class Order extends Model
     public function recalculateTotals(): static
     {
         $subtotal = $this->items->reduce(
-            fn ($carry, OrderItem $item) => bcadd((string) $carry, (string) $item->line_total, 2),
+            fn ($carry, OrderItem $item) => bcadd((string) $carry, Money::forCurrency((string) $item->line_total, $this->currency), 2),
             '0.00',
         );
 

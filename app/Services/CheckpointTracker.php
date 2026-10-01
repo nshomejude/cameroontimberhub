@@ -73,6 +73,7 @@ class CheckpointTracker
             'photo_path' => $data['photo_path'] ?? null,
             'recorded_by' => $data['recorded_by'] ?? null,
             'occurred_at' => $data['occurred_at'] ?? null,
+            'client_event_id' => $data['client_event_id'] ?? null,
         ]);
     }
 

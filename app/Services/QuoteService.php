@@ -5,14 +5,21 @@ namespace App\Services;
 use App\Enums\QuoteStatus;
 use App\Enums\RfqCompanyStatus;
 use App\Enums\RfqStatus;
+use App\Listeners\RecordQuotedPriceObservations;
 use App\Mail\QuoteSubmittedMail;
 use App\Models\Company;
 use App\Models\Quote;
 use App\Models\Rfq;
 use App\Models\RfqCompany;
 use App\Models\User;
+use App\Notifications\QuoteAcceptedNotification;
+use App\Notifications\QuoteDeclinedNotification;
+use App\Notifications\QuoteReceivedNotification;
+use App\Services\Commission\CommissionCollectionService;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use RuntimeException;
 
@@ -53,6 +60,19 @@ class QuoteService
         if ($rfq->status !== RfqStatus::Approved) {
             throw new RuntimeException('Only approved RFQs can be quoted.');
         }
+
+        // Owner rule: pending-verification suppliers receive requests but
+        // cannot respond until verified. Authoritative for every quote path
+        // (API, exporter Create Quote, chat, reorder).
+        if (! $company->canRespondToBuyers()) {
+            throw new RuntimeException(Company::VERIFICATION_REQUIRED_MESSAGE);
+        }
+
+        // Optional commission enforcement (timber.commission.block_on_overdue_days,
+        // OFF by default): a company with a commission statement unpaid too
+        // long past its due date cannot quote. Throws a 409 `commission_overdue`
+        // CommissionOverdueException (a RuntimeException).
+        app(CommissionCollectionService::class)->assertMayQuote($company);
 
         $routing = RfqCompany::where('rfq_id', $rfq->getKey())
             ->where('company_id', $company->getKey())
@@ -167,16 +187,16 @@ class QuoteService
         // Database notification for the registered buyer (a guest-submitted
         // RFQ has no `user_id`, so there is nobody to notify in-app).
         if ($quote->rfq->user) {
-            $quote->rfq->user->notify(new \App\Notifications\QuoteReceivedNotification($quote->fresh(['items', 'company', 'rfq'])));
+            $quote->rfq->user->notify(new QuoteReceivedNotification($quote->fresh(['items', 'company', 'rfq'])));
         }
 
         // docs/PRICE_DATA_STANDARD.md §5 — `quoted` price signal. No domain
         // event exists for quote submission; the collector is defensive and
         // wrapped here too so it can never block a submit.
         try {
-            app(\App\Listeners\RecordQuotedPriceObservations::class)->record($quote);
+            app(RecordQuotedPriceObservations::class)->record($quote);
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::channel('errors')->error('QuoteService::submit: price observation collector threw.', [
+            Log::channel('errors')->error('QuoteService::submit: price observation collector threw.', [
                 'quote_id' => $quote->getKey(),
                 'exception' => $e->getMessage(),
             ]);
@@ -201,7 +221,7 @@ class QuoteService
         $quote->loadMissing('items');
 
         foreach ($quote->items as $item) {
-            $expected = Quote::lineTotal($item->quantity, $item->unit_price);
+            $expected = Quote::lineTotal($item->quantity, $item->unit_price, $quote->currency);
 
             if ((string) $item->line_total !== $expected) {
                 $item->forceFill(['line_total' => $expected])->save();
@@ -243,7 +263,9 @@ class QuoteService
      */
     public function accept(Quote $quote, ?User $actor = null): Quote
     {
-        return DB::transaction(function () use ($quote, $actor) {
+        $autoDeclined = collect();
+
+        $accepted = DB::transaction(function () use ($quote, $actor, &$autoDeclined) {
             $quote = Quote::whereKey($quote->getKey())->lockForUpdate()->firstOrFail();
 
             if ($quote->isExpired()) {
@@ -261,7 +283,7 @@ class QuoteService
             $accepted = $this->transition($quote, QuoteStatus::Accepted, $actor);
 
             foreach ($others as $other) {
-                $this->transition($other, QuoteStatus::Declined, $actor, 'Another quote was accepted for this request.');
+                $autoDeclined->push($this->transition($other, QuoteStatus::Declined, $actor, 'Another quote was accepted for this request.'));
             }
 
             // The RFQ is settled once a quote wins.
@@ -279,6 +301,14 @@ class QuoteService
 
             return $accepted;
         });
+
+        // Single dispatch point for every accept path (signed buyer link,
+        // account screen, chat thread via AwardQuoteCommand). The winner and
+        // every auto-declined sibling supplier are told.
+        $this->notifySupplier($accepted, new QuoteAcceptedNotification($accepted));
+        $autoDeclined->each(fn (Quote $q) => $this->notifySupplier($q, new QuoteDeclinedNotification($q)));
+
+        return $accepted;
     }
 
     public function decline(Quote $quote, string $reason, ?User $actor = null): Quote
@@ -287,7 +317,26 @@ class QuoteService
             throw new RuntimeException('A decline reason is required.');
         }
 
-        return $this->transition($quote, QuoteStatus::Declined, $actor, trim($reason));
+        $declined = $this->transition($quote, QuoteStatus::Declined, $actor, trim($reason));
+
+        $this->notifySupplier($declined, new QuoteDeclinedNotification($declined));
+
+        return $declined;
+    }
+
+    /**
+     * Notify the quoting company's users. `afterCommit()` so that, when this
+     * runs inside a caller's outer transaction (ChatCommerceService), nothing
+     * is sent for a decision that is then rolled back.
+     */
+    private function notifySupplier(Quote $quote, Notification $notification): void
+    {
+        $quote->loadMissing('company.users');
+        $users = $quote->company?->users;
+
+        if ($users && $users->isNotEmpty()) {
+            \Illuminate\Support\Facades\Notification::send($users, $notification->afterCommit());
+        }
     }
 
     /* ---------------------------------------------------------------- system */

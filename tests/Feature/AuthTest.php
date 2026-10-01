@@ -124,16 +124,61 @@ it('sends a staff user to the admin panel on login', function () {
     $secret = $user->generateTwoFactorSecret();
     $user->confirmTwoFactor();
 
+    // Password alone is not enough for a 2FA account: no session yet.
     $this->post('/login', [
         'email' => 'staff@example.com',
         'password' => 'Str0ng-Passw0rd!',
-    ])->assertRedirect('/admin');
+    ])->assertRedirect(route('login.two-factor'));
+    $this->assertGuest();
+
+    $code = app(\PragmaRX\Google2FA\Google2FA::class)->getCurrentOtp($secret);
+
+    $this->post(route('login.two-factor.store'), ['code' => $code])->assertRedirect('/admin');
+    $this->assertAuthenticatedAs($user);
+});
+
+it('rejects a wrong two-factor code at login and stays signed out', function () {
+    $user = User::factory()->create(['email' => 'tf@example.com', 'password' => 'Str0ng-Passw0rd!']);
+    $user->generateTwoFactorSecret();
+    $user->confirmTwoFactor();
+
+    $this->post('/login', ['email' => 'tf@example.com', 'password' => 'Str0ng-Passw0rd!'])
+        ->assertRedirect(route('login.two-factor'));
+    $this->get(route('login.two-factor'))->assertOk()->assertSee(route('login.two-factor.store'), false);
+
+    $this->post(route('login.two-factor.store'), ['code' => '000000'])->assertSessionHasErrors('code');
+    $this->assertGuest();
+});
+
+it('accepts a recovery code to finish a two-factor login', function () {
+    $user = User::factory()->create(['email' => 'rc@example.com', 'password' => 'Str0ng-Passw0rd!']);
+    $user->generateTwoFactorSecret();
+    $codes = $user->confirmTwoFactor();
+
+    $this->post('/login', ['email' => 'rc@example.com', 'password' => 'Str0ng-Passw0rd!']);
+    $this->post(route('login.two-factor.store'), ['code' => $codes[0]])->assertRedirect(route('account.index'));
+    $this->assertAuthenticatedAs($user);
+});
+
+it('bounces the two-factor login step back to login when nothing is pending', function () {
+    $this->get(route('login.two-factor'))->assertRedirect(route('login'));
+    $this->post(route('login.two-factor.store'), ['code' => '123456'])->assertRedirect(route('login'));
+    $this->assertGuest();
+});
+
+it('logs in regardless of email case and surrounding whitespace', function () {
+    User::factory()->create(['email' => 'mixed@example.com', 'password' => 'Str0ng-Passw0rd!']);
+
+    $this->post('/login', ['email' => '  Mixed@Example.COM ', 'password' => 'Str0ng-Passw0rd!'])
+        ->assertRedirect(route('account.index'));
+    $this->assertAuthenticated();
 });
 
 // Blueprint §39: admin-panel staff must have two-factor authentication
 // configured; a login before that is done is redirected to set it up rather
 // than into /admin.
 it('sends an admin without two-factor configured to the two-factor setup screen instead of /admin', function () {
+    config(['auth.require_staff_2fa' => true]);
     $user = User::factory()->create([
         'email' => 'staff-no-2fa@example.com',
         'password' => 'Str0ng-Passw0rd!',

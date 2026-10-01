@@ -5,6 +5,13 @@ use App\Models\User;
 return [
 
     /*
+    | Platform staff (any role in User::STAFF_ROLES) must have confirmed
+    | two-factor authentication before reaching the /admin panel
+    | (App\Http\Middleware\EnsureStaffTwoFactor).
+    */
+    'require_staff_2fa' => (bool) env('STAFF_REQUIRE_2FA', true),
+
+    /*
     |--------------------------------------------------------------------------
     | Authentication Defaults
     |--------------------------------------------------------------------------
@@ -113,5 +120,12 @@ return [
     */
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
+
+
+    /*
+    | Require `terms_accepted: true` on API registration. Off until every
+    | released mobile build sends the field (older builds would 422).
+    */
+    'api_require_terms_accepted' => (bool) env('API_REQUIRE_TERMS_ACCEPTED', false),
 
 ];

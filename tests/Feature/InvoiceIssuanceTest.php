@@ -131,5 +131,5 @@ it('serves the invoice print view to an owning company member and 403s an unrela
     $this->actingAs($member)->get(route('billing.invoices.show', $invoice))->assertOk()->assertSee($invoice->invoice_number);
 
     $stranger = App\Models\User::factory()->create();
-    $this->actingAs($stranger)->get(route('billing.invoices.show', $invoice))->assertForbidden();
+    $this->actingAs($stranger)->get(route('billing.invoices.show', $invoice))->assertNotFound();
 });

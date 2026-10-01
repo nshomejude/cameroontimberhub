@@ -16,7 +16,22 @@ beforeEach(function () {
     Filament::setCurrentPanel(Filament::getPanel('exporter'));
 });
 
+test('carbon project creation is only offered while the carbon module is enabled', function () {
+    $company = Company::factory()->create(['type' => OrganisationType::CarbonDeveloper]);
+    $user = User::factory()->create();
+    $user->companies()->attach($company, ['role' => 'owner']);
+    $this->actingAs($user);
+
+    config(['timber.signup.carbon_enabled' => false]);
+    expect(\App\Filament\Exporter\Resources\CarbonProjects\CarbonProjectResource::canCreate())->toBeFalse()
+        ->and(\App\Filament\Exporter\Resources\CarbonProjects\CarbonProjectResource::canViewAny())->toBeTrue();
+
+    config(['timber.signup.carbon_enabled' => true]);
+    expect(\App\Filament\Exporter\Resources\CarbonProjects\CarbonProjectResource::canCreate())->toBeTrue();
+});
+
 test('a carbon-developer company user can create a carbon project scoped to their own company', function () {
+    config(['timber.signup.carbon_enabled' => true]);
     $company = Company::factory()->create(['type' => OrganisationType::CarbonDeveloper]);
     $user = User::factory()->create();
     $user->companies()->attach($company, ['role' => 'owner']);

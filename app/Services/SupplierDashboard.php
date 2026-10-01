@@ -134,7 +134,7 @@ class SupplierDashboard
             ],
             [
                 'key' => 'active_products',
-                'label' => 'Active products',
+                'label' => __('messages.supplier_dashboard.active_products'),
                 'value' => $activeProducts,
                 'hint' => null,
                 'delta' => null,
@@ -142,7 +142,7 @@ class SupplierDashboard
             ],
             [
                 'key' => 'profile_completion',
-                'label' => 'Profile completion',
+                'label' => __('messages.supplier_dashboard.profile_completion'),
                 'value' => $company?->calculateProfileCompletion() ?? 0,
                 'hint' => null,
                 'delta' => null,
@@ -168,6 +168,7 @@ class SupplierDashboard
     {
         return (clone $this->quotes($user))
             ->with(['rfq:id,reference_code,buyer_email,title', 'items'])
+            ->withConversationId()
             ->orderByDesc('created_at')
             ->limit($limit)
             ->get();
@@ -229,28 +230,28 @@ class SupplierDashboard
             && (filled($company->city) || filled($company->website_url) || filled($company->email) || filled($company->phone));
 
         if (! $hasBasicProfile) {
-            $missing[] = 'Basic profile completed';
+            $missing[] = __('messages.supplier_dashboard.missing_basic_profile');
         }
 
         if (! in_array($company->type, [OrganisationType::Logistics, OrganisationType::CarbonDeveloper], true)
             && $company->species->isEmpty()) {
-            $missing[] = 'Species / products added';
+            $missing[] = __('messages.supplier_dashboard.missing_species');
         }
 
         if ($company->contacts->isEmpty()) {
-            $missing[] = 'Contact person added';
+            $missing[] = __('messages.supplier_dashboard.missing_contact');
         }
 
         if ($company->gallery->isEmpty()) {
-            $missing[] = 'Gallery images uploaded';
+            $missing[] = __('messages.supplier_dashboard.missing_gallery');
         }
 
         if ($company->documents->isEmpty()) {
-            $missing[] = 'Compliance documents uploaded';
+            $missing[] = __('messages.supplier_dashboard.missing_documents');
         }
 
         if ($company->verificationRequests->isEmpty()) {
-            $missing[] = 'Submitted for verification';
+            $missing[] = __('messages.supplier_dashboard.missing_verification');
         }
 
         return $missing;
@@ -275,7 +276,7 @@ class SupplierDashboard
             $entries[] = [
                 'at' => $quote->submitted_at,
                 'type' => 'quote_submitted',
-                'label' => 'Quote submitted',
+                'label' => __('messages.supplier_dashboard.quote_submitted'),
                 'detail' => $quote->reference_code.' · '.($quote->rfq?->reference_code ?? ''),
                 'reference' => $quote->reference_code,
                 'icon' => 'document-text',
@@ -372,9 +373,9 @@ class SupplierDashboard
         $outputVolume = (float) LotTransformation::query()->where('processor_company_id', $company->id)->sum('output_volume_m3');
 
         return [
-            ['key' => 'capacities', 'label' => 'Declared capacities', 'value' => $capacities, 'icon' => 'cog-6-tooth'],
-            ['key' => 'transformations', 'label' => 'Lot transformations', 'value' => $transformations, 'icon' => 'arrow-path'],
-            ['key' => 'output_volume_m3', 'label' => 'Total output (m³)', 'value' => round($outputVolume, 2), 'icon' => 'cube'],
+            ['key' => 'capacities', 'label' => __('messages.supplier_dashboard.declared_capacities'), 'value' => $capacities, 'icon' => 'cog-6-tooth'],
+            ['key' => 'transformations', 'label' => __('messages.supplier_dashboard.lot_transformations'), 'value' => $transformations, 'icon' => 'arrow-path'],
+            ['key' => 'output_volume_m3', 'label' => __('messages.supplier_dashboard.total_output_m3'), 'value' => round($outputVolume, 2), 'icon' => 'cube'],
         ];
     }
 
@@ -385,8 +386,8 @@ class SupplierDashboard
         $activeProducts = Product::query()->where('company_id', $company->id)->where('status', ProductStatus::Active->value)->count();
 
         return [
-            ['key' => 'capacities', 'label' => 'Declared capacities', 'value' => $capacities, 'icon' => 'cog-6-tooth'],
-            ['key' => 'active_products', 'label' => 'Active products', 'value' => $activeProducts, 'icon' => 'cube'],
+            ['key' => 'capacities', 'label' => __('messages.supplier_dashboard.declared_capacities'), 'value' => $capacities, 'icon' => 'cog-6-tooth'],
+            ['key' => 'active_products', 'label' => __('messages.supplier_dashboard.active_products'), 'value' => $activeProducts, 'icon' => 'cube'],
         ];
     }
 
@@ -396,7 +397,7 @@ class SupplierDashboard
         $activeProducts = Product::query()->where('company_id', $company->id)->where('status', ProductStatus::Active->value)->count();
 
         return [
-            ['key' => 'active_products', 'label' => 'Active products', 'value' => $activeProducts, 'icon' => 'cube'],
+            ['key' => 'active_products', 'label' => __('messages.supplier_dashboard.active_products'), 'value' => $activeProducts, 'icon' => 'cube'],
         ];
     }
 
@@ -408,10 +409,10 @@ class SupplierDashboard
         $visibleOnLocalMarket = $this->domesticMarketplace->base()->where('products.company_id', $company->id)->exists();
 
         return [
-            ['key' => 'active_products', 'label' => 'Active products', 'value' => $activeProducts, 'icon' => 'cube'],
-            ['key' => 'region', 'label' => 'Region', 'value' => $company->region ?? '', 'icon' => 'map-pin'],
-            ['key' => 'city', 'label' => 'City', 'value' => $company->city ?? '', 'icon' => 'map-pin'],
-            ['key' => 'local_market_visible', 'label' => 'Visible on local market', 'value' => $visibleOnLocalMarket ? 1 : 0, 'icon' => 'eye'],
+            ['key' => 'active_products', 'label' => __('messages.supplier_dashboard.active_products'), 'value' => $activeProducts, 'icon' => 'cube'],
+            ['key' => 'region', 'label' => __('messages.supplier_dashboard.region'), 'value' => $company->region ?? '', 'icon' => 'map-pin'],
+            ['key' => 'city', 'label' => __('messages.supplier_dashboard.city'), 'value' => $company->city ?? '', 'icon' => 'map-pin'],
+            ['key' => 'local_market_visible', 'label' => __('messages.supplier_dashboard.local_market_visible'), 'value' => $visibleOnLocalMarket ? 1 : 0, 'icon' => 'eye'],
         ];
     }
 
@@ -455,9 +456,9 @@ class SupplierDashboard
         $estimatedCreditsPerYear = (float) CarbonProject::query()->where('company_id', $company->id)->sum('estimated_credits_per_year');
 
         return [
-            ['key' => 'carbon_projects', 'label' => 'Carbon projects', 'value' => $projects, 'icon' => 'globe-alt'],
-            ['key' => 'area_hectares', 'label' => 'Total area (ha)', 'value' => round($areaHectares, 2), 'icon' => 'map'],
-            ['key' => 'estimated_credits_per_year', 'label' => 'Estimated credits / year', 'value' => round($estimatedCreditsPerYear, 2), 'icon' => 'chart-bar'],
+            ['key' => 'carbon_projects', 'label' => __('messages.supplier_dashboard.carbon_projects'), 'value' => $projects, 'icon' => 'globe-alt'],
+            ['key' => 'area_hectares', 'label' => __('messages.supplier_dashboard.area_hectares'), 'value' => round($areaHectares, 2), 'icon' => 'map'],
+            ['key' => 'estimated_credits_per_year', 'label' => __('messages.supplier_dashboard.estimated_credits_per_year'), 'value' => round($estimatedCreditsPerYear, 2), 'icon' => 'chart-bar'],
         ];
     }
 }

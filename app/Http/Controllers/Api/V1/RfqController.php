@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Enums\RfqType;
 use App\Exceptions\Api\ApiException;
+use App\Exceptions\Api\ConflictException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\StoreRfqRequest;
 use App\Http\Resources\Api\V1\QuoteResource;
@@ -10,10 +12,12 @@ use App\Http\Resources\Api\V1\RfqResource;
 use App\Models\Company;
 use App\Services\BuyerApiScope;
 use App\Services\IntakeService;
+use App\Services\RfqCancellationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
+use RuntimeException;
 
 /**
  * Buyer RFQs over token auth.
@@ -85,6 +89,7 @@ class RfqController extends Controller
 
         $rfq = $intake->createRfq(
             [
+                'type' => RfqType::tryFrom((string) ($data['type'] ?? '')) ?? RfqType::Export,
                 'title' => $data['title'],
                 'project_name' => $data['project_name'] ?? null,
                 'buyer_name' => $buyer->name,
@@ -173,6 +178,28 @@ class RfqController extends Controller
         ]);
     }
 
+    /**
+     * Withdraw one of the buyer's own RFQs (status -> `closed`) while it is
+     * still open and nothing has been awarded. Routed suppliers are told via
+     * RfqCancellationService. Another buyer's reference 404s (BuyerApiScope);
+     * an RFQ that can no longer be withdrawn is a 409 `rfq_not_cancellable`.
+     */
+    public function cancel(Request $request, string $reference, RfqCancellationService $cancellation): RfqResource
+    {
+        $rfq = $this->scope->rfq($request->user(), $reference);
+
+        try {
+            $rfq = $cancellation->cancel($rfq, $request->user());
+        } catch (RuntimeException $e) {
+            throw new ConflictException($e->getMessage(), 'rfq_not_cancellable', $e);
+        }
+
+        $rfq->load('items.species:id,slug,common_name');
+        $rfq->loadCount(['quotes' => fn ($q) => $q->buyerVisible()]);
+
+        return new RfqResource($rfq);
+    }
+
     /** Quotes suppliers have returned on one of the buyer's own RFQs. */
     public function quotes(Request $request, string $reference): AnonymousResourceCollection
     {
@@ -181,6 +208,7 @@ class RfqController extends Controller
         $quotes = $rfq->quotes()
             ->buyerVisible()
             ->with(['items', Company::cardEagerLoad()])
+            ->withConversationId()
             ->orderByDesc('submitted_at')
             ->get();
 

@@ -43,6 +43,7 @@ function registerViaApi(array $overrides = []): \Illuminate\Testing\TestResponse
         'email' => 'new'.uniqid().'@yahoo.fr',
         'password' => 'Str0ng-Passw0rd!',
         'company_name' => 'Bois Dupont SARL',
+        'terms_accepted' => true,
     ], $overrides));
 }
 

@@ -11,7 +11,7 @@ class PlanSeeder extends Seeder
         [
             'slug' => 'free', 'name' => 'Free', 'price_amount' => 0, 'sort_order' => 0, 'segment' => 'sell',
             'description' => 'A basic public listing to get discovered.',
-            'features' => ['max_gallery' => 3, 'verified_badge' => false, 'leads_receive' => false, 'featured' => false],
+            'features' => ['max_gallery' => 3, 'verified_badge' => false, 'leads_receive' => true, 'featured' => false],
         ],
         [
             'slug' => 'professional', 'name' => 'Professional', 'price_amount' => 50000, 'sort_order' => 1, 'segment' => 'sell',

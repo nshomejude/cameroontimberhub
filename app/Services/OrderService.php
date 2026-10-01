@@ -13,10 +13,12 @@ use App\Models\Quote;
 use App\Models\QuoteItem;
 use App\Models\Receipt;
 use App\Models\User;
+use App\Services\Commission\CommissionCalculator;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
+use Throwable;
 
 /**
  * Order lifecycle state machine, mirroring QuoteService / RfqTriageService.
@@ -31,7 +33,7 @@ class OrderService
         'awarded' => ['confirmed', 'cancelled'],
         'confirmed' => ['in_production', 'shipped', 'cancelled'],
         'in_production' => ['shipped', 'cancelled'],
-        'shipped' => ['delivered', 'cancelled'],
+        'shipped' => ['delivered'],  // once shipped, problems go through a dispute, never a cancel
         'delivered' => ['completed'],
         'completed' => [],
         'cancelled' => [],
@@ -132,7 +134,9 @@ class OrderService
                     'quantity' => $item->quantity,
                     'unit' => $item->unit,
                     'unit_price' => $item->unit_price,
-                    'line_total' => $item->line_total,
+                    // Whole francs for XAF/XOF, cents otherwise — per line,
+                    // so the subtotal is a sum of payable amounts.
+                    'line_total' => Quote::lineTotal($item->quantity, $item->unit_price, $quote->currency),
                 ]);
             }
 
@@ -255,6 +259,29 @@ class OrderService
 
         $order->update($data);
 
+        // PRICING_SPEC §15 (owner decision 2026-10-01): marketplace commission
+        // is charged on EVERY platform order, once, when the supplier
+        // confirms it (awarded -> confirmed) — so an order cancelled before
+        // supplier acceptance is never charged. charge() is idempotent.
+        if ($to === OrderStatus::Confirmed) {
+            $this->chargeCommission($order);
+        }
+
+        // Only pre-shipment states can reach Cancelled (see TRANSITIONS), so
+        // the trade never happened: release any marketplace commission
+        // charged at confirmation, leaving the order's net commission at
+        // zero. The charged snapshot itself stays immutable.
+        if ($to === OrderStatus::Cancelled) {
+            $this->releaseCommission($order);
+        }
+
+        // Every ship path (panel, chat, API, staff) lands here: guarantee the
+        // order has a waybill-bearing Shipment so buyer tracking and carrier
+        // checkpoints have something to attach to. No-op if one exists.
+        if ($to === OrderStatus::Shipped) {
+            app(ShipmentService::class)->ensureForOrder($order);
+        }
+
         $log = activity('order')->performedOn($order)->event('status_changed')
             ->withProperties(['from' => $from->value, 'to' => $to->value, 'reason' => $reason]);
 
@@ -265,6 +292,40 @@ class OrderService
         $log->log("Order status -> {$to->value}");
 
         return $order->refresh();
+    }
+
+    /**
+     * Never allowed to block the confirmation itself: a failure is logged
+     * and rolled back to its own savepoint, and the order stays confirmed
+     * (staff can re-run `CommissionCalculator::charge()` — it is idempotent).
+     */
+    private function chargeCommission(Order $order): void
+    {
+        try {
+            DB::transaction(fn () => app(CommissionCalculator::class)->charge($order));
+        } catch (Throwable $e) {
+            Log::error('Order confirmed but marketplace commission could not be charged.', [
+                'order_id' => $order->getKey(),
+                'exception' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    private function releaseCommission(Order $order): void
+    {
+        if (! $order->is_commission_charged) {
+            return;
+        }
+
+        $remaining = bcsub(
+            (string) ($order->commission_amount ?? '0'),
+            (string) ($order->commission_credited_amount ?? '0'),
+            2,
+        );
+
+        if (bccomp($remaining, '0', 2) > 0) {
+            app(CommissionCalculator::class)->credit($order, $remaining, 'Order cancelled before shipping');
+        }
     }
 
     public function confirm(Order $order, ?User $actor = null): Order

@@ -16,6 +16,11 @@ use Filament\Tables\Table;
  * "set / not set", the environment, the is_live toggle, and who last changed
  * them. Credentials are changed through the two-person + fresh-2FA
  * PaymentCredentialChangeRequest flow, not here.
+ *
+ * The one thing editable here is each provider's processing-fee settings
+ * (fee_percent / fee_fixed / fee_bearer — the table's "Edit fees" action),
+ * which override the env defaults in config/payments.php. See
+ * App\Services\Payments\ProviderFees.
  */
 class PaymentSettingResource extends Resource
 {

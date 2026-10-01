@@ -25,6 +25,7 @@
     // Real unread count (derived from last_read_at), or null when there is
     // nothing to show — never a placeholder badge.
     $unreadMessages = $user ? (app(\App\Services\MessagingService::class)->totalUnread($user) ?: null) : null;
+    $unreadNotifications = $user ? ($user->unreadNotifications()->count() ?: null) : null;
 
     $groups = [
         [
@@ -44,6 +45,9 @@
                 ['label' => __('messages.account.nav_quotes'), 'icon' => 'tag', 'url' => route('account.quotes'), 'active' => request()->routeIs('account.quotes')],
                 ['label' => __('messages.account.nav_orders'), 'icon' => 'clipboard-document-check', 'url' => route('account.orders'), 'active' => request()->routeIs('account.orders')],
                 ['label' => __('messages.account.nav_receipts'), 'icon' => 'receipt-percent', 'url' => route('account.receipts'), 'active' => request()->routeIs('account.receipts')],
+                ['label' => __('messages.account_center.nav_disputes'), 'icon' => 'exclamation-triangle', 'url' => route('account.disputes'), 'active' => request()->routeIs('account.disputes')],
+                ['label' => __('messages.account_center.nav_saved'), 'icon' => 'bookmark', 'url' => route('account.saved'), 'active' => request()->routeIs('account.saved')],
+                ['label' => __('messages.account_center.nav_notifications'), 'icon' => 'bell', 'url' => route('account.notifications'), 'active' => request()->routeIs('account.notifications'), 'badge' => $unreadNotifications],
                 ['label' => __('messages.billing.nav_billing'), 'icon' => 'credit-card', 'url' => route('billing.overview'), 'active' => request()->routeIs('billing.*')],
                 // NB: no "Fleet Registry" here. Fleet vehicles/drivers are a
                 // company-member feature, managed in the /dashboard exporter
@@ -54,6 +58,7 @@
         [
             'label' => __('messages.account.group_support'),
             'items' => [
+                ['label' => __('messages.account_center.nav_settings'), 'icon' => 'cog-6-tooth', 'url' => route('account.settings'), 'active' => request()->routeIs('account.settings')],
                 ['label' => __('messages.account.nav_verify_receipt'), 'icon' => 'shield-check', 'url' => route('receipts.verify'), 'active' => request()->routeIs('receipts.verify')],
                 ['label' => __('messages.account.nav_help_center'), 'icon' => 'question-mark-circle', 'url' => route('contact'), 'active' => request()->routeIs('contact')],
             ],
@@ -217,6 +222,14 @@
                 </form>
 
                 <div class="ml-auto flex shrink-0 items-center gap-3 lg:ml-0">
+                    <a href="{{ route('account.notifications') }}"
+                       class="relative flex h-10 w-10 items-center justify-center rounded-xl text-ink transition hover:bg-sand-100"
+                       aria-label="{{ __('messages.account_center.nav_notifications') }}">
+                        <x-heroicon-o-bell class="h-6 w-6" />
+                        @if ($unreadNotifications)
+                            <span class="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-forest-600 px-1 text-[0.8125rem] font-bold text-white">{{ $unreadNotifications }}</span>
+                        @endif
+                    </a>
                     <div class="hidden text-right lg:block">
                         <p class="text-[1.0625rem] font-semibold leading-tight text-ink">{{ $user?->name }}</p>
                         <p class="text-[0.9375rem] text-ink-soft">{{ __('messages.account.buyer') }}</p>
@@ -227,6 +240,7 @@
         </header>
 
         <main class="flex-1 px-4 pb-28 pt-5 lg:px-6 lg:pb-10 lg:pt-6">
+            @include('partials.verify-email-banner')
             {{ $slot }}
         </main>
 

@@ -2,7 +2,9 @@
 
 namespace App\Notifications;
 
+use App\Filament\Exporter\Resources\Leads\LeadResource;
 use App\Models\Company;
+use App\Models\Lead;
 use App\Models\NotificationPreference;
 use App\Models\Rfq;
 use App\Notifications\Channels\ExpoPushChannel;
@@ -48,11 +50,35 @@ class RfqRoutedToExporter extends Notification implements ShouldQueue
 
     public function toMail(object $notifiable): MailMessage
     {
-        return (new MailMessage)
+        $mail = (new MailMessage)
             ->subject(__('notifications.rfq_routed_to_exporter.subject', ['reference' => $this->rfq->reference_code]))
-            ->line(__('notifications.rfq_routed_to_exporter.line_1'))
-            ->action(__('notifications.rfq_routed_to_exporter.action'), url('/dashboard'))
+            ->line(__('notifications.rfq_routed_to_exporter.line_1'));
+
+        // Pending-verification suppliers receive requests but cannot respond yet.
+        if (! $this->company->canRespondToBuyers()) {
+            $mail->line(__(Company::VERIFICATION_REQUIRED_MESSAGE));
+        }
+
+        return $mail
+            ->action(__('notifications.rfq_routed_to_exporter.action'), $this->leadUrl())
             ->line(__('notifications.rfq_routed_to_exporter.line_2', ['reference' => $this->rfq->reference_code]));
+    }
+
+    /**
+     * Deep link to this RFQ's lead in the exporter panel (the lead is created
+     * by LeadFlowService::createFromRouting() before this fires); falls back
+     * to the leads inbox if it cannot be found.
+     */
+    public function leadUrl(): string
+    {
+        $lead = Lead::where('rfq_id', $this->rfq->getKey())
+            ->where('company_id', $this->company->getKey())
+            ->first();
+
+        // A pending company cannot open the lead yet (LeadResource::canEdit()).
+        return $lead && $this->company->canRespondToBuyers()
+            ? LeadResource::getUrl('edit', ['record' => $lead], panel: 'exporter')
+            : LeadResource::getUrl('index', panel: 'exporter');
     }
 
     /** @return array<string, mixed> */
@@ -64,6 +90,7 @@ class RfqRoutedToExporter extends Notification implements ShouldQueue
             'body' => __('notifications.push.rfq_routed.body'),
             'reference' => $this->rfq->reference_code,
             'screen' => 'rfq',
+            'can_respond' => $this->company->canRespondToBuyers(),
         ];
     }
 }

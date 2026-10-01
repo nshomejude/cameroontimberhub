@@ -64,12 +64,39 @@ class MessageController extends Controller
         ]);
 
         $company = Company::where('slug', $data['company'])->firstOrFail();
+
+        // Same gate as the API's POST /conversations: a company buyers cannot
+        // see (suspended, archived, pending, incomplete) cannot be messaged.
+        if (! $company->canReceiveMessages()) {
+            return back()->withErrors(['company' => __('messages.account_center.company_unavailable')]);
+        }
         $product = isset($data['product']) ? Product::where('slug', $data['product'])->first() : null;
 
         // An order may only be attached when this buyer actually owns it.
         $order = isset($data['order'])
             ? Order::where('user_id', $request->user()->getKey())->whereKey($data['order'])->first()
             : null;
+
+        // Starting a NEW conversation needs a verified email address (spam /
+        // impersonation guard). Re-opening an existing thread does not.
+        if (! $request->user()->hasVerifiedEmail()) {
+            $existing = Conversation::query()
+                ->where('user_id', $request->user()->getKey())
+                ->where('company_id', $company->getKey())
+                ->where('order_id', $order?->getKey())
+                ->where('status', '!=', \App\Enums\ConversationStatus::Closed->value)
+                ->orderByDesc('id')
+                ->first();
+
+            if ($existing === null) {
+                return redirect()->route('verification.notice')->with(
+                    'status',
+                    __('Please verify your email address before messaging suppliers. Check your inbox for the link, or resend it below.'),
+                );
+            }
+
+            return redirect()->route('account.messages.show', $existing);
+        }
 
         $conversation = $this->messaging->start(
             buyer: $request->user(),

@@ -325,7 +325,7 @@ it('accepts a valid contact submission and mails the team', function () {
         ->assertSessionHasNoErrors();
 
     Mail::assertSent(ContactMessageMail::class, function (ContactMessageMail $mail) {
-        return $mail->hasTo(config('mail.from.address'))
+        return $mail->hasTo(config('contact.inbox'))
             && $mail->data['email'] === 'jane@example.com'
             && $mail->data['company'] === 'Nordic Timber Imports'
             && str_contains($mail->data['message'], 'sapele supplier');

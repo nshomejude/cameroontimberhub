@@ -32,6 +32,13 @@ class EnsureApiBuyer
             abort(403, 'This endpoint is for buyer accounts.');
         }
 
+        // Agent service accounts (docs/api/AGENT_INGESTION.md) have no
+        // company but are never buyers. EnforceApiKeyPolicy already blocks
+        // agent tokens outside /api/v1/agent; this is defence in depth.
+        if ($user->hasRole(\App\Support\Agent\AgentPrincipal::ROLE)) {
+            abort(403, 'This endpoint is for buyer accounts.');
+        }
+
         return $next($request);
     }
 }

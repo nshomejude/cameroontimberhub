@@ -16,7 +16,7 @@ function supplierProductApiUser(): array
 {
     $user = User::factory()->create();
     $company = Company::factory()->publiclyVisible()->create();
-    $company->users()->attach($user);
+    $company->users()->attach($user, ['role' => 'owner']);
 
     return [$user, $company];
 }
@@ -156,7 +156,11 @@ it('404s updating another company product', function () {
 
 it('submits a draft product to active', function () {
     [$user, $company] = supplierProductApiUser();
-    $product = Product::factory()->for($company)->create(['status' => 'draft']);
+    $product = Product::factory()->for($company)->create([
+        'status' => 'draft',
+        'description' => 'Kiln-dried Iroko boards, FAS grade, ready for export.',
+        'primary_image_path' => 'products/iroko.jpg',
+    ]);
 
     $this->actingAs($user, 'sanctum')
         ->postJson("/api/v1/supplier/products/{$product->id}/submit")
@@ -219,6 +223,46 @@ it('rejects a non-image file upload', function () {
         ->assertStatus(422);
 
     expect($response->json('error.details'))->toHaveKey('image');
+});
+
+it('lists manageable images and deletes the primary image', function () {
+    Storage::fake('public');
+    [$user, $company] = supplierProductApiUser();
+    Storage::disk('public')->put('products/a.jpg', 'x');
+    $product = Product::factory()->for($company)->create(['primary_image_path' => 'products/a.jpg']);
+
+    $this->actingAs($user, 'sanctum')->getJson("/api/v1/supplier/products/{$product->id}")
+        ->assertOk()->assertJsonPath('data.images.0.id', 'primary');
+
+    $this->actingAs($user, 'sanctum')->deleteJson("/api/v1/supplier/products/{$product->id}/images/primary")
+        ->assertOk()->assertJsonPath('data.images', []);
+
+    expect($product->fresh()->primary_image_path)->toBeNull();
+    Storage::disk('public')->assertMissing('products/a.jpg');
+
+    $this->actingAs($user, 'sanctum')->deleteJson("/api/v1/supplier/products/{$product->id}/images/primary")->assertNotFound();
+});
+
+it('deletes and reorders gallery images of the own product only', function () {
+    Storage::fake('public');
+    [$user, $company] = supplierProductApiUser();
+    $product = Product::factory()->for($company)->create();
+    $a = $product->images()->create(['path' => 'products/g1.jpg', 'sort_order' => 1]);
+    $b = $product->images()->create(['path' => 'products/g2.jpg', 'sort_order' => 2]);
+    $foreign = Product::factory()->create()->images()->create(['path' => 'products/x.jpg']);
+    Storage::disk('public')->put('products/g1.jpg', 'x');
+
+    $this->actingAs($user, 'sanctum')->patchJson("/api/v1/supplier/products/{$product->id}/images/order", ['ids' => [$b->id, 'primary', $a->id]])
+        ->assertOk();
+    expect($b->fresh()->sort_order)->toBe(1)->and($a->fresh()->sort_order)->toBe(2);
+
+    $this->actingAs($user, 'sanctum')->patchJson("/api/v1/supplier/products/{$product->id}/images/order", ['ids' => [$foreign->id]])
+        ->assertUnprocessable();
+    $this->actingAs($user, 'sanctum')->deleteJson("/api/v1/supplier/products/{$product->id}/images/{$foreign->id}")->assertNotFound();
+
+    $this->actingAs($user, 'sanctum')->deleteJson("/api/v1/supplier/products/{$product->id}/images/{$a->id}")->assertOk();
+    expect($a->fresh())->toBeNull()->and($foreign->fresh())->not->toBeNull();
+    Storage::disk('public')->assertMissing('products/g1.jpg');
 });
 
 /* --------------------------------------------------------------- options */

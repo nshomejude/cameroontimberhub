@@ -39,6 +39,12 @@ class TimberLotResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'lot_number';
 
+    /** Same authority as the sibling LotTransformationResource (traceability catalogue). */
+    public static function canViewAny(): bool
+    {
+        return auth()->user()?->can('products.manage') ?? false;
+    }
+
     public static function canCreate(): bool
     {
         return false;

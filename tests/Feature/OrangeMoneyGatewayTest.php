@@ -20,6 +20,79 @@ function fakeOrangeMoneyConfig(): void
     ]);
 }
 
+function fakeOrangeStatus(string $status, ?string $amount = null): void
+{
+    Http::fake([
+        'api.orange.com/oauth/v3/token' => Http::response(['access_token' => 'fake-token'], 200),
+        'api.orange.com/orange-money-webpay/*/transactionstatus' => Http::response(array_filter([
+            'status' => $status,
+            'amount' => $amount,
+        ]), 200),
+    ]);
+}
+
+it('ignores a spoofed SUCCESS body when Orange itself reports the transaction still pending', function () {
+    fakeOrangeMoneyConfig();
+    fakeOrangeStatus('PENDING');
+
+    $payment = Payment::factory()->create([
+        'provider' => PaymentProvider::OrangeMoney,
+        'status' => PaymentStatus::Pending,
+        'provider_reference' => 'pay-token-spoof',
+    ]);
+
+    $this->postJson(route('payments.orange-money.notify'), [
+        'pay_token' => 'pay-token-spoof',
+        'status' => 'SUCCESS',
+    ])->assertOk();
+
+    expect($payment->fresh()->status)->toBe(PaymentStatus::Pending);
+    Http::assertSent(fn ($request) => str_ends_with($request->url(), '/transactionstatus')
+        && $request['pay_token'] === 'pay-token-spoof'
+        && $request['order_id'] === (string) $payment->id);
+});
+
+it('refuses to complete when Orange confirms SUCCESS for a different amount', function () {
+    fakeOrangeMoneyConfig();
+
+    $payment = Payment::factory()->create([
+        'provider' => PaymentProvider::OrangeMoney,
+        'status' => PaymentStatus::Pending,
+        'provider_reference' => 'pay-token-amt',
+        'amount' => 5000,
+    ]);
+
+    fakeOrangeStatus('SUCCESS', '5');
+
+    $this->postJson(route('payments.orange-money.notify'), [
+        'pay_token' => 'pay-token-amt',
+        'status' => 'SUCCESS',
+    ])->assertStatus(409);
+
+    expect($payment->fresh()->status)->toBe(PaymentStatus::Pending);
+});
+
+it('leaves the payment untouched when the status check cannot reach Orange', function () {
+    fakeOrangeMoneyConfig();
+    Http::fake([
+        'api.orange.com/oauth/v3/token' => Http::response(['access_token' => 'fake-token'], 200),
+        'api.orange.com/orange-money-webpay/*/transactionstatus' => Http::response('oops', 500),
+    ]);
+
+    $payment = Payment::factory()->create([
+        'provider' => PaymentProvider::OrangeMoney,
+        'status' => PaymentStatus::Pending,
+        'provider_reference' => 'pay-token-down',
+    ]);
+
+    $this->postJson(route('payments.orange-money.notify'), [
+        'pay_token' => 'pay-token-down',
+        'status' => 'SUCCESS',
+    ])->assertStatus(502);
+
+    expect($payment->fresh()->status)->toBe(PaymentStatus::Pending);
+});
+
 it('is not configured when credentials are missing', function () {
     config([
         'payments.orange_money.client_id' => null,
@@ -135,6 +208,8 @@ it('marks a matching payment completed via the notify webhook on SUCCESS', funct
         'provider_reference' => 'pay-token-xyz',
     ]);
 
+    fakeOrangeStatus('SUCCESS', (string) $payment->amount);
+
     $response = $this->postJson(route('payments.orange-money.notify'), [
         'pay_token' => 'pay-token-xyz',
         'status' => 'SUCCESS',
@@ -154,6 +229,8 @@ it('marks a matching payment failed via the notify webhook on FAILED', function 
         'status' => PaymentStatus::Pending,
         'provider_reference' => 'pay-token-fail',
     ]);
+
+    fakeOrangeStatus('FAILED');
 
     $response = $this->postJson(route('payments.orange-money.notify'), [
         'pay_token' => 'pay-token-fail',

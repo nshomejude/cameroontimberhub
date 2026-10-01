@@ -5,6 +5,8 @@ namespace App\Models;
 use App\Enums\QuoteStatus;
 use App\Enums\RfqCurrency;
 use App\Enums\RfqIncoterm;
+use App\Support\Money;
+use BackedEnum;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -105,6 +107,37 @@ class Quote extends Model
         return $query->whereIn('status', [QuoteStatus::Submitted->value, QuoteStatus::Viewed->value]);
     }
 
+    /**
+     * Preload the chat thread id QuoteResource::conversationIdFor() would
+     * compute (quotation-card message first, else conversations.quote_id;
+     * latest wins) as `resolved_conversation_id`, in the same query — so
+     * listing N quotes costs no extra queries per row.
+     */
+    public function scopeWithConversationId(Builder $query): Builder
+    {
+        if ($query->getQuery()->columns === null) {
+            $query->select($query->getModel()->getTable().'.*');
+        }
+
+        $table = $query->getModel()->getTable();
+
+        $viaCard = Message::query()
+            ->selectRaw('max(conversation_id)')
+            ->where('related_type', $this->getMorphClass())
+            ->whereColumn('related_id', $table.'.id')
+            ->toBase();
+
+        $direct = Conversation::query()
+            ->selectRaw('max(id)')
+            ->whereColumn('quote_id', $table.'.id')
+            ->toBase();
+
+        return $query->selectRaw(
+            'coalesce(('.$viaCard->toSql().'), ('.$direct->toSql().')) as resolved_conversation_id',
+            [...$viaCard->getBindings(), ...$direct->getBindings()],
+        );
+    }
+
     /* ------------------------------------------------------------- helpers */
 
     public function isExpired(): bool
@@ -158,7 +191,7 @@ class Quote extends Model
     public function recalculateTotals(): static
     {
         $subtotal = $this->items->reduce(
-            fn ($carry, QuoteItem $item) => bcadd((string) $carry, self::lineTotal($item->quantity, $item->unit_price), 2),
+            fn ($carry, QuoteItem $item) => bcadd((string) $carry, self::lineTotal($item->quantity, $item->unit_price, $this->currency), 2),
             '0.00',
         );
 
@@ -174,13 +207,29 @@ class Quote extends Model
         return $this;
     }
 
-    /** Quantity x unit price, half-up to 2dp, as a decimal string. */
-    public static function lineTotal(float|string|null $quantity, float|string|null $unitPrice): string
+    /**
+     * Quantity x unit price, rounded half-up PER LINE to the currency's real
+     * precision — whole francs for XAF/XOF, cents otherwise (2.5 m³ × 10,001
+     * XAF = 25,002.5 → "25003.00") — so a subtotal is always a sum of
+     * payable amounts. bcmath throughout; no currency = 2dp (legacy callers).
+     */
+    public static function lineTotal(float|string|null $quantity, float|string|null $unitPrice, BackedEnum|string|null $currency = null): string
     {
-        // bcmul truncates, so round half-up at 2dp via an extra digit of scale.
-        $raw = bcmul(number_format((float) $quantity, 4, '.', ''), number_format((float) $unitPrice, 4, '.', ''), 6);
+        $raw = bcmul(self::decimal($quantity), self::decimal($unitPrice), 8);
 
-        return number_format((float) $raw, 2, '.', '');
+        return Money::forCurrency($raw, $currency);
+    }
+
+    /** A float/string/null amount as a plain decimal string bcmath accepts. */
+    private static function decimal(float|string|null $value): string
+    {
+        if ($value === null || $value === '') {
+            return '0';
+        }
+
+        return is_string($value) && preg_match('/^-?\d+(\.\d+)?$/', $value) === 1
+            ? $value
+            : number_format((float) $value, 6, '.', '');
     }
 
     /** Total quantity across all line items (units may differ — label per row). */

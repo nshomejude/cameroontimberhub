@@ -7,6 +7,8 @@ use App\Models\User;
 use App\Services\InquiryTriageService;
 use Spatie\Activitylog\Models\Activity;
 
+uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
+
 function makeInquiry(array $attributes = []): CompanyInquiry
 {
     return CompanyInquiry::create(array_merge([

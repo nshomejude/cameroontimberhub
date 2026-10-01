@@ -100,7 +100,7 @@ it('rejects an unsigned request for the responses screen', function () {
     [$rfq, $company] = routedQuoteContext();
     submittedQuote($rfq, $company);
 
-    $this->get(route('buyer.rfq.responses', ['rfq' => $rfq->getKey()]))->assertForbidden();
+    $this->get(route('buyer.rfq.responses', ['rfq' => $rfq->getKey()]))->assertNotFound();
 });
 
 it('rejects a tampered signature', function () {
@@ -109,8 +109,8 @@ it('rejects a tampered signature', function () {
 
     $url = access()->responsesUrl($rfq);
 
-    $this->get($url.'x')->assertForbidden();
-    $this->get(str_replace('signature=', 'signature=deadbeef', $url))->assertForbidden();
+    $this->get($url.'x')->assertNotFound();
+    $this->get(str_replace('signature=', 'signature=deadbeef', $url))->assertNotFound();
 });
 
 it('rejects a signed link whose email hash no longer matches', function () {
@@ -122,7 +122,7 @@ it('rejects a signed link whose email hash no longer matches', function () {
     // The buyer changes address: every outstanding link dies with it.
     $rfq->update(['buyer_email' => 'someone-else@example.test']);
 
-    $this->get($url)->assertForbidden();
+    $this->get($url)->assertNotFound();
 });
 
 it('does not let one buyer signed link reach another buyer RFQ', function () {
@@ -135,7 +135,7 @@ it('does not let one buyer signed link reach another buyer RFQ', function () {
 
     // The signature covers the RFQ id, so swapping it invalidates the link...
     $swapped = str_replace('/rfq/'.$mine->getKey().'/', '/rfq/'.$theirs->getKey().'/', $mineUrl);
-    $this->get($swapped)->assertForbidden();
+    $this->get($swapped)->assertNotFound();
 
     // ...and the legitimate link never leaks the other buyer's figures.
     $this->get($mineUrl)->assertOk()->assertDontSee($secret->reference_code);
@@ -183,7 +183,7 @@ it('forbids a signed-in user from opening someone else RFQ', function () {
 
     $this->actingAs($intruder)
         ->get(route('buyer.rfq.responses', ['rfq' => $rfq->getKey()]))
-        ->assertForbidden();
+        ->assertNotFound();
 });
 
 it('binds a new RFQ to a matching account and backfills on registration', function () {
@@ -211,7 +211,15 @@ it('binds a new RFQ to a matching account and backfills on registration', functi
         'terms' => '1',
     ]);
 
-    expect($guest->fresh()->user_id)->toBe(User::where('email', 'later@acme.test')->value('id'));
+    // Not adopted until the address is proven (RFQ-takeover guard)...
+    expect($guest->fresh()->user_id)->toBeNull();
+
+    $later = User::where('email', 'later@acme.test')->firstOrFail();
+    $later->markEmailAsVerified();
+    event(new \Illuminate\Auth\Events\Verified($later));
+
+    // ...then it is.
+    expect($guest->fresh()->user_id)->toBe($later->getKey());
 });
 
 /* ---------------------------------------------------- security: supplier side */
@@ -536,7 +544,7 @@ it('refuses an unsigned accept POST', function () {
     $quote = submittedQuote($rfq, $company);
 
     $this->post(route('buyer.rfq.quote.accept', ['rfq' => $rfq->getKey(), 'quote' => $quote->getKey()]), ['confirm' => '1'])
-        ->assertForbidden();
+        ->assertNotFound();
 
     expect($quote->fresh()->status)->toBe(QuoteStatus::Submitted);
 });

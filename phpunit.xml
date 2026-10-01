@@ -25,6 +25,10 @@
         <env name="CACHE_STORE" value="array"/>
         <env name="DB_CONNECTION" value="pgsql"/>
         <env name="DB_DATABASE" value="cameroontimberhub_testing"/>
+        <!-- ~35 admin-panel tests sign staff in without 2FA; staff-2FA
+             enforcement (EnsureStaffTwoFactor) is switched on explicitly in
+             StaffTwoFactorEnforcementTest and AuthTest. Default in prod: on. -->
+        <env name="STAFF_REQUIRE_2FA" value="false"/>
         <env name="DB_URL" value=""/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>

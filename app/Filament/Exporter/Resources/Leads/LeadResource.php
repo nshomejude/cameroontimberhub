@@ -16,15 +16,14 @@ use Illuminate\Database\Eloquent\Builder;
 
 class LeadResource extends Resource
 {
-
     public static function getNavigationLabel(): string
     {
         return __('messages.filament.xnav.leads');
     }
+
     protected static ?string $model = Lead::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedInboxArrowDown;
-
 
     protected static ?int $navigationSort = 3;
 
@@ -38,9 +37,14 @@ class LeadResource extends Resource
         return false;
     }
 
+    /**
+     * Opening a lead shows buyer contact and changes its status — both locked
+     * while the lead's company is pending verification (Company::canRespondToBuyers()).
+     */
     public static function canEdit($record): bool
     {
-        return (bool) auth()->user()?->companies()->exists();
+        return (bool) auth()->user()?->companies()->exists()
+            && (bool) $record->company?->canRespondToBuyers();
     }
 
     public static function canDelete($record): bool

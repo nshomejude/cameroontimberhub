@@ -5,6 +5,8 @@ use App\Models\User;
 use App\Policies\CompanyInquiryPolicy;
 use Database\Seeders\RolesAndPermissionsSeeder;
 
+uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
+
 beforeEach(function () {
     $this->seed(RolesAndPermissionsSeeder::class);
 });

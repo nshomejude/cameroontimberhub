@@ -148,7 +148,12 @@
                                 <tr>
                                     <td class="px-4 py-2.5 {{ $muted }}">{{ ($payment->paid_at ?? $payment->created_at)?->toFormattedDateString() }}</td>
                                     <td class="px-4 py-2.5 text-forest-900 dark:text-sand-100">{{ $payment->provider?->label() ?? '—' }}</td>
-                                    <td class="px-4 py-2.5 {{ $muted }}">{{ number_format((float) $payment->amount) }} {{ $payment->currency }}</td>
+                                    <td class="px-4 py-2.5 {{ $muted }}">
+                                        {{ \App\Services\Payments\ProviderFeeCalculator::format($payment->amount, $payment->currency) }}
+                                        @if ($payment->providerFeePassedThrough())
+                                            <span class="block text-[0.75rem]">{{ __('messages.billing.provider_fee_line', ['provider' => $payment->provider->label()]) }}: {{ \App\Services\Payments\ProviderFeeCalculator::format($payment->provider_fee_amount, $payment->currency) }}</span>
+                                        @endif
+                                    </td>
                                     <td class="px-4 py-2.5 {{ $muted }}">{{ $payment->status->label() }}</td>
                                 </tr>
                             @endforeach

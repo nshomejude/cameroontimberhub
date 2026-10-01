@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Services\Commission\CommissionCalculator;
+use App\Enums\TradeAssuranceMilestoneStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -16,28 +16,16 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * money moves through this model or its milestones; real fund custody would
  * require a licensed financial partner and is out of scope for Phase 1.
  *
- * This is also, per billing engine M7 (plan §15), the moment an order becomes
- * a "protected trade" — the presence of a live agreement IS the protected-
- * trade flag `CommissionCalculator` gates on. Creating one is therefore the
- * point marketplace commission gets recorded on the order (`charge()` is
- * idempotent, so a re-created agreement never double-charges).
+ * Not tied to marketplace commission: per the 2026-10-01 owner decision
+ * commission is charged on every platform order when the supplier confirms
+ * it (`OrderService::transition()` → `CommissionCalculator::charge()`),
+ * whether or not an agreement exists.
  */
 class TradeAssuranceAgreement extends Model
 {
     use HasFactory;
 
     protected $guarded = ['id'];
-
-    protected static function booted(): void
-    {
-        static::created(function (self $agreement): void {
-            $order = $agreement->order;
-
-            if ($order) {
-                app(CommissionCalculator::class)->charge($order);
-            }
-        });
-    }
 
     /* --------------------------------------------------------- relations */
 
@@ -62,11 +50,17 @@ class TradeAssuranceAgreement extends Model
      * Seeds the default milestone set for a freshly-awarded order:
      * Order Confirmed, Goods Dispatched, Goods Delivered, Buyer Confirmation.
      *
-     * Idempotent-ish in intent but not enforced here -- callers (e.g. the
-     * order creation flow) are responsible for calling this once per order.
+     * Idempotent: an order has at most one agreement (unique index on
+     * `order_id`), so a second call returns the existing agreement untouched.
      */
     public static function createDefaultMilestones(Order $order, ?User $createdBy = null): self
     {
+        $existing = self::query()->where('order_id', $order->getKey())->first();
+
+        if ($existing) {
+            return $existing;
+        }
+
         $agreement = self::create([
             'order_id' => $order->getKey(),
             'created_by' => $createdBy?->getKey(),
@@ -83,7 +77,7 @@ class TradeAssuranceAgreement extends Model
             $agreement->milestones()->create([
                 'title' => $milestone['title'],
                 'sequence' => $milestone['sequence'],
-                'status' => \App\Enums\TradeAssuranceMilestoneStatus::Pending->value,
+                'status' => TradeAssuranceMilestoneStatus::Pending->value,
             ]);
         }
 

@@ -65,6 +65,40 @@ enum OrganisationType: string
         return collect(self::cases())->mapWithKeys(fn (self $c) => [$c->value => $c->label()])->all();
     }
 
+    /**
+     * Organisation types that can act as a provider on the Transformation
+     * Network (receive transformation requests). Single source of truth for
+     * the service, the API/public directories and the exporter panel.
+     *
+     * @return list<self>
+     */
+    public static function transformationProviders(): array
+    {
+        return [self::Processor, self::Manufacturer, self::Artisan];
+    }
+
+    /** @return list<string> */
+    public static function transformationProviderValues(): array
+    {
+        return array_map(fn (self $c) => $c->value, self::transformationProviders());
+    }
+
+    public function isTransformationProvider(): bool
+    {
+        return in_array($this, self::transformationProviders(), true);
+    }
+
+    /**
+     * Whether a company of this type keeps a timber catalogue (Products,
+     * CompanySpecies) in the exporter panel. Logistics companies and carbon
+     * developers don't sell timber, so those screens are hidden for them.
+     * Panel-only: the supplier products API is intentionally unchanged.
+     */
+    public function hasTimberCatalogue(): bool
+    {
+        return ! in_array($this, [self::Logistics, self::CarbonDeveloper], true);
+    }
+
     /** @return list<string> */
     public static function values(): array
     {

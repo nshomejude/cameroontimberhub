@@ -4,10 +4,13 @@ namespace App\Models;
 
 use App\Enums\DisputeCategory;
 use App\Enums\DisputeStatus;
+use App\Services\Commission\CommissionCalculator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
 /**
@@ -82,6 +85,21 @@ class Dispute extends Model
     public function messages(): HasMany
     {
         return $this->hasMany(DisputeMessage::class)->orderBy('id');
+    }
+
+    /* ------------------------------------------------------------ scopes */
+
+    /**
+     * Every dispute on any order the buyer placed, newest first, with what a
+     * list row needs. Shared by `GET /api/v1/disputes` and `/account/disputes`
+     * so both surfaces show exactly the same rows.
+     */
+    public function scopeForBuyer(Builder $query, User $buyer): Builder
+    {
+        return $query
+            ->whereHas('order', fn (Builder $q) => $q->where('user_id', $buyer->getKey()))
+            ->with(['order:id,reference_code,user_id', 'raisedByUser', 'raisedByCompany', 'respondentCompany'])
+            ->orderByDesc('id');
     }
 
     /* ------------------------------------------------------------- party */
@@ -177,11 +195,55 @@ class Dispute extends Model
         $this->update(['status' => DisputeStatus::UnderReview]);
     }
 
-    /** Admin-only: record the decision. Only valid once the case is under review. */
-    public function resolve(User $admin, string $notes): void
+    /**
+     * Statuses an admin may decide from. Admins are not bound to the parties'
+     * evidence/response ping-pong — a stalled case (one side never answers)
+     * must still be decidable. An Appealed case is first moved back to
+     * review ({@see moveToReview()}) so the re-review is explicit.
+     *
+     * @var list<DisputeStatus>
+     */
+    public const RESOLVABLE_STATUSES = [
+        DisputeStatus::Opened,
+        DisputeStatus::EvidencePending,
+        DisputeStatus::CounterpartyResponsePending,
+        DisputeStatus::UnderReview,
+    ];
+
+    /** @var list<DisputeStatus> Statuses an admin may (re-)open review from. */
+    public const REVIEWABLE_STATUSES = [
+        DisputeStatus::Opened,
+        DisputeStatus::EvidencePending,
+        DisputeStatus::CounterpartyResponsePending,
+        DisputeStatus::Appealed,
+    ];
+
+    /**
+     * Admin-only: take the case into review — either to stop waiting on a
+     * party, or to re-review an appealed decision.
+     */
+    public function moveToReview(User $admin): void
     {
-        if ($this->status !== DisputeStatus::UnderReview) {
-            throw new RuntimeException('A dispute can only be resolved once it is under review.');
+        if (! in_array($this->status, self::REVIEWABLE_STATUSES, true)) {
+            throw new RuntimeException('This dispute cannot be moved to review from its current status.');
+        }
+
+        $this->update(['status' => DisputeStatus::UnderReview]);
+    }
+
+    /**
+     * Admin-only: record the decision. Valid from any open (pre-decision) status.
+     *
+     * $commissionCredit (order currency, optional): part or all of the
+     * marketplace commission charged on the order to credit back as part of
+     * this decision (PRICING_SPEC §15 — the credit is recorded on the order
+     * and in the `commission_credit` activity log, citing this dispute).
+     * Over-crediting throws and leaves the dispute unresolved.
+     */
+    public function resolve(User $admin, string $notes, float|string|null $commissionCredit = null): void
+    {
+        if (! in_array($this->status, self::RESOLVABLE_STATUSES, true)) {
+            throw new RuntimeException('This dispute cannot be resolved from its current status.');
         }
 
         $notes = trim($notes);
@@ -190,12 +252,25 @@ class Dispute extends Model
             throw new RuntimeException('Resolution notes are required.');
         }
 
-        $this->update([
-            'status' => DisputeStatus::Resolved,
-            'resolution_notes' => $notes,
-            'resolved_by' => $admin->getKey(),
-            'resolved_at' => now(),
-        ]);
+        $credit = $commissionCredit === null || $commissionCredit === '' ? null : (string) $commissionCredit;
+
+        DB::transaction(function () use ($admin, $notes, $credit): void {
+            // Credit first: an over-credit throws before the dispute changes.
+            if ($credit !== null && bccomp($credit, '0', 2) !== 0) {
+                app(CommissionCalculator::class)->credit(
+                    $this->order()->firstOrFail(),
+                    $credit,
+                    "Dispute #{$this->getKey()} resolution",
+                );
+            }
+
+            $this->update([
+                'status' => DisputeStatus::Resolved,
+                'resolution_notes' => $notes,
+                'resolved_by' => $admin->getKey(),
+                'resolved_at' => now(),
+            ]);
+        });
     }
 
     /** Either party may appeal a resolved decision. */

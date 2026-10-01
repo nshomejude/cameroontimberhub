@@ -110,9 +110,9 @@ class QuoteCounterOffer extends Model
             .' '.($this->unit?->label() ?? '');
     }
 
-    /** Quantity x unit price, half-up at 2dp — never a posted total. */
-    public static function total(float|string|null $quantity, float|string|null $unitPrice): string
+    /** Quantity x unit price, half-up to the currency's precision (whole francs for XAF) — never a posted total. */
+    public static function total(float|string|null $quantity, float|string|null $unitPrice, \BackedEnum|string|null $currency = null): string
     {
-        return Quote::lineTotal($quantity ?: 1, $unitPrice);
+        return Quote::lineTotal($quantity ?: 1, $unitPrice, $currency);
     }
 }

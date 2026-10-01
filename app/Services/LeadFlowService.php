@@ -7,6 +7,9 @@ use App\Enums\RfqCompanyStatus;
 use App\Models\CompanyInquiry;
 use App\Models\Lead;
 use App\Models\RfqCompany;
+use App\Notifications\LeadReceivedNotification;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
 
 /**
  * Creates and advances leads (the exporter inbox), and the per-exporter RFQ
@@ -30,9 +33,15 @@ class LeadFlowService
         ]);
     }
 
+    /**
+     * A newly created inquiry lead notifies the company's users (mail +
+     * database) — on ANY plan; see LeadReceivedNotification for why
+     * `leads_receive` does not gate a buyer-chosen inquiry. A delivery
+     * failure is logged, never surfaced to the buyer confirming their email.
+     */
     public function createFromInquiry(CompanyInquiry $inquiry): Lead
     {
-        return Lead::firstOrCreate(['company_inquiry_id' => $inquiry->getKey()], [
+        $lead = Lead::firstOrCreate(['company_inquiry_id' => $inquiry->getKey()], [
             'company_id' => $inquiry->company_id,
             'source' => 'inquiry',
             'status' => LeadStatus::New,
@@ -40,6 +49,23 @@ class LeadFlowService
             'buyer_email' => $inquiry->email,
             'last_activity_at' => now(),
         ]);
+
+        if ($lead->wasRecentlyCreated) {
+            try {
+                $users = $lead->company?->users ?? collect();
+                if ($users->isNotEmpty()) {
+                    Notification::send($users, new LeadReceivedNotification($lead));
+                }
+            } catch (\Throwable $e) {
+                Log::channel('errors')->error('Lead received notification failed', [
+                    'lead_id' => $lead->getKey(),
+                    'exception' => $e::class,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return $lead;
     }
 
     public function setLeadStatus(Lead $lead, LeadStatus $to): Lead
