@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\V1\Agent;
 
+use App\Enums\CompanyStatus;
 use App\Exceptions\Api\ApiException;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Api\V1\Agent\AgentSupplierResource;
@@ -71,7 +72,7 @@ class AgentSupplierController extends Controller
     /** Ingestion status of a supplier by id. */
     public function show(Request $request, int $supplier): AgentSupplierResource
     {
-        return new AgentSupplierResource($this->findAgentCompany($supplier));
+        return new AgentSupplierResource($this->findAgentCompany($supplier, AgentContext::fromRequest($request)));
     }
 
     /** Look up a supplier this agent ingested by `?external_id=`. */
@@ -94,10 +95,16 @@ class AgentSupplierController extends Controller
     /** Upload the supplier logo (multipart `image`, jpg/png/webp, max 5 MB). Remote URLs are never fetched. */
     public function logo(Request $request, int $supplier): JsonResponse
     {
-        $company = $this->findAgentCompany($supplier);
+        $company = $this->findAgentCompany($supplier, AgentContext::fromRequest($request));
 
         if ($blocked = $this->ingestion->companyProductBlock($company)) {
             throw new ApiException($blocked['status'], $blocked['code'], $blocked['message'], ['existing_id' => $blocked['existing_id']]);
+        }
+
+        // The logo is live profile content: frozen once staff take the
+        // supplier out of draft (same rule as profile updates).
+        if ($company->status !== CompanyStatus::Draft) {
+            throw new ApiException(409, 'supplier_locked', 'This supplier is in staff review or verified; its logo can no longer be changed by an agent.', ['existing_id' => $company->getKey()]);
         }
 
         $request->validate(['image' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120']]);
@@ -167,9 +174,10 @@ class AgentSupplierController extends Controller
         return $row;
     }
 
-    private function findAgentCompany(int $id): Company
+    /** Only suppliers ingested by the calling agent's own source are visible. */
+    private function findAgentCompany(int $id, AgentContext $ctx): Company
     {
-        $company = Company::query()->whereKey($id)->first();
+        $company = Company::query()->whereKey($id)->where('source', $ctx->source)->first();
 
         if ($company === null || ! AgentPrincipal::isAgentSource($company->source)) {
             throw new ApiException(404, 'not_found', 'No agent-sourced supplier with that id.');

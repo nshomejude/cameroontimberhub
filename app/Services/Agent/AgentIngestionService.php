@@ -54,6 +54,17 @@ class AgentIngestionService
         'company_id', 'is_best_seller', 'rating',
     ];
 
+    /**
+     * Organisation types an agent may set. Carbon types are excluded: carbon
+     * developers are onboarded by humans only (feature-flagged module).
+     *
+     * @return list<string>
+     */
+    public static function agentOrganisationTypeValues(): array
+    {
+        return array_values(array_diff(OrganisationType::values(), [OrganisationType::CarbonDeveloper->value]));
+    }
+
     /** @return array<string, mixed> */
     public function supplierRules(): array
     {
@@ -64,7 +75,7 @@ class AgentIngestionService
             'trade_name' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:10000'],
             'supplier_type' => ['nullable', Rule::in(SupplierType::values())],
-            'type' => ['nullable', Rule::in(OrganisationType::values())],
+            'type' => ['nullable', Rule::in(self::agentOrganisationTypeValues())],
             'email' => ['nullable', 'email', 'max:255'],
             'phone' => ['nullable', 'string', 'max:32'],
             'website_url' => ['nullable', 'url', 'max:255'],
@@ -143,12 +154,10 @@ class AgentIngestionService
         }
 
         if ($duplicate = $this->findDuplicate($data)) {
-            if ($this->companyWriteBlock($duplicate) !== null) {
-                return [
-                    'result' => 'rejected', 'status' => 409, 'code' => 'supplier_owned',
-                    'message' => 'A matching supplier already exists and is managed by its owner or staff; agents may not modify it.',
-                    'existing_id' => $duplicate->getKey(),
-                ];
+            // Report the real reason: owned/claimed (supplier_owned), in review
+            // or verified (supplier_locked), or rejected/archived (supplier_closed).
+            if ($blocked = $this->companyWriteBlock($duplicate)) {
+                return $blocked;
             }
 
             return [

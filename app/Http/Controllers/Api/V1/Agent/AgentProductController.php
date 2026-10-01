@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\V1\Agent;
 
+use App\Enums\ProductStatus;
 use App\Exceptions\Api\ApiException;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Api\V1\Agent\AgentProductResource;
@@ -55,7 +56,8 @@ class AgentProductController extends Controller
     /** Upload a product's primary image (multipart `image`, jpg/png/webp, max 5 MB). Remote URLs are never fetched. */
     public function image(Request $request, int $product): JsonResponse
     {
-        $record = Product::query()->whereKey($product)->first();
+        $ctx = AgentContext::fromRequest($request);
+        $record = Product::query()->whereKey($product)->where('source', $ctx->source)->first();
 
         if ($record === null || ! AgentPrincipal::isAgentSource($record->source)) {
             throw new ApiException(404, 'not_found', 'No agent-sourced product with that id.');
@@ -65,12 +67,16 @@ class AgentProductController extends Controller
             throw new ApiException($blocked['status'], $blocked['code'], $blocked['message'], ['existing_id' => $blocked['existing_id']]);
         }
 
+        if ($record->status === ProductStatus::Active) {
+            throw new ApiException(409, 'product_locked', 'This product has been published by staff and can no longer be changed by an agent.', ['existing_id' => $record->getKey()]);
+        }
+
         $request->validate(['image' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120']]);
 
         $path = $request->file('image')->store('products', 'public');
         $record->forceFill(['primary_image_path' => $path, 'needs_review' => true])->save();
 
-        $this->ingestion->logUpload($record, AgentContext::fromRequest($request), $path);
+        $this->ingestion->logUpload($record, $ctx, $path);
 
         return response()->json(['result' => 'updated', 'data' => new AgentProductResource($record->refresh())], 201);
     }

@@ -250,7 +250,7 @@ Route::prefix('v1')->name('api.v1.')->middleware([AssignRequestId::class, 'throt
                 ->middleware('throttle:api-decision')->name('reply');
         });
 
-        Route::prefix('staff/support/tickets')->name('staff.support.tickets.')->group(function (): void {
+        Route::prefix('staff/support/tickets')->name('staff.support.tickets.')->middleware('api.staff.2fa')->group(function (): void {
             Route::get('/', [StaffSupportTicketController::class, 'index'])->name('index');
             Route::get('{reference}', [StaffSupportTicketController::class, 'show'])->name('show');
             Route::post('{reference}/reply', [StaffSupportTicketController::class, 'reply'])

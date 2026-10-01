@@ -14,7 +14,7 @@ Agent data is never shown publicly until a human approves it.
 | Guarantee | How |
 |---|---|
 | Agents never publish anything | Companies are created `status=draft`, `needs_review=true`. Products are always `status=draft`, `needs_review=true`. `status`, `verified_at`, `is_featured`, `plan_id` and similar fields are **prohibited** (422). |
-| Hidden until verified | `Company::publiclyVisible()` needs `status=verified` and an active verification badge. Only staff can set those. |
+| Hidden until verified | `Company::publiclyVisible()` needs `status=verified` and an active verification badge. Agents can never set either. Staff verify the company (Admin › Companies › Manage › Approve) and, because an unclaimed agent company has no owner to upload documents, issue its badge with **Issue badge (desk-verified)** (permission `verification.review`, written reason required). See §5. |
 | Agents cannot touch human data | Agents can only update or add products to companies whose `source` is `agent:*` and that have **no owner users** (unclaimed). Anything else returns 409 `supplier_owned`. |
 | Agent keys cannot act as users | Agent keys belong to a service-account user with role `agent`, no company, and no admin or exporter panel access. Outside `/api/v1/agent/*` they get 403 `agent_scope_violation`. |
 | Revocation works | Every API request checks `api_key_metas.revoked_at` and returns 401 `token_revoked`. This applies to **all** keys, including company keys. |
@@ -135,6 +135,9 @@ curl -s -X POST https://www.cameroontimberhub.com/api/v1/agent/suppliers \
 - `species` accepts ids or slugs. Unknown values return 422.
 - `contacts` are stored **non-public**. Staff decide what is shown.
 - `export_markets` are ISO-3166 alpha-2 codes.
+- `type` accepts every `organisation_types` value from `/reference`
+  **except** `carbon_developer` (422): carbon developers are onboarded by
+  humans only.
 - Provenance fields: `source_url`, `image_url`, `evidence` (any JSON),
   `confidence` (0–1) and `notes`. These go into `ingestion_meta`.
 
@@ -146,7 +149,7 @@ curl -s -X POST https://www.cameroontimberhub.com/api/v1/agent/suppliers \
 | 200 | `updated` | Same `external_id` from your source. Profile fields are overwritten, contacts, export markets and species are replaced, and `needs_review` is set again. |
 | 200 | `duplicate` | Matches an existing **agent-sourced, unclaimed** supplier, possibly from another agent. Nothing is created. Use `existing_id` to attach products. |
 | 409 | `supplier_owned` | Matches a human-owned or claimed company. Nothing is written. `error.details.existing_id` is set. |
-| 409 | `supplier_locked` | Your supplier has been approved and is in review or verified. Its profile can no longer be changed by agents, but products can still be added as drafts. |
+| 409 | `supplier_locked` | The supplier (yours, or a duplicate match) has been approved and is in review or verified. Its profile **and logo** can no longer be changed by agents, but products can still be added as drafts. |
 | 409 | `supplier_closed` | Staff rejected or archived it. |
 | 422 | `validation_failed` | See `error.details`. This includes prohibited fields such as `status`. |
 
@@ -223,6 +226,15 @@ Images must be jpg, png or webp and at most 5 MB. The server **never
 downloads URLs**. Fetch the image yourself and upload the bytes. You can
 send `image_url` in the JSON payload as provenance only.
 
+Uploads are refused once the content is live or under review:
+
+- `POST /suppliers/{id}/logo` returns 409 `supplier_locked` when the
+  supplier is no longer `draft` (staff approved the listing).
+- `POST /products/{id}/image` returns 409 `product_locked` when staff have
+  published the product (`status=active`).
+- Both return 404 `not_found` for suppliers or products ingested by a
+  **different** agent source. `GET /suppliers/{id}` is scoped the same way.
+
 ### 3.6 Status
 
 ```bash
@@ -259,7 +271,7 @@ agent POST ──► draft + needs_review (hidden)
                  │  Admin › Companies › filter "Agent submissions: awaiting review"
                  ├─ "Approve listing" ─► needs_review=false, enters the normal
                  │                       verification flow (draft → pending + VerificationRequest)
-                 │      └─ staff verify (existing flow: documents, badge) ─► verified
+                 │      └─ staff "Approve" ─► verified, then "Issue badge (desk-verified)"
                  │             └─ "Publish products" ─► agent draft products → active
                  │                (refused while the company is not verified)
                  ├─ "Reject submission" ─► company archived, its agent products archived
@@ -269,6 +281,31 @@ agent POST ──► draft + needs_review (hidden)
 A company appears publicly only when `Company::publiclyVisible()` is true.
 That requires verified status, a logo, a description, a region, species,
 contacts and an active badge.
+
+**Staff runbook: taking an unclaimed agent company live** (Admin ›
+Companies, filter "Agent submissions: awaiting review", row menu **Manage**):
+
+1. Check the profile (Edit). Make sure it has a logo, description, region,
+   at least one species and one contact — agents cannot change it after
+   step 2.
+2. **Approve listing** (`agent-submissions.moderate` or `companies.manage`).
+   Clears `needs_review` and moves the company `draft → pending`. From now on
+   agents get `supplier_locked` for the profile and logo.
+3. Verify the company out-of-band (registry lookup, phone call, site visit).
+4. **Approve** (`companies.manage`): `pending → verified`.
+5. **Issue badge (desk-verified)** (`verification.review`). Pick the badge
+   (default *Verified Company*) and write how the company was verified. The
+   normal document-backed badge path is impossible here because nobody can
+   upload documents for an unclaimed company. The badge is stored with
+   `issued_manually=true` and `manual_reason`, is logged as
+   `badge_issued_manually` (log `compliance`, properties
+   `source=desk_verified`, `reason`) and expires after 12 months.
+6. **Publish products**: every agent draft product → `active` (refused
+   while the company is not verified). Agents then get `product_locked` for
+   those products.
+7. Confirm with `GET /api/v1/agent/suppliers/{id}` (or the Badge column)
+   that `publicly_visible` is now `true`; the profile page lists any
+   remaining gap.
 
 **Claiming.** A real supplier who finds their agent-created profile contacts
 support. Staff run **Attach owner (claim)** with the supplier's account

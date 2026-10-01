@@ -5,11 +5,13 @@ namespace App\Filament\Resources\Companies\Tables;
 use App\Actions\Agent\ModerateAgentSubmission;
 use App\Actions\Company\RequestCompanySuspension;
 use App\Domain\Commerce\Commands\AssignSubscriptionCommand;
+use App\Enums\BadgeType;
 use App\Enums\CompanyStatus;
 use App\Enums\SupplierType;
 use App\Models\Company;
 use App\Models\CompanySuspensionRequest;
 use App\Models\Plan;
+use App\Services\BadgeService;
 use App\Services\CompanyStatusService;
 use App\Support\Bus\CommandBus;
 use Filament\Actions\Action;
@@ -153,6 +155,25 @@ class CompaniesTable
 
         return [
             ...static::agentModerationActions(),
+
+            // Desk verification — the only badge path for companies that cannot
+            // upload documents (unclaimed agent-sourced listings).
+            Action::make('issueDeskBadge')->label('Issue badge (desk-verified)')
+                ->icon('heroicon-o-shield-check')->color('success')
+                ->modalDescription('Issues a badge without approved documents. Only use after verifying the company out-of-band; the reason is recorded in the audit log. Expires in 12 months.')
+                ->visible(fn (Company $r): bool => (bool) auth()->user()?->can('verification.review')
+                    && ! in_array($r->status, [CompanyStatus::Archived, CompanyStatus::Rejected, CompanyStatus::Suspended], true))
+                ->schema([
+                    Select::make('badge_type')->label('Badge')->required()
+                        ->default(BadgeType::VerifiedCompany->value)
+                        ->options(collect(BadgeType::options())->except(BadgeType::PremiumMember->value)->all()),
+                    Textarea::make('reason')->label('How was this company verified?')->required()->minLength(10)->maxLength(1000),
+                ])
+                ->action(function (Company $record, array $data) use ($notify): void {
+                    abort_unless((bool) auth()->user()?->can('verification.review'), 403);
+                    app(BadgeService::class)->issueManually($record, BadgeType::from($data['badge_type']), auth()->user(), $data['reason']);
+                    $notify('Badge issued (desk-verified)');
+                }),
 
             Action::make('approve')
                 ->icon('heroicon-o-check-circle')->color('success')->requiresConfirmation()

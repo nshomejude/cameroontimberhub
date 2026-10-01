@@ -121,17 +121,38 @@ it('carries a dispute through its full lifecycle to closed', function () {
         ->and($dispute->closed_at)->not->toBeNull();
 });
 
-it('rejects resolving a dispute before it has reached review', function () {
+it('lets an admin resolve a stalled dispute straight from opened, but not a closed one', function () {
     [$order, $buyer] = buildDisputeOrderContext();
     $admin = User::factory()->create();
 
     $dispute = app(DisputeService::class)->open($order, $buyer, DisputeCategory::Delay, 'Shipment is three weeks late.');
 
-    expect(fn () => $dispute->resolve($admin, 'Too early to resolve.'))
-        ->toThrow(RuntimeException::class);
+    $dispute->resolve($admin, 'Supplier never responded; refund ordered.');
+    expect($dispute->refresh()->status)->toBe(DisputeStatus::Resolved);
 
-    $dispute->refresh();
-    expect($dispute->status)->toBe(DisputeStatus::Opened);
+    $dispute->close($admin);
+    expect(fn () => $dispute->resolve($admin, 'Again.'))->toThrow(RuntimeException::class);
+    expect($dispute->refresh()->status)->toBe(DisputeStatus::Closed);
+});
+
+it('requires an appealed dispute to be moved back to review before re-deciding', function () {
+    [$order, $buyer] = buildDisputeOrderContext();
+    $admin = User::factory()->create();
+
+    $dispute = app(DisputeService::class)->open($order, $buyer, DisputeCategory::Delay, 'Late.');
+    $dispute->moveToReview($admin);
+    expect($dispute->refresh()->status)->toBe(DisputeStatus::UnderReview);
+    $dispute->resolve($admin, 'First decision.');
+    $dispute->appeal($buyer);
+
+    expect(fn () => $dispute->resolve($admin, 'Skip review.'))->toThrow(RuntimeException::class);
+
+    $dispute->moveToReview($admin);
+    $dispute->resolve($admin, 'Appeal decision.');
+    expect($dispute->refresh()->status)->toBe(DisputeStatus::Resolved)
+        ->and($dispute->resolution_notes)->toBe('Appeal decision.');
+
+    expect(fn () => $dispute->moveToReview($admin))->toThrow(RuntimeException::class);
 });
 
 it('rejects closing a dispute that has not been resolved', function () {
@@ -189,4 +210,82 @@ it('lets the buyer open a dispute via the HTTP endpoint', function () {
 
     $response->assertRedirect();
     expect(Dispute::where('order_id', $order->id)->where('raised_by_user_id', $buyer->id)->exists())->toBeTrue();
+});
+
+/* ------------------------------------------- notifications & admin desk */
+
+it('notifies the supplier members and the dispute desk when a dispute is opened on the web', function () {
+    \Illuminate\Support\Facades\Notification::fake();
+    [$order, $buyer, $supplierCompany] = buildDisputeOrderContext();
+    $supplierUser = attachDisputeSupplierUser($supplierCompany);
+    $desk = User::factory()->create();
+    $desk->assignRole('admin');
+    $outsider = User::factory()->create();
+
+    $this->actingAs($buyer)->post(route('disputes.store', $order), [
+        'category' => DisputeCategory::Quality->value, 'description' => 'Wrong grade delivered.',
+    ])->assertRedirect();
+
+    \Illuminate\Support\Facades\Notification::assertSentTo($supplierUser, \App\Notifications\DisputeOpenedNotification::class);
+    \Illuminate\Support\Facades\Notification::assertNotSentTo($buyer, \App\Notifications\DisputeOpenedNotification::class);
+    \Illuminate\Support\Facades\Notification::assertSentTo($desk, \App\Notifications\DisputeOpenedStaffNotification::class,
+        fn ($n, $channels) => in_array('mail', $channels, true) && in_array('database', $channels, true));
+    \Illuminate\Support\Facades\Notification::assertNotSentTo($outsider, \App\Notifications\DisputeOpenedStaffNotification::class);
+});
+
+it('notifies the other party when a web reply is posted', function () {
+    \Illuminate\Support\Facades\Notification::fake();
+    [$order, $buyer, $supplierCompany] = buildDisputeOrderContext();
+    $supplierUser = attachDisputeSupplierUser($supplierCompany);
+    $service = app(DisputeService::class);
+    $dispute = $service->open($order, $buyer, DisputeCategory::Quality, 'Wrong grade.');
+    $service->submitEvidence($dispute, $buyer, 'Photos.');
+
+    $this->actingAs($supplierUser)->post(route('disputes.reply', [$order, $dispute]), ['body' => 'We disagree.'])->assertRedirect();
+
+    \Illuminate\Support\Facades\Notification::assertSentTo($buyer, \App\Notifications\DisputeReplyNotification::class);
+    \Illuminate\Support\Facades\Notification::assertNotSentTo($supplierUser, \App\Notifications\DisputeReplyNotification::class);
+});
+
+it('lets the admin desk move, resolve and close disputes and notifies both parties', function () {
+    \Illuminate\Support\Facades\Notification::fake();
+    [$order, $buyer, $supplierCompany] = buildDisputeOrderContext();
+    $supplierUser = attachDisputeSupplierUser($supplierCompany);
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+    $dispute = app(DisputeService::class)->open($order, $buyer, DisputeCategory::Delay, 'Late.');
+    $this->actingAs($admin);
+
+    \Livewire\Livewire::test(\App\Filament\Resources\Disputes\Pages\ListDisputes::class)
+        ->assertTableActionVisible('moveToReview', $dispute)
+        ->assertTableActionVisible('resolve', $dispute)
+        ->callTableAction('moveToReview', $dispute);
+    expect($dispute->refresh()->status)->toBe(DisputeStatus::UnderReview);
+
+    \Livewire\Livewire::test(\App\Filament\Resources\Disputes\Pages\ListDisputes::class)
+        ->callTableAction('resolve', $dispute, ['resolution_notes' => 'Partial refund.']);
+    expect($dispute->refresh()->status)->toBe(DisputeStatus::Resolved);
+
+    foreach ([$buyer, $supplierUser] as $party) {
+        \Illuminate\Support\Facades\Notification::assertSentTo($party, \App\Notifications\DisputeResolvedNotification::class,
+            fn ($n, $channels) => $n->event === 'resolved' && in_array('mail', $channels, true)
+                && $n->toArray($party)['dispute_id'] === $dispute->id
+                && $n->toArray($party)['reference'] === $order->reference_code);
+    }
+
+    $dispute->appeal($buyer);
+    \Livewire\Livewire::test(\App\Filament\Resources\Disputes\Pages\ListDisputes::class)
+        ->assertTableActionHidden('resolve', $dispute)
+        ->callTableAction('moveToReview', $dispute)
+        ->callTableAction('resolve', $dispute, ['resolution_notes' => 'Upheld.']);
+    \Illuminate\Support\Facades\Notification::assertSentTo($supplierUser, \App\Notifications\DisputeResolvedNotification::class, fn ($n) => $n->event === 'appeal_decided');
+
+    \Livewire\Livewire::test(\App\Filament\Resources\Disputes\Pages\ListDisputes::class)->callTableAction('close', $dispute);
+    expect($dispute->refresh()->status)->toBe(DisputeStatus::Closed);
+    \Illuminate\Support\Facades\Notification::assertSentTo($buyer, \App\Notifications\DisputeResolvedNotification::class, fn ($n) => $n->event === 'closed');
+
+    // Mail bodies render with a deep link to the dispute.
+    $html = (string) (new \App\Notifications\DisputeResolvedNotification($dispute, 'appeal_decided'))->toMail($buyer)->render();
+    expect($html)->toContain($order->reference_code)->toContain(route('disputes.show', [$order->id, $dispute->id]));
+    expect((string) (new \App\Notifications\DisputeOpenedStaffNotification($dispute))->toMail($admin)->render())->toContain($order->reference_code);
 });

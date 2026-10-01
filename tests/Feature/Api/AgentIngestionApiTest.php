@@ -389,3 +389,97 @@ it('rejects (archives) an agent submission and supports the claim path', functio
     app(ModerateAgentSubmission::class)->reject($company, $admin, 'spam');
     expect($company->fresh()->status)->toBe(CompanyStatus::Archived);
 });
+
+/* ------------------------------------------- round 3: locks, scoping, desk badge */
+
+it('refuses logo uploads once the supplier left draft (supplier_locked)', function () {
+    Storage::fake('public');
+    $key = agentKey();
+    $id = $this->postJson('/api/v1/agent/suppliers', agentSupplierPayload(), agentHeaders($key['token']))->json('data.id');
+    Company::whereKey($id)->update(['status' => CompanyStatus::Pending->value]);
+
+    $this->post("/api/v1/agent/suppliers/{$id}/logo", ['image' => UploadedFile::fake()->image('logo.png')], agentHeaders($key['token']))
+        ->assertStatus(409)->assertJsonPath('error.code', 'supplier_locked');
+
+    expect(Company::find($id)->logo_path)->toBeNull();
+});
+
+it('refuses product image uploads once staff published the product (product_locked)', function () {
+    Storage::fake('public');
+    $key = agentKey();
+    $id = $this->postJson('/api/v1/agent/suppliers', agentSupplierPayload(), agentHeaders($key['token']))->json('data.id');
+    $pid = $this->postJson("/api/v1/agent/suppliers/{$id}/products", agentProductPayload(), agentHeaders($key['token']))->json('data.id');
+    Product::whereKey($pid)->update(['status' => ProductStatus::Active->value]);
+
+    $this->post("/api/v1/agent/products/{$pid}/image", ['image' => UploadedFile::fake()->image('p.jpg')], agentHeaders($key['token']))
+        ->assertStatus(409)->assertJsonPath('error.code', 'product_locked');
+});
+
+it('scopes supplier and product lookups to the calling agent source', function () {
+    Storage::fake('public');
+    $hermes = agentKey();
+    $other = agentKey(name: 'Scout');
+    $id = $this->postJson('/api/v1/agent/suppliers', agentSupplierPayload(), agentHeaders($hermes['token']))->json('data.id');
+    $pid = $this->postJson("/api/v1/agent/suppliers/{$id}/products", agentProductPayload(), agentHeaders($hermes['token']))->json('data.id');
+
+    $this->getJson("/api/v1/agent/suppliers/{$id}", agentHeaders($other['token']))->assertNotFound();
+    $this->post("/api/v1/agent/suppliers/{$id}/logo", ['image' => UploadedFile::fake()->image('l.png')], agentHeaders($other['token']))->assertNotFound();
+    $this->post("/api/v1/agent/products/{$pid}/image", ['image' => UploadedFile::fake()->image('p.jpg')], agentHeaders($other['token']))->assertNotFound();
+});
+
+it('reports supplier_locked (not supplier_owned) for a duplicate agent company in review', function () {
+    $key = agentKey();
+    $id = $this->postJson('/api/v1/agent/suppliers', agentSupplierPayload(), agentHeaders($key['token']))->json('data.id');
+    Company::whereKey($id)->update(['status' => CompanyStatus::Pending->value]);
+
+    $this->postJson('/api/v1/agent/suppliers', agentSupplierPayload(['external_id' => 'other-id']), agentHeaders($key['token']))
+        ->assertStatus(409)
+        ->assertJsonPath('error.code', 'supplier_locked')
+        ->assertJsonPath('error.details.existing_id', $id);
+});
+
+it('rejects carbon organisation types from agents and hides them from /reference', function () {
+    $key = agentKey();
+
+    $this->postJson('/api/v1/agent/suppliers', agentSupplierPayload(['type' => 'carbon_developer']), agentHeaders($key['token']))
+        ->assertUnprocessable();
+
+    $types = collect($this->getJson('/api/v1/agent/reference', agentHeaders($key['token']))->json('data.organisation_types'))->pluck('value');
+    expect($types)->not->toContain('carbon_developer')->and($types)->toContain('supplier');
+});
+
+it('lets verification reviewers desk-issue a badge so an agent company can go public', function () {
+    $key = agentKey();
+    $id = $this->postJson('/api/v1/agent/suppliers', agentSupplierPayload(['species' => [Species::factory()->create()->slug]]), agentHeaders($key['token']))->json('data.id');
+    $company = Company::findOrFail($id);
+    $company->forceFill(['status' => CompanyStatus::Verified, 'logo_path' => 'companies/logos/x.png', 'needs_review' => false])->save();
+    expect($company->isPubliclyVisible())->toBeFalse();
+
+    $officer = User::factory()->create();
+    $officer->assignRole('verification_officer');
+    $this->actingAs($officer);
+
+    Livewire::test(ListCompanies::class)
+        ->callTableAction('issueDeskBadge', $company, ['badge_type' => 'verified_company', 'reason' => ''])
+        ->assertHasTableActionErrors(['reason' => 'required']);
+
+    Livewire::test(ListCompanies::class)
+        ->callTableAction('issueDeskBadge', $company, ['badge_type' => 'verified_company', 'reason' => 'Checked MINFOF registry and phoned the MD.'])
+        ->assertHasNoTableActionErrors();
+
+    $badge = $company->verificationBadges()->sole();
+    expect($badge->issued_manually)->toBeTrue()
+        ->and($badge->manual_reason)->toBe('Checked MINFOF registry and phoned the MD.')
+        ->and($badge->verified_by)->toBe($officer->id)
+        ->and($company->isPubliclyVisible())->toBeTrue()
+        ->and(Activity::where('event', 'badge_issued_manually')->first()?->properties['source'])->toBe('desk_verified');
+});
+
+it('hides the desk badge action from staff without verification.review', function () {
+    $company = Company::factory()->create(['status' => CompanyStatus::Verified]);
+    $staff = User::factory()->create();
+    $staff->givePermissionTo('companies.view', 'companies.manage');
+    $this->actingAs($staff->fresh());
+
+    Livewire::test(ListCompanies::class)->assertTableActionHidden('issueDeskBadge', $company);
+});

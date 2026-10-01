@@ -54,7 +54,14 @@ class RfqsTable
 
                     Action::make('approve')->label('Approve')->icon('heroicon-o-check-circle')->color('success')->requiresConfirmation()
                         ->visible(fn (Rfq $r): bool => in_array($r->status, [RfqStatus::New, RfqStatus::InReview], true) && static::canTriage())
-                        ->action(fn (Rfq $record) => static::run(fn () => app(RfqTriageService::class)->approve($record, auth()->user()), 'RFQ approved — sent to matching suppliers; you can route more')),
+                        ->action(function (Rfq $record): void {
+                            $routed = 0;
+                            static::run(function () use ($record, &$routed): void {
+                                $routed = app(RfqTriageService::class)->approve($record, auth()->user());
+                            }, fn (): string => $routed > 0
+                                ? "RFQ approved — auto-routed to {$routed} matching supplier(s); you can route more"
+                                : 'RFQ approved — no supplier matched automatically; route it manually');
+                        }),
 
                     Action::make('aiSuggestions')->label('AI suggestions')->icon('heroicon-o-sparkles')->color('gray')
                         ->visible(fn (Rfq $r): bool => $r->status === RfqStatus::Approved && static::canRoute())
@@ -75,7 +82,13 @@ class RfqsTable
                                     : null),
                         ])
                         ->action(function (Rfq $record, array $data): void {
-                            $result = app(RfqTriageService::class)->routeDetailed($record, $data['companies'], auth()->user(), app(LeadFlowService::class));
+                            try {
+                                $result = app(RfqTriageService::class)->routeDetailed($record, $data['companies'], auth()->user(), app(LeadFlowService::class));
+                            } catch (\RuntimeException $e) {
+                                Notification::make()->title($e->getMessage())->danger()->send();
+
+                                return;
+                            }
                             $selected = count($data['companies']);
 
                             // Anything short of "every selected company got it"
@@ -135,10 +148,23 @@ class RfqsTable
         ]);
     }
 
-    protected static function run(callable $callback, string $message): void
+    /**
+     * Run a triage transition; an illegal transition (RuntimeException from
+     * RfqTriageService) becomes a danger toast instead of a 500.
+     *
+     * @param  string|\Closure(): string  $message
+     */
+    protected static function run(callable $callback, string|\Closure $message): void
     {
-        $callback();
-        Notification::make()->title($message)->success()->send();
+        try {
+            $callback();
+        } catch (\RuntimeException $e) {
+            Notification::make()->title($e->getMessage())->danger()->send();
+
+            return;
+        }
+
+        Notification::make()->title($message instanceof \Closure ? $message() : $message)->success()->send();
     }
 
     protected static function canTriage(): bool

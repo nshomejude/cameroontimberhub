@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Actions\Auth\RegisterAccount;
+use App\Exceptions\Api\ApiException;
 use App\Http\Controllers\Controller;
+use App\Http\Middleware\EnsureApiStaffTwoFactor;
 use App\Http\Requests\Api\V1\ForgotPasswordRequest;
 use App\Http\Requests\Api\V1\LoginRequest;
 use App\Http\Requests\Api\V1\RegisterRequest;
@@ -85,6 +87,12 @@ class AuthController extends Controller
                     'challenge_token' => TwoFactorController::issueChallengeToken($user),
                 ],
             ]);
+        }
+
+        // Blueprint §39: staff must have 2FA. The web login sends them to
+        // enrolment; the API cannot enrol, so it refuses to mint a token.
+        if (config('auth.require_staff_2fa', true) && $user->isStaff()) {
+            throw new ApiException(403, EnsureApiStaffTwoFactor::CODE, EnsureApiStaffTwoFactor::message());
         }
 
         return response()->json([

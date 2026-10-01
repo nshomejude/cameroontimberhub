@@ -97,6 +97,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'api.supplier' => EnsureApiSupplier::class,
             'demo.logins.enabled' => EnsureDemoLoginsEnabled::class,
             'requires.recent.2fa' => RequiresRecentTwoFactor::class,
+            'api.staff.2fa' => \App\Http\Middleware\EnsureApiStaffTwoFactor::class,
             // Emits RFC 8594 Deprecation/Sunset/Link signalling on a route or
             // group. Not applied to any route today — see routes/api.php and
             // docs/api/CONVENTIONS.md for the "how to sunset an endpoint" flow.
