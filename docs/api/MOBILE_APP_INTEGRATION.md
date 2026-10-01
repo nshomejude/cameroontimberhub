@@ -957,7 +957,7 @@ Owner decision 2026-10-01: the marketplace commission charged on each order (at 
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/supplier/commission/summary` | `{ balances: [{ currency, outstanding, outstanding_formatted, open_statements, overdue, next_due_date, pending_deposits }], overdue, quoting_blocked, block_on_overdue_days }` — one balance per currency (never summed across currencies). `quoting_blocked` is only ever `true` when the optional enforcement is switched on (`block_on_overdue_days` not `null`). |
+| GET | `/supplier/commission/summary` | `{ balances: [{ currency, outstanding, outstanding_formatted, open_statements, overdue, next_due_date, pending_deposits }], overdue, quoting_blocked, block_on_overdue_days }` — one balance per currency (never summed across currencies). `quoting_blocked` is `true` while the company has a statement more than `block_on_overdue_days` (default 15) days overdue; `null` means enforcement is switched off. |
 | GET | `/supplier/commission/statements` | The company's statements, newest period first, 15/page. Query `status` = `issued\|partially_paid\|paid\|overdue\|void\|open` (`open` = still owed). |
 | GET | `/supplier/commission/statements/{number}` | One statement (e.g. `CTH-CS-2026-00012`) with `lines[]`, `deposits[]` and `payment_instructions`. |
 | POST | `/supplier/commission/statements/{number}/deposits` | Report a deposit — **multipart/form-data**: `method` (`mtn_momo\|orange_money\|bank`), `amount` (> 0), `currency` (must equal the statement currency), `transaction_reference` (required, 3–100 chars — the MoMo / Orange Money transaction ID or bank reference), `paid_on` (`YYYY-MM-DD`, not in the future), `notes?` (≤ 1000), `proof?` (jpg/png/webp/pdf ≤ 5 MB, stored privately). `201` with the deposit (`status: "pending"`). Throttled like other uploads. |
@@ -977,7 +977,7 @@ Detail only — `lines[]`: `kind` (`charge` / `adjustment`), `order_reference`, 
 
 Only configured channels are listed (`methods` may be empty before finance has set them — show "contact support"). Errors: `422` with `error.details.<field>` for validation — including `currency` (mismatch), `transaction_reference` (*already been reported*: the same reference was already used for that method — a rejected deposit's reference may be re-used) and `statement` (the statement is paid or void). `404` for a number that is not yours.
 
-**Optional enforcement:** when the platform sets `COMMISSION_BLOCK_ON_OVERDUE_DAYS=N` (off by default), a company with a statement unpaid more than N days past its due date gets **`409` `commission_overdue`** from `POST /supplier/rfqs/{reference}/quote` (and every other quote-submission path). Show the message and link to the Commission screen.
+**Overdue enforcement (on by default, 15 days):** a company with a statement unpaid more than N days past its due date gets **`409` `commission_overdue`** from `POST /supplier/rfqs/{reference}/quote` (and every other quote-submission path). Show the message and link to the Commission screen.
 
 Notifications (database + push with `screen: "commission"`, plus email; all respect notification preferences): `commission_statement` (statement issued; due-soon reminder 3 days before the due date and an overdue notice — `reminder: "due_soon" | "overdue"`, with `statement_number`, `currency`, `due_date`), `commission_deposit` (`deposit_status: "confirmed" | "rejected"`, `statement_number`, `transaction_reference`).
 

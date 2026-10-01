@@ -83,9 +83,11 @@ return [
     | against monthly statements, see RUNBOOK → Commission collection):
     | statement_due_days: days after issue a statement falls due.
     | reminder_days_before: the "due soon" reminder lead time.
-    | block_on_overdue_days: null (default) = OFF. When set to N, a company
-    | with a statement still unpaid more than N days past its due date cannot
-    | submit new quotes (409 `commission_overdue`).
+    | block_on_overdue_days: ON by default at 15 (owner decision 2026-10-01):
+    | a company with a statement still unpaid more than N days past its due
+    | date cannot submit new quotes (409 `commission_overdue`) until it pays.
+    | Set COMMISSION_BLOCK_ON_OVERDUE_DAYS to another number to change it, or
+    | to `off` to only remind.
     |
     */
 
@@ -98,7 +100,9 @@ return [
         'usd_to_cny' => filled(env('COMMISSION_USD_TO_CNY')) ? (float) env('COMMISSION_USD_TO_CNY') : null,
         'statement_due_days' => (int) env('COMMISSION_STATEMENT_DUE_DAYS', 15),
         'reminder_days_before' => (int) env('COMMISSION_REMINDER_DAYS_BEFORE', 3),
-        'block_on_overdue_days' => filled(env('COMMISSION_BLOCK_ON_OVERDUE_DAYS')) ? (int) env('COMMISSION_BLOCK_ON_OVERDUE_DAYS') : null,
+        'block_on_overdue_days' => in_array(strtolower(trim((string) env('COMMISSION_BLOCK_ON_OVERDUE_DAYS', '15'))), ['off', 'false', 'none'], true)
+            ? null
+            : (filled(env('COMMISSION_BLOCK_ON_OVERDUE_DAYS')) ? (int) env('COMMISSION_BLOCK_ON_OVERDUE_DAYS') : 15),
     ],
 
 ];

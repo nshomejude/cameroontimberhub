@@ -457,7 +457,12 @@ function ccolQuotePayload(): array
     return ['currency' => 'XAF', 'items' => [['description' => 'Sapele', 'quantity' => 5, 'unit' => 'm3', 'unit_price' => 1000]]];
 }
 
-it('does not block quoting on overdue commission while the flag is off (default)', function () {
+it('blocks after 15 overdue days by default (owner decision)', function () {
+    expect(config('timber.commission.block_on_overdue_days'))->toBe(15);
+});
+
+it('does not block quoting on overdue commission when the flag is switched off', function () {
+    config(['timber.commission.block_on_overdue_days' => null]);
     [$user, $company] = ccolSupplier();
     ccolOrder($company);
     ccolIssue('2026-09');
