@@ -44,7 +44,7 @@ class AgentReferenceController extends Controller
             'moq_units' => $enum(PriceUnit::options()),
             'currencies' => RfqCurrency::values(),
             'supplier_types' => $enum(SupplierType::options()),
-            'organisation_types' => $enum(OrganisationType::options()),
+            'organisation_types' => $enum(array_intersect_key(OrganisationType::options(), array_flip(\App\Services\Agent\AgentIngestionService::agentOrganisationTypeValues()))),
             'regions' => collect(CameroonGeography::regions())
                 ->map(fn (array $r, string $name) => ['name' => $name, 'cities' => $r['cities']])
                 ->values(),
