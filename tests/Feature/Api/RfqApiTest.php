@@ -492,3 +492,29 @@ it('rate-limits resend-verification per RFQ', function () {
 
     $this->actingAs($buyer, 'sanctum')->postJson($url)->assertStatus(429);
 });
+
+/* ------------------------------------------------------------- RFQ type */
+
+it('accepts a transport / manufacturing type and defaults to export', function () {
+    // A fresh buyer per request: RFQ creation is rate limited per user.
+    $this->actingAs(User::factory()->create(), 'sanctum')
+        ->postJson('/api/v1/rfqs', apiRfqPayload(['type' => 'transport']))
+        ->assertCreated()
+        ->assertJsonPath('data.type', 'transport');
+
+    $this->actingAs(User::factory()->create(), 'sanctum')
+        ->postJson('/api/v1/rfqs', apiRfqPayload(['type' => 'domestic_manufacturing']))
+        ->assertCreated()
+        ->assertJsonPath('data.type', 'domestic_manufacturing');
+
+    $this->actingAs(User::factory()->create(), 'sanctum')
+        ->postJson('/api/v1/rfqs', apiRfqPayload())
+        ->assertCreated()
+        ->assertJsonPath('data.type', 'export');
+
+    $this->actingAs(User::factory()->create(), 'sanctum')
+        ->postJson('/api/v1/rfqs', apiRfqPayload(['type' => 'teleport']))
+        ->assertStatus(422);
+
+    expect(Rfq::where('type', 'transport')->count())->toBe(1);
+});

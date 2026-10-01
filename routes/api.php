@@ -681,6 +681,8 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
             Route::get('shipments', [SupplierShipmentController::class, 'index'])->name('shipments.index');
             Route::get('shipments/{shipment}', [SupplierShipmentController::class, 'show'])
                 ->whereNumber('shipment')->name('shipments.show');
+            Route::patch('shipments/{shipment}', [SupplierShipmentController::class, 'update'])
+                ->whereNumber('shipment')->middleware('throttle:api-decision')->name('shipments.update');
             Route::post('shipments/{shipment}/checkpoints', [SupplierShipmentController::class, 'storeCheckpoint'])
                 ->whereNumber('shipment')->middleware('throttle:api-decision')->name('shipments.checkpoints.store');
             /* ---- end logistics block ---- */

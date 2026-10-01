@@ -2,11 +2,13 @@
 
 namespace App\Http\Requests\Api\V1;
 
+use App\Enums\RfqType;
 use App\Models\Species;
 use App\Services\RfqWizard;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Collection;
+use Illuminate\Validation\Rule;
 
 /**
  * RFQ creation payload for the mobile client.
@@ -54,6 +56,11 @@ class StoreRfqRequest extends FormRequest
             $rules['buyer_email'],
             $rules['buyer_phone'],
         );
+
+        // Which flow the RFQ belongs to (export / domestic_manufacturing /
+        // transport). The web wizard carries it in session; the API takes it
+        // from the body. Omitted means `export`, the original behavior.
+        $rules['type'] = ['nullable', Rule::enum(RfqType::class)];
 
         $rules['title'] = ['required', 'string', 'min:3', 'max:160'];
 

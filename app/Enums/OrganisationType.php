@@ -88,6 +88,17 @@ enum OrganisationType: string
         return in_array($this, self::transformationProviders(), true);
     }
 
+    /**
+     * Whether a company of this type keeps a timber catalogue (Products,
+     * CompanySpecies) in the exporter panel. Logistics companies and carbon
+     * developers don't sell timber, so those screens are hidden for them.
+     * Panel-only: the supplier products API is intentionally unchanged.
+     */
+    public function hasTimberCatalogue(): bool
+    {
+        return ! in_array($this, [self::Logistics, self::CarbonDeveloper], true);
+    }
+
     /** @return list<string> */
     public static function values(): array
     {

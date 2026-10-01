@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Api\V1;
 
+use App\Enums\RfqType;
 use App\Models\Rfq;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -30,6 +31,8 @@ class RfqResource extends JsonResource
     {
         return [
             'reference' => $this->reference_code,
+            'type' => ($this->type ?? RfqType::Export)->value,
+            'type_label' => ($this->type ?? RfqType::Export)->label(),
             'title' => $this->title,
             'project_name' => $this->project_name,
             'status' => $this->status->value,

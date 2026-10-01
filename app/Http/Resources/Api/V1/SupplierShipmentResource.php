@@ -71,6 +71,7 @@ class SupplierShipmentResource extends JsonResource
             'latitude' => $c->latitude,
             'longitude' => $c->longitude,
             'notes' => $c->notes,
+            'has_photo' => $c->photo_path !== null,
             'occurred_at' => $c->occurred_at?->toIso8601String(),
             'recorded_at' => $c->created_at?->toIso8601String(),
         ];

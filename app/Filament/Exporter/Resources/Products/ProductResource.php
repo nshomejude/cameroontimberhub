@@ -36,9 +36,12 @@ class ProductResource extends Resource
 
     protected static ?int $navigationSort = 4;
 
+    /** Hidden for logistics / carbon-developer companies (OrganisationType::hasTimberCatalogue()). */
     public static function canViewAny(): bool
     {
-        return (bool) auth()->user()?->companies()->exists();
+        $company = auth()->user()?->companies()->first();
+
+        return $company !== null && ($company->type?->hasTimberCatalogue() ?? true);
     }
 
     /**

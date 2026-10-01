@@ -110,6 +110,30 @@ return [
         'line_2' => 'Reply quickly — buyers usually contact several suppliers.',
     ],
 
+    // ----- app/Notifications/ShipmentAssignedNotification -----
+    'shipment_assigned' => [
+        'subject' => 'You were assigned as carrier for shipment :waybill',
+        'line_1' => ':supplier assigned your company as carrier for shipment :waybill (:origin → :destination).',
+        'action' => 'View the shipment',
+        'line_2' => 'If your company did not agree to move this shipment, contact the supplier or Cameroon Timber Hub support.',
+    ],
+
+    // ----- app/Notifications/ShipmentDeliveredNotification -----
+    'shipment_delivered' => [
+        'supplier' => [
+            'subject' => 'Shipment :waybill delivered (order :order)',
+            'line_1' => 'The carrier recorded shipment :waybill for order :order as delivered.',
+            'action' => 'View the shipment',
+            'line_2' => 'The order status has not changed — mark the order delivered once you have confirmed it.',
+        ],
+        'buyer' => [
+            'subject' => 'Goods delivered — please confirm (order :order)',
+            'line_1' => 'Shipment :waybill for your order :order was recorded as delivered.',
+            'action' => 'Confirm receipt',
+            'line_2' => 'Please check the goods and confirm receipt on your order.',
+        ],
+    ],
+
     // ----- app/Mail/BuyerRfqRoutedMail + BuyerRfqRejectedMail -----
     'buyer_rfq_routed' => [
         'subject' => 'Your request :reference was sent to suppliers',

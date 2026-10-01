@@ -77,6 +77,36 @@ class SupplierShipmentController extends Controller
     }
 
     /**
+     * PATCH supplier/shipments/{id} — assign/replace vehicle, driver, carrier
+     * and edit origin/destination (e.g. on the bare shipment auto-created
+     * when the order was marked shipped). Supplier side only: a member of the
+     * order's supplier company. A carrier member who can see the shipment
+     * gets 403 `not_shipment_supplier`; anyone else 404. Same selection rules
+     * as creation (ShipmentService::updateAssignment()).
+     */
+    public function update(Request $request, int $shipment): SupplierShipmentResource
+    {
+        $record = $this->find($request, $shipment);
+        $companyIds = $request->user()->companies()->pluck('companies.id')->all();
+
+        if (! in_array($record->order?->company_id, $companyIds, true)) {
+            throw new ApiException(403, 'not_shipment_supplier', __('logistics.errors.shipment_supplier_only'));
+        }
+
+        $data = $request->validate([
+            'vehicle_id' => ['sometimes', 'nullable', 'integer'],
+            'driver_id' => ['sometimes', 'nullable', 'integer'],
+            'carrier_company_id' => ['sometimes', 'nullable', 'integer'],
+            'origin' => ['sometimes', 'nullable', 'string', 'max:200'],
+            'destination' => ['sometimes', 'nullable', 'string', 'max:200'],
+        ]);
+
+        $this->shipments->updateAssignment($record, $data);
+
+        return new SupplierShipmentResource($record->refresh()->load(['order', 'carrierCompany', 'vehicle', 'driver']));
+    }
+
+    /**
      * POST supplier/shipments/{id}/checkpoints — offline-replay safe: a
      * repeated `client_event_id` returns the originally created checkpoint
      * (200) instead of creating a duplicate (201).
@@ -93,15 +123,24 @@ class SupplierShipmentController extends Controller
             'notes' => ['nullable', 'string', 'max:2000'],
             'occurred_at' => ['nullable', 'date'],
             'client_event_id' => ['nullable', 'string', 'max:100'],
+            // Optional proof photo (multipart). Stored on the private local
+            // disk: `photo_path` is never disclosed, only `has_photo`.
+            'photo' => ['nullable', 'image', 'max:5120'],
         ]);
+        unset($data['photo']);
 
         if (($existing = $this->replayed($record, $data['client_event_id'] ?? null)) !== null) {
             return response()->json(['data' => SupplierShipmentResource::checkpoint($existing), 'replayed' => true], 200);
         }
 
+        $photoPath = $request->hasFile('photo')
+            ? $request->file('photo')->store('checkpoint-photos/'.$record->getKey(), 'local')
+            : null;
+
         try {
             $checkpoint = $this->commandBus->dispatch(new RecordCheckpointCommand($record, [
                 ...$data,
+                'photo_path' => $photoPath,
                 'recorded_by' => $request->user()->getKey(),
             ]));
         } catch (UniqueConstraintViolationException $e) {
@@ -113,6 +152,8 @@ class SupplierShipmentController extends Controller
 
             return response()->json(['data' => SupplierShipmentResource::checkpoint($existing), 'replayed' => true], 200);
         }
+
+        $this->shipments->notifyCheckpointRecorded($record, $checkpoint, $request->user());
 
         return response()->json(['data' => SupplierShipmentResource::checkpoint($checkpoint), 'replayed' => false], 201);
     }

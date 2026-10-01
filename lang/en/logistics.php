@@ -5,6 +5,7 @@ return [
         'vehicle_unavailable' => 'That vehicle is not available for this order.',
         'driver_unavailable' => 'That driver is not available for this order.',
         'carrier_unavailable' => 'That carrier is not available for this order.',
+        'shipment_supplier_only' => 'Only the supplier who sold this order can change its shipment assignment.',
         'fleet_company_mismatch' => 'The vehicle, driver and carrier must all belong to the same company.',
         'checkpoint_invalid' => 'This checkpoint could not be saved. Please check the form and try again.',
         'checkpoint_login_required' => 'Please log in to record checkpoints.',

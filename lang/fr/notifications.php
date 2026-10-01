@@ -97,6 +97,28 @@ return [
         'line_2' => 'Répondez rapidement — les acheteurs contactent souvent plusieurs fournisseurs.',
     ],
 
+    'shipment_assigned' => [
+        'subject' => 'Vous avez été désigné transporteur de l\'expédition :waybill',
+        'line_1' => ':supplier a désigné votre société comme transporteur de l\'expédition :waybill (:origin → :destination).',
+        'action' => 'Voir l\'expédition',
+        'line_2' => 'Si votre société n\'a pas accepté ce transport, contactez le fournisseur ou le support Cameroon Timber Hub.',
+    ],
+
+    'shipment_delivered' => [
+        'supplier' => [
+            'subject' => 'Expédition :waybill livrée (commande :order)',
+            'line_1' => 'Le transporteur a enregistré l\'expédition :waybill de la commande :order comme livrée.',
+            'action' => 'Voir l\'expédition',
+            'line_2' => 'Le statut de la commande n\'a pas changé — marquez-la livrée une fois la livraison confirmée.',
+        ],
+        'buyer' => [
+            'subject' => 'Marchandises livrées — merci de confirmer (commande :order)',
+            'line_1' => 'L\'expédition :waybill de votre commande :order a été enregistrée comme livrée.',
+            'action' => 'Confirmer la réception',
+            'line_2' => 'Vérifiez les marchandises et confirmez la réception sur votre commande.',
+        ],
+    ],
+
     'buyer_rfq_routed' => [
         'subject' => 'Votre demande :reference a été transmise aux fournisseurs',
         'heading' => 'Votre demande est chez les fournisseurs',
