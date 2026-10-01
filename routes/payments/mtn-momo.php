@@ -24,6 +24,10 @@ Route::middleware(['auth', 'throttle:6,1'])
         return app(MtnMomoGateway::class)->submit($request, $payment);
     })->name('payments.mtn-momo.submit');
 
-Route::post('/payments/mtn-momo/webhook', function (Request $request) {
-    return app(MtnMomoGateway::class)->handleWebhook($request);
-})->name('payments.mtn-momo.webhook');
+// MTN's server calls this, never a browser with a session: it must be
+// exempt from CSRF or every callback is a 419 in production (the test
+// harness skips CSRF, so only the route definition guards this).
+Route::withoutMiddleware(\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class)
+    ->post('/payments/mtn-momo/webhook', function (Request $request) {
+        return app(MtnMomoGateway::class)->handleWebhook($request);
+    })->name('payments.mtn-momo.webhook');

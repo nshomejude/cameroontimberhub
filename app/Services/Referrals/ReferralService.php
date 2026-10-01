@@ -12,6 +12,7 @@ use App\Models\ReferralSetting;
 use App\Models\User;
 use App\Notifications\ReferralCommissionEarnedNotification;
 use App\Notifications\ReferralSignedUpNotification;
+use App\Services\Payments\PaymentAmount;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -213,7 +214,7 @@ class ReferralService
                 }
             }
 
-            $rate = (float) $settings->rate_percent;
+            $rate = bcadd((string) $settings->rate_percent, '0', 2);
             $referrer = User::find($company->referred_by_user_id);
             if ($referrer === null) {
                 return null;
@@ -223,6 +224,10 @@ class ReferralService
             if ($base <= 0) {
                 return null;
             }
+            $amount = PaymentAmount::format(
+                bcdiv(bcmul(number_format($base, 2, '.', ''), $rate, 8), '100', 8),
+                (string) $payment->currency,
+            );
 
             return ReferralEarning::create([
                 'referrer_user_id' => $referrer->id,
@@ -234,7 +239,7 @@ class ReferralService
                 'basis' => 'subscription',
                 'base_amount' => $base,
                 'rate_percent' => $rate,
-                'amount' => round($base * $rate / 100, 2),
+                'amount' => $amount,
                 'currency' => $payment->currency,
                 'status' => ReferralEarningStatus::Pending,
             ]);

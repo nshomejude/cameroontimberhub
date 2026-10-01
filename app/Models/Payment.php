@@ -82,13 +82,31 @@ class Payment extends Model
             && (float) $this->provider_fee_amount > 0;
     }
 
-    public function markCompleted(?string $providerReference = null): void
+    /**
+     * Complete a pending attempt — or a failed one the provider later
+     * confirms (e.g. a capture that timed out on our side but went through):
+     * the money moved, so it must settle. Returns true only when THIS call
+     * made the transition. Completed / refunded / cancelled payments are
+     * left untouched, so a replayed webhook or return leg can neither
+     * re-stamp `paid_at` nor resurrect a refunded payment. Conditional
+     * UPDATE keeps it race-safe against a concurrent completion.
+     */
+    public function markCompleted(?string $providerReference = null): bool
     {
-        $this->update([
-            'status' => PaymentStatus::Completed,
-            'provider_reference' => $providerReference ?? $this->provider_reference,
-            'paid_at' => now(),
-        ]);
+        $values = ['status' => PaymentStatus::Completed->value, 'paid_at' => now(), 'updated_at' => now()];
+
+        if ($providerReference !== null) {
+            $values['provider_reference'] = $providerReference;
+        }
+
+        $updated = static::query()
+            ->whereKey($this->getKey())
+            ->whereIn('status', [PaymentStatus::Pending->value, PaymentStatus::Failed->value])
+            ->update($values);
+
+        $this->refresh();
+
+        return $updated > 0;
     }
 
     /**

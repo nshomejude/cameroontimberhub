@@ -27,7 +27,7 @@ Route::get('/payments/stripe/cancel/{payment}', function (Request $request, Paym
         ->with('status', 'Payment was cancelled.');
 })->name('payments.stripe.cancel');
 
-Route::withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class)
+Route::withoutMiddleware(\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class)
     ->post('/payments/stripe/webhook', function (Request $request) {
         /** @var PaymentGatewayContract $gateway */
         $gateway = app(config('payments.providers.'.PaymentProvider::Stripe->value));

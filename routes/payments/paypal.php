@@ -25,6 +25,8 @@ Route::get('/payments/paypal/{payment}/cancel', function (Request $request, Paym
     return app(PayPalGateway::class)->handleCancel($request, $payment);
 })->name('payments.paypal.cancel');
 
-Route::post('/payments/paypal/webhook', function (Request $request) {
-    return app(PayPalGateway::class)->handleWebhook($request);
-})->name('payments.paypal.webhook');
+// Server-to-server webhook: exempt from CSRF (see mtn-momo.php).
+Route::withoutMiddleware(\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class)
+    ->post('/payments/paypal/webhook', function (Request $request) {
+        return app(PayPalGateway::class)->handleWebhook($request);
+    })->name('payments.paypal.webhook');
