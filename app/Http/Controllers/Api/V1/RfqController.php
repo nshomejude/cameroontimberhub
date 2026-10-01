@@ -208,6 +208,7 @@ class RfqController extends Controller
         $quotes = $rfq->quotes()
             ->buyerVisible()
             ->with(['items', Company::cardEagerLoad()])
+            ->withConversationId()
             ->orderByDesc('submitted_at')
             ->get();
 

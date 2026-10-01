@@ -105,7 +105,7 @@
         ['id' => 'overview', 'label' => 'Overview', 'icon' => 'clipboard-document-list', 'show' => true],
         ['id' => 'products', 'label' => 'Products'.($productCount ? ' ('.$productCount.')' : ''), 'icon' => 'squares-2x2', 'show' => $productCount > 0],
         ['id' => 'capacity', 'label' => 'Capacity'.($capacities->count() ? ' ('.$capacities->count().')' : ''), 'icon' => 'chart-bar', 'show' => $capacities->isNotEmpty()],
-        ['id' => 'carbon-projects', 'label' => 'Carbon Projects'.($carbonProjects->count() ? ' ('.$carbonProjects->count().')' : ''), 'icon' => 'globe-alt', 'show' => $carbonProjects->isNotEmpty()],
+        ['id' => 'carbon-projects', 'label' => __('messages.nav.carbon_projects').($carbonProjects->count() ? ' ('.$carbonProjects->count().')' : ''), 'icon' => 'globe-alt', 'show' => $carbonProjects->isNotEmpty()],
         ['id' => 'certificates', 'label' => 'Certificates'.($badges->count() ? ' ('.$badges->count().')' : ''), 'icon' => 'check-badge', 'show' => $badges->isNotEmpty()],
         ['id' => 'sourcing', 'label' => 'Forest & Sourcing', 'icon' => 'globe-europe-africa', 'show' => $forestRows->isNotEmpty() || $company->species->isNotEmpty()],
         ['id' => 'logistics', 'label' => 'Logistics', 'icon' => 'truck', 'show' => $logisticsRows->isNotEmpty()],

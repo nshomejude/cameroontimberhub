@@ -38,6 +38,7 @@ class TwoFactorController extends Controller
 
         return view('auth.two-factor.show', [
             'user' => $user,
+            'continueUrl' => $user->hasTwoFactorEnabled() ? $this->staffContinueUrl($request) : null,
             'secret' => $secret,
             'qrSvg' => $qrSvg,
         ]);
@@ -90,7 +91,26 @@ class TwoFactorController extends Controller
 
         return view('auth.two-factor.recovery-codes', [
             'codes' => $codes,
+            'continueUrl' => $this->staffContinueUrl($request),
         ]);
+    }
+
+    /**
+     * Where a staff user should head once 2FA is set up: the page they were
+     * bounced from (url.intended, same-site only) or the admin panel. Null
+     * for non-staff — they just return to the 2FA screen.
+     */
+    private function staffContinueUrl(Request $request): ?string
+    {
+        if (! $request->user()->isStaff()) {
+            return null;
+        }
+
+        $intended = $request->session()->get('url.intended');
+
+        return $intended !== null && self::safeRedirect($intended, $request) !== route('two-factor.show')
+            ? self::safeRedirect($intended, $request)
+            : url('/admin');
     }
 
     /**
@@ -98,9 +118,15 @@ class TwoFactorController extends Controller
      */
     public function disable(Request $request): RedirectResponse
     {
-        $data = $request->validate([
+        $request->validate([
             'password' => ['required', 'string', 'current_password'],
         ]);
+
+        if (config('auth.require_staff_2fa', true) && $request->user()->isStaff()) {
+            throw ValidationException::withMessages([
+                'password' => 'Two-factor authentication is required for staff accounts and cannot be disabled. Regenerate recovery codes or re-enrol instead.',
+            ]);
+        }
 
         $request->user()->disableTwoFactor();
 

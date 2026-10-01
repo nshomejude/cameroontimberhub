@@ -129,6 +129,12 @@ class TwoFactorController extends Controller
 
         $user = $request->user();
 
+        if (config('auth.require_staff_2fa', true) && $user->isStaff()) {
+            throw ValidationException::withMessages([
+                'password' => 'Two-factor authentication is required for staff accounts and cannot be disabled.',
+            ]);
+        }
+
         $verified = false;
 
         if (filled($data['password'] ?? null)) {

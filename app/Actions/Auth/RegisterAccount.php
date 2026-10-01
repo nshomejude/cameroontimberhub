@@ -82,7 +82,7 @@ class RegisterAccount
         $rules = [
             'account_type' => ['required', 'string', function (string $attribute, mixed $value, \Closure $fail): void {
                 if (in_array($value, self::CARBON_TYPES, true) && ! self::carbonSignupEnabled()) {
-                    $fail(__('Carbon accounts are coming soon and cannot be registered yet.'));
+                    $fail(__('messages.register.carbon_coming_soon'));
 
                     return;
                 }

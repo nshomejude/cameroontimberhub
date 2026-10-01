@@ -43,6 +43,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Memoised token lookup shared by EnforceApiKeyPolicy and auth:sanctum.
+        \Laravel\Sanctum\Sanctum::usePersonalAccessTokenModel(\App\Models\PersonalAccessToken::class);
+
         // Boot-time production guard: never refuse to boot (that would turn a
         // config slip into an outage), but shout on the log so it is noticed.
         // `php artisan launch:check` is the full, blocking gate.
@@ -376,7 +379,7 @@ class AppServiceProvider extends ServiceProvider
                 return Limit::perMinute(60)->by('api-key-ip:'.$request->ip());
             }
 
-            $tier = $this->resolveApiKeyRateLimitTier((int) $token->getKey());
+            $tier = $this->resolveApiKeyRateLimitTier((int) $token->getKey(), $request);
 
             return Limit::perMinute($this->apiKeyTierToPerMinute($tier))->by('api-key:'.$token->getKey());
         });
@@ -387,14 +390,19 @@ class AppServiceProvider extends ServiceProvider
      * precedence. Never throws — any failure logs and returns the config
      * default tier.
      */
-    private function resolveApiKeyRateLimitTier(int $tokenId): string
+    private function resolveApiKeyRateLimitTier(int $tokenId, ?Request $request = null): string
     {
         $default = (string) config('api.rate_limit_tiers.default', 'basic');
 
         try {
-            $meta = \App\Models\ApiKeyMeta::query()
-                ->where('personal_access_token_id', $tokenId)
-                ->first(['company_id', 'rate_limit_tier']);
+            // Reuse the row EnforceApiKeyPolicy already fetched this request.
+            $prefetched = $request?->attributes->get(\App\Http\Middleware\EnforceApiKeyPolicy::META_ATTRIBUTE);
+
+            $meta = is_array($prefetched) && (int) $prefetched['token_id'] === $tokenId
+                ? $prefetched['meta']
+                : \App\Models\ApiKeyMeta::query()
+                    ->where('personal_access_token_id', $tokenId)
+                    ->first(['company_id', 'rate_limit_tier']);
 
             $planTier = $meta?->company?->activeSubscription?->plan?->apiRateLimitTier();
 

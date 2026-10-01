@@ -105,6 +105,37 @@ class Quote extends Model
         return $query->whereIn('status', [QuoteStatus::Submitted->value, QuoteStatus::Viewed->value]);
     }
 
+    /**
+     * Preload the chat thread id QuoteResource::conversationIdFor() would
+     * compute (quotation-card message first, else conversations.quote_id;
+     * latest wins) as `resolved_conversation_id`, in the same query — so
+     * listing N quotes costs no extra queries per row.
+     */
+    public function scopeWithConversationId(Builder $query): Builder
+    {
+        if ($query->getQuery()->columns === null) {
+            $query->select($query->getModel()->getTable().'.*');
+        }
+
+        $table = $query->getModel()->getTable();
+
+        $viaCard = Message::query()
+            ->selectRaw('max(conversation_id)')
+            ->where('related_type', $this->getMorphClass())
+            ->whereColumn('related_id', $table.'.id')
+            ->toBase();
+
+        $direct = Conversation::query()
+            ->selectRaw('max(id)')
+            ->whereColumn('quote_id', $table.'.id')
+            ->toBase();
+
+        return $query->selectRaw(
+            'coalesce(('.$viaCard->toSql().'), ('.$direct->toSql().')) as resolved_conversation_id',
+            [...$viaCard->getBindings(), ...$direct->getBindings()],
+        );
+    }
+
     /* ------------------------------------------------------------- helpers */
 
     public function isExpired(): bool

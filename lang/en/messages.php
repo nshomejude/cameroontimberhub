@@ -257,6 +257,8 @@ return [
         'account_type_carbon_developer_hint' => 'I run a carbon/reforestation project',
         'account_type_carbon_buyer' => 'Carbon Buyer',
         'account_type_carbon_buyer_hint' => 'I buy carbon credits',
+        'coming_soon' => 'Coming soon',
+        'carbon_coming_soon' => 'Carbon accounts are coming soon and cannot be registered yet.',
         'label_company_name' => 'Business / company name',
         'placeholder_company_name' => 'Enter your business or company name',
         'help_company_name' => 'Your company profile starts as pending review. You can complete it after signing in.',

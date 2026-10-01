@@ -88,6 +88,9 @@ class CreateAdminCommand extends Command
             }
         }
 
+        $this->line('Next: sign in at '.url('/login').' and enrol two-factor authentication at '
+            .route('two-factor.show').' — staff cannot open /admin until 2FA is confirmed.');
+
         return self::SUCCESS;
     }
 }

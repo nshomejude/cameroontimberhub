@@ -34,6 +34,10 @@ return [
     | on the web register page and rejected (422) by web and API registration.
     | Existing users already holding these roles are unaffected.
     |
+    | BEFORE enabling SIGNUP_CARBON_ENABLED: build an admin (Filament)
+    | CarbonProject review resource first — today nothing can move a carbon
+    | project past Submitted, so new developers would be stuck. See RUNBOOK.
+    |
     */
 
     'signup' => [

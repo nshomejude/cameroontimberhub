@@ -25,6 +25,10 @@ class EnsureStaffTwoFactor
             && $user instanceof User
             && $user->isStaff()
             && ! $user->hasTwoFactorEnabled()) {
+            if ($request->isMethod('GET') && ! $request->expectsJson()) {
+                $request->session()->put('url.intended', $request->fullUrl());
+            }
+
             return redirect()->route('two-factor.show')
                 ->with('status', __('Two-factor authentication is required for staff accounts. Please set it up now.'));
         }
