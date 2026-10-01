@@ -21,4 +21,31 @@ enum RfqType: string
             self::Transport => 'Transport',
         };
     }
+
+    /**
+     * The organisation types this kind of RFQ should be offered to, or null
+     * for "no type restriction" (Export keeps its original species-led
+     * candidate set). Drives RfqMatchingService candidates and the admin
+     * routing selector's "suggested" group.
+     *
+     * @return list<OrganisationType>|null
+     */
+    public function targetOrganisationTypes(): ?array
+    {
+        return match ($this) {
+            self::Export => null,
+            self::DomesticManufacturing => [
+                OrganisationType::Manufacturer,
+                OrganisationType::Artisan,
+                OrganisationType::Processor,
+            ],
+            self::Transport => [OrganisationType::Logistics],
+        };
+    }
+
+    /** Whether candidates must handle the RFQ's species (not for transport). */
+    public function requiresSpeciesMatch(): bool
+    {
+        return $this !== self::Transport;
+    }
 }

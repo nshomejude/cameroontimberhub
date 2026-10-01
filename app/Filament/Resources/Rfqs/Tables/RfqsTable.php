@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Rfqs\Tables;
 
+use App\Enums\OrganisationType;
 use App\Enums\RfqStatus;
 use App\Models\Company;
 use App\Models\Rfq;
@@ -68,12 +69,10 @@ class RfqsTable
                         ->visible(fn (Rfq $r): bool => $r->status === RfqStatus::Approved && static::canRoute())
                         ->schema([
                             Select::make('companies')->label('Companies')->multiple()->required()->searchable()
-                                ->options(fn () => Company::where('status', 'verified')->orderBy('legal_name')->get()
-                                    ->mapWithKeys(fn (Company $company) => [
-                                        $company->id => $company->type instanceof \App\Enums\OrganisationType
-                                            ? "{$company->legal_name} ({$company->type->label()})"
-                                            : $company->legal_name,
-                                    ])),
+                                ->options(fn (Rfq $record) => static::routingOptions($record))
+                                ->helperText(fn (Rfq $record): ?string => $record->type?->targetOrganisationTypes() !== null
+                                    ? "Suggested: companies suited to a {$record->type->label()} request are listed first."
+                                    : null),
                         ])
                         ->action(function (Rfq $record, array $data): void {
                             $result = app(RfqTriageService::class)->routeDetailed($record, $data['companies'], auth()->user(), app(LeadFlowService::class));
@@ -104,6 +103,35 @@ class RfqsTable
                         ->action(fn (Rfq $record) => static::run(fn () => app(RfqTriageService::class)->close($record, auth()->user()), 'RFQ closed')),
                 ])->label('Triage')->icon('heroicon-m-ellipsis-vertical'),
             ]);
+    }
+
+    /**
+     * Verified companies for the manual routing selector. For RFQ types with
+     * target organisation types (RfqType::targetOrganisationTypes()) the
+     * suitable companies come first in a "Suggested" group; the rest stay
+     * selectable under "Other companies" so staff can still override.
+     *
+     * @return array<int|string, mixed>
+     */
+    public static function routingOptions(Rfq $rfq): array
+    {
+        $label = fn (Company $company): string => $company->type instanceof OrganisationType
+            ? "{$company->legal_name} ({$company->type->label()})"
+            : $company->legal_name;
+
+        $companies = Company::where('status', 'verified')->orderBy('legal_name')->get();
+        $targetTypes = $rfq->type?->targetOrganisationTypes();
+
+        if ($targetTypes === null) {
+            return $companies->mapWithKeys(fn (Company $c) => [$c->id => $label($c)])->all();
+        }
+
+        [$suggested, $others] = $companies->partition(fn (Company $c) => in_array($c->type, $targetTypes, true));
+
+        return array_filter([
+            'Suggested for '.$rfq->type->label() => $suggested->mapWithKeys(fn (Company $c) => [$c->id => $label($c)])->all(),
+            'Other companies' => $others->mapWithKeys(fn (Company $c) => [$c->id => $label($c)])->all(),
+        ]);
     }
 
     protected static function run(callable $callback, string $message): void

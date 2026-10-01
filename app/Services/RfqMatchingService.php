@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Enums\OrganisationType;
+use App\Enums\RfqType;
 use App\Models\Company;
 use App\Models\Rfq;
 use App\Services\Ai\AiGateway;
@@ -61,8 +63,16 @@ class RfqMatchingService
      * the same facets RfqTriageService::route() enforces — rather than
      * reimplementing the matching rules here.
      */
+    /**
+     * By RFQ type: Export = species-led (original behaviour, any type);
+     * DomesticManufacturing = Manufacturer/Artisan/Processor handling the
+     * species; Transport = Logistics companies, no species requirement,
+     * those with active fleet vehicles first (RFQs carry no region field).
+     */
     private function deterministicCandidates(Rfq $rfq, int $limit): Collection
     {
+        $type = $rfq->type ?? RfqType::Export;
+
         $speciesSlugs = $rfq->items->pluck('species')
             ->filter()
             ->pluck('slug')
@@ -72,8 +82,17 @@ class RfqMatchingService
 
         $query = Company::query()->where('status', 'verified');
 
-        if ($speciesSlugs !== []) {
+        if (($targetTypes = $type->targetOrganisationTypes()) !== null) {
+            $query->whereIn('type', array_map(fn (OrganisationType $t) => $t->value, $targetTypes));
+        }
+
+        if ($speciesSlugs !== [] && $type->requiresSpeciesMatch()) {
             $query->handlingSpecies($speciesSlugs);
+        }
+
+        if ($type === RfqType::Transport) {
+            $query->withCount(['vehicles as active_vehicles_count' => fn ($v) => $v->where('is_active', true)])
+                ->orderByDesc('active_vehicles_count');
         }
 
         if ($rfq->destination_country_code) {
