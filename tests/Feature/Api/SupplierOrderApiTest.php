@@ -156,6 +156,25 @@ it('does not offer cancel once the order is delivered', function () {
     expect($keys)->toContain('tracking')->and($keys)->not->toContain('cancel');
 });
 
+it('never cancels a shipped order: no cancel action, the endpoint refuses, the service refuses', function () {
+    [$user, $company] = supplierOrderApiUser();
+    $order = awardedOrderFor($company);
+    app(OrderService::class)->confirm($order);
+    app(OrderService::class)->ship($order);
+
+    $keys = collect($this->actingAs($user, 'sanctum')
+        ->getJson('/api/v1/supplier/orders/'.$order->reference_code)->json('data.actions'))->pluck('key');
+    expect($keys)->not->toContain('cancel');
+
+    // Once shipped, the only recourse is a dispute.
+    $this->actingAs($user, 'sanctum')
+        ->postJson('/api/v1/supplier/orders/'.$order->reference_code.'/cancel', ['reason' => 'Changed my mind'])
+        ->assertStatus(409)->assertJsonPath('error.code', 'order_transition_not_allowed');
+
+    expect(fn () => app(OrderService::class)->cancel($order->fresh(), 'late cancel'))->toThrow(RuntimeException::class)
+        ->and($order->fresh()->status->value)->toBe('shipped');
+});
+
 it('offers confirm but not ship on a freshly awarded order', function () {
     [$user, $company] = supplierOrderApiUser();
     $order = awardedOrderFor($company);

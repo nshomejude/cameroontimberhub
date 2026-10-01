@@ -31,7 +31,7 @@ class OrderService
         'awarded' => ['confirmed', 'cancelled'],
         'confirmed' => ['in_production', 'shipped', 'cancelled'],
         'in_production' => ['shipped', 'cancelled'],
-        'shipped' => ['delivered', 'cancelled'],
+        'shipped' => ['delivered'],  // once shipped, problems go through a dispute, never a cancel
         'delivered' => ['completed'],
         'completed' => [],
         'cancelled' => [],

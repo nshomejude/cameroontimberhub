@@ -917,8 +917,10 @@ do the same through `App\Actions\Account\DeleteAccount`.
   `conversations/{id}/orders/{order}/…`; each key appears at most once).
 - **Supplier order `cancel` action**: emitted on any order (threaded or not)
   whose status may still move to `cancelled` (`awarded`, `confirmed`,
-  `in_production`, `shipped`), always at `POST supplier/orders/{ref}/cancel`
-  with a required `reason` field (≤500 chars).
+  `in_production`), always at `POST supplier/orders/{ref}/cancel` with a
+  required `reason` field (≤500 chars). A **shipped** order can never be
+  cancelled (`409 order_transition_not_allowed`); problems after shipping go
+  through a dispute.
 - **Notification deep links**: `company_verified` (company approved by staff)
   now also lands in the notification centre and as an Expo push (both gated
   by the user's notification preferences; email always goes) with
