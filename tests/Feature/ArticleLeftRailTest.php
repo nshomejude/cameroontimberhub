@@ -111,6 +111,8 @@ it('renders the rail on the insights index with nothing marked current', functio
 
 it('adds no queries to the insights index for the rail', function () {
     Article::factory()->count(3)->create(['hub' => KnowledgeHub::Buying]);
+    // Layout's carbon-link visibility count is cached for 10 min in prod; warm it.
+    \App\Support\CarbonDirectory::activeCount();
 
     $queries = 0;
     DB::listen(function () use (&$queries): void {
