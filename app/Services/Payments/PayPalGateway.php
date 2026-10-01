@@ -53,6 +53,10 @@ class PayPalGateway implements PaymentGatewayContract
                             // custom_id ties the PayPal order back to this
                             // Payment; verified again on capture.
                             'custom_id' => (string) $payment->getKey(),
+                            // `amount` is the payer total INCLUDING any
+                            // passed-through PayPal fee (base_amount +
+                            // provider_fee_amount, disclosed at checkout);
+                            // captureMatches() verifies the capture against it.
                             'amount' => [
                                 'currency_code' => $payment->currency,
                                 'value' => self::formatAmount($payment->amount),

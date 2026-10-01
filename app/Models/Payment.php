@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\PaymentProvider;
 use App\Enums\PaymentStatus;
+use App\Services\Payments\ProviderFeeCalculator;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -27,6 +28,8 @@ class Payment extends Model
             'provider' => PaymentProvider::class,
             'status' => PaymentStatus::class,
             'amount' => 'decimal:2',
+            'base_amount' => 'decimal:2',
+            'provider_fee_amount' => 'decimal:2',
             'metadata' => 'array',
             'paid_at' => 'datetime',
         ];
@@ -45,6 +48,38 @@ class Payment extends Model
     public function subscription(): BelongsTo
     {
         return $this->belongsTo(Subscription::class);
+    }
+
+    /**
+     * What the platform is owed for the purchase: `amount` minus a provider
+     * fee passed through to the payer (plan price incl. any tax). Rows from
+     * before fee accounting have no base_amount and fall back to `amount`.
+     * Use this — never `amount` — for revenue-share maths (e.g. referral
+     * commission), so the payer's processing fee is never shared out.
+     */
+    public function baseAmount(): string
+    {
+        return bcadd((string) ($this->base_amount ?? $this->amount ?? '0'), '0', 2);
+    }
+
+    /**
+     * The pre-tax, pre-fee price (the tax breakdown's subtotal when a tax
+     * rule applied at checkout, else baseAmount()).
+     */
+    public function subtotalAmount(): string
+    {
+        $tax = is_array($this->metadata['tax'] ?? null) ? $this->metadata['tax'] : null;
+
+        return $tax !== null && isset($tax['subtotal'])
+            ? bcadd((string) $tax['subtotal'], '0', 2)
+            : $this->baseAmount();
+    }
+
+    /** True when the payer was charged a provider fee on top of the price. */
+    public function providerFeePassedThrough(): bool
+    {
+        return $this->provider_fee_bearer === ProviderFeeCalculator::BEARER_BUYER
+            && (float) $this->provider_fee_amount > 0;
     }
 
     public function markCompleted(?string $providerReference = null): void

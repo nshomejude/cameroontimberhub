@@ -7,6 +7,8 @@ use App\Enums\PaymentProvider;
 use App\Http\Controllers\Controller;
 use App\Models\Payment;
 use App\Models\Plan;
+use App\Services\Payments\ProviderFees;
+use App\Services\Tax\TaxCalculator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -61,7 +63,7 @@ class PaymentCheckoutController extends Controller
         // written — existing behaviour and tests are untouched. When finance
         // activates the rule, `amount` becomes subtotal+tax and the full
         // breakdown is persisted to `metadata['tax']` for the receipt/M4.
-        $breakdown = app(\App\Services\Tax\TaxCalculator::class)->breakdown(
+        $breakdown = app(TaxCalculator::class)->breakdown(
             $plan->price_amount,
             $plan->price_currency,
             $company->country_code ?: 'CM',
@@ -69,11 +71,28 @@ class PaymentCheckoutController extends Controller
         );
         $taxable = $breakdown['rule_id'] !== null;
 
+        // Provider processing fee (PayPal commission structure, part A):
+        // `base_amount` is what the platform is owed (price incl. any tax);
+        // when the provider's fee is passed through to the buyer, `amount`
+        // is grossed up so the platform still nets the base — the same
+        // subtotal / fee / total the checkout page disclosed before the
+        // payer chose to proceed. `amount` stays exactly what the payer is
+        // charged and what the gateway sends to (and verifies against) the
+        // provider.
+        $fee = ProviderFees::breakdown(
+            $provider,
+            $taxable ? (string) $breakdown['total'] : (string) $plan->price_amount,
+            (string) $plan->price_currency,
+        );
+
         $payment = Payment::create([
             'company_id' => $company->id,
             'plan_id' => $plan->id,
             'provider' => $provider,
-            'amount' => $taxable ? $breakdown['total'] : $plan->price_amount,
+            'amount' => $fee['total'],
+            'base_amount' => $fee['base'],
+            'provider_fee_amount' => $fee['fee'],
+            'provider_fee_bearer' => $fee['bearer'],
             'currency' => $plan->price_currency,
             'metadata' => array_filter([
                 'msisdn' => $data['msisdn'] ?? null,

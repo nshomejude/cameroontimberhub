@@ -53,4 +53,42 @@
             </table>
         </div>
     </div>
+
+    @php($feeRows = $this->getProviderFeeRows())
+    <div class="fi-section mt-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-gray-900">
+        <h2 class="mb-1 text-base font-semibold">Payment provider fees</h2>
+        <p class="mb-4 text-sm text-gray-500">Completed payments only. "Collected" = fee passed through to the buyer (disclosed at checkout); "Absorbed" = fee the platform paid. Net = charged − all provider fees.</p>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b border-gray-200 text-left text-xs uppercase tracking-wide text-gray-500 dark:border-white/10">
+                        <th class="py-2 pr-4">Provider</th>
+                        <th class="py-2 pr-4">Currency</th>
+                        <th class="py-2 pr-4 text-right">Payments</th>
+                        <th class="py-2 pr-4 text-right">Charged</th>
+                        <th class="py-2 pr-4 text-right">Fees collected</th>
+                        <th class="py-2 pr-4 text-right">Fees absorbed</th>
+                        <th class="py-2 pr-4 text-right">Net to platform</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse ($feeRows as $row)
+                        <tr class="border-b border-gray-100 dark:border-white/5">
+                            <td class="py-2 pr-4 font-medium">{{ $row['provider'] }}</td>
+                            <td class="py-2 pr-4">{{ $row['currency'] }}</td>
+                            <td class="py-2 pr-4 text-right tabular-nums">{{ $row['payments'] }}</td>
+                            <td class="py-2 pr-4 text-right tabular-nums">{{ $row['charged'] }}</td>
+                            <td class="py-2 pr-4 text-right tabular-nums">{{ $row['fees_collected'] }}</td>
+                            <td class="py-2 pr-4 text-right tabular-nums">{{ $row['fees_absorbed'] }}</td>
+                            <td class="py-2 pr-4 text-right tabular-nums">{{ $row['net'] }}</td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="7" class="py-6 text-center text-gray-500">No completed payments with provider-fee data yet.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
 </x-filament-panels::page>

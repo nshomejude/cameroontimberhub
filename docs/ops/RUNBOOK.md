@@ -122,6 +122,14 @@ Queue worker (unit file: `deploy/systemd/timberhub-queue.service`): `systemctl s
 - **Buyer requests board**: suppliers also see matching approved RFQs not routed to them (exporter panel → Buyer requests; API `GET /api/v1/supplier/rfq-board`) without buyer contact details; quoting self-routes them.
 - **Who receives leads** is controlled only by the plan's "Receive RFQ leads" toggle in Admin → Plans (Free plan: on at launch). Turning it off stops routing and empties that plan's board. To pause all automatic distribution set `RFQ_AUTO_ROUTE_ON_APPROVAL=false` and/or `RFQ_AUTO_APPROVE_LOW_RISK=false`, then `config:cache`.
 
+### Payment provider fees (config `payments.<provider>.fee_*`)
+
+- **What it does**: every plan checkout prices the charge through `ProviderFees::breakdown()`. With `fee_bearer=buyer` (PayPal default) the payer total is grossed up so the platform nets the list price — `total = (price + fixed) / (1 − percent/100)`, rounded **up** (XAF 0dp, others 2dp) — and the checkout page / `GET /api/v1/billing/checkout/{plan}` show *Subtotal · PayPal processing fee · Total* before the payer authorises. With `fee_bearer=platform` (Stripe, MTN MoMo, Orange Money defaults) the payer pays the list price and the fee is recorded as a platform cost.
+- **Defaults** (env, `.env.example`): PayPal `4.4% + 0.30 USD`, buyer; Stripe `3.4% + 0.30`, platform; MTN MoMo / Orange Money `0`, platform. `PAYPAL_FEE_FIXED` is in `PAYPAL_CURRENCY` (USD) — a charge in another currency gets the percentage only (logged warning). **Confirm the PayPal rate on the live merchant account** (it varies by country/volume) before launch.
+- **Change without a deploy**: `/admin` → Payment settings → *Edit fees* on the provider row (`payments.manage`; activity-logged with before/after). Blank fields fall back to env. A change affects new checkouts only — each `payments` row snapshots `base_amount`, `provider_fee_amount`, `provider_fee_bearer` at creation and `amount` (what PayPal is asked to capture, and what the capture is verified against) never changes afterwards.
+- **Where it shows**: the invoice for a subscription payment has the fee as its own untaxed line (subtotal + tax + fee = amount charged); `/billing` payment history and the success page show it; `/admin` → Commission report → *Payment provider fees* lists fees collected (passed through) vs absorbed per provider and currency, completed payments only.
+- **Revenue-share maths** (e.g. referral commission) must use `Payment::baseAmount()` / `subtotalAmount()`, never `amount`, so the payer's fee is not shared out.
+
 ---
 
 ## 5a. Go-live checklist

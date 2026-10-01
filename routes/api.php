@@ -416,6 +416,12 @@ Route::prefix('v1')->name('api.v1.')->middleware([AssignRequestId::class, 'throt
             Route::get('/', [ReferralController::class, 'index'])->name('index');
         });
 
+        // Plan checkout price breakdown (subtotal / tax / provider fee /
+        // total per payment method) — disclosed before the user authorises;
+        // the payment itself starts on the web checkout (`checkout_url`).
+        Route::get('billing/checkout/{plan}', [\App\Http\Controllers\Api\V1\BillingCheckoutController::class, 'show'])
+            ->name('billing.checkout');
+
         // Expo push-token registration for the mobile app — own prefix,
         // right after `notifications` for the same reason that group sits
         // where it does (any-authenticated-user, not buyer/supplier-scoped).

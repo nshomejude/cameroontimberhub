@@ -347,6 +347,10 @@ return [
         'tax_subtotal' => 'Sous-total',
         'tax_line' => ':label (:rate %)',
         'tax_total' => 'Total',
+        'provider_fee_line' => 'Frais de traitement :provider',
+        'provider_fee_rate' => ':percent % + :fixed',
+        'provider_fee_note' => 'Le paiement par :provider ajoute :fee de frais de traitement (:rate) ; le total débité est de :total.',
+        'provider_fee_disclosure' => "Les frais de traitement du prestataire de paiement sont affichés ici avant que vous n'autorisiez le paiement. Mobile Money n'ajoute aucun frais.",
 
         // Billing engine Phase 2 — page /billing côté client.
         'no_company_title' => "Vous n'avez pas d'abonnement d'entreprise",

@@ -341,6 +341,10 @@ return [
         'tax_subtotal' => 'Subtotal',
         'tax_line' => ':label (:rate%)',
         'tax_total' => 'Total',
+        'provider_fee_line' => ':provider processing fee',
+        'provider_fee_rate' => ':percent% + :fixed',
+        'provider_fee_note' => 'Paying with :provider adds a :fee processing fee (:rate), so the total charged is :total.',
+        'provider_fee_disclosure' => "The payment provider's processing fee is shown here before you authorise the payment. Mobile Money has no added fee.",
 
         // Billing engine Phase 2 — customer /billing overview page.
         'no_company_title' => "You don't have a company subscription",

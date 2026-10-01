@@ -746,6 +746,34 @@ is `409` `order_transition_not_allowed` (`order_action_not_allowed` for
 `{ company_id, organisation_type, plan: {slug,name,segment,price_amount,price_currency,billing_period,features}|null, subscription: {id,status,starts_at,ends_at,renews_at,trial_ends_at,on_trial}|null, effective_plan: (as above), pricing_url }`.
 Upgrading stays on the web (`pricing_url`).
 
+`GET /billing/checkout/{plan_slug}` (any signed-in user) — the price
+breakdown to show **before** the user authorises a plan payment (pricing spec
+§20: a processing fee passed through to the payer must be disclosed first).
+404 for inactive / non-self-serve (e.g. enterprise) plans.
+
+```json
+{ "data": {
+  "plan": "exporter-professional", "plan_name": "Exporter Professional", "billing_period": "monthly",
+  "currency": "USD", "price": "29.00",
+  "tax": null,                       // or { "label", "rate": "0.1925", "amount" } when a tax rule applies
+  "providers": [{
+    "provider": "paypal", "label": "PayPal", "configured": true,
+    "subtotal": "29.00",             // price incl. any tax — what the platform nets
+    "provider_fee": "1.65", "provider_fee_bearer": "buyer", "provider_fee_passed_through": true,
+    "provider_fee_percent": "4.4", "provider_fee_fixed": "0.30",
+    "total": "30.65"                 // exactly what the payer is charged
+  }],
+  "checkout_url": "https://www.cameroontimberhub.com/billing/checkout/exporter-professional"
+} }
+```
+
+Show *Subtotal / PayPal processing fee / Total* as separate lines only when
+`provider_fee_passed_through` is true for the method the user picked; mobile
+money (`mtn_momo`, `orange_money`) is fee-free (`provider_fee: "0.00"`,
+`total == subtotal`). Amounts are decimal strings; XAF has no minor unit.
+The payment itself still starts on the web (`checkout_url`), which charges the
+same `total`.
+
 **Artisan portfolio.** `PATCH /company` `gallery[]` items accept, besides
 `image_path`/`caption`: `description` (max 2000), `is_portfolio` (bool),
 `materials_used` (max 255), `completed_on` (date, not in the future). Items
