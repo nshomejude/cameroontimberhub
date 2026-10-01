@@ -435,6 +435,10 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
 
         Route::get('rfqs/{reference}/quotes', [RfqController::class, 'quotes'])->name('rfqs.quotes');
 
+        // Buyer withdraws their own still-open RFQ; routed suppliers are told.
+        Route::post('rfqs/{reference}/cancel', [RfqController::class, 'cancel'])
+            ->middleware('throttle:api-decision')->name('rfqs.cancel');
+
         Route::get('quotes/{reference}', [QuoteController::class, 'show'])->name('quotes.show');
 
         Route::post('quotes/{reference}/accept', [QuoteController::class, 'accept'])
@@ -478,6 +482,15 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
 
         Route::post('orders/{orderReference}/disputes/{dispute}/reply', [DisputeController::class, 'reply'])
             ->middleware('throttle:api-decision')->name('orders.disputes.reply');
+
+        Route::post('orders/{orderReference}/disputes/{dispute}/evidence', [DisputeController::class, 'evidence'])
+            ->middleware('throttle:order-upload')->name('orders.disputes.evidence');
+
+        Route::post('orders/{orderReference}/disputes/{dispute}/appeal', [DisputeController::class, 'appeal'])
+            ->middleware('throttle:api-decision')->name('orders.disputes.appeal');
+
+        // The buyer's disputes across every order, newest first.
+        Route::get('disputes', [DisputeController::class, 'buyerIndex'])->name('disputes.index');
 
         // Order documents (proof of delivery, invoice, packing list, ...):
         // stays inside this same buyer-only `orders/{orderReference}/...`

@@ -399,6 +399,7 @@ dashboard (own RFQ inbox, sales figures, …) is a separate follow-up task.
 | GET | `/rfqs/{reference}` | 🔑 | One RFQ (by `reference` e.g. `RFQ-2026-000123`), items eager-loaded. |
 | POST | `/rfqs/{reference}/resend-verification` | 🔑 | Re-send the email-verification link for an RFQ still behind the gate. Own rate budget. → `202`. |
 | GET | `/rfqs/{reference}/quotes` | 🔑 | Buyer-visible quotes for that RFQ. |
+| POST | `/rfqs/{reference}/cancel` | 🔑 | Withdraw the buyer's own RFQ. Allowed only while its status is `new`, `in_review` or `approved` **and** no order has been awarded on it; the RFQ moves to `closed` (there is no separate `cancelled` status). Every supplier it was routed to is notified (database + mail, type `rfq_withdrawn`). → `200` `RfqResource`; `409` `rfq_not_cancellable` when already awarded/closed/rejected; another buyer's reference `404`. `throttle:api-decision`. |
 
 **Email verification gate.** A newly created RFQ is **not routed to suppliers** until the buyer clicks the link emailed to them (signed URL, opens on web). Every RFQ payload carries a `verification` block:
 
@@ -481,8 +482,9 @@ Order lifecycle is in `status` / `status_label` plus the timestamp fields (`awar
 | GET | `/orders/{orderReference}/disputes/{dispute}` | 🔑 | One dispute + its message thread. |
 | POST | `/orders/{orderReference}/disputes` | 🔑 | Open a dispute. Body: `{ "category": "...", "subject": "...", "description": "..." }`. Rate-limited. |
 | POST | `/orders/{orderReference}/disputes/{dispute}/reply` | 🔑 | Post a message to the thread. Body: `{ "message": "..." }`. Rate-limited. |
-
-Evidence file upload and appeal are **not** in v1 — deferred to a later release (or handled on web for now).
+| POST | `/orders/{orderReference}/disputes/{dispute}/evidence` | 🔑 | **multipart/form-data.** `description` (required, ≤2000 chars) + optional `file` (PDF/JPEG/PNG/WebP, ≤15 MB — same rules as the web form). Allowed while the dispute is `opened`/`evidence_pending`, otherwise `409` `dispute_not_actionable`. → `201` with the refreshed `DisputeResource`. `throttle:order-upload`. |
+| POST | `/orders/{orderReference}/disputes/{dispute}/appeal` | 🔑 | Appeal a **resolved** dispute (no body). → `200` `DisputeResource` with `status: appealed`; any other status `409` `dispute_not_actionable`. Rate-limited. |
+| GET | `/disputes` | 🔑 | All of the buyer's disputes across every order, newest first, paginated (20/page). Each row carries `order_reference` so the client can open `/orders/{orderReference}/disputes/{id}`. |
 
 ### Documents
 
@@ -549,7 +551,7 @@ A second `POST` on the same order — by the same buyer or a race between two re
 | Method | Path | Auth | Purpose |
 |---|---|---|---|
 | GET | `/conversations` | 🔑 | The buyer's inbox, paginated. Query: `q` (search subject/company/buyer name/message body). |
-| POST | `/conversations` | 🔑 buyer only | Start (or reuse) a thread with a supplier company and post the first message. Body: `{ "company": "sam-timber-co" \| 5, "body": "...", "product_id"?: 12, "order"?: "ORD-2026-000001", "topic"?: "general\|rfq\|order\|product\|support", "subject"?: "..." }`. `company` is the slug or numeric id; `product_id` must belong to that company and `order` must be the caller's own order with that company (else `422`). → `201` with `ConversationResource` for a new thread, `200` when an open thread with the same company/order was reused. **Unverified email:** a NEW thread is refused with `403` `email_unverified` (reusing an existing open one still works) — prompt the user to verify (`POST /auth/email/verification-notification`). Rate-limited (`throttle:message-start`, 30/h). A supplier account gets `403` (suppliers reply in existing threads). |
+| POST | `/conversations` | 🔑 buyer only | Start (or reuse) a thread with a supplier company and post the first message. Body: `{ "company": "sam-timber-co" \| 5, "body": "...", "product_id"?: 12, "order"?: "ORD-2026-000001", "topic"?: "general\|rfq\|order\|product\|support", "subject"?: "..." }`. `company` is the slug or numeric id; `product_id` must belong to that company and `order` must be the caller's own order with that company (else `422`). → `201` with `ConversationResource` for a new thread, `200` when an open thread with the same company/order was reused. **Unavailable supplier:** a company that is not publicly visible (suspended, archived, pending, rejected, or missing its required profile/badge) is refused with `422` `company_unavailable` — even when an old thread with it exists. **Thread reuse:** if the buyer already has a non-closed thread with the same company *and* the same order (or both without an order), that thread is reused and `body` is appended to it (`200`); `product_id`/`topic`/`subject` do not create a separate thread. A closed thread is never reused — a new one is opened (`201`). **Unverified email:** a NEW thread is refused with `403` `email_unverified` (reusing an existing open one still works) — prompt the user to verify (`POST /auth/email/verification-notification`). Rate-limited (`throttle:message-start`, 30/h). A supplier account gets `403` (suppliers reply in existing threads). |
 | GET | `/conversations/{id}` | 🔑 | One conversation (`ConversationResource`). |
 | GET | `/conversations/{id}/messages` | 🔑 | The thread, **oldest-first** (same order the web thread renders). Query: `limit` (default/max 200). |
 | POST | `/conversations/{id}/messages` | 🔑 | Post a plain-text message. Body: `{ "body": "..." }` (required, 1–4000 chars). Rate-limited (`throttle:api-decision`). → `201`. |

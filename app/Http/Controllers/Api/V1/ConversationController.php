@@ -144,6 +144,14 @@ class ConversationController extends Controller
             throw ValidationException::withMessages(['company' => [__('validation.exists', ['attribute' => 'company'])]]);
         }
 
+        // Only a company buyers can actually see (verified, complete, badged —
+        // Company::scopePubliclyVisible) can be messaged; a suspended,
+        // archived, pending or otherwise hidden one is refused, even when an
+        // older thread with it exists.
+        if (! $company->isPubliclyVisible()) {
+            throw new ApiException(422, 'company_unavailable', __('messages.account_center.company_unavailable'));
+        }
+
         $product = null;
         if (isset($data['product_id'])) {
             $product = Product::whereKey($data['product_id'])->where('company_id', $company->getKey())->first();

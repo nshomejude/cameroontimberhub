@@ -412,6 +412,28 @@ Route::middleware(['auth', 'buyer'])->prefix('account')->name('account.')->group
     Route::get('/orders', [AccountController::class, 'orders'])->name('orders');
     Route::get('/receipts', [AccountController::class, 'receipts'])->name('receipts');
 
+    // Buyer withdraws a still-open RFQ (RfqCancellationService).
+    Route::post('/requests/{reference}/cancel', [AccountController::class, 'cancelRfq'])
+        ->middleware('throttle:10,1')->name('rfqs.cancel');
+
+    Route::get('/disputes', [AccountController::class, 'disputes'])->name('disputes');
+
+    // Settings: profile, password, notification preferences (2FA links out
+    // to the shared /security/two-factor screen).
+    Route::get('/settings', [App\Http\Controllers\Public\AccountSettingsController::class, 'show'])->name('settings');
+    Route::put('/settings/profile', [App\Http\Controllers\Public\AccountSettingsController::class, 'updateProfile'])->name('settings.profile');
+    Route::put('/settings/password', [App\Http\Controllers\Public\AccountSettingsController::class, 'updatePassword'])
+        ->middleware('throttle:6,1')->name('settings.password');
+    Route::put('/settings/notifications', [App\Http\Controllers\Public\AccountSettingsController::class, 'updatePreferences'])->name('settings.preferences');
+
+    Route::get('/notifications', [App\Http\Controllers\Public\AccountNotificationController::class, 'index'])->name('notifications');
+    Route::post('/notifications/read-all', [App\Http\Controllers\Public\AccountNotificationController::class, 'readAll'])->name('notifications.read-all');
+    Route::post('/notifications/{id}/read', [App\Http\Controllers\Public\AccountNotificationController::class, 'read'])->name('notifications.read');
+
+    Route::get('/saved', [App\Http\Controllers\Public\SavedSupplierController::class, 'index'])->name('saved');
+    Route::post('/saved/{slug}', [App\Http\Controllers\Public\SavedSupplierController::class, 'store'])->name('saved.store');
+    Route::delete('/saved/{slug}', [App\Http\Controllers\Public\SavedSupplierController::class, 'destroy'])->name('saved.destroy');
+
     // Messaging. `/messages/new` and `/messages/start` are declared before the
     // `{conversation}` binding so the static segments win. Every screen resolves
     // the thread through MessagingService, which 404s a non-participant.
