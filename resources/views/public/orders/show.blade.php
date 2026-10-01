@@ -223,6 +223,45 @@
                             </p>
                         @endif
                     </section>
+
+                    @if ($order->shipments->isNotEmpty())
+                        {{-- Shipment tracking + checkpoint proof photos (30-min signed URLs). --}}
+                        <section aria-labelledby="order-shipments"
+                                 class="rounded-2xl border border-sand-200 bg-white p-5 dark:border-[#2c2a24] dark:bg-[#1f1d18] sm:p-6">
+                            <h2 id="order-shipments" class="font-display text-[1.0625rem] font-bold text-forest-950 dark:text-sand-100">{{ __('messages.order.shipments') }}</h2>
+                            @foreach ($order->shipments as $shipment)
+                                <div class="mt-4">
+                                    <p class="font-mono text-[1.0625rem] font-semibold text-forest-800 dark:text-forest-300">
+                                        {{ __('messages.order.shipment_waybill', ['waybill' => $shipment->waybill_number]) }}
+                                        @if ($shipment->carrier_status)
+                                            <span class="ml-2 font-sans text-[0.9375rem] font-normal text-ink-soft dark:text-[#8f887b]">{{ $shipment->carrier_status->label() }}</span>
+                                        @endif
+                                    </p>
+                                    <ol class="mt-2 space-y-3">
+                                        @forelse ($shipment->checkpointUpdates as $checkpoint)
+                                            @php($photoUrl = $shipmentService->photoSignedUrl($shipment, $checkpoint))
+                                            <li class="flex items-start gap-3 text-[1.0625rem]">
+                                                <span class="flex-1">
+                                                    <span class="font-medium text-ink dark:text-[#e4ddcf]">{{ $checkpoint->status->label() }}</span>
+                                                    @if ($checkpoint->location)<span class="text-ink-soft dark:text-[#8f887b]"> · {{ $checkpoint->location }}</span>@endif
+                                                    <span class="block text-ink-soft dark:text-[#8f887b]">{{ $checkpoint->occurred_at?->isoFormat('D MMM YYYY, HH:mm') }}</span>
+                                                    @if ($checkpoint->notes)<span class="block text-ink-soft dark:text-[#8f887b]">{{ $checkpoint->notes }}</span>@endif
+                                                </span>
+                                                @if ($photoUrl)
+                                                    <a href="{{ $photoUrl }}" target="_blank" rel="noopener" data-checkpoint-photo>
+                                                        <img src="{{ $photoUrl }}" alt="{{ __('messages.order.checkpoint_photo') }}" loading="lazy"
+                                                             class="h-16 w-16 rounded-lg border border-sand-200 object-cover dark:border-[#2c2a24]">
+                                                    </a>
+                                                @endif
+                                            </li>
+                                        @empty
+                                            <li class="text-[1.0625rem] text-ink-soft dark:text-[#8f887b]">{{ __('messages.order.shipment_no_checkpoints') }}</li>
+                                        @endforelse
+                                    </ol>
+                                </div>
+                            @endforeach
+                        </section>
+                    @endif
                 </div>
             </div>
 
