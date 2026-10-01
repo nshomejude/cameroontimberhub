@@ -8,6 +8,7 @@ use App\Models\Plan;
 use App\Models\User;
 use App\Services\Payments\PayPalGateway;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\URL;
 
 function fakePayPalConfig(): void
 {
@@ -111,7 +112,7 @@ test('return route captures the order and marks payment completed when status is
                 [
                     'payments' => [
                         'captures' => [
-                            ['id' => 'CAPTURE-XYZ-789', 'status' => 'COMPLETED'],
+                            ['id' => 'CAPTURE-XYZ-789', 'status' => 'COMPLETED', 'amount' => ['currency_code' => 'USD', 'value' => '49.99']],
                         ],
                     ],
                 ],
@@ -119,9 +120,9 @@ test('return route captures the order and marks payment completed when status is
         ], 200),
     ]);
 
-    $payment = Payment::factory()->create(['provider' => PaymentProvider::PayPal, 'provider_reference' => 'ORDER-ABC-123']);
+    $payment = Payment::factory()->create(['provider' => PaymentProvider::PayPal, 'provider_reference' => 'ORDER-ABC-123', 'amount' => 49.99, 'currency' => 'USD']);
 
-    $response = $this->get(route('payments.paypal.return', $payment).'?token=ORDER-ABC-123');
+    $response = $this->get(URL::temporarySignedRoute('payments.paypal.return', now()->addDay(), ['payment' => $payment->id]).'&token=ORDER-ABC-123');
 
     $response->assertOk();
 
@@ -141,9 +142,9 @@ test('return route marks payment failed when capture status is not COMPLETED', f
         ], 200),
     ]);
 
-    $payment = Payment::factory()->create(['provider' => PaymentProvider::PayPal, 'provider_reference' => 'ORDER-ABC-123']);
+    $payment = Payment::factory()->create(['provider' => PaymentProvider::PayPal, 'provider_reference' => 'ORDER-ABC-123', 'amount' => 49.99, 'currency' => 'USD']);
 
-    $response = $this->get(route('payments.paypal.return', $payment).'?token=ORDER-ABC-123');
+    $response = $this->get(URL::temporarySignedRoute('payments.paypal.return', now()->addDay(), ['payment' => $payment->id]).'&token=ORDER-ABC-123');
 
     $response->assertStatus(400);
 
@@ -199,12 +200,15 @@ test('webhook marks payment completed on verified capture completed event', func
         'provider' => PaymentProvider::PayPal,
         'provider_reference' => 'ORDER-ABC-123',
         'status' => PaymentStatus::Pending,
+        'amount' => 49.99,
+        'currency' => 'USD',
     ]);
 
     $response = $this->postJson(route('payments.paypal.webhook'), [
         'event_type' => 'PAYMENT.CAPTURE.COMPLETED',
         'resource' => [
             'id' => 'CAPTURE-XYZ-789',
+            'amount' => ['currency_code' => 'USD', 'value' => '49.99'],
             'supplementary_data' => ['related_ids' => ['order_id' => 'ORDER-ABC-123']],
         ],
     ]);

@@ -768,3 +768,50 @@ it('renders a thread full of commerce cards in a bounded number of queries', fun
     // under one query per card.
     expect($count)->toBeLessThan(15);
 });
+
+/* ------------------------------------- audit P0-2: cross-buyer quote actions */
+
+/** A second buyer who opens their own thread with the same supplier. */
+function ccOtherBuyerThread(Company $company): array
+{
+    $other = User::factory()->create(['email' => 'ccother'.uniqid().'@example.com', 'email_verified_at' => now()]);
+    $thread = app(MessagingService::class)->start($other, $company);
+
+    return [$thread->refresh(), $other];
+}
+
+it('P0-2: a buyer cannot accept, decline or counter a quote sent to another buyer via their own thread', function () {
+    [, , $company, , $quote] = ccScene();
+    [$thread, $attacker] = ccOtherBuyerThread($company);
+
+    expect(fn () => ccCommerce()->acceptQuotation($thread, $quote, $attacker))
+        ->toThrow(HttpException::class);
+    expect(fn () => ccCommerce()->declineQuotation($thread, $quote, $attacker, 'no'))
+        ->toThrow(HttpException::class);
+    expect(fn () => ccCommerce()->counter($thread, $quote, $attacker, ['unit_price' => 1]))
+        ->toThrow(HttpException::class);
+
+    expect($quote->fresh()->status)->toBe(QuoteStatus::Submitted)
+        ->and(Order::where('quote_id', $quote->getKey())->exists())->toBeFalse();
+});
+
+it('P0-2: the web accept route 404s for a quote that was never posted in that thread', function () {
+    [, , $company, , $quote] = ccScene();
+    [$thread, $attacker] = ccOtherBuyerThread($company);
+
+    $this->actingAs($attacker)
+        ->post(route('chat.quote.accept', [$thread, $quote]))
+        ->assertNotFound();
+
+    expect($quote->fresh()->status)->toBe(QuoteStatus::Submitted);
+});
+
+it('P0-2: a supplier cannot post another buyer\'s quote into a different buyer\'s thread', function () {
+    [, , $company, $staff, $quote] = ccScene();
+    [$thread] = ccOtherBuyerThread($company);
+
+    expect(fn () => ccCommerce()->issueQuotation($thread, $quote, $staff))
+        ->toThrow(HttpException::class);
+
+    expect($thread->messages()->where('type', MessageType::Quotation->value)->exists())->toBeFalse();
+});

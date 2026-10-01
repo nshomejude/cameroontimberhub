@@ -38,7 +38,7 @@ class DisputeController extends Controller
     {
         $user = $request->user();
 
-        abort_unless($this->disputes->isOrderParty($order, $user), 403);
+        abort_unless($this->disputes->isOrderParty($order, $user), 404);
 
         $order->load(['disputes.raisedByUser', 'disputes.raisedByCompany', 'disputes.respondentCompany']);
 
@@ -51,7 +51,7 @@ class DisputeController extends Controller
 
     public function store(Request $request, Order $order): RedirectResponse
     {
-        abort_unless($this->disputes->isOrderParty($order, $request->user()), 403);
+        abort_unless($this->disputes->isOrderParty($order, $request->user()), 404);
 
         $data = $request->validate([
             'category' => ['required', 'string', 'in:'.implode(',', DisputeCategory::values())],
@@ -78,10 +78,7 @@ class DisputeController extends Controller
 
     public function show(Request $request, Order $order, Dispute $dispute): View
     {
-        $user = $request->user();
-
-        abort_unless($dispute->order_id === $order->getKey(), 404);
-        abort_unless($dispute->isParty($user), 403);
+        $this->assertDisputeParty($request, $order, $dispute);
 
         $dispute->load(['evidence.submittedByUser', 'evidence.submittedByCompany', 'messages.user', 'messages.company', 'raisedByUser', 'respondentCompany']);
 
@@ -93,7 +90,7 @@ class DisputeController extends Controller
 
     public function submitEvidence(Request $request, Order $order, Dispute $dispute): RedirectResponse
     {
-        abort_unless($dispute->order_id === $order->getKey(), 404);
+        $this->assertDisputeParty($request, $order, $dispute);
 
         $data = $request->validate([
             'description' => ['required', 'string', 'max:2000'],
@@ -111,7 +108,7 @@ class DisputeController extends Controller
 
     public function reply(Request $request, Order $order, Dispute $dispute): RedirectResponse
     {
-        abort_unless($dispute->order_id === $order->getKey(), 404);
+        $this->assertDisputeParty($request, $order, $dispute);
 
         $data = $request->validate([
             'body' => ['required', 'string', 'max:4000'],
@@ -130,7 +127,7 @@ class DisputeController extends Controller
 
     public function appeal(Request $request, Order $order, Dispute $dispute): RedirectResponse
     {
-        abort_unless($dispute->order_id === $order->getKey(), 404);
+        $this->assertDisputeParty($request, $order, $dispute);
 
         try {
             $dispute->appeal($request->user());
@@ -141,5 +138,16 @@ class DisputeController extends Controller
         $this->notifier->appealed($dispute);
 
         return back()->with('status', 'Dispute appealed.');
+    }
+
+    /**
+     * Another tenant's dispute is indistinguishable from a missing one (404),
+     * and the party check runs before any write — DisputeService used to
+     * persist evidence before its own model-level party check threw.
+     */
+    private function assertDisputeParty(Request $request, Order $order, Dispute $dispute): void
+    {
+        abort_unless($dispute->order_id === $order->getKey(), 404);
+        abort_unless($dispute->isParty($request->user()), 404);
     }
 }

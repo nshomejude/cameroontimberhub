@@ -31,13 +31,18 @@ class AgentProductController extends Controller
     /** Upsert a product on an agent-sourced supplier by `external_id`. 201 created / 200 updated. */
     public function store(Request $request, int $supplier): JsonResponse
     {
-        $company = Company::query()->whereKey($supplier)->first();
+        $ctx = AgentContext::fromRequest($request);
 
-        if ($company === null) {
-            throw new ApiException(404, 'not_found', 'Supplier not found.');
+        // Scoped to this agent's own source (same rule as
+        // AgentSupplierController::findAgentCompany): another agent's or a
+        // human-owned supplier is indistinguishable from a missing one.
+        $company = Company::query()->whereKey($supplier)->where('source', $ctx->source)->first();
+
+        if ($company === null || ! AgentPrincipal::isAgentSource($company->source)) {
+            throw new ApiException(404, 'not_found', 'No agent-sourced supplier with that id.');
         }
 
-        $outcome = $this->ingestion->upsertProduct($company, $request->all(), AgentContext::fromRequest($request));
+        $outcome = $this->ingestion->upsertProduct($company, $request->all(), $ctx);
 
         if ($outcome['result'] === 'rejected') {
             if ($outcome['status'] === 422) {

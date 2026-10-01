@@ -375,7 +375,7 @@ it('notifies the supplier company when the buyer accepts their quote', function 
     QuoteItem::factory()->create(['quote_id' => $quote->getKey(), 'quantity' => 50, 'unit_price' => 185.00, 'line_total' => Quote::lineTotal(50, 185.00)]);
     $quote->load('items')->recalculateTotals()->save();
 
-    $conversation = Conversation::factory()->create(['user_id' => $buyer->getKey(), 'company_id' => $supplierCompany->getKey()]);
+    $conversation = Conversation::factory()->create(['user_id' => $buyer->getKey(), 'company_id' => $supplierCompany->getKey(), 'quote_id' => $quote->getKey()]);
     ConversationParticipant::firstOrCreate(
         ['conversation_id' => $conversation->getKey(), 'user_id' => $supplierUser->getKey()],
         ['role' => ConversationParticipant::ROLE_SUPPLIER, 'company_id' => $supplierCompany->getKey()],

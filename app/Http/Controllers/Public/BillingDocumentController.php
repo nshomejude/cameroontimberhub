@@ -15,7 +15,7 @@ use Symfony\Component\HttpFoundation\Response;
  * (billing engine M4). Mirrors the order-receipt print view.
  *
  * Access: a member of the document's owning company, or platform finance
- * staff (`payments.view` / `payments.manage`). Anyone else → 403.
+ * staff (`payments.view` / `payments.manage`). Anyone else → 404 (another tenant's document is indistinguishable from a missing one).
  *
  * `?format=pdf` renders through dompdf (barryvdh/laravel-dompdf, already a
  * dependency); the default HTML view is print-optimised (window.print()).
@@ -24,7 +24,7 @@ class BillingDocumentController extends Controller
 {
     public function invoice(Request $request, Invoice $invoice): Response
     {
-        abort_unless($this->authorized($request->user(), $invoice->company_id), 403);
+        abort_unless($this->authorized($request->user(), $invoice->company_id), 404);
 
         $invoice->load(['lines', 'creditNotes']);
 
@@ -38,7 +38,7 @@ class BillingDocumentController extends Controller
 
     public function creditNote(Request $request, CreditNote $creditNote): Response
     {
-        abort_unless($this->authorized($request->user(), $creditNote->company_id), 403);
+        abort_unless($this->authorized($request->user(), $creditNote->company_id), 404);
 
         $creditNote->load(['lines', 'invoice']);
 

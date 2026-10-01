@@ -188,10 +188,10 @@ it('refuses cross-buyer access by direct id on every deep link', function () {
 
     $this->actingAs($mine);
 
-    $this->get(route('buyer.rfq.responses', ['rfq' => $theirRfq->getKey()]))->assertForbidden();
-    $this->get(route('buyer.rfq.quote', ['rfq' => $theirRfq->getKey(), 'quote' => $theirQuote->getKey()]))->assertForbidden();
-    $this->get(route('buyer.rfq.order', ['rfq' => $theirRfq->getKey()]))->assertForbidden();
-    $this->get(route('buyer.rfq.order.receipt', ['rfq' => $theirRfq->getKey()]))->assertForbidden();
+    $this->get(route('buyer.rfq.responses', ['rfq' => $theirRfq->getKey()]))->assertNotFound();
+    $this->get(route('buyer.rfq.quote', ['rfq' => $theirRfq->getKey(), 'quote' => $theirQuote->getKey()]))->assertNotFound();
+    $this->get(route('buyer.rfq.order', ['rfq' => $theirRfq->getKey()]))->assertNotFound();
+    $this->get(route('buyer.rfq.order.receipt', ['rfq' => $theirRfq->getKey()]))->assertNotFound();
 
     expect($theirOrder->receipt)->not->toBeNull();
 });

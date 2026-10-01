@@ -210,6 +210,12 @@ class ChatCommerceService
             abort(403, 'That quote belongs to another company.');
         }
 
+        // ...and it must answer THIS thread's buyer: a quote on buyer A's RFQ
+        // posted into buyer B's thread would let B accept A's terms.
+        if (! $this->quoteIsForThreadBuyer($conversation, $quote)) {
+            abort(403, 'That quote was issued to another buyer.');
+        }
+
         if (! in_array($quote->status->value, QuoteStatus::buyerVisible(), true)) {
             throw new RuntimeException('Only a submitted quote can be shared in a conversation.');
         }
@@ -602,10 +608,41 @@ class ChatCommerceService
 
     /* ------------------------------------------------------------- guards */
 
-    /** The quote must be the supplier's on this very thread. */
+    /**
+     * The quote must be the supplier's on this very thread, answer this
+     * thread's buyer, AND have actually been posted into this thread (or be
+     * its tracked quote). Quotes are route-bound globally by id, so the
+     * company check alone let any buyer with a thread to supplier S act on
+     * quotes S sent to other buyers. 404 — the quote is not this thread's.
+     */
     private function assertQuoteBelongsToThread(Conversation $conversation, Quote $quote): void
     {
-        abort_unless((int) $quote->company_id === (int) $conversation->company_id, 404);
+        abort_unless(
+            (int) $quote->company_id === (int) $conversation->company_id
+                && $this->quoteIsForThreadBuyer($conversation, $quote)
+                && $this->quoteWasPostedInThread($conversation, $quote),
+            404,
+        );
+    }
+
+    private function quoteIsForThreadBuyer(Conversation $conversation, Quote $quote): bool
+    {
+        $rfqUserId = $quote->rfq()->value('user_id');
+
+        return $rfqUserId !== null && (int) $rfqUserId === (int) $conversation->user_id;
+    }
+
+    private function quoteWasPostedInThread(Conversation $conversation, Quote $quote): bool
+    {
+        if ((int) $conversation->quote_id === (int) $quote->getKey()) {
+            return true;
+        }
+
+        return $conversation->messages()
+            ->where('type', MessageType::Quotation->value)
+            ->where('related_type', $quote->getMorphClass())
+            ->where('related_id', $quote->getKey())
+            ->exists();
     }
 
     /**

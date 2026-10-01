@@ -75,11 +75,11 @@ it('returns 403 for a different inspector', function () {
 
     $this->actingAs($other)
         ->get(route('inspector.inspections.report.edit', $inspection))
-        ->assertForbidden();
+        ->assertNotFound();
 
     $this->actingAs($other)
         ->postJson(route('inspector.inspections.report.store', $inspection), validReportPayload())
-        ->assertForbidden();
+        ->assertNotFound();
 });
 
 it('returns 403 for a guest', function () {

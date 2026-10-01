@@ -192,6 +192,6 @@ class BillingCheckoutController extends Controller
     {
         $companyIds = $request->user()?->companies()->pluck('companies.id')->all() ?? [];
 
-        abort_unless(in_array($payment->company_id, $companyIds, true), 403);
+        abort_unless(in_array($payment->company_id, $companyIds, true), 404);
     }
 }

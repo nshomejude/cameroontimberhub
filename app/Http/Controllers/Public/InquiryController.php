@@ -47,7 +47,7 @@ class InquiryController extends Controller
     {
         // Signature checked here (not via `signed` middleware) so an expired
         // link gets a recovery page — still a 403 — rather than a bare error.
-        if (! $request->hasValidSignature() || $request->query('h') !== sha1($inquiry->email)) {
+        if (! $request->hasValidSignature() || ! is_string($request->query('h')) || ! hash_equals(sha1($inquiry->email), $request->query('h'))) {
             return response()->view('public.rfq.link-invalid', [
                 'kind' => 'inquiry',
                 'company' => $inquiry->company,

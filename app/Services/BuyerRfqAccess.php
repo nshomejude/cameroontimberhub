@@ -25,7 +25,7 @@ use Illuminate\Support\Facades\URL;
  *     address registered — the signed-in owner reaches the same screens with no
  *     signature at all.
  *
- * Anything else is a 403. This class is the single decision point; controllers
+ * Anything else is a 404 (never confirm the RFQ exists). This class is the single decision point; controllers
  * never re-implement the check.
  */
 class BuyerRfqAccess
@@ -109,7 +109,7 @@ class BuyerRfqAccess
 
     public function authorize(Request $request, Rfq $rfq): void
     {
-        abort_unless($this->allows($request, $rfq), 403);
+        abort_unless($this->allows($request, $rfq), 404);
     }
 
     public function isAccountOwner(Request $request, Rfq $rfq): bool
