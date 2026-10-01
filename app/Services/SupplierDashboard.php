@@ -168,6 +168,7 @@ class SupplierDashboard
     {
         return (clone $this->quotes($user))
             ->with(['rfq:id,reference_code,buyer_email,title', 'items'])
+            ->withConversationId()
             ->orderByDesc('created_at')
             ->limit($limit)
             ->get();

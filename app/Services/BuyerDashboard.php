@@ -316,6 +316,7 @@ class BuyerDashboard
     {
         return (clone $this->quotes($user))
             ->with(['rfq:id,reference_code,buyer_email,user_id,title', 'company:id,slug,legal_name,trade_name'])
+            ->withConversationId()
             ->orderByDesc('submitted_at')
             ->orderByDesc('id')
             ->limit($limit)

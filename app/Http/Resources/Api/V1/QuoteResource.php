@@ -61,6 +61,13 @@ class QuoteResource extends JsonResource
      */
     public static function conversationIdFor(Quote $quote): ?int
     {
+        // Preloaded by Quote::scopeWithConversationId() on list endpoints.
+        if (array_key_exists('resolved_conversation_id', $quote->getAttributes())) {
+            $preloaded = $quote->getAttributes()['resolved_conversation_id'];
+
+            return $preloaded === null ? null : (int) $preloaded;
+        }
+
         $viaCard = Message::query()
             ->where('related_type', $quote->getMorphClass())
             ->where('related_id', $quote->getKey())

@@ -114,6 +114,7 @@ class SupplierQuoteController extends Controller
     {
         $quotes = $this->scope->quotes($request->user())
             ->with(['items', 'rfq'])
+            ->withConversationId()
             ->paginate(15);
 
         return SupplierQuoteResource::collection($quotes);
