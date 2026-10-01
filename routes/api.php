@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\V1\CertificateController;
 use App\Http\Controllers\Api\V1\TraceabilityController;
 use App\Http\Controllers\Api\V1\FleetDriverController;
 use App\Http\Controllers\Api\V1\FleetVehicleController;
+use App\Http\Controllers\Api\V1\SupplierShipmentController;
 use App\Http\Controllers\Api\V1\LocalMarketController;
 use App\Http\Controllers\Api\V1\NearbyController;
 use App\Http\Controllers\Api\V1\TransformationNetworkController;
@@ -632,7 +633,27 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
                 Route::get('drivers/{driver}', [FleetDriverController::class, 'show'])->name('drivers.show');
                 Route::patch('drivers/{driver}', [FleetDriverController::class, 'update'])
                     ->middleware('throttle:api-decision')->name('drivers.update');
+
+                // Delete (409 while assigned to an in-transit shipment).
+                Route::delete('vehicles/{vehicle}', [FleetVehicleController::class, 'destroy'])
+                    ->middleware('throttle:api-decision')->name('vehicles.destroy');
+                Route::delete('drivers/{driver}', [FleetDriverController::class, 'destroy'])
+                    ->middleware('throttle:api-decision')->name('drivers.destroy');
             });
+
+            /* ---- Logistics: shipments + waybills (SupplierShipmentController) ----
+             * Kept as a separate block from the supplier order-action routes
+             * (`orders/{reference}/{confirm|...}`) to ease merging. Visibility:
+             * member of the carrier company OR the order's supplier company.
+             */
+            Route::post('orders/{reference}/shipments', [SupplierShipmentController::class, 'storeForOrder'])
+                ->middleware('throttle:api-decision')->name('orders.shipments.store');
+            Route::get('shipments', [SupplierShipmentController::class, 'index'])->name('shipments.index');
+            Route::get('shipments/{shipment}', [SupplierShipmentController::class, 'show'])
+                ->whereNumber('shipment')->name('shipments.show');
+            Route::post('shipments/{shipment}/checkpoints', [SupplierShipmentController::class, 'storeCheckpoint'])
+                ->whereNumber('shipment')->middleware('throttle:api-decision')->name('shipments.checkpoints.store');
+            /* ---- end logistics block ---- */
         });
     });
 

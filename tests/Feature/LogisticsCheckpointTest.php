@@ -12,6 +12,7 @@ use App\Models\Rfq;
 use App\Models\RfqCompany;
 use App\Models\Shipment;
 use App\Models\TimberLot;
+use App\Models\User;
 use App\Services\QuoteService;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Support\Facades\Mail;
@@ -57,9 +58,18 @@ function logisticsCheckpointTestOrder(): Order
     return Order::where('quote_id', $quote->getKey())->firstOrFail();
 }
 
-function logisticsCheckpointTestShipment(): Shipment
+/** Creates a shipment and (by default) logs in a member of its order's supplier company. */
+function logisticsCheckpointTestShipment(bool $actAsSupplier = true): Shipment
 {
-    return Shipment::factory()->create(['order_id' => logisticsCheckpointTestOrder()->getKey()]);
+    $shipment = Shipment::factory()->create(['order_id' => logisticsCheckpointTestOrder()->getKey()]);
+
+    if ($actAsSupplier) {
+        $user = User::factory()->create();
+        $shipment->order->company->users()->attach($user, ['role' => 'member', 'is_primary' => true]);
+        test()->actingAs($user);
+    }
+
+    return $shipment;
 }
 
 beforeEach(function () {
@@ -77,6 +87,8 @@ it('shows the checkpoint recording form for a valid waybill number', function ()
 });
 
 it('404s for an unknown/invalid waybill number', function () {
+    $this->actingAs(User::factory()->create());
+
     $response = $this->get('/logistics/shipments/NOT-A-REAL-WAYBILL/checkpoint');
 
     $response->assertNotFound();
@@ -199,4 +211,44 @@ it('validates the status field', function () {
     ]);
 
     $response->assertStatus(422);
+});
+
+it('redirects a guest to login (keeping the intended capture URL) instead of showing the form', function () {
+    $shipment = logisticsCheckpointTestShipment(actAsSupplier: false);
+    $url = "/logistics/shipments/{$shipment->waybill_number}/checkpoint";
+
+    $this->get($url)->assertRedirect(route('login'));
+    expect(session('url.intended'))->toEndWith($url);
+
+    $this->postJson($url, ['status' => TrackingCheckpointStatus::Delivered->value])->assertUnauthorized();
+    expect(CheckpointUpdate::forTrackable($shipment)->count())->toBe(0);
+});
+
+it('forbids a logged-in user who is neither the carrier nor the supplier', function () {
+    $shipment = logisticsCheckpointTestShipment(actAsSupplier: false);
+    $this->actingAs(User::factory()->create());
+    $url = "/logistics/shipments/{$shipment->waybill_number}/checkpoint";
+
+    $this->get($url)->assertForbidden();
+    $this->postJson($url, ['status' => TrackingCheckpointStatus::Delivered->value])->assertForbidden();
+    expect(CheckpointUpdate::forTrackable($shipment)->count())->toBe(0);
+});
+
+it('lets a member of the carrier company record checkpoints', function () {
+    $shipment = logisticsCheckpointTestShipment(actAsSupplier: false);
+    $carrier = Company::factory()->create();
+    $shipment->update(['carrier_company_id' => $carrier->getKey()]);
+    $driverUser = User::factory()->create();
+    $carrier->users()->attach($driverUser, ['role' => 'member', 'is_primary' => true]);
+
+    $this->actingAs($driverUser)
+        ->postJson("/logistics/shipments/{$shipment->waybill_number}/checkpoint", [
+            'status' => TrackingCheckpointStatus::InTransit->value,
+        ])->assertCreated();
+});
+
+it('keeps the public waybill page readable without login', function () {
+    $shipment = logisticsCheckpointTestShipment(actAsSupplier: false);
+
+    $this->get("/shipments/{$shipment->waybill_number}/waybill")->assertOk();
 });
