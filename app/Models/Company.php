@@ -94,6 +94,10 @@ class Company extends Model
             'delivery_days_max' => 'integer',
             'latitude' => 'decimal:6',
             'longitude' => 'decimal:6',
+            // Agent Ingestion Gateway provenance (docs/api/AGENT_INGESTION.md).
+            'ingested_at' => 'datetime',
+            'ingestion_meta' => 'array',
+            'needs_review' => 'boolean',
         ];
     }
 

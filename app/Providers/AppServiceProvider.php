@@ -314,6 +314,16 @@ class AppServiceProvider extends ServiceProvider
         // with a Log::warning. No caching: Laravel resolves a named limiter's
         // Limit once per request, so this adds at most one indexed lookup +
         // one eager-load per request.
+        // Agent Ingestion Gateway (docs/api/AGENT_INGESTION.md): per-token
+        // budget for machine principals, on top of the api-key limiter.
+        RateLimiter::for('api-agent', function (Request $request) {
+            $tokenId = $request->user()?->currentAccessToken()?->getKey();
+
+            return $tokenId
+                ? Limit::perMinute(600)->by('api-agent:'.$tokenId)
+                : Limit::perMinute(30)->by('api-agent-ip:'.$request->ip());
+        });
+
         RateLimiter::for('api-key', function (Request $request) {
             $token = $request->user()?->currentAccessToken();
 

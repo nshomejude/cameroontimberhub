@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Controllers\Api\V1\Agent\AgentProductController;
+use App\Http\Controllers\Api\V1\Agent\AgentReferenceController;
+use App\Http\Controllers\Api\V1\Agent\AgentSupplierController;
 use App\Http\Controllers\Api\V1\AnnouncementController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CompanyDocumentController;
@@ -629,4 +632,34 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
             });
         });
     });
+
+    /* ------------------------------------------------- agent ingestion */
+
+    // Agent Ingestion Gateway (docs/api/AGENT_INGESTION.md): machine
+    // principals (e.g. Hermes) add suppliers/products for staff review.
+    // Agent keys are minted with `php artisan agent:create-key`, confined
+    // to this prefix by EnforceApiKeyPolicy, and everything they write is
+    // hidden (draft + needs_review) until staff approve it in the admin.
+    Route::prefix('agent')->name('agent.')
+        ->middleware(['auth:sanctum', 'agent.token', 'throttle:api-agent'])
+        ->group(function (): void {
+            Route::get('reference', AgentReferenceController::class)
+                ->middleware('agent.token:agent:read')->name('reference');
+
+            Route::get('suppliers', [AgentSupplierController::class, 'lookup'])
+                ->middleware('agent.token:agent:read')->name('suppliers.lookup');
+            Route::get('suppliers/{supplier}', [AgentSupplierController::class, 'show'])
+                ->whereNumber('supplier')->middleware('agent.token:agent:read')->name('suppliers.show');
+
+            Route::middleware(['agent.token:agent:ingest', 'agent.idempotent'])->group(function (): void {
+                Route::post('suppliers/batch', [AgentSupplierController::class, 'batch'])->name('suppliers.batch');
+                Route::post('suppliers', [AgentSupplierController::class, 'store'])->name('suppliers.store');
+                Route::post('suppliers/{supplier}/products', [AgentProductController::class, 'store'])
+                    ->whereNumber('supplier')->name('suppliers.products.store');
+                Route::post('suppliers/{supplier}/logo', [AgentSupplierController::class, 'logo'])
+                    ->whereNumber('supplier')->name('suppliers.logo');
+                Route::post('products/{product}/image', [AgentProductController::class, 'image'])
+                    ->whereNumber('product')->name('products.image');
+            });
+        });
 });

@@ -26,6 +26,10 @@ Schedule::command('subscriptions:process-renewals')->dailyAt('02:30')->withoutOv
 // engine M6). Stub until price versioning (M9) lands.
 Schedule::command('subscriptions:notify-price-changes')->dailyAt('08:00');
 
+// Agent Ingestion Gateway: drop Idempotency-Key replay records past their
+// 7-day window (docs/api/AGENT_INGESTION.md).
+Schedule::command('agent:prune-idempotency-keys')->dailyAt('03:40');
+
 // Compliance daily maintenance.
 Schedule::command('compliance:expire-badges')->dailyAt('06:30');
 Schedule::command('compliance:remind-expiring')->dailyAt('07:00');

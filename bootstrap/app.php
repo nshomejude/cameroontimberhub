@@ -1,7 +1,10 @@
 <?php
 
 use App\Exceptions\Api\ErrorEnvelope;
+use App\Http\Middleware\AgentIdempotency;
 use App\Http\Middleware\AssignRequestId;
+use App\Http\Middleware\EnforceApiKeyPolicy;
+use App\Http\Middleware\EnsureAgentToken;
 use App\Http\Middleware\EnsureApiBuyer;
 use App\Http\Middleware\EnsureApiSupplier;
 use App\Http\Middleware\EnsureBuyerAccount;
@@ -46,7 +49,16 @@ return Application::configure(basePath: dirname(__DIR__))
         // SetLocale::handle().
         $middleware->api(append: [
             SetLocale::class,
+            // Global API-key policy: revoked keys -> 401 `token_revoked`;
+            // agent (machine-principal) keys confined to /api/v1/agent/*.
+            EnforceApiKeyPolicy::class,
         ]);
+        // ...and it must run BEFORE route-level `auth:sanctum`, so a revoked
+        // key reports `token_revoked` rather than a generic 401.
+        $middleware->prependToPriorityList(
+            before: \Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests::class,
+            prepend: EnforceApiKeyPolicy::class,
+        );
 
         $middleware->web(append: [
             SetLocale::class,
@@ -78,6 +90,12 @@ return Application::configure(basePath: dirname(__DIR__))
             // group. Not applied to any route today — see routes/api.php and
             // docs/api/CONVENTIONS.md for the "how to sunset an endpoint" flow.
             'deprecated' => AnnounceDeprecation::class,
+            // Sanctum token-ability checks (abilities = all, ability = any).
+            'abilities' => \Laravel\Sanctum\Http\Middleware\CheckAbilities::class,
+            'ability' => \Laravel\Sanctum\Http\Middleware\CheckForAnyAbility::class,
+            // Agent Ingestion Gateway (docs/api/AGENT_INGESTION.md).
+            'agent.token' => EnsureAgentToken::class,
+            'agent.idempotent' => AgentIdempotency::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

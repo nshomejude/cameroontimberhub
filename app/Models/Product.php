@@ -57,6 +57,10 @@ class Product extends Model
             'specifications' => 'array',
             'key_benefits' => 'array',
             'custom_attributes' => 'array',
+            // Agent Ingestion Gateway provenance (docs/api/AGENT_INGESTION.md).
+            'ingested_at' => 'datetime',
+            'ingestion_meta' => 'array',
+            'needs_review' => 'boolean',
         ];
     }
 
