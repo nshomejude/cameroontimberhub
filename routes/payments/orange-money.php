@@ -15,6 +15,8 @@ Route::get('/payments/orange-money/{payment}/return', function (Payment $payment
     return app(OrangeMoneyGateway::class)->returnPage($payment);
 })->name('payments.orange-money.return');
 
-Route::post('/payments/orange-money/notify', function (Request $request) {
-    return app(OrangeMoneyGateway::class)->handleWebhook($request);
-})->name('payments.orange-money.notify');
+// Server-to-server notification: exempt from CSRF (see mtn-momo.php).
+Route::withoutMiddleware(\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class)
+    ->post('/payments/orange-money/notify', function (Request $request) {
+        return app(OrangeMoneyGateway::class)->handleWebhook($request);
+    })->name('payments.orange-money.notify');
