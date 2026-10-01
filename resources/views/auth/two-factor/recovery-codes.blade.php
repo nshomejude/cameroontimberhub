@@ -15,5 +15,11 @@
         <a href="{{ route('two-factor.show') }}" class="mt-6 inline-block rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white">
             Done
         </a>
+
+        @if (! empty($continueUrl))
+            <a href="{{ $continueUrl }}" class="mt-6 ml-2 inline-block rounded-md bg-gray-800 px-4 py-2 text-sm font-medium text-white">
+                Continue to admin panel
+            </a>
+        @endif
     </div>
 </x-layouts.app>
