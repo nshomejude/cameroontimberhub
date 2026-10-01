@@ -36,8 +36,12 @@
         ['label' => __('messages.nav.transformation_network'), 'url' => route('transformation-network')],
         ['label' => __('messages.nav.made_in_cameroon'), 'url' => route('made-in-cameroon')],
         ['label' => __('messages.nav.logistics_directory'), 'url' => route('logistics-directory')],
-        ['label' => __('messages.nav.carbon_projects'), 'url' => route('carbon-projects')],
     ];
+    // Hidden while carbon signup is dormant and the directory is empty.
+    $showCarbonLinks = \App\Support\CarbonDirectory::linksVisible();
+    if ($showCarbonLinks) {
+        $domesticMarket[] = ['label' => __('messages.nav.carbon_projects'), 'url' => route('carbon-projects')];
+    }
 
     // Deep screens swap the mobile hamburger for a back affordance.
     // Native-script labels for the language switcher — these are display
@@ -474,7 +478,7 @@
                         [__('messages.footer.link_transformation_network'), route('transformation-network')],
                         [__('messages.footer.link_made_in_cameroon'), route('made-in-cameroon')],
                         [__('messages.footer.link_logistics_directory'), route('logistics-directory')],
-                        [__('messages.footer.link_carbon_projects'), route('carbon-projects')],
+                        ...($showCarbonLinks ? [[__('messages.footer.link_carbon_projects'), route('carbon-projects')]] : []),
                     ]],
                     ['title' => __('messages.footer.col_company'), 'links' => [
                         [__('messages.footer.link_about_us'), '/about'],

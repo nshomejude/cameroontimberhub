@@ -254,6 +254,8 @@ return [
         'account_type_carbon_developer_hint' => 'Je gère un projet carbone/de reboisement',
         'account_type_carbon_buyer' => 'Acheteur de carbone',
         'account_type_carbon_buyer_hint' => "J'achète des crédits carbone",
+        'coming_soon' => 'Bientôt disponible',
+        'carbon_coming_soon' => 'Les comptes carbone arrivent bientôt et ne peuvent pas encore être créés.',
         'label_company_name' => 'Nom commercial / entreprise',
         'placeholder_company_name' => 'Entrez le nom de votre entreprise',
         'help_company_name' => "Le profil de votre entreprise démarre en attente de vérification. Vous pourrez le compléter après votre connexion.",

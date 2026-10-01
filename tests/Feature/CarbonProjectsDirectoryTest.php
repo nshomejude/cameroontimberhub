@@ -79,6 +79,11 @@ it('filters by project_type', function () {
 });
 
 it('links to the carbon projects page from the nav dropdown', function () {
+    // Links are hidden while carbon is dormant AND the directory is empty
+    // (see CarbonLaunchPolishTest); a listed project brings them back.
+    CarbonProject::factory()->active()->for(carbonDeveloperCompany())->create();
+    \Illuminate\Support\Facades\Cache::forget(\App\Support\CarbonDirectory::CACHE_KEY);
+
     $response = $this->get('/');
 
     $response->assertOk();

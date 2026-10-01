@@ -168,12 +168,12 @@
                                                     {{-- Dormant account type (config timber.signup.carbon_enabled): shown, not selectable, not submitted. --}}
                                                     <div class="flex cursor-not-allowed items-start gap-3 rounded-xl border border-dashed border-sand-300 bg-sand-50 px-4 py-3.5 opacity-70" aria-disabled="true" data-coming-soon="{{ $value }}">
                                                         <input type="radio" value="{{ $value }}" disabled
-                                                               class="mt-1 h-4 w-4 shrink-0 border-sand-400" aria-label="{{ $label }} ({{ __('Coming soon') }})">
+                                                               class="mt-1 h-4 w-4 shrink-0 border-sand-400" aria-label="{{ $label }} ({{ __('messages.register.coming_soon') }})">
                                                         <span>
                                                             <span class="flex flex-wrap items-center gap-1.5 text-[1.0625rem] font-semibold text-ink-soft">
                                                                 <x-dynamic-component :component="'heroicon-o-'.$icon" class="h-4 w-4" aria-hidden="true" />
                                                                 {{ $label }}
-                                                                <span class="rounded-full bg-sand-200 px-2 py-0.5 text-xs font-medium text-ink-soft">{{ __('Coming soon') }}</span>
+                                                                <span class="rounded-full bg-sand-200 px-2 py-0.5 text-xs font-medium text-ink-soft">{{ __('messages.register.coming_soon') }}</span>
                                                             </span>
                                                             <span class="mt-0.5 block text-[0.9375rem] text-ink-soft">{{ $hint }}</span>
                                                         </span>
@@ -205,7 +205,7 @@
                                     </fieldset>
 
                                     {{-- Supplier-only: everything here lands on the new Company row. --}}
-                                    <div x-show="['supplier','processor','artisan','logistics_partner','carbon_developer'].includes(accountType)" x-cloak class="space-y-4">
+                                    <div x-show="{{ \Illuminate\Support\Js::from(array_values(array_intersect(['supplier', 'processor', 'artisan', 'logistics_partner', 'carbon_developer'], \App\Actions\Auth\RegisterAccount::selectableTypes()))) }}.includes(accountType)" x-cloak class="space-y-4">
                                         <x-auth.field
                                             name="company_name"
                                             :label="__('messages.register.label_company_name')"
