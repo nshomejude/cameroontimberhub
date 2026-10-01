@@ -12,12 +12,20 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (DB::getDriverName() !== 'pgsql') {
+            return;
+        }
+
         DB::statement('ALTER TABLE rfqs DROP CONSTRAINT IF EXISTS rfqs_type_check');
         DB::statement("ALTER TABLE rfqs ADD CONSTRAINT rfqs_type_check CHECK (type IN ('export','domestic_manufacturing','transport'))");
     }
 
     public function down(): void
     {
+        if (DB::getDriverName() !== 'pgsql') {
+            return;
+        }
+
         DB::statement('ALTER TABLE rfqs DROP CONSTRAINT IF EXISTS rfqs_type_check');
         DB::statement("ALTER TABLE rfqs ADD CONSTRAINT rfqs_type_check CHECK (type IN ('export','domestic_manufacturing'))");
     }
