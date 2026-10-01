@@ -7,6 +7,7 @@ use App\Domain\Commerce\Commands\RecordPaymentCompletionCommand;
 use App\Enums\PaymentProvider;
 use App\Enums\PaymentStatus;
 use App\Models\Payment;
+use App\Services\Referrals\ReferralPayoutService;
 use App\Support\Bus\CommandBus;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -207,6 +208,15 @@ class PayPalGateway implements PaymentGatewayContract
         $eventType = $payload['event_type'];
         $resource = $payload['resource'];
 
+        // Referral commission payouts (Payouts API) share this verified
+        // webhook; they never touch a checkout Payment.
+        if (is_string($eventType) && str_starts_with($eventType, 'PAYMENT.PAYOUTS')) {
+            $result = app(ReferralPayoutService::class)
+                ->handlePayPalWebhook($eventType, is_array($resource) ? $resource : []);
+
+            return $this->jsonResponse(['status' => $result]);
+        }
+
         $orderId = $resource['supplementary_data']['related_ids']['order_id']
             ?? $resource['id']
             ?? null;
@@ -307,5 +317,35 @@ class PayPalGateway implements PaymentGatewayContract
         }
 
         return $response->json('access_token');
+    }
+
+    // ------------------------------------------------------------------
+    // Payouts API (referral commission payouts — ReferralPayoutService).
+    // Reuses this gateway's credentials, environment and OAuth token.
+    // ------------------------------------------------------------------
+
+    /**
+     * POST /v1/payments/payouts. PayPal rejects a re-used `sender_batch_id`
+     * (30-day window), so re-submitting the same payout can never pay twice;
+     * PayPal-Request-Id additionally makes an exact retry idempotent.
+     *
+     * @param  array<string, mixed>  $body
+     */
+    public function createPayout(array $body, string $requestId): \Illuminate\Http\Client\Response
+    {
+        return Http::withToken($this->getAccessToken())
+            ->acceptJson()
+            ->withHeaders(['PayPal-Request-Id' => $requestId])
+            ->timeout(30)
+            ->post($this->baseUrl().'/v1/payments/payouts', $body);
+    }
+
+    /** GET /v1/payments/payouts/{payout_batch_id} — batch header + items. */
+    public function getPayoutBatch(string $payoutBatchId): \Illuminate\Http\Client\Response
+    {
+        return Http::withToken($this->getAccessToken())
+            ->acceptJson()
+            ->timeout(30)
+            ->get($this->baseUrl().'/v1/payments/payouts/'.rawurlencode($payoutBatchId));
     }
 }

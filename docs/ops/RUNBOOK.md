@@ -122,6 +122,18 @@ Queue worker (unit file: `deploy/systemd/timberhub-queue.service`): `systemctl s
 - **Buyer requests board**: suppliers also see matching approved RFQs not routed to them (exporter panel → Buyer requests; API `GET /api/v1/supplier/rfq-board`) without buyer contact details; quoting self-routes them.
 - **Who receives leads** is controlled only by the plan's "Receive RFQ leads" toggle in Admin → Plans (Free plan: on at launch). Turning it off stops routing and empties that plan's board. To pause all automatic distribution set `RFQ_AUTO_ROUTE_ON_APPROVAL=false` and/or `RFQ_AUTO_APPROVE_LOW_RISK=false`, then `config:cache`.
 
+### Referral commission payouts (PayPal)
+
+Referrers earn 10% (Admin → Referral settings) of a referred company's first subscription payment, computed on the price **excluding tax and any provider fee passed to the buyer** (`ReferralService::commissionBase()`). Payouts live in Admin → Referral earnings (needs `payments.manage`: super_admin, finance_officer).
+
+- **PayPal prerequisites** — the PayPal REST app whose credentials are in Admin → Payment settings must have **Payouts** enabled (PayPal business account → Developer dashboard → the app → Features → Payouts; live accounts need PayPal to approve Payouts first). Keep the business balance funded in the payout currency; `INSUFFICIENT_FUNDS` fails the payout (it can be re-requested).
+- **Webhook events** — on the same PayPal webhook (`https://www.cameroontimberhub.com/payments/paypal/webhook`, id in `PAYPAL_WEBHOOK_ID` / Payment settings) also subscribe: `PAYMENT.PAYOUTS-ITEM.SUCCEEDED`, `PAYMENT.PAYOUTS-ITEM.FAILED`, `PAYMENT.PAYOUTS-ITEM.UNCLAIMED`, `PAYMENT.PAYOUTS-ITEM.RETURNED`, `PAYMENT.PAYOUTS-ITEM.BLOCKED`, `PAYMENT.PAYOUTS-ITEM.DENIED`, `PAYMENT.PAYOUTS-ITEM.REFUNDED`, `PAYMENT.PAYOUTS-ITEM.CANCELED`, `PAYMENT.PAYOUTS-ITEM.HELD`, `PAYMENT.PAYOUTSBATCH.DENIED`. Signatures are verified exactly like checkout webhooks. `referrals:refresh-payouts` (hourly, scheduled) is the safety net if a webhook is missed.
+- **Currencies** — only `PAYPAL_PAYOUT_CURRENCIES` (default `USD,EUR,GBP`) can go through PayPal. **PayPal cannot pay XAF**: XAF commissions are paid by MoMo / bank and recorded with "Mark paid manually".
+- **Flow** — the referrer sets a PayPal email (web `/account/settings` → Referral payouts, or API `PATCH /api/v1/referrals/payout-settings`). Approve the commission → admin A clicks **Request PayPal payout** (single or bulk) → a **different** admin B clicks **Approve payout** (with a fresh 2FA confirmation when `STAFF_REQUIRE_2FA=true`) → PayPal is called. Outcome: *Paid* (earning paid, referrer emailed), *Failed* (referrer emailed, can be re-requested), *Unclaimed* (the email has no PayPal account; PayPal holds it 30 days, then it comes back as RETURNED → Failed).
+- **Never pay twice** — one live payout per commission is enforced by a DB unique index; the PayPal `sender_batch_id` is `CTH-REFPAY-{payout id}` so a retry is deduplicated by PayPal. If a submission timed out, use **Refresh payout status** (re-submits the same batch id safely). If it shows provider status `DUPLICATE`, check PayPal → Activity for that batch id: if it was paid, use **Mark paid manually** with the PayPal transaction id as the reference.
+- **Manual payments** — **Mark paid manually** requires the MoMo / bank reference; it is stored on the payout and in the activity log (`log_name = referral_payout`).
+- If PayPal is not configured the PayPal actions are disabled with an explanation; manual marking still works.
+
 ---
 
 ## 5a. Go-live checklist

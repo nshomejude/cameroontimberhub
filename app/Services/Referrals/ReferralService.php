@@ -5,12 +5,14 @@ namespace App\Services\Referrals;
 use App\Enums\PaymentStatus;
 use App\Enums\ReferralEarningStatus;
 use App\Models\Company;
+use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\ReferralEarning;
 use App\Models\ReferralSetting;
 use App\Models\User;
 use App\Notifications\ReferralCommissionEarnedNotification;
 use App\Notifications\ReferralSignedUpNotification;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -23,8 +25,10 @@ use Illuminate\Support\Str;
  *   `referral_code` registration rule; `attachReferrer()` stores it.
  * - Commission: `awardForPayment()` runs off the billing engine's
  *   PaymentCompleted event and creates ONE earning, `rate_percent` of the
- *   referred company's FIRST completed subscription payment. Renewals (any
- *   later completed plan payment) earn nothing while `one_time` is on.
+ *   referred company's FIRST completed subscription payment, computed on the
+ *   price excluding tax and passed-through provider fees (`commissionBase()`).
+ *   Renewals (any later completed plan payment) earn nothing while
+ *   `one_time` is on. Paying it out: ReferralPayoutService.
  */
 class ReferralService
 {
@@ -61,7 +65,7 @@ class ReferralService
                 $owner->forceFill(['referral_code' => $code])->saveQuietly();
 
                 return $code;
-            } catch (\Illuminate\Database\UniqueConstraintViolationException) {
+            } catch (UniqueConstraintViolationException) {
                 continue;
             }
         }
@@ -215,6 +219,11 @@ class ReferralService
                 return null;
             }
 
+            $base = self::commissionBase($payment);
+            if ($base <= 0) {
+                return null;
+            }
+
             return ReferralEarning::create([
                 'referrer_user_id' => $referrer->id,
                 'referrer_company_id' => $company->referred_by_company_id,
@@ -223,9 +232,9 @@ class ReferralService
                 'payment_id' => $payment->id,
                 'source_reference' => 'SUB-PAY-'.$payment->id,
                 'basis' => 'subscription',
-                'base_amount' => $payment->amount,
+                'base_amount' => $base,
                 'rate_percent' => $rate,
-                'amount' => round(((float) $payment->amount) * $rate / 100, 2),
+                'amount' => round($base * $rate / 100, 2),
                 'currency' => $payment->currency,
                 'status' => ReferralEarningStatus::Pending,
             ]);
@@ -236,6 +245,36 @@ class ReferralService
         }
 
         return $earning;
+    }
+
+    /**
+     * What the commission is a percentage of: the subscription price the
+     * company actually bought, EXCLUDING tax and EXCLUDING any payment-provider
+     * fee passed through to the buyer.
+     *
+     * - Taxed checkout: `metadata.tax.subtotal` (pre-tax, pre-fee) — the same
+     *   figure as `Payment::subtotalAmount()` from the fee pass-through work.
+     * - Otherwise: `Payment::baseAmount()` / `payments.base_amount` (amount
+     *   before the passed-through fee; falls back to `amount`), minus any tax
+     *   recorded as `metadata.tax.tax_amount` or on the payment's invoice.
+     */
+    public static function commissionBase(Payment $payment): float
+    {
+        $tax = is_array($payment->metadata['tax'] ?? null) ? $payment->metadata['tax'] : [];
+
+        if (isset($tax['subtotal'])) {
+            $subtotal = method_exists($payment, 'subtotalAmount') ? $payment->subtotalAmount() : $tax['subtotal'];
+
+            return round(max(0.0, (float) $subtotal), 2);
+        }
+
+        $gross = method_exists($payment, 'baseAmount')
+            ? (float) $payment->baseAmount()
+            : (float) ($payment->getAttribute('base_amount') ?? $payment->amount);
+
+        $taxAmount = $tax['tax_amount'] ?? Invoice::where('payment_id', $payment->getKey())->value('tax_amount');
+
+        return round(max(0.0, $gross - (float) ($taxAmount ?? 0)), 2);
     }
 
     /**

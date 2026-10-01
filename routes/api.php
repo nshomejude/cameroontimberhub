@@ -413,6 +413,8 @@ Route::prefix('v1')->name('api.v1.')->middleware([AssignRequestId::class, 'throt
         Route::prefix('referrals')->name('referrals.')->group(function (): void {
             Route::get('me', [ReferralController::class, 'me'])->name('me');
             Route::get('earnings', [ReferralController::class, 'earnings'])->name('earnings');
+            Route::patch('payout-settings', [ReferralController::class, 'updatePayoutSettings'])
+                ->middleware('throttle:10,1')->name('payout-settings.update');
             Route::get('/', [ReferralController::class, 'index'])->name('index');
         });
 

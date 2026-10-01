@@ -904,6 +904,35 @@ Web: `GET /account/delete` (route `account.delete`, confirmation page for
 settings pages to link to) and `POST /account/delete` (`password`, `confirm`)
 do the same through `App\Actions\Account\DeleteAccount`.
 
+### Referrals — "Refer & earn" and commission payouts
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/referrals/me` | Code, share URL, stats, terms and `payout` (below). |
+| GET | `/referrals` | People the user referred (masked names). |
+| GET | `/referrals/earnings` | The user's commissions, newest first, with payout status. |
+| PATCH | `/referrals/payout-settings` | Body: `paypal_payout_email` (email, or `null` / `""` to remove). Throttled 10/min. |
+
+`payout` block (in `/referrals/me` and the PATCH response) — the email is **never** returned in full:
+
+```json
+{ "paypal_email_masked": "je*********@example.com", "has_paypal_email": true,
+  "paypal_available": true, "paypal_currencies": ["USD", "EUR", "GBP"] }
+```
+
+`paypal_available: false` means PayPal payouts are not switched on yet (commissions are paid manually by MoMo / bank). Commissions in a currency outside `paypal_currencies` (e.g. XAF) are always paid manually. `422` with `error.details.paypal_payout_email` for an invalid email.
+
+Each `/referrals/earnings` item adds to `id, source_reference, amount_label, status, status_label, at`:
+
+| Field | Values |
+|---|---|
+| `payout_status` | `awaiting_approval` (commission not yet approved), `awaiting_payout`, `processing` (payout requested / sent to PayPal), `unclaimed` (PayPal holds it — the user must sign up / log in to PayPal with the payout email within 30 days), `failed` (check the payout email; it will be retried), `paid`, `cancelled` |
+| `payout_status_label` | Display text for `payout_status`. |
+| `payout_method` | `paypal` / `manual` once paid, else `null`. |
+| `paid_at` | ISO-8601 or `null`. |
+
+Notifications: `referral_payout_updated` (database + push, `screen: "referral"`, `payout_status`: `paid` / `failed` / `unclaimed`) and an email.
+
 ### Released-app compatibility notes
 
 - **Supplier orders without a conversation**: `GET /supplier/orders/{ref}`
