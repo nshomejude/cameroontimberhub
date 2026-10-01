@@ -7,6 +7,7 @@ use App\Enums\DisputeCategory;
 use App\Http\Controllers\Controller;
 use App\Models\Dispute;
 use App\Models\Order;
+use App\Services\DisputeNotifier;
 use App\Services\DisputeService;
 use App\Support\Bus\CommandBus;
 use Illuminate\Http\RedirectResponse;
@@ -30,6 +31,7 @@ class DisputeController extends Controller
     public function __construct(
         private readonly DisputeService $disputes,
         private readonly CommandBus $commandBus,
+        private readonly DisputeNotifier $notifier,
     ) {}
 
     public function index(Request $request, Order $order): View
@@ -66,6 +68,8 @@ class DisputeController extends Controller
         } catch (RuntimeException $e) {
             return back()->with('error', $e->getMessage());
         }
+
+        $this->notifier->opened($dispute, $request->user());
 
         return redirect()
             ->route('disputes.show', ['order' => $order->getKey(), 'dispute' => $dispute->getKey()])
@@ -118,6 +122,8 @@ class DisputeController extends Controller
         } catch (RuntimeException $e) {
             return back()->with('error', $e->getMessage());
         }
+
+        $this->notifier->replied($dispute, $request->user(), $data['body']);
 
         return back()->with('status', 'Response sent.');
     }

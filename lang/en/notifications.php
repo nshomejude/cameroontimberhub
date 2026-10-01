@@ -102,6 +102,35 @@ return [
         'body' => 'The buyer withdrew request :reference.',
     ],
 
+    // ----- app/Notifications/DisputeDecisionNotification -----
+    'dispute_decision' => [
+        'resolved' => [
+            'subject' => 'Dispute decided — order :order',
+            'title' => 'Dispute decided',
+            'line' => 'Our team has decided the dispute on order :order.',
+        ],
+        'appeal_decided' => [
+            'subject' => 'Appeal decided — order :order',
+            'title' => 'Appeal decided',
+            'line' => 'Our team has re-reviewed the appealed dispute on order :order and issued a new decision.',
+        ],
+        'closed' => [
+            'subject' => 'Dispute closed — order :order',
+            'title' => 'Dispute closed',
+            'line' => 'The dispute on order :order is now closed.',
+        ],
+        'notes' => 'Decision: :notes',
+        'action' => 'View dispute',
+    ],
+
+    // ----- app/Notifications/DisputeOpenedStaffNotification -----
+    'dispute_opened_staff' => [
+        'subject' => 'New dispute on order :order',
+        'title' => 'New dispute to review',
+        'line' => 'A :category dispute was opened on order :order and needs staff attention.',
+        'action' => 'Open disputes',
+    ],
+
     // ----- app/Notifications/MessageReceivedNotification (mail, coalesced) -----
     'message_received_mail' => [
         'subject' => 'New message from :sender',

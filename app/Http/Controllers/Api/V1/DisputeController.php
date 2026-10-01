@@ -11,9 +11,8 @@ use App\Http\Requests\Api\V1\OpenDisputeRequest;
 use App\Http\Requests\Api\V1\ReplyDisputeRequest;
 use App\Http\Resources\Api\V1\DisputeResource;
 use App\Models\Dispute;
-use App\Notifications\DisputeOpenedNotification;
-use App\Notifications\DisputeReplyNotification;
 use App\Services\BuyerApiScope;
+use App\Services\DisputeNotifier;
 use App\Services\DisputeService;
 use App\Support\Bus\CommandBus;
 use App\Support\Bus\QueryBus;
@@ -173,11 +172,10 @@ class DisputeController extends Controller
         // Notify the OTHER party, mirroring how reply() notifies below —
         // wired here rather than inside OpenDisputeCommand's handler for the
         // same additive reasoning documented on reply()'s notify call.
-        $otherParty = (int) $dispute->raised_by_user_id === (int) $request->user()->getKey()
-            ? $dispute->respondentUser
-            : $dispute->raisedByUser;
-
-        $otherParty?->notify(new DisputeOpenedNotification($dispute));
+        // DisputeNotifier re-derives parties from the order (the respondent
+        // is usually a COMPANY, so respondentUser alone missed its members)
+        // and also alerts staff holding disputes.manage.
+        app(DisputeNotifier::class)->opened($dispute, $request->user());
 
         return response()->json([
             'message' => 'Dispute opened.',
@@ -205,12 +203,7 @@ class DisputeController extends Controller
         // in-flight change from another agent (a can_reply/isReplyable guard)
         // when this was built, so the notification is added additively at
         // the controller layer instead of touching that method's body.
-        $body = $request->validated('body');
-        $otherParty = (int) $model->raised_by_user_id === (int) $request->user()->getKey()
-            ? $model->respondentUser
-            : $model->raisedByUser;
-
-        $otherParty?->notify(new DisputeReplyNotification($model, $body));
+        app(DisputeNotifier::class)->replied($model, $request->user(), $request->validated('body'));
 
         return response()->json([
             'message' => 'Response sent.',
