@@ -50,9 +50,16 @@ class RfqRoutedToExporter extends Notification implements ShouldQueue
 
     public function toMail(object $notifiable): MailMessage
     {
-        return (new MailMessage)
+        $mail = (new MailMessage)
             ->subject(__('notifications.rfq_routed_to_exporter.subject', ['reference' => $this->rfq->reference_code]))
-            ->line(__('notifications.rfq_routed_to_exporter.line_1'))
+            ->line(__('notifications.rfq_routed_to_exporter.line_1'));
+
+        // Pending-verification suppliers receive requests but cannot respond yet.
+        if (! $this->company->canRespondToBuyers()) {
+            $mail->line(__(Company::VERIFICATION_REQUIRED_MESSAGE));
+        }
+
+        return $mail
             ->action(__('notifications.rfq_routed_to_exporter.action'), $this->leadUrl())
             ->line(__('notifications.rfq_routed_to_exporter.line_2', ['reference' => $this->rfq->reference_code]));
     }
@@ -68,7 +75,8 @@ class RfqRoutedToExporter extends Notification implements ShouldQueue
             ->where('company_id', $this->company->getKey())
             ->first();
 
-        return $lead
+        // A pending company cannot open the lead yet (LeadResource::canEdit()).
+        return $lead && $this->company->canRespondToBuyers()
             ? LeadResource::getUrl('edit', ['record' => $lead], panel: 'exporter')
             : LeadResource::getUrl('index', panel: 'exporter');
     }
@@ -82,6 +90,7 @@ class RfqRoutedToExporter extends Notification implements ShouldQueue
             'body' => __('notifications.push.rfq_routed.body'),
             'reference' => $this->rfq->reference_code,
             'screen' => 'rfq',
+            'can_respond' => $this->company->canRespondToBuyers(),
         ];
     }
 }

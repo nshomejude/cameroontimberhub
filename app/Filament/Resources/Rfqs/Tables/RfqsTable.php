@@ -106,7 +106,8 @@ class RfqsTable
     }
 
     /**
-     * Verified companies for the manual routing selector. For RFQ types with
+     * Verified and pending-verification companies (Company::BUYER_REQUEST_STATUSES)
+     * for the manual routing selector. For RFQ types with
      * target organisation types (RfqType::targetOrganisationTypes()) the
      * suitable companies come first in a "Suggested" group; the rest stay
      * selectable under "Other companies" so staff can still override.
@@ -119,7 +120,7 @@ class RfqsTable
             ? "{$company->legal_name} ({$company->type->label()})"
             : $company->legal_name;
 
-        $companies = Company::where('status', 'verified')->orderBy('legal_name')->get();
+        $companies = Company::query()->receivingBuyerRequests()->orderBy('legal_name')->get();
         $targetTypes = $rfq->type?->targetOrganisationTypes();
 
         if ($targetTypes === null) {

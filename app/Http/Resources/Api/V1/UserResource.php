@@ -150,6 +150,8 @@ class UserResource extends JsonResource
             'role' => $company->pivot->role,
             'status' => $company->status?->value,
             'type' => $company->type?->value,
+            // Pending-verification suppliers receive buyer requests but cannot act on them.
+            'can_respond_to_buyers' => $company->canRespondToBuyers(),
             // Additive: {value,label} + the effective plan, see CompanyContextPayload.
             'organisation_type' => CompanyContextPayload::organisationType($company),
             'plan' => CompanyContextPayload::plan($company),

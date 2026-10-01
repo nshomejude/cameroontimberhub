@@ -3,6 +3,7 @@
 namespace App\Filament\Exporter\Pages;
 
 use App\Enums\RfqType;
+use App\Filament\Exporter\Concerns\ShowsBuyerResponseLockBanner;
 use App\Filament\Exporter\Resources\Quotes\QuoteResource;
 use App\Models\Company;
 use App\Models\Rfq;
@@ -29,6 +30,7 @@ use Filament\Tables\Table;
 class BuyerRequests extends Page implements HasTable
 {
     use InteractsWithTable;
+    use ShowsBuyerResponseLockBanner;
 
     protected string $view = 'filament.exporter.pages.buyer-requests';
 
@@ -56,7 +58,7 @@ class BuyerRequests extends Page implements HasTable
                     : Rfq::query()->whereRaw('1 = 0');
             })
             ->emptyStateHeading('No open buyer requests match your company right now')
-            ->emptyStateDescription('Requests appear here when they match the species and activity on your profile. Your plan must include "Receive RFQ leads" and your company must be verified.')
+            ->emptyStateDescription('Requests appear here when they match the species and activity on your profile. Your plan must include "Receive RFQ leads" and your company must be verified or pending verification.')
             ->columns([
                 TextColumn::make('reference_code')->label('Reference'),
                 TextColumn::make('type')->badge()
@@ -77,8 +79,17 @@ class BuyerRequests extends Page implements HasTable
                 Action::make('quote')
                     ->label('Quote this request')
                     ->icon(Heroicon::OutlinedDocumentText)
+                    ->disabled(fn (): bool => static::buyerResponsesLocked())
+                    ->tooltip(fn (): ?string => static::buyerResponsesLocked() ? Company::VERIFICATION_REQUIRED_MESSAGE : null)
                     ->action(function (Rfq $record) {
                         $company = $this->getCompany();
+
+                        // Server-side too: a disabled button is not a guard.
+                        if ($company !== null && ! $company->canRespondToBuyers()) {
+                            Notification::make()->title(Company::VERIFICATION_REQUIRED_MESSAGE)->warning()->send();
+
+                            return null;
+                        }
 
                         if (! $company || ! app(RfqOpenRequestService::class)->selfRoute($record, $company, auth()->user())) {
                             Notification::make()->title('This request is no longer available to your company.')->danger()->send();

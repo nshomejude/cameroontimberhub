@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Actions\Lead\UpdateLeadStatus;
 use App\Enums\LeadStatus;
 use App\Enums\RfqType;
+use App\Exceptions\Api\CompanyVerificationRequiredException;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Api\V1\LeadResource;
 use App\Models\Lead;
@@ -58,6 +59,9 @@ class SupplierLeadController extends Controller
     public function update(Request $request, int|string $lead): LeadResource
     {
         $record = $this->lead($request->user(), $lead);
+
+        // Leads of a company pending verification are read-only.
+        CompanyVerificationRequiredException::unless($record->company);
 
         $data = $request->validate([
             'status' => ['sometimes', 'required', Rule::enum(LeadStatus::class)],

@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Enums\CompanyStatus;
 use App\Enums\ConsentPurpose;
 use App\Enums\OrganisationType;
 use App\Enums\RfqStatus;
@@ -99,7 +98,7 @@ class RfqMatchingService
                 ->orWhereHas('consents', fn (Builder $c) => $c->active()->where('purpose', ConsentPurpose::RfqExporterSharing->value)))
             ->orderByDesc('created_at');
 
-        if ($company->status !== CompanyStatus::Verified || ! $company->hasFeature('leads_receive')) {
+        if (! $company->canReceiveBuyerRequests() || ! $company->hasFeature('leads_receive')) {
             return $query->whereRaw('1 = 0');
         }
 
@@ -169,7 +168,7 @@ class RfqMatchingService
             ->values()
             ->all();
 
-        $query = Company::query()->where('status', 'verified');
+        $query = Company::query()->receivingBuyerRequests();
 
         if (($targetTypes = $type->targetOrganisationTypes()) !== null) {
             $query->whereIn('type', array_map(fn (OrganisationType $t) => $t->value, $targetTypes));

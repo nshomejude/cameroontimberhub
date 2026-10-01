@@ -3,6 +3,7 @@
 namespace App\Http\Resources\Api\V1;
 
 use App\Models\Rfq;
+use App\Services\SupplierApiScope;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -37,6 +38,12 @@ class SupplierRfqBoardResource extends JsonResource
             'deadline' => $this->deadline?->toDateString(),
             'created_at' => $this->created_at?->toIso8601String(),
             'items' => RfqItemResource::collection($this->whenLoaded('items')),
+            // Board entries never carry buyer contact; can_respond tells the
+            // app whether express-interest/quote will be accepted (a company
+            // pending verification sees the board but gets 403
+            // company_verification_required on those writes).
+            'can_respond' => (bool) ($request->user() ? app(SupplierApiScope::class)->company($request->user())?->canRespondToBuyers() : false),
+            'contact_locked' => true,
         ];
     }
 }

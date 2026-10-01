@@ -18,12 +18,18 @@ class LeadResource extends JsonResource
     /** @return array<string, mixed> */
     public function toArray(Request $request): array
     {
+        $canRespond = (bool) $this->company?->canRespondToBuyers();
+        $locked = ! $canRespond;
+
         return [
             'id' => $this->id,
             'source' => $this->source,
             'status' => $this->status ? ['value' => $this->status->value, 'label' => $this->status->label()] : null,
-            'buyer_name' => $this->buyer_name,
-            'buyer_email' => $this->buyer_email,
+            // Buyer contact withheld until the company is verified.
+            'buyer_name' => $locked ? null : $this->buyer_name,
+            'buyer_email' => $locked ? null : $this->buyer_email,
+            'can_respond' => $canRespond,
+            'contact_locked' => $locked,
             'buyer_country_code' => $this->buyer_country_code,
             'value_amount' => $this->value_amount !== null ? (string) $this->value_amount : null,
             'value_currency' => $this->value_currency,

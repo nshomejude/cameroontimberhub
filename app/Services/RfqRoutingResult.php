@@ -17,6 +17,8 @@ final class RfqRoutingResult
 
     public const REASON_CONSENT_REVOKED = 'consent_revoked';
 
+    public const REASON_INELIGIBLE_STATUS = 'company_status';
+
     /**
      * @param  list<array{company_id: int, company: ?string, reason: string}>  $skipped
      */
@@ -32,6 +34,7 @@ final class RfqRoutingResult
             self::REASON_NO_ENTITLEMENT => 'plan lacks lead delivery (leads_receive)',
             self::REASON_ALREADY_ROUTED => 'already routed',
             self::REASON_CONSENT_REVOKED => 'buyer revoked sharing consent',
+            self::REASON_INELIGIBLE_STATUS => 'company is not verified or pending verification',
             default => $reason,
         };
     }
@@ -41,6 +44,6 @@ final class RfqRoutingResult
     {
         return collect($this->skipped)
             ->map(fn (array $s) => ($s['company'] ?? "#{$s['company_id']}").' — '.self::reasonLabel($s['reason']))
-            ->implode("; ");
+            ->implode('; ');
     }
 }

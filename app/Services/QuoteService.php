@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\QuoteStatus;
 use App\Enums\RfqCompanyStatus;
 use App\Enums\RfqStatus;
+use App\Listeners\RecordQuotedPriceObservations;
 use App\Mail\QuoteSubmittedMail;
 use App\Models\Company;
 use App\Models\Quote;
@@ -13,8 +14,11 @@ use App\Models\RfqCompany;
 use App\Models\User;
 use App\Notifications\QuoteAcceptedNotification;
 use App\Notifications\QuoteDeclinedNotification;
+use App\Notifications\QuoteReceivedNotification;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use RuntimeException;
 
@@ -54,6 +58,13 @@ class QuoteService
     {
         if ($rfq->status !== RfqStatus::Approved) {
             throw new RuntimeException('Only approved RFQs can be quoted.');
+        }
+
+        // Owner rule: pending-verification suppliers receive requests but
+        // cannot respond until verified. Authoritative for every quote path
+        // (API, exporter Create Quote, chat, reorder).
+        if (! $company->canRespondToBuyers()) {
+            throw new RuntimeException(Company::VERIFICATION_REQUIRED_MESSAGE);
         }
 
         $routing = RfqCompany::where('rfq_id', $rfq->getKey())
@@ -169,16 +180,16 @@ class QuoteService
         // Database notification for the registered buyer (a guest-submitted
         // RFQ has no `user_id`, so there is nobody to notify in-app).
         if ($quote->rfq->user) {
-            $quote->rfq->user->notify(new \App\Notifications\QuoteReceivedNotification($quote->fresh(['items', 'company', 'rfq'])));
+            $quote->rfq->user->notify(new QuoteReceivedNotification($quote->fresh(['items', 'company', 'rfq'])));
         }
 
         // docs/PRICE_DATA_STANDARD.md §5 — `quoted` price signal. No domain
         // event exists for quote submission; the collector is defensive and
         // wrapped here too so it can never block a submit.
         try {
-            app(\App\Listeners\RecordQuotedPriceObservations::class)->record($quote);
+            app(RecordQuotedPriceObservations::class)->record($quote);
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::channel('errors')->error('QuoteService::submit: price observation collector threw.', [
+            Log::channel('errors')->error('QuoteService::submit: price observation collector threw.', [
                 'quote_id' => $quote->getKey(),
                 'exception' => $e->getMessage(),
             ]);
@@ -311,7 +322,7 @@ class QuoteService
      * runs inside a caller's outer transaction (ChatCommerceService), nothing
      * is sent for a decision that is then rolled back.
      */
-    private function notifySupplier(Quote $quote, \Illuminate\Notifications\Notification $notification): void
+    private function notifySupplier(Quote $quote, Notification $notification): void
     {
         $quote->loadMissing('company.users');
         $users = $quote->company?->users;

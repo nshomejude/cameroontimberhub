@@ -4,6 +4,7 @@ namespace App\Filament\Exporter\Resources\Leads\Tables;
 
 use App\Enums\LeadStatus;
 use App\Enums\RfqType;
+use App\Models\Lead;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -16,7 +17,9 @@ class LeadsTable
     {
         return $table
             ->columns([
-                TextColumn::make('buyer_name')->label('Buyer')->searchable()->placeholder('—'),
+                // Buyer contact is withheld until the company is verified.
+                TextColumn::make('buyer_name')->label('Buyer')->searchable()->placeholder('—')
+                    ->formatStateUsing(fn (?string $state, Lead $record): ?string => $record->company?->canRespondToBuyers() ? $state : 'Hidden until verified'),
                 TextColumn::make('source')->badge()->color('gray'),
                 // RFQ-originated leads carry the RFQ's flow (export /
                 // manufacturing / transport); inquiry leads have no RFQ.

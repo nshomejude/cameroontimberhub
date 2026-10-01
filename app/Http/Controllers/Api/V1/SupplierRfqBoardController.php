@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Enums\RfqType;
+use App\Exceptions\Api\CompanyVerificationRequiredException;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Api\V1\SupplierRfqBoardResource;
 use App\Http\Resources\Api\V1\SupplierRfqResource;
@@ -63,6 +64,8 @@ class SupplierRfqBoardController extends Controller
         $user = $request->user();
         /** @var Company $company */
         $company = $this->scope->company($user);
+
+        CompanyVerificationRequiredException::unless($company);
 
         $rfq = Rfq::where('reference_code', $reference)->first();
 

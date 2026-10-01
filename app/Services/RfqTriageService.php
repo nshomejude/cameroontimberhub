@@ -146,6 +146,14 @@ class RfqTriageService
                 continue;
             }
 
+            // Draft/suspended/rejected/archived companies never receive
+            // buyer requests (Company::BUYER_REQUEST_STATUSES).
+            if (! $company->canReceiveBuyerRequests()) {
+                $skipped[] = ['company_id' => (int) $companyId, 'company' => $company->legal_name, 'reason' => RfqRoutingResult::REASON_INELIGIBLE_STATUS];
+
+                continue;
+            }
+
             if (! $company->hasFeature('leads_receive')) {
                 $skipped[] = ['company_id' => (int) $companyId, 'company' => $company->legal_name, 'reason' => RfqRoutingResult::REASON_NO_ENTITLEMENT];
 

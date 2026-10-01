@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Exceptions\Api\CompanyVerificationRequiredException;
 use App\Exceptions\Api\ConflictException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\StoreSupplierQuoteRequest;
@@ -54,6 +55,9 @@ class SupplierQuoteController extends Controller
 
         /** @var Company $company */
         $company = $this->scope->company($user);
+
+        // Pending-verification suppliers see requests but cannot quote.
+        CompanyVerificationRequiredException::unless($company);
 
         // An RFQ on the caller's open-requests board (not routed yet) is
         // self-routed first (RfqOpenRequestService::selfRoute()); anything

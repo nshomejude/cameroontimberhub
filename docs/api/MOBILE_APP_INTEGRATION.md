@@ -659,7 +659,7 @@ company's reference is always a `404`.
 | GET | `/supplier/rfqs` | RFQs routed to the caller's company. Query: `status` (`sent\|viewed\|responded\|declined`), `type` (`export\|domestic_manufacturing\|transport`). Each item carries `type`. |
 | GET | `/supplier/rfqs/{reference}` | One routed RFQ. |
 | POST | `/supplier/rfqs/{reference}/quote` | Submit a quote (`throttle:api-decision`). Also accepts an RFQ from the caller's open-requests board (below): it is self-routed to the caller's company first, then quoted. |
-| GET | `/supplier/rfq-board` | Open buyer requests: approved, open RFQs matching the caller's company (species handled + RFQ type targeting) that are **not** routed to it yet. Paginated (15). Query: `type` (`export\|domestic_manufacturing\|transport`), `species` (species slug). Buyer name/company/email, notes and attachments are **omitted**. Empty when the company is not verified or its plan has `leads_receive` off. |
+| GET | `/supplier/rfq-board` | Open buyer requests: approved, open RFQs matching the caller's company (species handled + RFQ type targeting) that are **not** routed to it yet. Paginated (15). Query: `type` (`export\|domestic_manufacturing\|transport`), `species` (species slug). Buyer name/company/email, notes and attachments are **omitted**. Shown to verified **and pending-verification** companies; empty for draft/suspended/rejected/archived companies or when the plan has `leads_receive` off. Each item carries `can_respond` and `contact_locked: true`. |
 | POST | `/supplier/rfq-board/{reference}/express-interest` | Self-route a board RFQ to the caller's company (`throttle:api-decision`). Returns the routed RFQ (`SupplierRfqResource`, as `/supplier/rfqs/{reference}`). `404` if the RFQ is not on the caller's board. Optional: quoting a board RFQ directly does the same. |
 | GET | `/supplier/quotes`, `/supplier/quotes/{reference}` | The caller's quotes; each carries `conversation_id` (see Quotes). |
 | GET | `/supplier/orders`, `/supplier/orders/{reference}` | Sales orders (`SupplierOrderResource`), with `conversation_id` and `actions[]`. |
@@ -674,6 +674,25 @@ company's reference is always a `404`.
 | POST | `/supplier/orders/{reference}/documents` | Attach shipping papers. Multipart: `documents[]` (1–10 PDF/JPG/PNG/WEBP), optional `kind` (`OrderDocumentKind`, default `other`), `label`. Buyer is notified. `throttle:api-upload`. |
 | POST | `/supplier/orders/{reference}/payments` | Record an OFF-platform payment: `amount` (cumulative total received to date, >= 0), optional `method` (free-text name only — never account details). `409 order_action_not_allowed` when above the order total or the order is cancelled. |
 | POST | `/supplier/orders/{reference}/cancel` | Cancel with a required `reason` (max 500). `409 order_transition_not_allowed` for completed/cancelled orders. |
+
+**Pending verification — receive, but cannot respond.** Buyer requests are
+routed (and the routing notification sent) to companies whose status is
+`verified` **or** `pending`, but only a `verified` company may act on them.
+While `can_respond` is `false`:
+
+- `/supplier/rfqs*` and `/supplier/leads*` items return `buyer_name`,
+  `buyer_company`, `buyer_email` (and on RFQs `notes`/`attachments`) as
+  `null`/`[]` with `contact_locked: true`; the commercial spec is still shown.
+- `POST /supplier/rfqs/{reference}/quote`, `POST /supplier/rfq-board/{reference}/express-interest`
+  and `PATCH /supplier/leads/{id}` return `403` with error code
+  `company_verification_required` and message "Complete your company
+  verification to respond to buyer requests."
+- `GET /auth/me` exposes `company.can_respond_to_buyers` so the app can show
+  a "complete verification" banner and disable Quote/Express interest up
+  front. The `rfq_routed` notification payload also carries `can_respond`.
+
+Every supplier RFQ / board / lead item carries `can_respond` (bool) and
+`contact_locked` (bool; always `true` on the board).
 
 **Fulfilment and chat.** Accepting a quote does **not** create a conversation,
 so an order may have `conversation_id: null` (e.g. accepted from the buyer's

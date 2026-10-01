@@ -2,12 +2,15 @@
 
 namespace App\Filament\Exporter\Resources\Leads\Pages;
 
+use App\Filament\Exporter\Concerns\ShowsBuyerResponseLockBanner;
 use App\Filament\Exporter\Resources\Leads\LeadResource;
 use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 
 class ListLeads extends ListRecords
 {
+    use ShowsBuyerResponseLockBanner;
+
     protected static string $resource = LeadResource::class;
 
     protected function getHeaderActions(): array
