@@ -6,6 +6,7 @@ use App\Enums\OrderPaymentStatus;
 use App\Enums\OrderStatus;
 use App\Enums\RfqCurrency;
 use App\Enums\RfqIncoterm;
+use App\Support\Money;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -273,7 +274,7 @@ class Order extends Model
     public function recalculateTotals(): static
     {
         $subtotal = $this->items->reduce(
-            fn ($carry, OrderItem $item) => bcadd((string) $carry, (string) $item->line_total, 2),
+            fn ($carry, OrderItem $item) => bcadd((string) $carry, Money::forCurrency((string) $item->line_total, $this->currency), 2),
             '0.00',
         );
 

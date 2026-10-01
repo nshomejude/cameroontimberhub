@@ -214,7 +214,7 @@ class QuoteService
         $quote->loadMissing('items');
 
         foreach ($quote->items as $item) {
-            $expected = Quote::lineTotal($item->quantity, $item->unit_price);
+            $expected = Quote::lineTotal($item->quantity, $item->unit_price, $quote->currency);
 
             if ((string) $item->line_total !== $expected) {
                 $item->forceFill(['line_total' => $expected])->save();

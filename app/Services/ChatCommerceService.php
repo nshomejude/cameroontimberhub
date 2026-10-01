@@ -438,7 +438,7 @@ class ChatCommerceService
                 'unit_price' => $unitPrice,
                 // Derived here, never posted: the totals a buyer reads are
                 // always computed by us from quantity x unit price.
-                'total_amount' => QuoteCounterOffer::total($quantity, $unitPrice),
+                'total_amount' => QuoteCounterOffer::total($quantity, $unitPrice, $locked->currency),
                 'incoterm' => $data['incoterm'] ?? $locked->incoterm?->value,
                 'lead_time_days' => $data['lead_time_days'] ?? $locked->lead_time_days,
                 'payment_terms' => $data['payment_terms'] ?? $locked->payment_terms,
@@ -598,7 +598,7 @@ class ChatCommerceService
             'quantity' => $quantity,
             'unit' => ($offer->unit ?? $line->unit)?->value,
             'unit_price' => $offer->unit_price,
-            'line_total' => Quote::lineTotal($quantity, $offer->unit_price),
+            'line_total' => Quote::lineTotal($quantity, $offer->unit_price, $revision->currency),
         ]);
 
         // submit() recomputes every total from the line items, so the revised

@@ -424,6 +424,7 @@ Verification fees purchase a verification process. They do not guarantee approva
 | Tax calculation | Configurable tax engine; do not hard-code one rate in the pricing UI |
 | FX | Exchange rate, timestamp, provider and applied rate must be stored where conversion occurs |
 | Historical integrity | Original transaction currency and amount remain immutable |
+| Line rounding *(implemented 2026-10-01)* | Every quote/order line is quantity × unit price rounded half-up **per line** to the currency's precision — whole francs for XAF/XOF, cents otherwise (`Quote::lineTotal()`, `App\Support\Money`, bcmath) — so subtotals/totals are sums of payable amounts (2.5 m³ × 10,001 XAF = 25,003 XAF) |
 | Payment fees | If passed through to customer, they must be disclosed before authorization |
 
 

@@ -134,7 +134,9 @@ class OrderService
                     'quantity' => $item->quantity,
                     'unit' => $item->unit,
                     'unit_price' => $item->unit_price,
-                    'line_total' => $item->line_total,
+                    // Whole francs for XAF/XOF, cents otherwise — per line,
+                    // so the subtotal is a sum of payable amounts.
+                    'line_total' => Quote::lineTotal($item->quantity, $item->unit_price, $quote->currency),
                 ]);
             }
 
