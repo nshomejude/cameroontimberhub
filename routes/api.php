@@ -281,6 +281,11 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
 
         Route::post('conversations/{id}/read', [ConversationController::class, 'markRead'])->name('conversations.read');
 
+        // Chat paperclip: the caller's own orders/quotes/RFQs/receipts that
+        // involve this thread's counterparty. Read-only.
+        Route::get('conversations/{id}/attachables', [\App\Http\Controllers\Api\V1\ConversationAttachablesController::class, 'index'])
+            ->name('conversations.attachables');
+
         /*
          * ---------------------------------------------- in-thread commerce
          *
@@ -374,6 +379,11 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
         Route::delete('follow', [FollowController::class, 'destroy'])->name('follow.destroy');
         Route::get('following', [FollowController::class, 'following'])->name('following.index');
         Route::get('followers', [FollowController::class, 'followers'])->name('followers.index');
+
+        // Supply-chain partners, read-only, derived from completed orders
+        // (no invitation flow exists — POST is deliberately not routed).
+        Route::get('supply-chain/relationships', [\App\Http\Controllers\Api\V1\SupplyChainRelationshipController::class, 'index'])
+            ->name('supply-chain.relationships.index');
 
         // "Things I follow" — see FeedController's docblock for exactly
         // what real event sources back this today (published products from

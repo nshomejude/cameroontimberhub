@@ -678,6 +678,65 @@ Request pipeline (authenticated, any company member):
 
 Each item carries server-computed `actions[]` for the caller — render only those.
 
+### Account deletion (App Store / Play requirement)
+
+| Method | Path | Purpose |
+|---|---|---|
+| DELETE | `/auth/me` | Body: `password` (current). `204` on success. Throttled 5/min. |
+
+Effects: every Sanctum token and Expo device token is revoked; the user row is
+**kept but anonymised** (`name` → `Deleted user`, `email` →
+`deleted+{id}@deleted.invalid`, `phone` null, 2FA cleared, random password) so
+orders/quotes/messages keep their links; favorites/follows/roles removed;
+company memberships detached. A company where the user was the **only member**
+is archived (`status=archived`) together with its products. Logged to the
+activity log as `account_deleted`.
+
+Errors: `422` wrong/missing password (`error.details.password`); `403
+staff_cannot_self_delete`; `409 transfer_ownership_first` when the user is the
+sole owner of a company that still has other members.
+
+Web: `GET /account/delete` (route `account.delete`, confirmation page for
+settings pages to link to) and `POST /account/delete` (`password`, `confirm`)
+do the same through `App\Actions\Account\DeleteAccount`.
+
+### Released-app compatibility notes
+
+- **Supplier orders without a conversation**: `GET /supplier/orders/{ref}`
+  `actions[]` is no longer empty for threadless orders — it carries the same
+  `{key,label,method,path,fields?}` objects (`confirm`, `production`, `ship`,
+  `deliver`, `tracking`) with `path` = `supplier/orders/{ref}/{action}`.
+  Conversation-only actions (documents, proforma, payment request/record)
+  appear only when a thread exists (paths stay `conversations/{id}/orders/{order}/…`).
+- **Product images**: `SupplierProductResource.images[]` =
+  `[{id, url, alt, is_primary}]` — the primary image has `id: "primary"`,
+  gallery (`product_images`) rows their numeric id.
+  `DELETE /supplier/products/{product}/images/{id}` removes one (file deleted
+  too; `404` for an id not on this product). `PATCH
+  /supplier/products/{product}/images/order` body `{ids: [...]}` sets
+  gallery `sort_order` (`"primary"` is ignored — it is always first; `422` for
+  foreign ids). Removing the primary image of an active product is allowed.
+- **`POST /conversations`** also accepts `company_slug` (alias of `company`)
+  and `product_slug` (must belong to that company), and `body` is optional —
+  without it the thread is started/reused and no message is posted.
+- **`POST /rfqs`**: an unknown `items.N.species_slug` is dropped (not `422`)
+  when the item also has `species_text` or `species_id`.
+- **`GET /conversations/{id}/attachables?type=`** — `order|quote|rfq|receipt|shipment`
+  (plural accepted). The caller's own records involving the thread's
+  counterparty (buyer: orders/shipments/RFQs/receipts with that company;
+  supplier: that buyer's orders/quotes/RFQs). Rows:
+  `{type, id, reference, title, status, status_label, total_amount?, currency?, created_at}`
+  (max 30, newest first). Kinds not applicable to the caller's side → `data: []`.
+- **`GET /supply-chain/relationships?status=active|pending`** — read-only,
+  derived from **completed orders** only: `supplier` (a company you bought
+  from) and `customer` (a company whose member bought from your company).
+  Rows: `{id, relationship, status:"active", direction:null, source, orders_count, last_order_at, company:{id,slug,name,type}, actions:[]}`.
+  `pending` is always empty; `POST` (invitations) is **coming soon** — not
+  routed (`405`), which the app renders as "coming soon".
+- **Demo logins** (`/auth/demo-personas`, `/auth/demo-login/{persona}`) are
+  gated by `DEMO_LOGINS_ENABLED` (Pennant `DemoLoginsEnabled`): when off,
+  personas returns `200 {data: []}` and login `403`.
+
 ---
 
 ## 4. A full transaction flow
