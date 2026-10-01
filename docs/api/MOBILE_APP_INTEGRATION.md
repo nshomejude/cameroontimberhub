@@ -157,6 +157,7 @@ clients need no update.
     "id": 1, "name": "...", "email": "...", "email_verified": true,
     "email_verified_at": "...", "created_at": "...",
     "role": "buyer",           // "buyer" | "supplier" | "staff"
+    "account_type": "buyer",   // finer-grained, see below
     "roles": [],                // raw spatie role names, e.g. ["admin"] for staff
     "company": null,            // null for buyer/staff; populated for a supplier — see below
     "capabilities": ["rfq.create", "quote.respond", "order.view", "dispute.file", "trade_assurance.confirm", "message.send"]
@@ -167,6 +168,16 @@ clients need no update.
 `role` resolution: staff first (`hasAnyRole` on the platform staff spatie
 roles), then company membership (`supplier`), then plain `buyer`. A user who
 is both staff and a company member gets `staff` — staff wins.
+
+`account_type` (additive) is the account type chosen at registration, one of
+`buyer`, `supplier`, `processor`, `artisan`, `logistics_partner`,
+`carbon_developer`, `carbon_buyer`, `staff`. It is read from the
+account-capability role assigned at signup; a company member without one
+falls back to its company's `type` (`logistics` -> `logistics_partner`),
+anything else is `buyer`. `role` stays the coarse population switch
+(`buyer`/`supplier`/`staff`) — use `account_type` to pick the app's
+home-screen flavour. It is returned by `/auth/me`, `register`/`login` (same
+`UserResource`) and `GET /dashboard`.
 
 For a **supplier**, `company` is populated with the user's primary company
 (the `company_user` pivot row flagged `is_primary`, or the first membership
@@ -325,6 +336,10 @@ Auth column: 🌐 public · 🔑 buyer token.
 |---|---|---|---|
 | GET | `/dashboard` | 🔑 any authenticated user | Stats, recent orders/quotes, top suppliers, order-status breakdown, value trend and an activity trail. Shape depends on `data.role`, always the **first key** in the payload. |
 
+Every payload also carries `account_type` (same value as `/auth/me`) and
+`company` (the same `{id, slug, name, role, status, type}` object as
+`UserResource.company` for a supplier; `null` for buyer/staff).
+
 **`role: "buyer"`** — the full feed, server-computed via the same
 `BuyerDashboard` service the web `/account` dashboard uses. `stats[]` and
 `activity[]` intentionally omit the `url` field the web dashboard's own
@@ -423,6 +438,8 @@ Render "check your email — tap to resend" whenever `verification.required` is 
 | POST | `/quotes/{reference}/accept` | 🔑 | Accept → **awards the order**. Rate-limited (`throttle:api-decision`). → `{ data: { quote, order } }`. |
 | POST | `/quotes/{reference}/decline` | 🔑 | Decline. Body: `{ "reason": "…" }` (required). Rate-limited. |
 
+`conversation_id` (int|null) is the chat thread the quote was shared into (its quotation card), on both the buyer `QuoteResource` and the supplier `SupplierQuoteResource` — use it for `POST /conversations/{id}/quotes/{quote}/counter` (counter-offer) / `accept` / `decline`. `null` means the quote lives only outside chat; use the plain `/quotes/{reference}/accept|decline` endpoints.
+
 Quote payload fields to drive UI: `status` / `status_label`, `is_expired`, `is_actionable` (only show accept/decline when `true`), `valid_until`, `total_amount` + component amounts, `lead_time_days`, `payment_terms`. A `409 quote_not_actionable` means someone raced you (already settled / expired) — refetch and re-render.
 
 ### Orders
@@ -518,6 +535,7 @@ A second `POST` on the same order — by the same buyer or a race between two re
 | Method | Path | Auth | Purpose |
 |---|---|---|---|
 | GET | `/conversations` | 🔑 | The buyer's inbox, paginated. Query: `q` (search subject/company/buyer name/message body). |
+| POST | `/conversations` | 🔑 buyer only | Start (or reuse) a thread with a supplier company and post the first message. Body: `{ "company": "sam-timber-co" \| 5, "body": "...", "product_id"?: 12, "order"?: "ORD-2026-000001", "topic"?: "general\|rfq\|order\|product\|support", "subject"?: "..." }`. `company` is the slug or numeric id; `product_id` must belong to that company and `order` must be the caller's own order with that company (else `422`). → `201` with `ConversationResource` for a new thread, `200` when an open thread with the same company/order was reused. **Unverified email:** a NEW thread is refused with `403` `email_unverified` (reusing an existing open one still works) — prompt the user to verify (`POST /auth/email/verification-notification`). Rate-limited (`throttle:message-start`, 30/h). A supplier account gets `403` (suppliers reply in existing threads). |
 | GET | `/conversations/{id}` | 🔑 | One conversation (`ConversationResource`). |
 | GET | `/conversations/{id}/messages` | 🔑 | The thread, **oldest-first** (same order the web thread renders). Query: `limit` (default/max 200). |
 | POST | `/conversations/{id}/messages` | 🔑 | Post a plain-text message. Body: `{ "body": "..." }` (required, 1–4000 chars). Rate-limited (`throttle:api-decision`). → `201`. |
@@ -528,6 +546,41 @@ A second `POST` on the same order — by the same buyer or a race between two re
 Every message carries a `kind` field taken directly from `App\Enums\MessageType` (no invented values): `text`, `system`, `order_reference`, `order_status`, `product_reference`, `rfq_reference`, `quotation`, `counter_offer`, `contract_acceptance`, `proforma_invoice`, `payment_request`, `payment_confirmed`, `shipment_update`, `order_delivered`, `order_documents`, `transaction_completed`, `company_review`, `reorder_request`. Only `text` messages have a non-null `body`; every other kind carries its structured data in `payload` (the same immutable snapshot the web card partials render from) — render a fallback bubble/card per `kind` for anything the client doesn't have a dedicated view for yet, rather than assuming `body` is always populated.
 
 A conversation id you are not a participant on (or one that does not exist) is a **`404`**, never a `403` — same enumeration-safety rule as RFQs/quotes/orders (see `MessagingService`'s class docblock): a 403 would confirm the id is real.
+
+### Supplier — RFQ inbox, quotes, sales orders & fulfilment
+
+All under `/supplier/...` behind `api.supplier` (company membership). Another
+company's reference is always a `404`.
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/supplier/rfqs` | RFQs routed to the caller's company. Query: `status` (`sent\|viewed\|responded\|declined`), `type` (`export\|domestic_manufacturing\|transport`). Each item carries `type`. |
+| GET | `/supplier/rfqs/{reference}` | One routed RFQ. |
+| POST | `/supplier/rfqs/{reference}/quote` | Submit a quote (`throttle:api-decision`). |
+| GET | `/supplier/quotes`, `/supplier/quotes/{reference}` | The caller's quotes; each carries `conversation_id` (see Quotes). |
+| GET | `/supplier/orders`, `/supplier/orders/{reference}` | Sales orders (`SupplierOrderResource`), with `conversation_id` and `actions[]`. |
+| GET | `/supplier/orders/{reference}/documents` | The order's documents (`OrderDocumentResource`, same shape as the buyer's). |
+| GET | `/supplier/orders/{reference}/documents/{document}/download` | Stream one document. |
+| GET | `/supplier/orders/{reference}/shipments` | Shipment + checkpoint timeline (`ShipmentTrackingResource`). |
+| POST | `/supplier/orders/{reference}/confirm` | `awarded` -> `confirmed`. |
+| POST | `/supplier/orders/{reference}/production` | `confirmed` -> `in_production`. |
+| POST | `/supplier/orders/{reference}/ship` | -> `shipped`. Optional tracking fields: `carrier`, `tracking_number`, `tracking_url`, `shipping_method`, `vessel_name`, `voyage_number`, `container_number`, `port_of_loading`, `port_of_discharge`, `etd`, `eta`. |
+| POST | `/supplier/orders/{reference}/tracking` | Update the same tracking fields without moving the status (at least one required). |
+| POST | `/supplier/orders/{reference}/deliver` | `shipped` -> `delivered`. Optional `received_by`, `location`, `proof[]` (multipart, up to 5 PDF/JPG/PNG/WEBP). |
+
+**Fulfilment and chat.** Accepting a quote does **not** create a conversation,
+so an order may have `conversation_id: null` (e.g. accepted from the buyer's
+e-mail link, or a guest buyer). The `/supplier/orders/{reference}/*` actions
+above work either way and return the refreshed `SupplierOrderResource`
+(`200`): when the order has a conversation they go through the same path as
+`conversations/{id}/orders/{order}/*` (the buyer sees the card in the thread);
+when it has none they go through the same path as the web exporter panel's
+Orders table. Prefer these reference-based endpoints in the app; the
+`conversations/{id}/orders/{order}/*` routes (and `actions[]` paths) remain for
+in-thread UI and for the actions only available there (`proforma`,
+`payment-request`, `payment-record`, document upload). An illegal transition
+is `409` `order_transition_not_allowed` (`order_action_not_allowed` for
+`tracking`). Rate-limited (`throttle:api-decision`).
 
 ### Fleet (logistics) — a company's own vehicles + drivers
 

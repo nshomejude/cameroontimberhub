@@ -42,6 +42,7 @@ use App\Http\Controllers\Api\V1\SearchController;
 use App\Http\Controllers\Api\V1\SpeciesController;
 use App\Http\Controllers\Api\V1\SupplierController;
 use App\Http\Controllers\Api\V1\SupplierOrderController;
+use App\Http\Controllers\Api\V1\SupplierOrderFulfilmentController;
 use App\Http\Controllers\Api\V1\SupplierProductController;
 use App\Http\Controllers\Api\V1\TwoFactorController;
 use App\Http\Controllers\Api\V1\SupplierProductImageController;
@@ -255,6 +256,13 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
         // app. Authorization is still enforced per-conversation (404, not
         // 403, for a non-participant's id) via MessagingService::find().
         Route::get('conversations', [ConversationController::class, 'index'])->name('conversations.index');
+
+        // Start (or reuse) a thread with a supplier company — API counterpart
+        // of the web `messages.start` route, same `message-start` budget.
+        // Buyer-only: MessagingService::start() always seats the caller as
+        // the BUYER side. See ConversationController::store().
+        Route::post('conversations', [ConversationController::class, 'store'])
+            ->middleware(['api.buyer', 'throttle:message-start'])->name('conversations.store');
 
         Route::get('conversations/{id}', [ConversationController::class, 'show'])->name('conversations.show');
 
@@ -583,6 +591,28 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
             // caller's company is the SUPPLIER side. See SupplierOrderController.
             Route::get('orders', [SupplierOrderController::class, 'index'])->name('orders.index');
             Route::get('orders/{reference}', [SupplierOrderController::class, 'show'])->name('orders.show');
+
+            // Documents + shipments for the supplier's own order — same
+            // resources as the buyer's `orders/{orderReference}/documents`
+            // and `orders/{reference}/shipments`, scoped to the supplying
+            // company (another company's reference 404s).
+            Route::get('orders/{reference}/documents', [SupplierOrderController::class, 'documents'])->name('orders.documents.index');
+            Route::get('orders/{reference}/documents/{document}/download', [SupplierOrderController::class, 'downloadDocument'])
+                ->name('orders.documents.download');
+            Route::get('orders/{reference}/shipments', [SupplierOrderController::class, 'shipments'])->name('orders.shipments');
+
+            // Fulfilment by order reference (no conversation id needed): an
+            // accepted quote does NOT guarantee a chat thread, so these
+            // delegate to OrderLifecycleService when the order has one and to
+            // the exporter Orders-table path (OrderService / CommandBus) when
+            // it does not. See SupplierOrderFulfilmentController.
+            Route::middleware('throttle:api-decision')->group(function (): void {
+                Route::post('orders/{reference}/confirm', [SupplierOrderFulfilmentController::class, 'confirm'])->name('orders.confirm');
+                Route::post('orders/{reference}/production', [SupplierOrderFulfilmentController::class, 'startProduction'])->name('orders.production');
+                Route::post('orders/{reference}/ship', [SupplierOrderFulfilmentController::class, 'ship'])->name('orders.ship');
+                Route::post('orders/{reference}/tracking', [SupplierOrderFulfilmentController::class, 'updateTracking'])->name('orders.tracking');
+                Route::post('orders/{reference}/deliver', [SupplierOrderFulfilmentController::class, 'deliver'])->name('orders.deliver');
+            });
 
             // Product management (this task): full CRUD + submit-for-publish
             // over the caller's own company's catalogue listings, API

@@ -273,21 +273,51 @@ class OrderLifecycleService
         array $proofFiles = [],
     ): Message {
         return $this->advance($conversation, $order, $supplier, function (Order $o) use ($supplier, $receivedBy, $location, $proofFiles) {
-            $facts = array_filter([
-                'delivered_to_name' => $receivedBy ? trim($receivedBy) : null,
-                'delivery_location' => $location ? trim($location) : null,
-            ], fn ($v) => $v !== null && $v !== '');
-
-            if ($facts !== []) {
-                $o->forceFill($facts)->save();
-            }
-
-            foreach ($proofFiles as $file) {
-                $this->documents->store($o, $file, OrderDocumentKind::ProofOfDelivery, $supplier);
-            }
+            $this->recordDeliveryFacts($o, $supplier, $receivedBy, $location, $proofFiles);
 
             return $this->orders->deliver($o->refresh(), $supplier);
         }, MessageType::OrderDelivered);
+    }
+
+    /**
+     * Who received the goods, where, and any proof-of-delivery files — the
+     * delivery facts `deliver()` records before moving the status. Public so
+     * an order with NO conversation (e.g. a guest buyer's order, fulfilled
+     * from the app via `Api\V1\SupplierOrderFulfilmentController`) records
+     * them identically. Does not move the status itself.
+     *
+     * @param  list<UploadedFile>  $proofFiles
+     */
+    public function recordDeliveryFacts(Order $order, User $supplier, ?string $receivedBy = null, ?string $location = null, array $proofFiles = []): void
+    {
+        $facts = array_filter([
+            'delivered_to_name' => $receivedBy ? trim($receivedBy) : null,
+            'delivery_location' => $location ? trim($location) : null,
+        ], fn ($v) => $v !== null && $v !== '');
+
+        if ($facts !== []) {
+            $order->forceFill($facts)->save();
+        }
+
+        foreach ($proofFiles as $file) {
+            $this->documents->store($order, $file, OrderDocumentKind::ProofOfDelivery, $supplier);
+        }
+    }
+
+    /**
+     * Write the shipment facts on an order that has NO conversation — the
+     * same write `updateTracking()`/`ship()` perform (and the same
+     * `tracking_updated` audit entry), minus the chat card. Throws
+     * RuntimeException when no field was supplied, exactly like the threaded
+     * path.
+     *
+     * @param  array<string, mixed>  $tracking
+     */
+    public function recordShipmentDetails(Order $order, User $supplier, array $tracking): Order
+    {
+        $this->writeTracking($order, $supplier, $tracking);
+
+        return $order->refresh();
     }
 
     /**

@@ -54,6 +54,7 @@ class UserResource extends JsonResource
             'email_verified_at' => $this->email_verified_at?->toIso8601String(),
             'created_at' => $this->created_at?->toIso8601String(),
             'role' => $role,
+            'account_type' => self::resolveAccountType($user, $role),
             'roles' => $user->getRoleNames()->values()->all(),
             'company' => $company,
             'capabilities' => self::resolveCapabilities($user, $role, $company),
@@ -73,6 +74,52 @@ class UserResource extends JsonResource
 
         if ($user->companies()->exists()) {
             return 'supplier';
+        }
+
+        return 'buyer';
+    }
+
+    /**
+     * The account type chosen at registration (`RegisterAccount`'s
+     * `account_type`), finer-grained than `role`: one of `buyer`, `supplier`,
+     * `processor`, `artisan`, `logistics_partner`, `carbon_developer`,
+     * `carbon_buyer`, or `staff`.
+     *
+     * Read from the account-capability spatie role `RegisterAccount` assigns
+     * (company-forming types first, since a company member is a seller even
+     * if it also holds `buyer`). An older company member that predates
+     * those roles falls back to its primary company's `OrganisationType`
+     * (`supplier`/`processor`/`artisan`/`carbon_developer`, `logistics` ->
+     * `logistics_partner`); anything else is `buyer`.
+     */
+    public static function resolveAccountType(User $user, ?string $role = null): string
+    {
+        $role ??= self::resolveRole($user);
+
+        if ($role === 'staff') {
+            return 'staff';
+        }
+
+        $held = $user->getRoleNames()->all();
+
+        $order = $role === 'supplier'
+            ? ['supplier', 'processor', 'artisan', 'logistics_partner', 'carbon_developer']
+            : ['carbon_buyer', 'buyer'];
+
+        foreach ($order as $type) {
+            if (in_array($type, $held, true)) {
+                return $type;
+            }
+        }
+
+        if ($role === 'supplier') {
+            $type = self::resolveCompany($user)['type'] ?? null;
+
+            return match ($type) {
+                'processor', 'artisan', 'carbon_developer' => $type,
+                'logistics' => 'logistics_partner',
+                default => 'supplier',
+            };
         }
 
         return 'buyer';

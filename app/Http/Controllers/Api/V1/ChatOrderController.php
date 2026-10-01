@@ -284,8 +284,13 @@ class ChatOrderController extends Controller
 
     /* -------------------------------------------------------------- plumbing */
 
-    /** @return list<mixed> */
-    private function fileRules(): array
+    /**
+     * Public + static so `SupplierOrderFulfilmentController` validates the
+     * same uploads/tracking fields identically, rather than a second copy.
+     *
+     * @return list<mixed>
+     */
+    public static function fileRules(): array
     {
         return [
             'file',
@@ -296,7 +301,7 @@ class ChatOrderController extends Controller
     }
 
     /** @return array<string, mixed> */
-    private function trackingRules(Request $request): array
+    public static function trackingRules(Request $request): array
     {
         return $request->validate([
             'carrier' => ['nullable', 'string', 'max:120'],
