@@ -98,7 +98,22 @@ class AppServiceProvider extends ServiceProvider
         // Wizard step saves write only to the session, so they get their own,
         // much looser limiter — the strict rfq-submit budget above is reserved
         // for the one POST that actually creates an RFQ.
-        RateLimiter::for('rfq-step', fn (Request $request) => Limit::perHour(120)->by('rfq-step-ip:'.$request->ip()));
+        // Web login: 6/min per (email, IP) pair so one attacker cannot lock a
+        // victim out from elsewhere, plus a looser per-IP ceiling against
+        // credential stuffing across many addresses. The two-factor step of
+        // a web login shares the same shape keyed by the pending login.
+        RateLimiter::for('web-login', fn (Request $request) => [
+            Limit::perMinute(6)->by('web-login:'.strtolower(trim((string) $request->input('email'))).'|'.$request->ip()),
+            Limit::perMinute(30)->by('web-login-ip:'.$request->ip()),
+        ]);
+        RateLimiter::for('web-login-2fa', fn (Request $request) => [
+            Limit::perMinute(6)->by('web-login-2fa:'.$request->session()->get('login.two_factor.id', 'none').'|'.$request->ip()),
+        ]);
+        RateLimiter::for('two-factor-confirm', fn (Request $request) => [
+            Limit::perMinute(6)->by('two-factor-confirm:'.($request->user()?->getAuthIdentifier() ?? $request->ip())),
+        ]);
+
+        RateLimiter::for('rfq-step',fn (Request $request) => Limit::perHour(120)->by('rfq-step-ip:'.$request->ip()));
 
         // Public receipt verification is open to anyone, so it is the one place
         // a stranger could grind receipt numbers. Budget is per-IP and tight

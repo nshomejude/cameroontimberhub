@@ -59,9 +59,29 @@ Sanctum bearer tokens. Send `Authorization: Bearer <token>` on authenticated cal
   "name": "Amara Okafor",
   "email": "amara@buildright.ng",
   "password": "your-password",
+  "terms_accepted": true,                  // REQUIRED — must be true (consent to the terms of service)
   "device_name": "amara-pixel-8"           // optional; labels the token, defaults to "mobile"
 }
 ```
+
+`terms_accepted` is **required** (`accepted` rule: `true`, `1`, `"yes"`, `"on"`).
+Show your terms screen/checkbox and send it; a missing or false value is a
+`422` on `terms_accepted`. The server records the acceptance time and the
+current terms version on the account. `email` is stored trimmed and
+lower-cased; uniqueness is case-insensitive.
+
+**Email verification.** Registration sends a verification email. The user can
+use the app straight away (login is not blocked), but until `email_verified`
+is `true`:
+- RFQs previously submitted as a guest under that address are **not** attached
+  to the account (they are attached automatically when the link is clicked);
+- starting a new supplier conversation on the web is refused.
+
+The link in the email is a signed web URL that works without a session, so it
+can be opened from the phone's mail app. To resend it:
+`POST /api/v1/auth/email/verification-notification` (auth, 6/min) →
+`202 { "data": { "email_verified": false, "message": "..." } }`.
+Re-fetch `GET /auth/me` to pick up `email_verified: true`.
 
 For `account_type: "supplier"`, add the company fields (mirrors the web
 supplier-registration flow — same `RegisterAccount` action, no second write
@@ -73,6 +93,7 @@ path):
   "name": "Sam Chia",
   "email": "sam@timberco.cm",
   "password": "your-password",
+  "terms_accepted": true,                  // required
   "company_name": "Sam Timber Co",         // required for account_type: supplier
   "company_phone": "+237...",              // optional
   "company_city": "Douala",                // optional
@@ -124,6 +145,9 @@ clients need no update.
 |---|---|
 | `GET /api/v1/auth/me` | `{ "data": { …UserResource } }` — see below |
 | `POST /api/v1/auth/logout` | `204 No Content`. Revokes **only the calling token** — other devices stay signed in. |
+| `POST /api/v1/auth/password` | `204`. Changes the password and revokes **every other token** of the user (the calling token stays valid). |
+| `POST /api/v1/auth/reset-password` | Revokes **all** tokens of the user (and a web reset does the same) — every device must sign in again. |
+| `POST /api/v1/auth/two-factor/enable` | When 2FA is already confirmed, `password` (current password) is **required**, otherwise `422` — re-enrolling would otherwise silently disable 2FA. `two-factor/confirm` is rate-limited (6/min). |
 
 `UserResource` now carries the RBAC fields every population needs:
 

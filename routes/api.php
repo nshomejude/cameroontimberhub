@@ -147,12 +147,15 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
             Route::get('me', [AuthController::class, 'me'])->name('me');
             Route::patch('me', [AuthController::class, 'updateMe'])->name('me.update');
             Route::post('password', [AuthController::class, 'updatePassword'])->name('password.update');
+            Route::post('email/verification-notification', [AuthController::class, 'sendVerificationEmail'])
+                ->middleware('throttle:6,1')->name('verification.send');
 
             // Self-service 2FA management, mobile counterpart of the web
             // Auth\TwoFactorController (see that class's docblock).
             Route::get('two-factor', [TwoFactorController::class, 'show'])->name('two-factor.show');
             Route::post('two-factor/enable', [TwoFactorController::class, 'enable'])->name('two-factor.enable');
-            Route::post('two-factor/confirm', [TwoFactorController::class, 'confirm'])->name('two-factor.confirm');
+            Route::post('two-factor/confirm', [TwoFactorController::class, 'confirm'])
+                ->middleware('throttle:two-factor-confirm')->name('two-factor.confirm');
             Route::post('two-factor/disable', [TwoFactorController::class, 'disable'])->name('two-factor.disable');
         });
     });

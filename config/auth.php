@@ -5,6 +5,13 @@ use App\Models\User;
 return [
 
     /*
+    | Platform staff (any role in User::STAFF_ROLES) must have confirmed
+    | two-factor authentication before reaching the /admin panel
+    | (App\Http\Middleware\EnsureStaffTwoFactor).
+    */
+    'require_staff_2fa' => (bool) env('STAFF_REQUIRE_2FA', true),
+
+    /*
     |--------------------------------------------------------------------------
     | Authentication Defaults
     |--------------------------------------------------------------------------

@@ -83,4 +83,11 @@ class EventServiceProvider extends ServiceProvider
         // notifications), same pattern as DocumentApproved/BadgeIssued above.
         ComplianceCaseOpened::class => [],
     ];
+
+    /**
+     * The framework's own (auto-discovering) EventServiceProvider already
+     * wires Registered → SendEmailVerificationNotification; doing it here too
+     * would send every new user two verification emails.
+     */
+    protected function configureEmailVerification(): void {}
 }

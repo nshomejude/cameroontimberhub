@@ -27,7 +27,7 @@ use Symfony\Component\HttpFoundation\Response;
 class EnsureBuyerAccount
 {
     /** Platform staff roles that gate the /admin Filament panel. */
-    public const STAFF_ROLES = ['super_admin', 'admin', 'verification_officer', 'content_manager'];
+    public const STAFF_ROLES = \App\Models\User::STAFF_ROLES;
 
     public function handle(Request $request, Closure $next): Response
     {

@@ -78,6 +78,12 @@ return [
     |
     */
 
+    /*
+    | Version label recorded on users.terms_version when an account accepts
+    | the terms of service at registration. Bump when the terms change.
+    */
+    'terms_version' => env('TERMS_VERSION', '2026-10'),
+
     'locale' => env('APP_LOCALE', 'en'),
 
     'fallback_locale' => env('APP_FALLBACK_LOCALE', 'en'),

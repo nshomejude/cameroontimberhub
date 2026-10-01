@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\DemoLoginController;
+use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
@@ -301,7 +302,12 @@ Route::get('/exporters/{species}', [ProgrammaticExporterController::class, 'show
 // Public buyer/supplier authentication (hand-rolled; no starter kit).
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'create'])->name('login');
-    Route::post('/login', [LoginController::class, 'store'])->middleware('throttle:6,1')->name('login.store');
+    Route::post('/login', [LoginController::class, 'store'])->middleware('throttle:web-login')->name('login.store');
+    // Second step of a password login for an account with confirmed 2FA
+    // (blueprint §39). Guest-only: nobody is signed in until the code passes.
+    Route::get('/login/two-factor', [LoginController::class, 'showTwoFactor'])->name('login.two-factor');
+    Route::post('/login/two-factor', [LoginController::class, 'storeTwoFactor'])
+        ->middleware('throttle:web-login-2fa')->name('login.two-factor.store');
     // One-click demo logins. POST-only and CSRF-protected on purpose: a GET
     // would let a link, a prefetch or a crawler authenticate someone. The
     // persona segment is constrained to the three literal keys in
@@ -327,6 +333,17 @@ Route::middleware('guest')->group(function () {
 
 Route::post('/logout', [LoginController::class, 'destroy'])->middleware('auth')->name('logout');
 
+// Email verification (MustVerifyEmail). Login is NOT blocked for unverified
+// accounts; verification unlocks guest-RFQ adoption and starting new
+// conversations. The verify link is signed and does not require a session,
+// so a link opened from the mobile app's mail (or another browser) works.
+Route::get('/email/verify', [EmailVerificationController::class, 'notice'])
+    ->middleware('auth')->name('verification.notice');
+Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
+    ->middleware(['signed', 'throttle:6,1'])->name('verification.verify');
+Route::post('/email/verification-notification', [EmailVerificationController::class, 'send'])
+    ->middleware(['auth', 'throttle:6,1'])->name('verification.send');
+
 // TOTP-based multi-factor authentication (blueprint §39). Self-service
 // enrolment/management is available to every signed-in user; the step-up
 // re-verify challenge is used both by RequiresRecentTwoFactor-gated routes
@@ -334,7 +351,8 @@ Route::post('/logout', [LoginController::class, 'destroy'])->middleware('auth')-
 Route::middleware(['auth'])->prefix('security/two-factor')->name('two-factor.')->group(function () {
     Route::get('/', [App\Http\Controllers\Auth\TwoFactorController::class, 'show'])->name('show');
     Route::post('/enable', [App\Http\Controllers\Auth\TwoFactorController::class, 'enable'])->name('enable');
-    Route::post('/confirm', [App\Http\Controllers\Auth\TwoFactorController::class, 'confirm'])->name('confirm');
+    Route::post('/confirm', [App\Http\Controllers\Auth\TwoFactorController::class, 'confirm'])
+        ->middleware('throttle:two-factor-confirm')->name('confirm');
     Route::post('/disable', [App\Http\Controllers\Auth\TwoFactorController::class, 'disable'])->name('disable');
     Route::post('/recovery-codes', [App\Http\Controllers\Auth\TwoFactorController::class, 'regenerateRecoveryCodes'])->name('recovery-codes');
     Route::get('/challenge', [App\Http\Controllers\Auth\TwoFactorController::class, 'showChallenge'])->name('challenge.show');

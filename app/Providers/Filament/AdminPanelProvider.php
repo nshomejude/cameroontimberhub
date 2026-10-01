@@ -58,6 +58,8 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
+                // Blueprint §39: staff must have confirmed 2FA to use /admin.
+                \App\Http\Middleware\EnsureStaffTwoFactor::class,
             ]);
     }
 }

@@ -71,6 +71,27 @@ class MessageController extends Controller
             ? Order::where('user_id', $request->user()->getKey())->whereKey($data['order'])->first()
             : null;
 
+        // Starting a NEW conversation needs a verified email address (spam /
+        // impersonation guard). Re-opening an existing thread does not.
+        if (! $request->user()->hasVerifiedEmail()) {
+            $existing = Conversation::query()
+                ->where('user_id', $request->user()->getKey())
+                ->where('company_id', $company->getKey())
+                ->where('order_id', $order?->getKey())
+                ->where('status', '!=', \App\Enums\ConversationStatus::Closed->value)
+                ->orderByDesc('id')
+                ->first();
+
+            if ($existing === null) {
+                return redirect()->route('verification.notice')->with(
+                    'status',
+                    __('Please verify your email address before messaging suppliers. Check your inbox for the link, or resend it below.'),
+                );
+            }
+
+            return redirect()->route('account.messages.show', $existing);
+        }
+
         $conversation = $this->messaging->start(
             buyer: $request->user(),
             company: $company,

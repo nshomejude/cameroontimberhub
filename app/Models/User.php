@@ -6,6 +6,7 @@ namespace App\Models;
 use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -22,8 +23,20 @@ use App\Models\Concerns\TwoFactorAuthenticatable;
 
 #[Fillable(['name', 'email', 'password', 'phone', 'locale'])]
 #[Hidden(['password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes'])]
-class User extends Authenticatable implements FilamentUser
+class User extends Authenticatable implements FilamentUser, MustVerifyEmail
 {
+    /**
+     * Platform staff roles: every role that reaches the /admin Filament panel.
+     * The single source of truth for "is this user staff" — canAccessPanel(),
+     * RedirectsAfterAuth, EnsureBuyerAccount and EnsureStaffTwoFactor all
+     * read this list.
+     */
+    public const STAFF_ROLES = [
+        'super_admin', 'admin', 'verification_officer', 'content_manager',
+        'compliance_officer', 'billing_officer', 'finance_officer',
+        'support_officer', 'moderator',
+    ];
+
     /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, HasRoles, Notifiable, TwoFactorAuthenticatable;
 
@@ -55,14 +68,16 @@ class User extends Authenticatable implements FilamentUser
     public function canAccessPanel(Panel $panel): bool
     {
         return match ($panel->getId()) {
-            'admin' => $this->hasAnyRole([
-                'super_admin', 'admin', 'verification_officer', 'content_manager',
-                'compliance_officer', 'billing_officer', 'finance_officer',
-                'support_officer', 'moderator',
-            ]),
+            'admin' => $this->isStaff(),
             'exporter' => Schema::hasTable('company_user') && $this->companies()->exists(),
             default => false,
         };
+    }
+
+    /** Whether this user holds any platform staff role (see STAFF_ROLES). */
+    public function isStaff(): bool
+    {
+        return $this->hasAnyRole(self::STAFF_ROLES);
     }
 
     /**

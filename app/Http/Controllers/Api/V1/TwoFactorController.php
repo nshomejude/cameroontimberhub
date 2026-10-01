@@ -57,6 +57,18 @@ class TwoFactorController extends Controller
     public function enable(Request $request): JsonResponse
     {
         $user = $request->user();
+
+        // Re-enrolling over a CONFIRMED setup would silently turn 2FA off
+        // (the new secret is unconfirmed), so it needs the current password.
+        if ($user->hasTwoFactorEnabled()) {
+            $data = $request->validate(['password' => ['required', 'string']]);
+
+            if (! Hash::check($data['password'], (string) $user->password)) {
+                throw ValidationException::withMessages([
+                    'password' => __('The provided password does not match your current password.'),
+                ]);
+            }
+        }
         $secret = $user->generateTwoFactorSecret();
 
         return response()->json([

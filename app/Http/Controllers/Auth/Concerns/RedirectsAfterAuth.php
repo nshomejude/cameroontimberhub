@@ -18,7 +18,7 @@ trait RedirectsAfterAuth
     /** Platform staff roles that gate the /admin Filament panel. */
     protected function staffRoles(): array
     {
-        return ['super_admin', 'admin', 'verification_officer', 'content_manager'];
+        return User::STAFF_ROLES;
     }
 
     protected function redirectPathFor(User $user): string
