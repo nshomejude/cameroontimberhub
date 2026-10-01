@@ -9,6 +9,8 @@ use App\Models\User;
 use App\Services\Payments\GatewayCredentials;
 use App\Support\Ops\OpsProbes;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Str;
 use Laravel\Pennant\Feature;
 use Spatie\Permission\Models\Role;
@@ -50,6 +52,10 @@ class LaunchCheckCommand extends Command
         $this->checkFilesystem();
         $this->checkRuntime();
         $this->checkPayments();
+        $this->checkStaffSecurity();
+        $this->checkLaunchSettings();
+        $this->checkSearchExtensions();
+        $this->checkQueueService();
 
         foreach ($this->warnings as $warning) {
             $this->components->warn($warning);
@@ -223,6 +229,98 @@ class LaunchCheckCommand extends Command
             $this->addWarning('No payment gateway is configured — paid plans cannot be purchased (manual invoicing only).');
         } else {
             $this->line('  Payment gateways configured: '.implode(', ', $configured).' (mobile-money callbacks are verified against the provider status API).');
+        }
+    }
+
+    private function checkStaffSecurity(): void
+    {
+        if (app()->isProduction() && config('auth.require_staff_2fa') !== true) {
+            $this->addFailure('STAFF_REQUIRE_2FA is not true — staff could reach /admin without two-factor authentication.');
+        }
+
+        try {
+            $admins = User::role(['super_admin', 'admin'])
+                ->where(fn ($q) => $q->whereNull('two_factor_secret')->orWhereNull('two_factor_confirmed_at'))
+                ->get(['id', 'email']);
+
+            foreach ($admins as $admin) {
+                $this->addWarning("Admin [{$admin->email}] has not confirmed two-factor authentication — enrol TOTP before launch.");
+            }
+        } catch (\Throwable) {
+            // Missing roles / database failures are reported by checkSeededData().
+        }
+    }
+
+    private function checkLaunchSettings(): void
+    {
+        $proxies = config('app.trusted_proxies');
+        $this->line('  TRUSTED_PROXIES: ['.(is_array($proxies) ? implode(',', $proxies) : (string) $proxies).']');
+
+        if (blank($proxies)) {
+            $this->addWarning('TRUSTED_PROXIES is blank — behind nginx/Cloudflare the app would see http and the proxy IP (no HSTS, wrong client IPs).');
+        }
+
+        if (config('timber.signup.carbon_enabled')) {
+            $this->addWarning('SIGNUP_CARBON_ENABLED is true — carbon accounts can register but there is no admin review for carbon projects yet.');
+        }
+
+        $inbox = (string) config('contact.inbox');
+
+        if ($inbox === '' || Str::endsWith(Str::lower($inbox), ['.test', 'example.com'])) {
+            $this->addWarning("CONTACT_INBOX [{$inbox}] is blank or a placeholder — contact-form messages would not reach anyone.");
+        }
+
+        $ops = (string) config('mail.ops_address');
+
+        // config/mail.php falls back to MAIL_FROM_ADDRESS when MAIL_OPS_ADDRESS is unset
+        // (env() cannot be read here once config is cached).
+        if ($ops === '' || Str::endsWith(Str::lower($ops), ['.test', 'example.com'])
+            || Str::lower($ops) === Str::lower((string) config('mail.from.address'))) {
+            $this->addWarning("MAIL_OPS_ADDRESS is not set (currently [{$ops}]) — the daily error digest has no dedicated recipient.");
+        }
+
+        $this->line('  API_REQUIRE_TERMS_ACCEPTED: '.(config('auth.api_require_terms_accepted') ? 'true' : 'false').' (set true once every live app build sends terms_accepted).');
+    }
+
+    private function checkSearchExtensions(): void
+    {
+        try {
+            if (DB::connection()->getDriverName() !== 'pgsql') {
+                return;
+            }
+
+            $extensions = DB::table('pg_extension')->whereIn('extname', ['unaccent', 'pg_trgm'])->pluck('extname')->all();
+
+            foreach (['unaccent', 'pg_trgm'] as $extension) {
+                if (! in_array($extension, $extensions, true)) {
+                    $this->addWarning("PostgreSQL extension [{$extension}] is missing — run `CREATE EXTENSION IF NOT EXISTS {$extension};` as a superuser, then re-run the 2026_10_01_140000 search-index migration.");
+                }
+            }
+
+            if (! DB::table('pg_proc')->where('proname', 'ct_unaccent')->exists()) {
+                $this->addWarning('Function ct_unaccent() is missing — instant search falls back to accent-sensitive matching without trigram indexes.');
+            }
+        } catch (\Throwable $e) {
+            $this->addWarning('Could not inspect PostgreSQL search extensions: '.$e->getMessage());
+        }
+    }
+
+    /** Best effort: only when systemctl exists on this host; never fails the gate. */
+    private function checkQueueService(): void
+    {
+        try {
+            if (! Process::run(['sh', '-c', 'command -v systemctl'])->successful()) {
+                return;
+            }
+
+            $result = Process::timeout(10)->run(['systemctl', 'is-active', 'timberhub-queue']);
+
+            if (! $result->successful()) {
+                $state = trim($result->output()) ?: 'unknown';
+                $this->addWarning("systemd unit timberhub-queue is [{$state}], not active — `systemctl enable --now timberhub-queue`.");
+            }
+        } catch (\Throwable) {
+            // systemctl unavailable or not permitted here: nothing to report.
         }
     }
 }
