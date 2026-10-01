@@ -188,6 +188,28 @@ return [
     ],
 
     'push' => [
+        'commission_statement_issued' => [
+            'title' => 'Relevé de commission :number émis',
+            'body' => 'Votre relevé de commission de la place de marché pour :period s\'élève à :amount, à régler avant le :due.',
+        ],
+        'commission_statement_due_soon' => [
+            'title' => 'Relevé de commission :number bientôt échu',
+            'body' => ':amount reste dû sur le relevé de commission :number. Merci de régler avant le :due.',
+        ],
+        'commission_statement_overdue' => [
+            'title' => 'Relevé de commission :number en retard',
+            'body' => ':amount sur le relevé de commission :number était dû le :due et est maintenant en retard. Merci de régler et de déclarer votre dépôt.',
+        ],
+        'commission_deposit_confirmed' => [
+            'title' => 'Dépôt de commission confirmé',
+            'body' => 'Nous avons reçu :amount (réf. :reference) pour le relevé :number. Solde restant : :balance.',
+        ],
+        'commission_deposit_rejected' => [
+            'title' => 'Dépôt de commission refusé',
+            'body' => 'Votre dépôt (réf. :reference) pour le relevé :number n\'a pas pu être confirmé : :reason',
+        ],
+        'commission_pay_hint' => 'Payez par MTN Mobile Money, Orange Money ou dépôt bancaire avec les coordonnées du relevé, puis déclarez le dépôt avec sa référence de transaction.',
+        'commission_action' => 'Voir le relevé',
         'quote_received' => [
             'title' => 'Nouveau devis reçu',
             'body' => ':supplier a soumis un devis pour la demande :rfq.',

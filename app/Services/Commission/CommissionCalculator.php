@@ -242,6 +242,9 @@ class CommissionCalculator
             'commission_amount' => $result['amount'],
             'commission_rule_id' => $result['rule_id'],
             'is_commission_charged' => true,
+            // When it was charged decides which monthly commission statement
+            // bills it (CommissionStatementIssuer).
+            'commission_charged_at' => now(),
         ])->save();
     }
 

@@ -54,6 +54,7 @@ class Order extends Model
             'delivered_at' => 'datetime',
             'completed_at' => 'datetime',
             'cancelled_at' => 'datetime',
+            'commission_charged_at' => 'datetime',
         ];
     }
 

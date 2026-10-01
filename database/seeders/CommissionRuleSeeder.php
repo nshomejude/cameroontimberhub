@@ -25,6 +25,10 @@ use Illuminate\Database\Seeder;
  *   §15 "Pro / Business"         → export/`exporter-business`
  *                                  (2.0% dom, 3.0% intl, cap 3%) — the sell
  *                                  segment has no business-tier plan.
+ *   Dealer segment (owner approved 2026-10-01):
+ *                                  deal/`dealer-free` = Free rates,
+ *                                  deal/`dealer-pro` = Professional rates,
+ *                                  deal/`dealer-network` = Business rates.
  *   §15 "Enterprise"             → negotiated: NO rule seeded (`enterprise`,
  *                                  `exporter-enterprise` carry 0% until finance
  *                                  adds the contract rate in /admin).
@@ -65,6 +69,11 @@ class CommissionRuleSeeder extends Seeder
             $rule('Professional supplier (§15 Starter / Professional)', 'sell', 'professional', '0.0250', '0.0400', '0.0400', 'TX-DOM-START, TX-INT-PRO'),
             $rule('Exporter Professional (§15 Starter / Professional)', 'export', 'exporter-professional', '0.0250', '0.0400', '0.0400', 'TX-DOM-START, TX-INT-PRO'),
             $rule('Exporter Business (§15 Pro / Business)', 'export', 'exporter-business', '0.0200', '0.0300', '0.0300', 'TX-DOM-PRO, TX-INT-BIZ'),
+            // Dealer segment (owner approved 2026-10-01): mapped onto the
+            // same three §15 bands as the sell/export tiers.
+            $rule('Dealer Free (§15 Free / unlisted)', 'deal', 'dealer-free', '0.0300', '0.0500', '0.0500', 'TX-DOM-FREE, TX-INT-FREE'),
+            $rule('Dealer Pro (§15 Starter / Professional)', 'deal', 'dealer-pro', '0.0250', '0.0400', '0.0400', 'TX-DOM-START, TX-INT-PRO'),
+            $rule('Dealer Network (§15 Pro / Business)', 'deal', 'dealer-network', '0.0200', '0.0300', '0.0300', 'TX-DOM-PRO, TX-INT-BIZ'),
         ];
     }
 

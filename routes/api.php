@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\V1\CompanyOnboardingController;
 use App\Http\Controllers\Api\V1\CompanyProfileController;
 use App\Http\Controllers\Api\V1\CompanySubscriptionController;
 use App\Http\Controllers\Api\V1\SupplierCapacityController;
+use App\Http\Controllers\Api\V1\SupplierCommissionController;
 use App\Http\Controllers\Api\V1\SupplierLeadController;
 use App\Http\Controllers\Api\V1\SupplierLotTransformationController;
 use App\Http\Controllers\Api\V1\CompanyReviewController;
@@ -689,6 +690,16 @@ Route::prefix('v1')->name('api.v1.')->middleware([AssignRequestId::class, 'throt
             Route::get('leads/{lead}', [SupplierLeadController::class, 'show'])->whereNumber('lead')->name('leads.show');
             Route::patch('leads/{lead}', [SupplierLeadController::class, 'update'])
                 ->whereNumber('lead')->middleware('throttle:api-decision')->name('leads.update');
+
+            // Marketplace commission statements + manual deposit reporting
+            // (SupplierCommissionController; owner decision 2026-10-01 —
+            // MoMo / bank deposit, verified by finance). `summary` is a
+            // static segment, registered before the `{number}` routes.
+            Route::get('commission/summary', [SupplierCommissionController::class, 'summary'])->name('commission.summary');
+            Route::get('commission/statements', [SupplierCommissionController::class, 'index'])->name('commission.statements.index');
+            Route::get('commission/statements/{number}', [SupplierCommissionController::class, 'show'])->name('commission.statements.show');
+            Route::post('commission/statements/{number}/deposits', [SupplierCommissionController::class, 'storeDeposit'])
+                ->middleware('throttle:api-upload')->name('commission.statements.deposits.store');
 
             // Declared capacities (SupplierCapacityController), exporter CapacityResource counterpart.
             Route::get('capacities', [SupplierCapacityController::class, 'index'])->name('capacities.index');

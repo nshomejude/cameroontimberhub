@@ -30,6 +30,12 @@ Schedule::command('subscriptions:notify-price-changes')->dailyAt('08:00');
 // safety net) and safely retry submissions whose outcome was unknown.
 Schedule::command('referrals:refresh-payouts')->hourlyAt(17)->withoutOverlapping();
 
+// Marketplace commission collection (owner decision 2026-10-01: manual MoMo /
+// bank deposit). Monthly statements for the previous month on the 1st; daily
+// due-soon reminders + overdue flagging. Both idempotent.
+Schedule::command('commission:issue-statements')->monthlyOn(1, '01:15')->withoutOverlapping();
+Schedule::command('commission:process-statements')->dailyAt('07:20')->withoutOverlapping();
+
 // Agent Ingestion Gateway: drop Idempotency-Key replay records past their
 // 7-day window (docs/api/AGENT_INGESTION.md).
 Schedule::command('agent:prune-idempotency-keys')->dailyAt('03:40');

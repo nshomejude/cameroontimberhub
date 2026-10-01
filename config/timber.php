@@ -79,6 +79,14 @@ return [
     | usd_to_xaf. When no rate is configured for a pair, the fixed-amount cap
     | is skipped for that order (the percentage cap still applies).
     |
+    | Collection (owner decision 2026-10-01 — manual MoMo / bank deposit
+    | against monthly statements, see RUNBOOK → Commission collection):
+    | statement_due_days: days after issue a statement falls due.
+    | reminder_days_before: the "due soon" reminder lead time.
+    | block_on_overdue_days: null (default) = OFF. When set to N, a company
+    | with a statement still unpaid more than N days past its due date cannot
+    | submit new quotes (409 `commission_overdue`).
+    |
     */
 
     'commission' => [
@@ -88,6 +96,9 @@ return [
             : round((float) env('COMMISSION_USD_TO_XAF', 600) / 655.957, 6),
         'usd_to_gbp' => filled(env('COMMISSION_USD_TO_GBP')) ? (float) env('COMMISSION_USD_TO_GBP') : null,
         'usd_to_cny' => filled(env('COMMISSION_USD_TO_CNY')) ? (float) env('COMMISSION_USD_TO_CNY') : null,
+        'statement_due_days' => (int) env('COMMISSION_STATEMENT_DUE_DAYS', 15),
+        'reminder_days_before' => (int) env('COMMISSION_REMINDER_DAYS_BEFORE', 3),
+        'block_on_overdue_days' => filled(env('COMMISSION_BLOCK_ON_OVERDUE_DAYS')) ? (int) env('COMMISSION_BLOCK_ON_OVERDUE_DAYS') : null,
     ],
 
 ];

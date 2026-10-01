@@ -92,6 +92,7 @@ it('seeds the §15 rates as fractions with a $5,000 USD cap, mapped to real plan
     $rules = CommissionRule::all()->keyBy(fn (CommissionRule $r) => $r->segment.'/'.$r->plan_tier);
 
     expect($rules->keys()->sort()->values()->all())->toBe([
+        'deal/dealer-free', 'deal/dealer-network', 'deal/dealer-pro',
         'export/exporter-business', 'export/exporter-professional', 'sell/free', 'sell/professional',
     ]);
 
@@ -119,7 +120,7 @@ it('is idempotent and never overwrites an admin-edited rule', function () {
     $this->seed(CommissionRuleSeeder::class);
     $this->seed(CommissionRuleSeeder::class);
 
-    expect(CommissionRule::count())->toBe(4)
+    expect(CommissionRule::count())->toBe(7)
         ->and(CommissionRule::where('segment', 'sell')->where('plan_tier', 'free')->count())->toBe(1)
         ->and($admin->refresh()->name)->toBe('Admin promo')
         ->and($admin->domestic_rate)->toBe('0.0100')
@@ -129,7 +130,7 @@ it('is idempotent and never overwrites an admin-edited rule', function () {
 it('skips tiers whose plan does not exist', function () {
     Plan::whereIn('slug', ['exporter-professional', 'exporter-business'])->delete();
 
-    expect(CommissionRuleSeeder::insertMissing())->toBe(2)
+    expect(CommissionRuleSeeder::insertMissing())->toBe(5)
         ->and(CommissionRule::where('segment', 'export')->exists())->toBeFalse();
 });
 
@@ -148,7 +149,7 @@ it('data migration inserts missing rules only, and leaves existing ones alone', 
     $migration->up();
     $migration->up();
 
-    expect(CommissionRule::count())->toBe(4)
+    expect(CommissionRule::count())->toBe(7)
         ->and($existing->refresh()->domestic_rate)->toBe('0.0150')
         ->and(CommissionRule::where('plan_tier', 'free')->value('domestic_rate'))->toBe('0.0300');
 });

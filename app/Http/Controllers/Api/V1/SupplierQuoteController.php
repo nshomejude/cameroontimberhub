@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Exceptions\Api\ApiException;
 use App\Exceptions\Api\CompanyVerificationRequiredException;
 use App\Exceptions\Api\ConflictException;
 use App\Http\Controllers\Controller;
@@ -84,6 +85,12 @@ class SupplierQuoteController extends Controller
                 'notes' => $data['notes'] ?? null,
             ]);
         } catch (RuntimeException $e) {
+            // A typed API error from the domain (e.g. 409
+            // `commission_overdue`) keeps its own status + code.
+            if ($e instanceof ApiException) {
+                throw $e;
+            }
+
             // "not routed" / "not approved" cannot actually happen here —
             // routedRfq() already 404s an unrouted RFQ, and an unapproved one
             // still resolves (routing exists regardless of RFQ status) so
@@ -114,6 +121,10 @@ class SupplierQuoteController extends Controller
         try {
             $quote = $this->quotes->submit($quote->fresh(), $user);
         } catch (RuntimeException $e) {
+            if ($e instanceof ApiException) {
+                throw $e;
+            }
+
             throw new ConflictException($e->getMessage(), 'quote_not_submittable', $e);
         }
 

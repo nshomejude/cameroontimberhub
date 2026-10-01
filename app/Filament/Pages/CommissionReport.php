@@ -3,7 +3,11 @@
 namespace App\Filament\Pages;
 
 use App\Enums\OrderStatus;
+use App\Enums\CommissionDepositStatus;
+use App\Enums\CommissionStatementStatus;
+use App\Models\CommissionDeposit;
 use App\Models\CommissionRule;
+use App\Models\CommissionStatement;
 use App\Enums\PaymentProvider;
 use App\Enums\PaymentStatus;
 use App\Models\Order;
@@ -26,6 +30,10 @@ use Illuminate\Support\Collection;
  * (PayPal commission structure, part A): fees collected from buyers (passed
  * through, `provider_fee_bearer = buyer`) vs absorbed by the platform
  * (`platform`), per provider and currency — never summed across currencies.
+ *
+ * Collection (owner decision 2026-10-01, manual MoMo / bank deposit): billed
+ * on non-void commission statements vs collected (confirmed deposits) vs
+ * outstanding / overdue, plus deposits awaiting verification, per currency.
  */
 class CommissionReport extends Page
 {
@@ -165,5 +173,49 @@ class CommissionReport extends Page
                     'net' => ProviderFeeCalculator::format($net, $currency),
                 ];
             });
+    }
+
+    /**
+     * Commission collection per currency: what was billed on non-void
+     * statements, collected (confirmed deposits), still outstanding, of which
+     * past due, and reported deposits still awaiting finance verification.
+     *
+     * @return Collection<int, array{currency: string, statements: int, billed: string, collected: string, outstanding: string, overdue: string, pending_deposits: string, collection_rate: string}>
+     */
+    public function getCollectionRows(): Collection
+    {
+        $pending = CommissionDeposit::query()
+            ->where('status', CommissionDepositStatus::Pending->value)
+            ->get(['currency', 'amount'])
+            ->groupBy(fn (CommissionDeposit $d) => $d->currency->value)
+            ->map(fn (Collection $group) => $group->reduce(fn (string $c, CommissionDeposit $d) => bcadd($c, (string) $d->amount, 2), '0.00'));
+
+        return CommissionStatement::query()
+            ->where('status', '!=', CommissionStatementStatus::Void->value)
+            ->get(['id', 'currency', 'status', 'total_amount', 'amount_paid', 'due_date'])
+            ->groupBy(fn (CommissionStatement $s) => $s->currency->value)
+            ->map(function (Collection $statements, string $currency) use ($pending): array {
+                $billed = $statements->reduce(fn (string $c, CommissionStatement $s) => bcadd($c, (string) $s->total_amount, 2), '0.00');
+                $collected = $statements->reduce(fn (string $c, CommissionStatement $s) => bcadd($c, (string) $s->amount_paid, 2), '0.00');
+                $outstanding = $statements->reduce(fn (string $c, CommissionStatement $s) => bcadd($c, $s->outstanding(), 2), '0.00');
+                $overdue = $statements->filter(fn (CommissionStatement $s) => $s->isPastDue())
+                    ->reduce(fn (string $c, CommissionStatement $s) => bcadd($c, $s->outstanding(), 2), '0.00');
+                $rate = bccomp($billed, '0', 2) > 0
+                    ? rtrim(rtrim(number_format((float) bcdiv(bcmul($collected, '100', 8), $billed, 4), 2), '0'), '.').'%'
+                    : '—';
+
+                return [
+                    'currency' => $currency,
+                    'statements' => $statements->count(),
+                    'billed' => CommissionStatement::format($billed, $currency),
+                    'collected' => CommissionStatement::format($collected, $currency),
+                    'outstanding' => CommissionStatement::format($outstanding, $currency),
+                    'overdue' => CommissionStatement::format($overdue, $currency),
+                    'pending_deposits' => CommissionStatement::format($pending[$currency] ?? '0', $currency),
+                    'collection_rate' => $rate,
+                ];
+            })
+            ->sortKeys()
+            ->values();
     }
 }
