@@ -2,11 +2,16 @@
 # or merge into the existing crontab with `crontab -e -u timberhub`).
 # Verify:  crontab -l -u timberhub
 #
+# PHP: the host runs PHP 8.3 (RUNBOOK); the versioned binary is used so a
+# second PHP install changing /usr/bin/php (update-alternatives) cannot switch
+# the scheduler's PHP. Keep in sync with deploy/systemd/timberhub-queue.service.
+#
 # 1. Laravel scheduler — REQUIRED. Drives the outbox relay, digests, renewals,
 #    badge expiry, queue-health and the scheduler heartbeat that /up/health
 #    checks (503 if > 3 minutes stale).
-* * * * * cd /home/timberhub/htdocs/www.cameroontimberhub.com && /usr/bin/php artisan schedule:run >> /dev/null 2>&1
+* * * * * cd /home/timberhub/htdocs/www.cameroontimberhub.com && /usr/bin/php8.3 artisan schedule:run >> /dev/null 2>&1
 
 # 2. Nightly backup (DB + uploaded files), 02:00 server time. Logs to
-#    ~/backups/backup.log; config via env vars at the top of deploy/backup.sh.
-0 2 * * * /home/timberhub/htdocs/www.cameroontimberhub.com/deploy/backup.sh >> /home/timberhub/backups/backup.log 2>&1
+#    ~/backups/backup.log (the directory is created first so the redirect
+#    cannot fail); config via env vars at the top of deploy/backup.sh.
+0 2 * * * mkdir -p /home/timberhub/backups && /home/timberhub/htdocs/www.cameroontimberhub.com/deploy/backup.sh >> /home/timberhub/backups/backup.log 2>&1
