@@ -187,6 +187,9 @@ class AppServiceProvider extends ServiceProvider
             Limit::perHour(30)->by('demo-login-ip-hour:'.$request->ip()),
         ]);
 
+        // Instant search fires on (debounced) keystrokes: generous, but bounded.
+        RateLimiter::for('search-suggest', fn (Request $request) => Limit::perMinute(120)
+            ->by($request->user() ? 'search-suggest-user:'.$request->user()->getAuthIdentifier() : 'search-suggest-ip:'.$request->ip()));
         RateLimiter::for('inquiry-submit', fn (Request $request) => Limit::perHour(8)->by('inquiry-ip:'.$request->ip()));
 
         // Content-Security-Policy violation beacons (Task A3). Unauthenticated

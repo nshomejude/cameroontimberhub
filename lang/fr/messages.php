@@ -48,6 +48,15 @@ return [
         'carbon_projects' => 'Projets carbone',
     ],
 
+    'search_suggest' => [
+        'products' => 'Produits',
+        'suppliers' => 'Fournisseurs',
+        'species' => 'Essences',
+        'results' => 'suggestions',
+        'none' => 'Aucune suggestion — appuyez sur Entrée pour une recherche complète.',
+        'see_all' => 'Voir tous les résultats pour',
+    ],
+
     'locale' => [
         'english' => 'English',
         'french' => 'Français',

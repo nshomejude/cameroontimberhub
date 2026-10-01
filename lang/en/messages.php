@@ -42,6 +42,15 @@ return [
         'carbon_projects' => 'Carbon Projects',
     ],
 
+    'search_suggest' => [
+        'products' => 'Products',
+        'suppliers' => 'Suppliers',
+        'species' => 'Species',
+        'results' => 'suggestions',
+        'none' => 'No quick matches — press Enter for a full search.',
+        'see_all' => 'See all results for',
+    ],
+
     'locale' => [
         'english' => 'English',
         'french' => 'Français',
