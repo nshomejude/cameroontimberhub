@@ -7,6 +7,9 @@ use App\Http\Middleware\SetLocale;
 use App\Http\Requests\Api\V1\UpdateMeRequest;
 use App\Http\Requests\Api\V1\UpdatePasswordRequest;
 use App\Models\NotificationPreference;
+use App\Models\ReferralEarning;
+use App\Models\ReferralPayoutProfile;
+use App\Services\Referrals\ReferralPayoutService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -36,7 +39,26 @@ class AccountSettingsController extends Controller
             'preferences' => NotificationPreference::forUser($user),
             'channelKeys' => NotificationPreference::CHANNEL_KEYS,
             'typeKeys' => NotificationPreference::TYPE_KEYS,
+            'payoutProfile' => ReferralPayoutProfile::forUser($user),
+            'paypalPayoutsAvailable' => app(ReferralPayoutService::class)->paypalConfigured(),
+            'referralEarnings' => ReferralEarning::where('referrer_user_id', $user->getKey())
+                ->with('latestPayout')
+                ->orderByDesc('created_at')->orderByDesc('id')
+                ->limit(20)
+                ->get(),
         ]);
+    }
+
+    /** Referral payout destination — web counterpart of PATCH /api/v1/referrals/payout-settings. */
+    public function updateReferralPayout(Request $request): RedirectResponse
+    {
+        $data = $request->validateWithBag('payout', [
+            'paypal_payout_email' => ['nullable', 'string', 'max:254', 'email:rfc'],
+        ]);
+
+        app(ReferralPayoutService::class)->setPaypalEmail($request->user(), $data['paypal_payout_email'] ?? null);
+
+        return redirect()->to(route('account.settings').'#referral-payouts')->with('status', __('messages.account_center.payout_saved'));
     }
 
     public function updateProfile(Request $request): RedirectResponse

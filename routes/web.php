@@ -433,6 +433,8 @@ Route::middleware(['auth', 'buyer'])->prefix('account')->name('account.')->group
     Route::put('/settings/password', [App\Http\Controllers\Public\AccountSettingsController::class, 'updatePassword'])
         ->middleware('throttle:6,1')->name('settings.password');
     Route::put('/settings/notifications', [App\Http\Controllers\Public\AccountSettingsController::class, 'updatePreferences'])->name('settings.preferences');
+    Route::put('/settings/referral-payout', [App\Http\Controllers\Public\AccountSettingsController::class, 'updateReferralPayout'])
+        ->middleware('throttle:10,1')->name('settings.referral-payout');
 
     Route::get('/notifications', [App\Http\Controllers\Public\AccountNotificationController::class, 'index'])->name('notifications');
     Route::post('/notifications/read-all', [App\Http\Controllers\Public\AccountNotificationController::class, 'readAll'])->name('notifications.read-all');

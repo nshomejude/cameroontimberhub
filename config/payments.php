@@ -91,4 +91,12 @@ return [
         'fee_bearer' => env('PAYPAL_FEE_BEARER', 'buyer'), // 'buyer' | 'platform'
     ],
 
+    // Referral commission payouts via the PayPal Payouts API (same PayPal
+    // credentials as above; Payouts must be enabled on the business account).
+    // Only earnings in these currencies can be sent through PayPal — PayPal
+    // does not support XAF, so XAF commissions are paid manually (MoMo/bank).
+    'paypal_payouts' => [
+        'currencies' => array_values(array_filter(array_map('trim', explode(',', (string) env('PAYPAL_PAYOUT_CURRENCIES', 'USD,EUR,GBP'))))),
+    ],
+
 ];

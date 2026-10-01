@@ -323,6 +323,19 @@ return [
             'title' => 'Referral commission earned',
             'body' => 'You earned :amount from a referral\'s first subscription payment.',
         ],
+        'referral_payout_paid' => [
+            'title' => 'Referral commission paid',
+            'body' => 'Your referral commission of :amount (:reference) has been paid.',
+        ],
+        'referral_payout_failed' => [
+            'title' => 'Referral commission payout failed',
+            'body' => 'We could not pay your referral commission of :amount (:reference) to :email. Please check your PayPal payout email; we will retry.',
+        ],
+        'referral_payout_unclaimed' => [
+            'title' => 'Claim your referral commission',
+            'body' => 'Your referral commission of :amount (:reference) was sent to :email but is unclaimed. Sign up or log in to PayPal with that email within 30 days to receive it.',
+        ],
+        'referral_payout_action' => 'Review payout settings',
         'payment_confirmed' => [
             'title' => 'Payment recorded',
             'body' => 'A payment was recorded on order :order.',
