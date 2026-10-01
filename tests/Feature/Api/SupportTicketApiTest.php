@@ -175,7 +175,7 @@ it('forbids non-staff from the staff inbox', function () {
     $this->actingAs($user, 'sanctum')->getJson('/api/v1/staff/support/tickets')->assertForbidden();
     $this->actingAs($user, 'sanctum')->getJson("/api/v1/staff/support/tickets/{$ref}")->assertForbidden();
     $this->actingAs($user, 'sanctum')->postJson("/api/v1/staff/support/tickets/{$ref}/reply", ['body' => 'x'])->assertForbidden();
-    $this->actingAs(supportStaff('billing_officer'), 'sanctum')->getJson('/api/v1/staff/support/tickets')->assertForbidden();
+    $this->actingAs(supportStaff('sales_officer'), 'sanctum')->getJson('/api/v1/staff/support/tickets')->assertForbidden(); // staff role without support.manage
 });
 
 it('lets staff list with status filter and requester', function () {
@@ -252,5 +252,5 @@ it('shows the support ticket admin list to staff only', function () {
     supportOpen(User::factory()->create());
 
     $this->actingAs(supportStaff('moderator'), 'web')->get('/admin/support-tickets')->assertOk();
-    $this->actingAs(supportStaff('billing_officer'), 'web')->get('/admin/support-tickets')->assertForbidden();
+    $this->actingAs(supportStaff('sales_officer'), 'web')->get('/admin/support-tickets')->assertForbidden();
 });
