@@ -11,6 +11,7 @@ use App\Models\ReferralSetting;
 use App\Models\User;
 use App\Notifications\ReferralCommissionEarnedNotification;
 use App\Notifications\ReferralSignedUpNotification;
+use App\Services\Payments\PaymentAmount;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -209,11 +210,14 @@ class ReferralService
                 }
             }
 
-            $rate = (float) $settings->rate_percent;
+            $rate = bcadd((string) $settings->rate_percent, '0', 2);
             $referrer = User::find($company->referred_by_user_id);
             if ($referrer === null) {
                 return null;
             }
+
+            $base = $this->commissionBase($payment);
+            $amount = PaymentAmount::format(bcdiv(bcmul($base, $rate, 8), '100', 8), (string) $payment->currency);
 
             return ReferralEarning::create([
                 'referrer_user_id' => $referrer->id,
@@ -223,9 +227,9 @@ class ReferralService
                 'payment_id' => $payment->id,
                 'source_reference' => 'SUB-PAY-'.$payment->id,
                 'basis' => 'subscription',
-                'base_amount' => $payment->amount,
+                'base_amount' => $base,
                 'rate_percent' => $rate,
-                'amount' => round(((float) $payment->amount) * $rate / 100, 2),
+                'amount' => $amount,
                 'currency' => $payment->currency,
                 'status' => ReferralEarningStatus::Pending,
             ]);
@@ -236,6 +240,21 @@ class ReferralService
         }
 
         return $earning;
+    }
+
+    /**
+     * What the commission is assessed on: the plan price the customer paid
+     * EXCLUDING tax. When TVA applied, checkout persisted the breakdown on
+     * `metadata['tax']` and `amount` is subtotal + tax — tax collected for
+     * the state is not platform revenue and must not earn a referrer 10%.
+     */
+    private function commissionBase(Payment $payment): string
+    {
+        $subtotal = $payment->metadata['tax']['subtotal'] ?? null;
+
+        return is_numeric($subtotal)
+            ? bcadd((string) $subtotal, '0', 2)
+            : bcadd((string) $payment->amount, '0', 2);
     }
 
     /**
