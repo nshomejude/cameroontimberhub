@@ -33,7 +33,7 @@ class TransformationNetworkController extends Controller
 
         $companies = $this->base()
             ->when(
-                in_array($type, [OrganisationType::Processor->value, OrganisationType::Manufacturer->value], true),
+                in_array($type, OrganisationType::transformationProviderValues(), true),
                 fn (Builder $q) => $q->where('type', $type)
             )
             ->when($region !== '', fn (Builder $q) => $q->where('region', $region))
@@ -96,7 +96,7 @@ class TransformationNetworkController extends Controller
     private function base(): Builder
     {
         return Company::query()
-            ->whereIn('type', [OrganisationType::Processor->value, OrganisationType::Manufacturer->value])
+            ->whereIn('type', OrganisationType::transformationProviderValues())
             ->where('status', CompanyStatus::Verified->value);
     }
 }

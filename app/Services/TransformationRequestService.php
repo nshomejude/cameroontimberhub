@@ -124,7 +124,7 @@ class TransformationRequestService
 
         $provider = Company::query()
             ->where('slug', $data['provider_slug'])
-            ->whereIn('type', [OrganisationType::Processor->value, OrganisationType::Manufacturer->value])
+            ->whereIn('type', OrganisationType::transformationProviderValues())
             ->where('status', CompanyStatus::Verified->value)
             ->first();
 

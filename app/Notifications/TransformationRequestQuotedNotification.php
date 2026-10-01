@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Filament\Exporter\Resources\TransformationRequests\TransformationRequestResource;
 use App\Models\TransformationRequest;
 use App\Notifications\Concerns\PreferenceGatedChannels;
 use Illuminate\Bus\Queueable;
@@ -35,6 +36,7 @@ class TransformationRequestQuotedNotification extends Notification implements Sh
             ]),
             'reference' => $this->request->reference_code,
             'screen' => 'transformation_request',
+            'url' => TransformationRequestResource::getUrl('view', ['record' => $this->request], panel: 'exporter'),
             'quote_amount' => (string) $this->request->quote_amount,
             'quote_currency' => $this->request->quote_currency,
         ];

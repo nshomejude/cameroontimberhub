@@ -323,3 +323,51 @@ it('computes actions[] correctly at each status for each side', function () {
 
     expect($afterQuoteProvider->json('data.actions'))->toBe([]);
 });
+
+
+it('defaults the box to received for a provider company and sent otherwise', function () {
+    [$requesterUser] = xfrRequester(['type' => 'buyer']);
+    [$providerUser, $providerCompany] = xfrProvider('artisan');
+
+    $reference = $this->actingAs($requesterUser, 'sanctum')
+        ->postJson('/api/v1/transformation/requests', xfrCreatePayload($providerCompany))
+        ->assertCreated()
+        ->json('data.reference');
+
+    $providerDefault = $this->actingAs($providerUser, 'sanctum')
+        ->getJson('/api/v1/transformation/requests')
+        ->assertOk();
+    expect(collect($providerDefault->json('data'))->pluck('reference'))->toContain($reference);
+
+    $requesterDefault = $this->actingAs($requesterUser, 'sanctum')
+        ->getJson('/api/v1/transformation/requests')
+        ->assertOk();
+    expect(collect($requesterDefault->json('data'))->pluck('reference'))->toContain($reference);
+});
+
+it('filters the list by status', function () {
+    [$requesterUser] = xfrRequester();
+    [$providerUser, $providerCompany] = xfrProvider();
+
+    $reference = $this->actingAs($requesterUser, 'sanctum')
+        ->postJson('/api/v1/transformation/requests', xfrCreatePayload($providerCompany))
+        ->assertCreated()
+        ->json('data.reference');
+
+    $pending = $this->actingAs($providerUser, 'sanctum')
+        ->getJson('/api/v1/transformation/requests?status=pending')->assertOk();
+    expect(collect($pending->json('data'))->pluck('reference'))->toContain($reference);
+
+    $quoted = $this->actingAs($providerUser, 'sanctum')
+        ->getJson('/api/v1/transformation/requests?status=quoted')->assertOk();
+    expect($quoted->json('data'))->toBe([]);
+});
+
+it('accepts an artisan as a transformation provider', function () {
+    [$requesterUser] = xfrRequester();
+    [, $artisan] = xfrProvider('artisan');
+
+    $this->actingAs($requesterUser, 'sanctum')
+        ->postJson('/api/v1/transformation/requests', xfrCreatePayload($artisan))
+        ->assertCreated();
+});
