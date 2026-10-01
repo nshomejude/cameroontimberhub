@@ -321,7 +321,7 @@ it('cancels an RFQ over the API, 409s once awarded and 404s for another buyer', 
 
 /* ------------------------------------------------- conversations visibility */
 
-it('refuses to start a conversation with a company that is not publicly visible', function () {
+it('refuses to start a conversation with a suspended company but allows pending ones', function () {
     $buyer = bacBuyer(['email_verified_at' => now()]);
     $hidden = Company::factory()->create(['status' => CompanyStatus::Suspended]);
 
@@ -334,6 +334,10 @@ it('refuses to start a conversation with a company that is not publicly visible'
         ->assertSessionHasErrors('company');
 
     expect(Conversation::count())->toBe(0);
+
+    $pending = Company::factory()->create(['status' => CompanyStatus::Pending]);
+    $this->actingAs($buyer, 'sanctum')->postJson('/api/v1/conversations', ['company' => $pending->slug, 'body' => 'Hello'])
+        ->assertCreated();
 
     $visible = Company::factory()->publiclyVisible()->create();
     $this->actingAs($buyer, 'sanctum')->postJson('/api/v1/conversations', ['company' => $visible->slug, 'body' => 'Hello'])

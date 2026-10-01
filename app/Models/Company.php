@@ -385,6 +385,17 @@ class Company extends Model
             );
     }
 
+    /**
+     * Whether buyers may open a conversation with this company. Deliberately
+     * looser than publiclyVisible(): new suppliers awaiting verification must
+     * still be reachable (most companies are pending at launch). Only
+     * companies an admin has shut down are refused.
+     */
+    public function canReceiveMessages(): bool
+    {
+        return ! in_array($this->status, [CompanyStatus::Suspended, CompanyStatus::Rejected, CompanyStatus::Archived], true);
+    }
+
     /** Instance form of {@see scopePubliclyVisible()} — one query, same rules. */
     public function isPubliclyVisible(): bool
     {

@@ -148,7 +148,7 @@ class ConversationController extends Controller
         // Company::scopePubliclyVisible) can be messaged; a suspended,
         // archived, pending or otherwise hidden one is refused, even when an
         // older thread with it exists.
-        if (! $company->isPubliclyVisible()) {
+        if (! $company->canReceiveMessages()) {
             throw new ApiException(422, 'company_unavailable', __('messages.account_center.company_unavailable'));
         }
 
