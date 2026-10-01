@@ -9,11 +9,14 @@ use Illuminate\Support\Facades\Notification;
 
 it('seeds only reference data in production — no default admin, no demo companies', function () {
     app()->detectEnvironment(fn () => 'production');
+    $users = User::count();
+    $companies = \App\Models\Company::count();
 
     (new DatabaseSeeder)->setContainer(app())->__invoke();
 
-    expect(User::count())->toBe(0)
-        ->and(\App\Models\Company::count())->toBe(0)
+    expect(User::count())->toBe($users)
+        ->and(User::where('email', 'admin@cameroontimberhub.test')->exists())->toBeFalse()
+        ->and(\App\Models\Company::count())->toBe($companies)
         ->and(\Spatie\Permission\Models\Role::where('name', 'super_admin')->exists())->toBeTrue()
         ->and(\App\Models\Plan::count())->toBeGreaterThan(0);
 });
@@ -57,12 +60,13 @@ it('admin:create promotes an existing user without touching their password', fun
     $this->seed(RolesAndPermissionsSeeder::class);
     $user = User::factory()->create(['email' => 'existing@example.cm']);
     $hash = $user->password;
+    $before = User::count();
 
     $this->artisan('admin:create', ['email' => 'EXISTING@example.cm'])->assertSuccessful();
 
     expect($user->fresh()->hasRole('super_admin'))->toBeTrue()
         ->and($user->fresh()->password)->toBe($hash)
-        ->and(User::count())->toBe(1);
+        ->and(User::count())->toBe($before);
 });
 
 it('admin:create fails clearly when roles are not seeded or the email is invalid', function () {
