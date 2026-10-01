@@ -50,7 +50,7 @@ test('a different company\'s user cannot download the pack, and gets no file', f
 
     $response = $this->actingAs($otherUser)->get(route('compliance-pack.download', $lot));
 
-    $response->assertForbidden();
+    $response->assertNotFound();
     expect($response->headers->get('content-type'))->not->toContain('application/pdf');
 });
 

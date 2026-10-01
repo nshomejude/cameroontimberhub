@@ -236,7 +236,7 @@ class RfqController extends Controller
         // Checked here rather than via the `signed` middleware so an expired
         // or tampered link gets a recovery page (still a 403) offering a
         // fresh link, instead of a bare error.
-        if (! $request->hasValidSignature() || $request->query('h') !== sha1($rfq->buyer_email)) {
+        if (! $request->hasValidSignature() || ! is_string($request->query('h')) || ! hash_equals(sha1($rfq->buyer_email), $request->query('h'))) {
             return response()->view('public.rfq.link-invalid', ['kind' => 'rfq'], 403);
         }
 

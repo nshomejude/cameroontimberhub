@@ -17,7 +17,7 @@ class DocumentDownloadController extends Controller
 {
     public function __invoke(Request $request, CompanyDocument $document, DocumentService $documents): StreamedResponse
     {
-        abort_unless($this->authorized($request->user(), $document), 403);
+        abort_unless($this->authorized($request->user(), $document), 404);
 
         return $documents->download($document, $request->user());
     }

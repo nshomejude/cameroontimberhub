@@ -132,7 +132,7 @@ it('exposes payment status as JSON and 403s another company', function () {
         ->assertOk()->assertJson(['status' => 'completed']);
 
     $other = Company::factory()->create();
-    $this->actingAs(memberOf($other))->getJson(route('billing.checkout.status', $payment))->assertForbidden();
+    $this->actingAs(memberOf($other))->getJson(route('billing.checkout.status', $payment))->assertNotFound();
 });
 
 it('success page 403s another company and shows the plan + receipt once completed', function () {
@@ -144,7 +144,7 @@ it('success page 403s another company and shows the plan + receipt once complete
     ]);
 
     $other = Company::factory()->create();
-    $this->actingAs(memberOf($other))->get(route('billing.checkout.success', $payment))->assertForbidden();
+    $this->actingAs(memberOf($other))->get(route('billing.checkout.success', $payment))->assertNotFound();
 
     app(CommandBus::class)->dispatch(new RecordPaymentCompletionCommand($payment->getKey(), 'ref-1'));
     app(RelayOutboxEventsJob::class)->handle();

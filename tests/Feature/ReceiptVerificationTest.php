@@ -234,8 +234,8 @@ it('does not let a verifier walk from a receipt to the buyer order screens', fun
     $order = verifiableOrder();
 
     // The verification page is public; the order screens behind it are not.
-    $this->get(route('buyer.rfq.order', ['rfq' => $order->rfq_id]))->assertForbidden();
-    $this->get(route('buyer.rfq.order.receipt', ['rfq' => $order->rfq_id]))->assertForbidden();
+    $this->get(route('buyer.rfq.order', ['rfq' => $order->rfq_id]))->assertNotFound();
+    $this->get(route('buyer.rfq.order.receipt', ['rfq' => $order->rfq_id]))->assertNotFound();
 });
 
 /* -------------------------------------------------------------- rate limits */

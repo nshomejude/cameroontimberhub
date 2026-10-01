@@ -130,7 +130,7 @@ class InspectorReportController extends Controller
 
         abort_unless(
             $inspection->inspector !== null && $inspection->inspector->user_id === $user->getKey(),
-            403
+            404 // someone else's inspection is indistinguishable from a missing one
         );
     }
 }
