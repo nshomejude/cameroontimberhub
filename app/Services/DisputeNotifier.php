@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Dispute;
 use App\Models\User;
+use App\Notifications\DisputeAppealedStaffNotification;
 use App\Notifications\DisputeOpenedNotification;
 use App\Notifications\DisputeOpenedStaffNotification;
 use App\Notifications\DisputeReplyNotification;
@@ -55,6 +56,13 @@ class DisputeNotifier
 
         $staff = User::permission('disputes.manage')->get();
         Notification::send($staff, new DisputeOpenedStaffNotification($dispute));
+    }
+
+    /** A party appealed a resolved dispute: alert the dispute desk. */
+    public function appealed(Dispute $dispute): void
+    {
+        $staff = User::permission('disputes.manage')->get();
+        Notification::send($staff, new DisputeAppealedStaffNotification($dispute));
     }
 
     /** A party replied: alert the other party. */

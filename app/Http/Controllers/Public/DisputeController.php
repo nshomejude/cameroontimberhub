@@ -138,6 +138,8 @@ class DisputeController extends Controller
             return back()->with('error', $e->getMessage());
         }
 
+        $this->notifier->appealed($dispute);
+
         return back()->with('status', 'Dispute appealed.');
     }
 }

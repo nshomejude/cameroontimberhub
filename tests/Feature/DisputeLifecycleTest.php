@@ -289,3 +289,45 @@ it('lets the admin desk move, resolve and close disputes and notifies both parti
     expect($html)->toContain($order->reference_code)->toContain(route('disputes.show', [$order->id, $dispute->id]));
     expect((string) (new \App\Notifications\DisputeOpenedStaffNotification($dispute))->toMail($admin)->render())->toContain($order->reference_code);
 });
+
+it('alerts the dispute desk when a party appeals on the web or over the API', function (string $via) {
+    \Illuminate\Support\Facades\Notification::fake();
+    [$order, $buyer] = buildDisputeOrderContext();
+    $desk = User::factory()->create();
+    $desk->assignRole('admin');
+    $outsider = User::factory()->create();
+    $dispute = app(DisputeService::class)->open($order, $buyer, DisputeCategory::Quality, 'Wrong grade.');
+    $dispute->update(['status' => DisputeStatus::Resolved, 'resolved_at' => now()]);
+
+    if ($via === 'web') {
+        $this->actingAs($buyer)->post(route('disputes.appeal', [$order, $dispute]))->assertRedirect();
+    } else {
+        $this->actingAs($buyer, 'sanctum')
+            ->postJson("/api/v1/orders/{$order->reference_code}/disputes/{$dispute->id}/appeal")
+            ->assertOk();
+    }
+
+    expect($dispute->refresh()->status)->toBe(DisputeStatus::Appealed);
+    \Illuminate\Support\Facades\Notification::assertSentTo($desk, \App\Notifications\DisputeAppealedStaffNotification::class,
+        fn ($n, $channels) => in_array('mail', $channels, true) && in_array('database', $channels, true)
+            && $n->toArray($desk)['dispute_id'] === $dispute->id);
+    \Illuminate\Support\Facades\Notification::assertNotSentTo($outsider, \App\Notifications\DisputeAppealedStaffNotification::class);
+    \Illuminate\Support\Facades\Notification::assertNotSentTo($buyer, \App\Notifications\DisputeAppealedStaffNotification::class);
+
+    expect((string) (new \App\Notifications\DisputeAppealedStaffNotification($dispute))->toMail($desk)->render())
+        ->toContain($order->reference_code);
+})->with(['web', 'api']);
+
+it('does not alert the dispute desk when an appeal is refused', function () {
+    \Illuminate\Support\Facades\Notification::fake();
+    [$order, $buyer] = buildDisputeOrderContext();
+    $desk = User::factory()->create();
+    $desk->assignRole('admin');
+    $dispute = app(DisputeService::class)->open($order, $buyer, DisputeCategory::Quality, 'Wrong grade.');
+
+    $this->actingAs($buyer, 'sanctum')
+        ->postJson("/api/v1/orders/{$order->reference_code}/disputes/{$dispute->id}/appeal")
+        ->assertStatus(409);
+
+    \Illuminate\Support\Facades\Notification::assertNothingSentTo($desk);
+});

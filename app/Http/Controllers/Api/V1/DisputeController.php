@@ -110,6 +110,8 @@ class DisputeController extends Controller
             throw new ConflictException($e->getMessage(), 'dispute_not_actionable', $e);
         }
 
+        app(DisputeNotifier::class)->appealed($model);
+
         return response()->json([
             'message' => 'Dispute appealed.',
             'data' => new DisputeResource($model->refresh()->load(['raisedByUser', 'raisedByCompany', 'respondentCompany'])),

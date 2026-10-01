@@ -131,6 +131,13 @@ return [
         'action' => 'Open disputes',
     ],
 
+    'dispute_appealed_staff' => [
+        'subject' => 'Dispute appealed on order :order',
+        'title' => 'Dispute appeal to review',
+        'line' => 'A party appealed the decision on the :category dispute for order :order. Move it back to review and re-decide it.',
+        'action' => 'Open disputes',
+    ],
+
     // ----- app/Notifications/MessageReceivedNotification (mail, coalesced) -----
     'message_received_mail' => [
         'subject' => 'New message from :sender',
