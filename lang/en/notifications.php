@@ -127,6 +127,26 @@ return [
         'line_2' => 'If your company did not agree to move this shipment, contact the supplier or Cameroon Timber Hub support.',
     ],
 
+    'shipment_booking_requested' => [
+        'subject' => 'Booking request for shipment :waybill',
+        'line_1' => ':supplier asked your company to carry shipment :waybill (:origin → :destination).',
+        'action' => 'Accept or decline',
+        'line_2' => 'Please accept or decline this booking so the supplier can plan the shipment.',
+    ],
+
+    'shipment_booking_accepted' => [
+        'subject' => ':carrier accepted the booking for shipment :waybill',
+        'line_1' => ':carrier accepted your booking request for shipment :waybill (order :order).',
+        'action' => 'View the shipment',
+    ],
+
+    'shipment_booking_declined' => [
+        'subject' => ':carrier declined the booking for shipment :waybill',
+        'line_1' => ':carrier declined your booking request for shipment :waybill (order :order).',
+        'reason' => 'Reason: :reason',
+        'action' => 'Choose another carrier',
+    ],
+
     // ----- app/Notifications/ShipmentDeliveredNotification -----
     'shipment_delivered' => [
         'supplier' => [

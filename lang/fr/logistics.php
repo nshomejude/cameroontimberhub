@@ -12,5 +12,8 @@ return [
         'checkpoint_forbidden' => 'Seuls le transporteur ou le fournisseur de cette expédition peuvent enregistrer des points de contrôle.',
         'order_not_shippable' => 'Impossible de créer une expédition pour une commande livrée, terminée ou annulée.',
         'fleet_in_use' => 'Cet élément est affecté à une expédition en cours et ne peut pas être supprimé.',
+        'booking_not_pending' => 'Cette expédition n\'a aucune demande de réservation en attente.',
+        'carrier_only' => 'Seul le transporteur de cette expédition peut répondre à sa demande de réservation.',
+        'booking_not_active' => 'Acceptez la demande de réservation avant d\'enregistrer des points de contrôle.',
     ],
 ];

@@ -15,6 +15,7 @@ use App\Http\Controllers\Public\BuyerQuoteController;
 use App\Http\Controllers\Public\CarbonProjectsController;
 use App\Http\Controllers\Public\CertificateVerificationController;
 use App\Http\Controllers\Public\ChatCommerceController;
+use App\Http\Controllers\Public\CheckpointPhotoController;
 use App\Http\Controllers\Public\CheckpointTrackingController;
 use App\Http\Controllers\Public\CompanyController;
 use App\Http\Controllers\Public\ContactController;
@@ -269,6 +270,13 @@ Route::get('/logistics/shipments/{shipment:waybill_number}/checkpoint', [Logisti
     ->middleware('auth')->name('logistics.checkpoints.create');
 Route::post('/logistics/shipments/{shipment:waybill_number}/checkpoint', [LogisticsCheckpointController::class, 'store'])
     ->middleware('throttle:checkpoint-record')->name('logistics.checkpoints.store');
+
+// Checkpoint proof photos for the buyer order page and the exporter shipment
+// view: a 30-minute temporary signed URL minted only after those pages have
+// authorised the viewer (see CheckpointPhotoController). Never linked from
+// the public /track/{token} page.
+Route::get('/shipments/{shipment}/checkpoints/{checkpoint}/photo', CheckpointPhotoController::class)
+    ->whereNumber(['shipment', 'checkpoint'])->middleware('signed')->name('shipments.checkpoints.photo');
 
 // The staff-facing printable certificate document. Authorization is checked
 // inside the controller against the certificates.manage permission.

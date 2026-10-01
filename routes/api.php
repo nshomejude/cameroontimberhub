@@ -484,6 +484,8 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
         // BuyerApiScope::order() boundary as show()/trade-assurance above.
         Route::get('orders/{reference}/shipments', [OrderController::class, 'shipmentTracking'])
             ->name('orders.shipments');
+        Route::get('orders/{reference}/shipments/{shipment}/checkpoints/{checkpoint}/photo', [OrderController::class, 'checkpointPhoto'])
+            ->whereNumber(['shipment', 'checkpoint'])->name('orders.shipments.checkpoints.photo');
 
         Route::get('orders/{orderReference}/trade-assurance', [TradeAssuranceController::class, 'show'])
             ->name('orders.trade-assurance.show');
@@ -757,6 +759,13 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
                 ->whereNumber('shipment')->middleware('throttle:api-decision')->name('shipments.update');
             Route::post('shipments/{shipment}/checkpoints', [SupplierShipmentController::class, 'storeCheckpoint'])
                 ->whereNumber('shipment')->middleware('throttle:api-decision')->name('shipments.checkpoints.store');
+            Route::get('shipments/{shipment}/checkpoints/{checkpoint}/photo', [SupplierShipmentController::class, 'checkpointPhoto'])
+                ->whereNumber(['shipment', 'checkpoint'])->name('shipments.checkpoints.photo');
+            // Carrier booking acceptance (owner decision): only for a pending booking request.
+            Route::post('shipments/{shipment}/accept', [SupplierShipmentController::class, 'accept'])
+                ->whereNumber('shipment')->middleware('throttle:api-decision')->name('shipments.accept');
+            Route::post('shipments/{shipment}/decline', [SupplierShipmentController::class, 'decline'])
+                ->whereNumber('shipment')->middleware('throttle:api-decision')->name('shipments.decline');
             /* ---- end logistics block ---- */
         });
     });

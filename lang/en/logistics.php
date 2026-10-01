@@ -12,5 +12,8 @@ return [
         'checkpoint_forbidden' => 'Only the carrier or the supplier on this shipment can record checkpoints.',
         'order_not_shippable' => 'Shipments cannot be created for a delivered, completed or cancelled order.',
         'fleet_in_use' => 'This record is assigned to a shipment that is still in transit and cannot be deleted.',
+        'booking_not_pending' => 'This shipment has no pending booking request to answer.',
+        'carrier_only' => 'Only the carrier on this shipment can answer its booking request.',
+        'booking_not_active' => 'Accept the booking request before recording checkpoints.',
     ],
 ];

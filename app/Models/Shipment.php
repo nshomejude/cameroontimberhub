@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\ShipmentCarrierStatus;
 use App\Models\Concerns\HasCheckpointUpdates;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -30,6 +31,14 @@ class Shipment extends Model
     use HasCheckpointUpdates;
 
     protected $guarded = ['id'];
+
+    protected function casts(): array
+    {
+        return [
+            'carrier_status' => ShipmentCarrierStatus::class,
+            'carrier_responded_at' => 'datetime',
+        ];
+    }
 
     public function getRouteKeyName(): string
     {

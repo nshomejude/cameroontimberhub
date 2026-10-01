@@ -112,6 +112,26 @@ return [
         'line_2' => 'Si votre société n\'a pas accepté ce transport, contactez le fournisseur ou le support Cameroon Timber Hub.',
     ],
 
+    'shipment_booking_requested' => [
+        'subject' => 'Demande de réservation pour l\'expédition :waybill',
+        'line_1' => ':supplier demande à votre société de transporter l\'expédition :waybill (:origin → :destination).',
+        'action' => 'Accepter ou refuser',
+        'line_2' => 'Merci d\'accepter ou de refuser cette réservation afin que le fournisseur puisse planifier l\'expédition.',
+    ],
+
+    'shipment_booking_accepted' => [
+        'subject' => ':carrier a accepté la réservation de l\'expédition :waybill',
+        'line_1' => ':carrier a accepté votre demande de réservation pour l\'expédition :waybill (commande :order).',
+        'action' => 'Voir l\'expédition',
+    ],
+
+    'shipment_booking_declined' => [
+        'subject' => ':carrier a refusé la réservation de l\'expédition :waybill',
+        'line_1' => ':carrier a refusé votre demande de réservation pour l\'expédition :waybill (commande :order).',
+        'reason' => 'Motif : :reason',
+        'action' => 'Choisir un autre transporteur',
+    ],
+
     'shipment_delivered' => [
         'supplier' => [
             'subject' => 'Expédition :waybill livrée (commande :order)',

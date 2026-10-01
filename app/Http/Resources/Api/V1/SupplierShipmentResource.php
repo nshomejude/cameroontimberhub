@@ -39,6 +39,10 @@ class SupplierShipmentResource extends JsonResource
                 'id' => $this->carrierCompany->id,
                 'name' => $this->carrierCompany->name,
             ] : null,
+            'carrier_status' => $this->carrier_status?->value,
+            'carrier_status_label' => $this->carrier_status?->label(),
+            'carrier_decline_reason' => $this->carrier_decline_reason,
+            'carrier_responded_at' => $this->carrier_responded_at?->toIso8601String(),
             'vehicle' => $this->vehicle ? [
                 'id' => $this->vehicle->id,
                 'registration_number' => $this->vehicle->registration_number,
@@ -53,15 +57,17 @@ class SupplierShipmentResource extends JsonResource
             'current_status_label' => $current?->status->label(),
             'current_status_updated_at' => $current?->occurred_at?->toIso8601String(),
             'checkpoints' => $this->whenLoaded('checkpointUpdates', fn () => $this->checkpointUpdates
-                ->map(fn (CheckpointUpdate $c) => SupplierShipmentResource::checkpoint($c))
+                ->map(fn (CheckpointUpdate $c) => SupplierShipmentResource::checkpoint($c, $this->resource))
                 ->values()),
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }
 
     /** @return array<string, mixed> */
-    public static function checkpoint(CheckpointUpdate $c): array
+    public static function checkpoint(CheckpointUpdate $c, ?Shipment $shipment = null): array
     {
+        $shipmentId = $shipment?->getKey() ?? ($c->trackable_type === Shipment::class ? $c->trackable_id : null);
+
         return [
             'id' => $c->id,
             'client_event_id' => $c->client_event_id,
@@ -72,6 +78,9 @@ class SupplierShipmentResource extends JsonResource
             'longitude' => $c->longitude,
             'notes' => $c->notes,
             'has_photo' => $c->photo_path !== null,
+            'photo_url' => $c->photo_path !== null && $shipmentId !== null
+                ? route('api.v1.supplier.shipments.checkpoints.photo', ['shipment' => $shipmentId, 'checkpoint' => $c->id])
+                : null,
             'occurred_at' => $c->occurred_at?->toIso8601String(),
             'recorded_at' => $c->created_at?->toIso8601String(),
         ];

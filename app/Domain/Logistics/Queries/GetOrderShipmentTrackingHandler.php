@@ -40,7 +40,7 @@ final class GetOrderShipmentTrackingHandler implements HandlesQuery
 
         return Shipment::query()
             ->where('order_id', $order->getKey())
-            ->with(['checkpointUpdates' => function ($relation) {
+            ->with(['order', 'checkpointUpdates' => function ($relation) {
                 $relation->orderBy('occurred_at')->orderBy('id');
             }])
             ->orderBy('created_at')

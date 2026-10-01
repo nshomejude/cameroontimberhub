@@ -14,9 +14,10 @@ use Illuminate\Notifications\Notification;
  * Fired at every user of a third-party logistics company when a supplier
  * assigns that company as a shipment's carrier (ShipmentService::
  * createFromOrder() / updateAssignment()). It is the carrier's only signal
- * that it has been booked: carrier selection is open to any
- * OrganisationType::Logistics company without a prior acceptance step
- * (owner decision pending), so the carrier must at least be told.
+ * that it has been booked. Two flavours (owner decision): a direct
+ * assignment (carrier_status=assigned, informational) or a booking request
+ * (`$bookingRequest`, carrier_status=pending) whose copy asks the carrier to
+ * accept or decline from the shipment page / API.
  *
  * Mirrors LeadReceivedNotification: mail always, database gated by
  * NotificationPreference.
@@ -27,7 +28,7 @@ class ShipmentAssignedNotification extends Notification implements ShouldQueue
 
     public const TYPE = 'shipment_assigned';
 
-    public function __construct(public Shipment $shipment) {}
+    public function __construct(public Shipment $shipment, public bool $bookingRequest = false) {}
 
     /** @return array<int, string> */
     public function via(object $notifiable): array
@@ -43,11 +44,18 @@ class ShipmentAssignedNotification extends Notification implements ShouldQueue
 
     public function toMail(object $notifiable): MailMessage
     {
+        $key = $this->langKey();
+
         return (new MailMessage)
-            ->subject(__('notifications.shipment_assigned.subject', $this->replacements()))
-            ->line(__('notifications.shipment_assigned.line_1', $this->replacements()))
-            ->action(__('notifications.shipment_assigned.action'), $this->shipmentUrl())
-            ->line(__('notifications.shipment_assigned.line_2'));
+            ->subject(__("notifications.{$key}.subject", $this->replacements()))
+            ->line(__("notifications.{$key}.line_1", $this->replacements()))
+            ->action(__("notifications.{$key}.action"), $this->shipmentUrl())
+            ->line(__("notifications.{$key}.line_2"));
+    }
+
+    private function langKey(): string
+    {
+        return $this->bookingRequest ? 'shipment_booking_requested' : 'shipment_assigned';
     }
 
     public function shipmentUrl(): string
@@ -60,8 +68,9 @@ class ShipmentAssignedNotification extends Notification implements ShouldQueue
     {
         return [
             'type' => self::TYPE,
-            'title' => __('notifications.shipment_assigned.subject', $this->replacements()),
-            'body' => __('notifications.shipment_assigned.line_1', $this->replacements()),
+            'title' => __("notifications.{$this->langKey()}.subject", $this->replacements()),
+            'body' => __("notifications.{$this->langKey()}.line_1", $this->replacements()),
+            'booking_request' => $this->bookingRequest,
             'reference' => (string) $this->shipment->getKey(),
             'screen' => 'shipment',
             'url' => $this->shipmentUrl(),

@@ -549,7 +549,8 @@ Quote payload fields to drive UI: `status` / `status_label`, `is_expired`, `is_a
 |---|---|---|---|
 | GET | `/orders` | 🔑 | The buyer's orders, paginated (15/page), newest first (`OrderSummaryResource`). |
 | GET | `/orders/{reference}` | 🔑 | One order with line items (`OrderResource`). |
-| GET | `/orders/{reference}/shipments` | 🔑 | Shipment + checkpoint tracking timeline (`ShipmentTrackingResource`). |
+| GET | `/orders/{reference}/shipments` | 🔑 | Shipment + checkpoint tracking timeline (`ShipmentTrackingResource`): `id`, `waybill_number`, `carrier_status` / `carrier_status_label` (see Logistics), `current_status`, `checkpoints[]` (`id`, `status`, `location`, `notes`, `has_photo`, `photo_url`, `occurred_at`, `recorded_at`). |
+| GET | `/orders/{reference}/shipments/{shipment}/checkpoints/{checkpoint}/photo` | 🔑 | Streams the checkpoint proof photo (image bytes with its real `Content-Type`, `Cache-Control: private`). Use the `photo_url` from the timeline (only set when `has_photo`). Buyer of the order only; anything else `404`. |
 
 Order lifecycle is in `status` / `status_label` plus the timestamp fields (`awarded_at`, `confirmed_at`, `production_started_at`, `shipped_at`, `delivered_at`, `completed_at`, `cancelled_at`) and `etd` / `eta` / `expected_delivery_at`. `has_trade_assurance` (bool|null) tells you whether to show the trade-assurance tab.
 
@@ -762,32 +763,57 @@ Who sees/writes a shipment: members of its **carrier company**
 order's **supplier company**. Anyone else gets `404`. All routes sit behind
 `api.supplier` (any company member, including logistics companies).
 
+**Carrier booking (`carrier_status`).** A supplier can give a third-party
+logistics carrier a shipment in two ways, chosen with `"mode"` on create /
+PATCH (default `assign`, so existing clients are unchanged):
+
+| `carrier_status` | Meaning |
+|---|---|
+| `null` | Own fleet, or no carrier yet. |
+| `assigned` | `mode: "assign"` — direct assignment; carrier notified, no action needed. |
+| `pending` | `mode: "request"` — booking request; the carrier must accept or decline. |
+| `accepted` | The carrier accepted the request. |
+| `declined` | The carrier declined: carrier (and its vehicle/driver) cleared; `carrier_decline_reason` set. Re-book by PATCHing a carrier. |
+
+A carrier member can see a `pending` shipment (to answer it) but can record
+checkpoints only while `carrier_status` is `assigned`/`accepted` (`403
+carrier_booking_not_active` otherwise; the supplier side can always record).
+PATCH with the same carrier and `"mode": "assign"` turns a pending request into
+a direct assignment.
+
 | Method | Path | Auth | Notes |
 |---|---|---|---|
-| POST | `/supplier/orders/{reference}/shipments` | 🔑 | Supplier only (own sales order). Body (all optional): `{ "vehicle_id": 1, "driver_id": 2, "carrier_company_id": 3, "origin": "Douala", "destination": "Le Havre" }`. Vehicle/driver/carrier must be the supplier's own or a logistics company's (`type = logistics`), active, and all from the same company — else `422`. `422 order_not_shippable` for delivered/completed/cancelled orders. Returns `201` + shipment. Rate-limited (`api-decision`). |
+| POST | `/supplier/orders/{reference}/shipments` | 🔑 | Supplier only (own sales order). Body (all optional): `{ "vehicle_id": 1, "driver_id": 2, "carrier_company_id": 3, "mode": "assign\|request", "origin": "Douala", "destination": "Le Havre" }`. Vehicle/driver/carrier must be the supplier's own or a logistics company's (`type = logistics`), active, and all from the same company — else `422`. `422 order_not_shippable` for delivered/completed/cancelled orders. Returns `201` + shipment. Rate-limited (`api-decision`). |
 | GET | `/supplier/shipments` | 🔑 | Shipments visible to the caller (carrier or supplier), newest first, 15/page. |
 | GET | `/supplier/shipments/{id}` | 🔑 | One shipment incl. `checkpoints[]` (ordered by `occurred_at`). |
-| PATCH | `/supplier/shipments/{id}` | 🔑 | Edit assignment/route — e.g. give the bare shipment auto-created on ship a carrier. Body (any subset, `null` clears): `{ "vehicle_id", "driver_id", "carrier_company_id", "origin", "destination" }`. Only keys sent change; the resulting vehicle/driver/carrier set is validated exactly like creation (`422`). **Supplier side only:** a carrier member gets `403 not_shipment_supplier`, others `404`. Returns `200` + shipment. Rate-limited (`api-decision`). |
-| POST | `/supplier/shipments/{id}/checkpoints` | 🔑 | Record a checkpoint. Body: `{ "status": "dispatched\|in_transit\|delayed\|delivered", "location": "...", "latitude": 4.05, "longitude": 9.7, "notes": "...", "occurred_at": "ISO-8601 device time", "client_event_id": "uuid" }` (`status` required). Optional proof photo: send as `multipart/form-data` with an image file in `photo` (max 5 MB, `422` otherwise); it is stored privately and only exposed as `has_photo: true`. **Offline replay:** mint one `client_event_id` per captured checkpoint and resend it on every retry — a repeat returns `200` with `"replayed": true` and the original row instead of a duplicate (`201`, `"replayed": false`). Rate-limited (`api-decision`). |
+| PATCH | `/supplier/shipments/{id}` | 🔑 | Edit assignment/route — e.g. give the bare shipment auto-created on ship a carrier. Body (any subset, `null` clears): `{ "vehicle_id", "driver_id", "carrier_company_id", "mode", "origin", "destination" }` (`mode` as on create). Only keys sent change; the resulting vehicle/driver/carrier set is validated exactly like creation (`422`). **Supplier side only:** a carrier member gets `403 not_shipment_supplier`, others `404`. Returns `200` + shipment. Rate-limited (`api-decision`). |
+| POST | `/supplier/shipments/{id}/checkpoints` | 🔑 | Record a checkpoint. Body: `{ "status": "dispatched\|in_transit\|delayed\|delivered", "location": "...", "latitude": 4.05, "longitude": 9.7, "notes": "...", "occurred_at": "ISO-8601 device time", "client_event_id": "uuid" }` (`status` required). Optional proof photo: send as `multipart/form-data` with an image file in `photo` (max 5 MB, `422` otherwise); it is stored privately and exposed as `has_photo: true` + `photo_url` (never the storage path). A carrier on a `pending` booking gets `403 carrier_booking_not_active`. **Offline replay:** mint one `client_event_id` per captured checkpoint and resend it on every retry — a repeat returns `200` with `"replayed": true` and the original row instead of a duplicate (`201`, `"replayed": false`). Rate-limited (`api-decision`). |
+| POST | `/supplier/shipments/{id}/accept` | 🔑 | **Carrier members only** (`403 not_shipment_carrier` for the supplier side): accept a `pending` booking request → `carrier_status: accepted`; supplier members notified. `409 booking_not_pending` if there is nothing to answer. Returns `200` + shipment. Rate-limited (`api-decision`). |
+| POST | `/supplier/shipments/{id}/decline` | 🔑 | Carrier members only: decline a `pending` booking. Body: `{ "reason": "optional, max 500" }`. Clears the carrier (and its vehicle/driver), sets `carrier_status: declined`, notifies supplier members. After this the carrier no longer sees the shipment. Same errors as accept. |
+| GET | `/supplier/shipments/{id}/checkpoints/{checkpoint}/photo` | 🔑 | Streams a checkpoint proof photo (`Content-Type` of the image, `Cache-Control: private`) to anyone who can see the shipment; `404` otherwise or without a photo. Linked as `photo_url`. |
 
 Shipment shape: `id`, `waybill_number`, `order_reference`, `origin`,
-`destination`, `carrier_company {id,name}`, `vehicle {id,registration_number}`,
+`destination`, `carrier_company {id,name}`, `carrier_status`,
+`carrier_status_label`, `carrier_decline_reason`, `carrier_responded_at`, `vehicle {id,registration_number}`,
 `driver {id,name}`, `waybill_url` (public printable waybill + QR, always set),
 `tracking_url` (public `/track/{token}` link — `null` until the first
 checkpoint exists), `current_status` / `current_status_label` /
 `current_status_updated_at`, `checkpoints[]` (show only: `id`,
 `client_event_id`, `status`, `status_label`, `location`, `latitude`,
-`longitude`, `notes`, `has_photo`, `occurred_at`, `recorded_at`), `created_at`.
+`longitude`, `notes`, `has_photo`, `photo_url`, `occurred_at`, `recorded_at`), `created_at`.
 
 Notifications (mail + in-app `database`; type keys in parentheses):
 
 - **Carrier assigned** (`shipment_assigned`, `screen: "shipment"`): when a
   supplier creates or edits a shipment so that a *third-party* logistics
   company becomes its carrier, every user of that company is told (deep link:
-  the exporter Shipments view). Own-fleet assignments notify nobody. Carrier
-  selection is currently open to **any** `type = logistics` company with no
-  accept/decline step — the notification is the carrier's only signal; an
-  acceptance flow is an open owner decision.
+  the exporter Shipments view). Own-fleet assignments notify nobody. For a
+  booking request (`mode: "request"`) the same type carries
+  `booking_request: true` and "accept or decline" copy.
+- **Booking accepted / declined** (`shipment_booking_accepted` /
+  `shipment_booking_declined`, `screen: "shipment"`): the order's supplier
+  company users when the carrier answers a request (declined includes
+  `reason`).
 - **Delivered** (`shipment_delivered`): a `delivered` checkpoint (API or web
   capture page) notifies the order's supplier company users (minus the
   recorder; `screen: "shipment"`) and the buyer ("goods delivered — please
@@ -798,8 +824,11 @@ Notifications (mail + in-app `database`; type keys in parentheses):
 
 Web: the offline-capable capture page `/logistics/shipments/{waybill}/checkpoint`
 now requires login (guests are redirected to login and back) and the same
-carrier-or-supplier membership; the public waybill and `/track/{token}` pages
-stay open.
+carrier-or-supplier membership (carriers only once the booking is
+assigned/accepted); the public waybill and `/track/{token}` pages stay open
+(and never show checkpoint photos). Web pages that already authorised the
+viewer (buyer order page, exporter shipment view) show photo thumbnails via a
+30-minute temporary signed URL (`/shipments/{id}/checkpoints/{checkpoint}/photo`).
 
 ### Transformation — requests to processors, manufacturers & artisans
 

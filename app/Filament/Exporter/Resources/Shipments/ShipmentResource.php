@@ -2,6 +2,7 @@
 
 namespace App\Filament\Exporter\Resources\Shipments;
 
+use App\Enums\ShipmentCarrierStatus;
 use App\Filament\Exporter\Resources\Shipments\Pages\ListShipments;
 use App\Filament\Exporter\Resources\Shipments\Pages\ViewShipment;
 use App\Models\CheckpointUpdate;
@@ -9,10 +10,14 @@ use App\Models\Shipment;
 use App\Services\ShipmentService;
 use App\Services\ShipmentWaybillQrCodeService;
 use BackedEnum;
+use DomainException;
 use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
+use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Infolists\Components\ImageEntry;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
@@ -30,7 +35,9 @@ use Illuminate\Validation\ValidationException;
  * operator side of an order: the carrier company moving it and the
  * supplier who sold it. Scoping is ShipmentService::visibleTo() — the same
  * boundary the supplier shipments API uses. Shipments are created from the
- * Orders table ("Create shipment / waybill") or automatically on ship;
+ * Orders table ("Create shipment / waybill") or automatically on ship; a
+ * third-party carrier is either assigned directly or asked to accept a
+ * booking request (Accept / Decline booking actions, carrier side only);
  * checkpoints are recorded through the offline-capable capture page.
  */
 class ShipmentResource extends Resource
@@ -87,6 +94,13 @@ class ShipmentResource extends Resource
                 TextColumn::make('waybill_number')->label('Waybill')->searchable()->copyable(),
                 TextColumn::make('order.reference_code')->label('Order')->searchable(),
                 TextColumn::make('carrierCompany.name')->label('Carrier')->placeholder('—'),
+                TextColumn::make('carrier_status')->label('Booking')->badge()->placeholder('—')
+                    ->formatStateUsing(fn (?ShipmentCarrierStatus $state): ?string => $state?->label())
+                    ->color(fn (?ShipmentCarrierStatus $state): string => match ($state) {
+                        ShipmentCarrierStatus::Pending => 'warning',
+                        ShipmentCarrierStatus::Declined => 'danger',
+                        default => 'success',
+                    }),
                 TextColumn::make('vehicle.registration_number')->label('Vehicle')->placeholder('—'),
                 TextColumn::make('driver.name')->label('Driver')->placeholder('—'),
                 TextColumn::make('current_status')->label('Status')->badge()
@@ -98,7 +112,10 @@ class ShipmentResource extends Resource
                 ViewAction::make(),
                 static::waybillAction(),
                 static::assignAction(),
+                static::acceptBookingAction(),
+                static::declineBookingAction(),
                 Action::make('checkpoint')->label('Record checkpoint')->icon('heroicon-o-map-pin')
+                    ->visible(fn (Shipment $r): bool => app(ShipmentService::class)->canRecordCheckpoints(auth()->user(), $r))
                     ->url(fn (Shipment $r): string => route('logistics.checkpoints.create', $r))
                     ->openUrlInNewTab(),
             ]);
@@ -118,8 +135,16 @@ class ShipmentResource extends Resource
 
         return Action::make('assign')->label('Assign carrier / vehicle')->icon('heroicon-o-truck')
             ->visible(fn (Shipment $r): bool => (bool) auth()->user()?->companies()->whereKey($r->order?->company_id)->exists())
-            ->fillForm(fn (Shipment $r): array => $r->only(['carrier_company_id', 'vehicle_id', 'driver_id', 'origin', 'destination']))
+            ->fillForm(fn (Shipment $r): array => [
+                ...$r->only(['carrier_company_id', 'vehicle_id', 'driver_id', 'origin', 'destination']),
+                'mode' => $r->carrier_status === ShipmentCarrierStatus::Pending ? ShipmentService::MODE_REQUEST : ShipmentService::MODE_ASSIGN,
+            ])
             ->schema([
+                Radio::make('mode')->label('Third-party carrier')->default(ShipmentService::MODE_ASSIGN)->required()
+                    ->options([
+                        ShipmentService::MODE_ASSIGN => 'Assign directly (carrier is notified, no action needed)',
+                        ShipmentService::MODE_REQUEST => 'Request booking (carrier must accept or decline)',
+                    ]),
                 Select::make('carrier_company_id')->label('Carrier company (optional)')->searchable()
                     ->helperText('Your own company or any logistics company. Taken from the vehicle/driver when one is chosen.')
                     ->options(fn (Shipment $record): array => $service()->selectableCarriers($record->order)
@@ -149,6 +174,57 @@ class ShipmentResource extends Resource
             });
     }
 
+    /** Carrier side: accept a pending booking request (ShipmentService::acceptBooking()). */
+    public static function acceptBookingAction(): Action
+    {
+        return Action::make('acceptBooking')->label('Accept booking')->icon('heroicon-o-check-circle')->color('success')
+            ->visible(fn (Shipment $r): bool => static::canAnswerBooking($r))
+            ->requiresConfirmation()
+            ->action(function (Shipment $record): void {
+                try {
+                    app(ShipmentService::class)->acceptBooking($record, auth()->user());
+                } catch (DomainException $e) {
+                    Notification::make()->title($e->getMessage())->danger()->send();
+
+                    return;
+                }
+
+                Notification::make()->title('Booking accepted')->success()->send();
+            });
+    }
+
+    /** Carrier side: decline a pending booking request with a reason (ShipmentService::declineBooking()). */
+    public static function declineBookingAction(): Action
+    {
+        return Action::make('declineBooking')->label('Decline booking')->icon('heroicon-o-x-circle')->color('danger')
+            ->visible(fn (Shipment $r): bool => static::canAnswerBooking($r))
+            ->schema([
+                Textarea::make('reason')->label('Reason (shared with the supplier)')->maxLength(500),
+            ])
+            ->action(function (Shipment $record, array $data): void {
+                try {
+                    app(ShipmentService::class)->declineBooking($record, auth()->user(), $data['reason'] ?? null);
+                } catch (DomainException $e) {
+                    Notification::make()->title($e->getMessage())->danger()->send();
+
+                    return;
+                }
+
+                Notification::make()->title('Booking declined')->success()->send();
+            });
+    }
+
+    /** A carrier member (not also the supplier) looking at a pending booking request. */
+    private static function canAnswerBooking(Shipment $r): bool
+    {
+        $service = app(ShipmentService::class);
+        $user = auth()->user();
+
+        return $r->carrier_status === ShipmentCarrierStatus::Pending
+            && $service->isCarrierMember($user, $r)
+            && ! $service->isSupplierMember($user, $r);
+    }
+
     public static function waybillAction(): Action
     {
         return Action::make('waybill')->label('Waybill')->icon('heroicon-o-qr-code')
@@ -163,6 +239,10 @@ class ShipmentResource extends Resource
                 TextEntry::make('waybill_number')->label('Waybill')->copyable(),
                 TextEntry::make('order.reference_code')->label('Order'),
                 TextEntry::make('carrierCompany.name')->label('Carrier')->placeholder('—'),
+                TextEntry::make('carrier_status')->label('Booking')->badge()->placeholder('—')
+                    ->formatStateUsing(fn (?ShipmentCarrierStatus $state): ?string => $state?->label()),
+                TextEntry::make('carrier_decline_reason')->label('Decline reason')
+                    ->visible(fn (Shipment $r): bool => $r->carrier_status === ShipmentCarrierStatus::Declined && filled($r->carrier_decline_reason)),
                 TextEntry::make('vehicle.registration_number')->label('Vehicle')->placeholder('—'),
                 TextEntry::make('driver.name')->label('Driver')->placeholder('—'),
                 TextEntry::make('origin')->placeholder('—'),
@@ -179,13 +259,16 @@ class ShipmentResource extends Resource
                             'location' => $c->location,
                             'notes' => $c->notes,
                             'occurred_at' => $c->occurred_at?->format('d M Y H:i'),
+                            'photo_url' => app(ShipmentService::class)->photoSignedUrl($r, $c),
                         ])->all())
-                    ->columns(4)
+                    ->columns(5)
                     ->schema([
                         TextEntry::make('status')->badge(),
                         TextEntry::make('location')->placeholder('—'),
                         TextEntry::make('notes')->placeholder('—'),
                         TextEntry::make('occurred_at')->label('When'),
+                        ImageEntry::make('photo_url')->label('Photo')->imageHeight(64)->placeholder('—')
+                            ->url(fn (?string $state): ?string => $state)->openUrlInNewTab(),
                     ])
                     ->placeholder('No checkpoints recorded yet.'),
             ]),
