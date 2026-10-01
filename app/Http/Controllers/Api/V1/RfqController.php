@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Enums\RfqType;
 use App\Exceptions\Api\ApiException;
 use App\Exceptions\Api\ConflictException;
 use App\Http\Controllers\Controller;
@@ -88,6 +89,7 @@ class RfqController extends Controller
 
         $rfq = $intake->createRfq(
             [
+                'type' => RfqType::tryFrom((string) ($data['type'] ?? '')) ?? RfqType::Export,
                 'title' => $data['title'],
                 'project_name' => $data['project_name'] ?? null,
                 'buyer_name' => $buyer->name,

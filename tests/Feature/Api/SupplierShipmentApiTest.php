@@ -17,12 +17,19 @@ use App\Models\RfqCompany;
 use App\Models\Shipment;
 use App\Models\User;
 use App\Models\Vehicle;
+use App\Notifications\ShipmentAssignedNotification;
+use App\Notifications\ShipmentDeliveredNotification;
+use App\Notifications\ShipmentUpdateNotification;
 use App\Services\OrderService;
 use App\Services\QuoteService;
+use App\Services\ShipmentService;
 use App\Support\Bus\CommandBus;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Filament\Facades\Filament;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Notification as NotificationFacade;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 
 beforeEach(function () {
@@ -285,4 +292,168 @@ it('scopes the exporter ShipmentResource to carrier or supplier', function () {
     Livewire::test(ViewShipment::class, ['record' => $mine->waybill_number])
         ->assertOk()
         ->assertSee('Edea');
+});
+
+/* -------------------------------------------- round-2: edit / notify / photo */
+
+it('lets the supplier assign a partner carrier vehicle to an existing shipment via PATCH and notifies the carrier', function () {
+    NotificationFacade::fake();
+    ['order' => $order, 'supplier' => $supplier] = shipmentApiFixture();
+    [$carrier, $carrierUser] = shipmentApiCarrier();
+    $vehicle = Vehicle::factory()->create(['company_id' => $carrier->id, 'is_active' => true]);
+    $shipment = app(ShipmentService::class)->ensureForOrder($order);
+    expect($shipment->carrier_company_id)->toBeNull();
+
+    $this->actingAs($supplier, 'sanctum')
+        ->patchJson("/api/v1/supplier/shipments/{$shipment->id}", ['vehicle_id' => $vehicle->id, 'destination' => 'Yaoundé'])
+        ->assertOk()
+        ->assertJsonPath('data.carrier_company.id', $carrier->id)
+        ->assertJsonPath('data.vehicle.id', $vehicle->id)
+        ->assertJsonPath('data.destination', 'Yaoundé');
+
+    NotificationFacade::assertSentTo($carrierUser, ShipmentAssignedNotification::class,
+        fn ($n, array $channels) => in_array('mail', $channels, true) && str_contains($n->shipmentUrl(), '/shipments/'));
+});
+
+it('does not send a carrier notification for an own-fleet assignment', function () {
+    NotificationFacade::fake();
+    ['order' => $order, 'supplier' => $supplier, 'company' => $company] = shipmentApiFixture();
+    $vehicle = Vehicle::factory()->create(['company_id' => $company->id, 'is_active' => true]);
+
+    $this->actingAs($supplier, 'sanctum')
+        ->postJson("/api/v1/supplier/orders/{$order->reference_code}/shipments", ['vehicle_id' => $vehicle->id])
+        ->assertCreated();
+
+    NotificationFacade::assertNotSentTo($supplier, ShipmentAssignedNotification::class);
+});
+
+it('notifies the carrier when a shipment is created with a partner carrier', function () {
+    NotificationFacade::fake();
+    ['order' => $order, 'supplier' => $supplier] = shipmentApiFixture();
+    [$carrier, $carrierUser] = shipmentApiCarrier();
+
+    $this->actingAs($supplier, 'sanctum')
+        ->postJson("/api/v1/supplier/orders/{$order->reference_code}/shipments", ['carrier_company_id' => $carrier->id])
+        ->assertCreated();
+
+    NotificationFacade::assertSentTo($carrierUser, ShipmentAssignedNotification::class);
+});
+
+it('rejects PATCH from the carrier (403) and from strangers (404), and validates like creation', function () {
+    ['order' => $order, 'supplier' => $supplier] = shipmentApiFixture();
+    [$carrier, $carrierUser] = shipmentApiCarrier();
+    $shipment = Shipment::factory()->create(['order_id' => $order->id, 'carrier_company_id' => $carrier->id]);
+    ['supplier' => $stranger] = shipmentApiFixture();
+    $originBefore = $shipment->origin;
+
+    $this->actingAs($carrierUser, 'sanctum')
+        ->patchJson("/api/v1/supplier/shipments/{$shipment->id}", ['origin' => 'X'])
+        ->assertForbidden()->assertJsonPath('error.code', 'not_shipment_supplier');
+
+    $this->actingAs($stranger, 'sanctum')
+        ->patchJson("/api/v1/supplier/shipments/{$shipment->id}", ['origin' => 'X'])
+        ->assertNotFound();
+
+    $foreign = Vehicle::factory()->create(['company_id' => Company::factory()->create()->id, 'is_active' => true]);
+    $this->actingAs($supplier, 'sanctum')
+        ->patchJson("/api/v1/supplier/shipments/{$shipment->id}", ['vehicle_id' => $foreign->id])
+        ->assertStatus(422);
+
+    expect($shipment->refresh()->origin)->toBe($originBefore);
+});
+
+it('notifies supplier users and the buyer on a carrier delivered checkpoint without changing order status', function () {
+    NotificationFacade::fake();
+    ['order' => $order, 'supplier' => $supplier, 'buyer' => $buyer] = shipmentApiFixture();
+    [$carrier, $carrierUser] = shipmentApiCarrier();
+    $shipment = Shipment::factory()->create(['order_id' => $order->id, 'carrier_company_id' => $carrier->id]);
+    $statusBefore = $order->refresh()->status;
+
+    $this->actingAs($carrierUser, 'sanctum')
+        ->postJson("/api/v1/supplier/shipments/{$shipment->id}/checkpoints", ['status' => 'delivered'])
+        ->assertCreated();
+
+    NotificationFacade::assertSentTo($supplier, ShipmentDeliveredNotification::class, fn ($n) => $n->audience === 'supplier');
+    NotificationFacade::assertSentTo($buyer, ShipmentDeliveredNotification::class, fn ($n) => $n->audience === 'buyer');
+    NotificationFacade::assertNotSentTo($carrierUser, ShipmentDeliveredNotification::class);
+    expect($order->refresh()->status)->toBe($statusBefore);
+});
+
+it('notifies on a delivered checkpoint recorded via the web capture flow too', function () {
+    NotificationFacade::fake();
+    ['order' => $order, 'buyer' => $buyer] = shipmentApiFixture();
+    [$carrier, $carrierUser] = shipmentApiCarrier();
+    $shipment = Shipment::factory()->create(['order_id' => $order->id, 'carrier_company_id' => $carrier->id]);
+
+    $this->actingAs($carrierUser)
+        ->postJson(route('logistics.checkpoints.store', $shipment), ['status' => 'delivered'])
+        ->assertCreated();
+
+    NotificationFacade::assertSentTo($buyer, ShipmentDeliveredNotification::class);
+});
+
+it('coalesces in-transit buyer notifications to one per shipment per 6h', function () {
+    NotificationFacade::fake();
+    ['order' => $order, 'buyer' => $buyer] = shipmentApiFixture();
+    [$carrier, $carrierUser] = shipmentApiCarrier();
+    $shipment = Shipment::factory()->create(['order_id' => $order->id, 'carrier_company_id' => $carrier->id]);
+
+    foreach (['Edea', 'Pouma'] as $place) {
+        $this->actingAs($carrierUser, 'sanctum')
+            ->postJson("/api/v1/supplier/shipments/{$shipment->id}/checkpoints", ['status' => 'in_transit', 'location' => $place])
+            ->assertCreated();
+    }
+    NotificationFacade::assertSentToTimes($buyer, ShipmentUpdateNotification::class, 1);
+
+    $this->travel(7)->hours();
+    $this->actingAs($carrierUser, 'sanctum')
+        ->postJson("/api/v1/supplier/shipments/{$shipment->id}/checkpoints", ['status' => 'in_transit'])
+        ->assertCreated();
+    NotificationFacade::assertSentToTimes($buyer, ShipmentUpdateNotification::class, 2);
+});
+
+it('stores an optional checkpoint photo privately and rejects oversize uploads', function () {
+    Storage::fake('local');
+    ['order' => $order, 'supplier' => $supplier] = shipmentApiFixture();
+    $shipment = Shipment::factory()->create(['order_id' => $order->id]);
+
+    $this->actingAs($supplier, 'sanctum')
+        ->post("/api/v1/supplier/shipments/{$shipment->id}/checkpoints", [
+            'status' => 'dispatched',
+            'photo' => UploadedFile::fake()->image('proof.jpg')->size(6000),
+        ], ['Accept' => 'application/json'])
+        ->assertStatus(422);
+
+    $this->actingAs($supplier, 'sanctum')
+        ->post("/api/v1/supplier/shipments/{$shipment->id}/checkpoints", [
+            'status' => 'dispatched',
+            'photo' => UploadedFile::fake()->image('proof.jpg'),
+        ], ['Accept' => 'application/json'])
+        ->assertCreated()
+        ->assertJsonPath('data.has_photo', true)
+        ->assertJsonMissingPath('data.photo_path');
+
+    $checkpoint = CheckpointUpdate::forTrackable($shipment)->sole();
+    Storage::disk('local')->assertExists($checkpoint->photo_path);
+});
+
+it('assigns a carrier from the exporter ShipmentResource action (supplier only)', function () {
+    NotificationFacade::fake();
+    Filament::setCurrentPanel(Filament::getPanel('exporter'));
+    ['order' => $order, 'supplier' => $supplier] = shipmentApiFixture();
+    [$carrier, $carrierUser] = shipmentApiCarrier();
+    $shipment = Shipment::factory()->create(['order_id' => $order->id]);
+
+    $this->actingAs($supplier);
+    Livewire::test(ListShipments::class)
+        ->callTableAction('assign', $shipment, data: ['carrier_company_id' => $carrier->id, 'origin' => 'Douala'])
+        ->assertNotified();
+
+    expect($shipment->refresh()->carrier_company_id)->toBe($carrier->id)
+        ->and($shipment->origin)->toBe('Douala');
+    NotificationFacade::assertSentTo($carrierUser, ShipmentAssignedNotification::class);
+
+    $shipment->update(['carrier_company_id' => $carrier->id]);
+    $this->actingAs($carrierUser);
+    Livewire::test(ListShipments::class)->assertTableActionHidden('assign', $shipment);
 });

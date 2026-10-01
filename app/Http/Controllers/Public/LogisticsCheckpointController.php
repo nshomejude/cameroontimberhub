@@ -103,6 +103,8 @@ class LogisticsCheckpointController extends Controller
             'recorded_by' => $request->user()?->id,
         ]));
 
+        $this->shipments->notifyCheckpointRecorded($shipment, $checkpoint, $request->user());
+
         return response()->json([
             'saved' => true,
             'checkpoint_id' => $checkpoint->id,

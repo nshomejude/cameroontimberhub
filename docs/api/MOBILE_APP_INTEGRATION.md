@@ -416,6 +416,7 @@ Render "check your email — tap to resend" whenever `verification.required` is 
 
 ```json
 {
+  "type": "export",                                      // optional: export (default) | domestic_manufacturing | transport
   "title": "Azobe decking for marina project",          // required, 3–160
   "project_name": "Douala Marina Phase 2",              // optional
   "deadline": "2026-11-30",                              // optional, today or later
@@ -441,6 +442,7 @@ Render "check your email — tap to resend" whenever `verification.required` is 
 }
 ```
 
+- `type` picks the RFQ flow: `export` (default when omitted), `domestic_manufacturing` (manufacturing / local procurement — offered to manufacturers, artisans, processors) or `transport` (offered to logistics companies). Unknown values are a `422`. Every RFQ payload returns `type` and `type_label`.
 - Identity (`buyer_name`, `buyer_email`, `buyer_phone`) is **taken from the token** and rejected if sent in the body.
 - Species per line: send **`species_slug`** (from `/species`) when the timber is in the catalogue; use `species_text` for anything that isn't. An unknown/unpublished slug is a `422` on `items.N.species_slug`.
 - Optional anti-spam fields the client may include: `website` (honeypot — leave empty) and `form_rendered_at` (unix seconds when the form was shown).
@@ -645,7 +647,8 @@ order's **supplier company**. Anyone else gets `404`. All routes sit behind
 | POST | `/supplier/orders/{reference}/shipments` | 🔑 | Supplier only (own sales order). Body (all optional): `{ "vehicle_id": 1, "driver_id": 2, "carrier_company_id": 3, "origin": "Douala", "destination": "Le Havre" }`. Vehicle/driver/carrier must be the supplier's own or a logistics company's (`type = logistics`), active, and all from the same company — else `422`. `422 order_not_shippable` for delivered/completed/cancelled orders. Returns `201` + shipment. Rate-limited (`api-decision`). |
 | GET | `/supplier/shipments` | 🔑 | Shipments visible to the caller (carrier or supplier), newest first, 15/page. |
 | GET | `/supplier/shipments/{id}` | 🔑 | One shipment incl. `checkpoints[]` (ordered by `occurred_at`). |
-| POST | `/supplier/shipments/{id}/checkpoints` | 🔑 | Record a checkpoint. Body: `{ "status": "dispatched\|in_transit\|delayed\|delivered", "location": "...", "latitude": 4.05, "longitude": 9.7, "notes": "...", "occurred_at": "ISO-8601 device time", "client_event_id": "uuid" }` (`status` required). **Offline replay:** mint one `client_event_id` per captured checkpoint and resend it on every retry — a repeat returns `200` with `"replayed": true` and the original row instead of a duplicate (`201`, `"replayed": false`). Rate-limited (`api-decision`). |
+| PATCH | `/supplier/shipments/{id}` | 🔑 | Edit assignment/route — e.g. give the bare shipment auto-created on ship a carrier. Body (any subset, `null` clears): `{ "vehicle_id", "driver_id", "carrier_company_id", "origin", "destination" }`. Only keys sent change; the resulting vehicle/driver/carrier set is validated exactly like creation (`422`). **Supplier side only:** a carrier member gets `403 not_shipment_supplier`, others `404`. Returns `200` + shipment. Rate-limited (`api-decision`). |
+| POST | `/supplier/shipments/{id}/checkpoints` | 🔑 | Record a checkpoint. Body: `{ "status": "dispatched\|in_transit\|delayed\|delivered", "location": "...", "latitude": 4.05, "longitude": 9.7, "notes": "...", "occurred_at": "ISO-8601 device time", "client_event_id": "uuid" }` (`status` required). Optional proof photo: send as `multipart/form-data` with an image file in `photo` (max 5 MB, `422` otherwise); it is stored privately and only exposed as `has_photo: true`. **Offline replay:** mint one `client_event_id` per captured checkpoint and resend it on every retry — a repeat returns `200` with `"replayed": true` and the original row instead of a duplicate (`201`, `"replayed": false`). Rate-limited (`api-decision`). |
 
 Shipment shape: `id`, `waybill_number`, `order_reference`, `origin`,
 `destination`, `carrier_company {id,name}`, `vehicle {id,registration_number}`,
@@ -654,7 +657,24 @@ Shipment shape: `id`, `waybill_number`, `order_reference`, `origin`,
 checkpoint exists), `current_status` / `current_status_label` /
 `current_status_updated_at`, `checkpoints[]` (show only: `id`,
 `client_event_id`, `status`, `status_label`, `location`, `latitude`,
-`longitude`, `notes`, `occurred_at`, `recorded_at`), `created_at`.
+`longitude`, `notes`, `has_photo`, `occurred_at`, `recorded_at`), `created_at`.
+
+Notifications (mail + in-app `database`; type keys in parentheses):
+
+- **Carrier assigned** (`shipment_assigned`, `screen: "shipment"`): when a
+  supplier creates or edits a shipment so that a *third-party* logistics
+  company becomes its carrier, every user of that company is told (deep link:
+  the exporter Shipments view). Own-fleet assignments notify nobody. Carrier
+  selection is currently open to **any** `type = logistics` company with no
+  accept/decline step — the notification is the carrier's only signal; an
+  acceptance flow is an open owner decision.
+- **Delivered** (`shipment_delivered`): a `delivered` checkpoint (API or web
+  capture page) notifies the order's supplier company users (minus the
+  recorder; `screen: "shipment"`) and the buyer ("goods delivered — please
+  confirm", `screen: "order"`). The **order status is NOT changed** — the
+  supplier still marks the order delivered and the buyer confirms as usual.
+- **In transit** (`shipment_update`, `screen: "order"`): an `in_transit`
+  checkpoint notifies the buyer at most once per shipment per 6 hours.
 
 Web: the offline-capable capture page `/logistics/shipments/{waybill}/checkpoint`
 now requires login (guests are redirected to login and back) and the same
