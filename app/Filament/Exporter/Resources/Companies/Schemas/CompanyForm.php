@@ -4,6 +4,7 @@ namespace App\Filament\Exporter\Resources\Companies\Schemas;
 
 use App\Support\CameroonGeography;
 use App\Models\Company;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
@@ -126,6 +127,15 @@ class CompanyForm
                             ->schema([
                                 FileUpload::make('image_path')->image()->disk('public')->directory('companies/gallery')->required(),
                                 TextInput::make('caption'),
+                                // Portfolio fields: items flagged here are what the
+                                // public /companies/{slug}/portfolio page lists (shown
+                                // for Artisan companies; harmless for other types).
+                                Toggle::make('is_portfolio')->label(__('messages.company.portfolio_is_portfolio'))
+                                    ->helperText(__('messages.company.portfolio_is_portfolio_help')),
+                                DatePicker::make('completed_on')->label(__('messages.company.portfolio_completed_on'))
+                                    ->maxDate(now()),
+                                TextInput::make('materials_used')->label(__('messages.company.portfolio_materials_used'))->maxLength(255),
+                                Textarea::make('description')->label(__('messages.company.portfolio_description'))->rows(2)->maxLength(2000),
                             ])
                             ->addActionLabel('Add image')
                             ->columnSpanFull(),

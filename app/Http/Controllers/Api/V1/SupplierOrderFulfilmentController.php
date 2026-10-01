@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Domain\Trade\Commands\RecordOrderDeliveryCommand;
 use App\Domain\Trade\Commands\RecordOrderShipmentCommand;
+use App\Enums\OrderDocumentKind;
+use App\Enums\OrderStatus;
 use App\Exceptions\Api\ApiException;
 use App\Exceptions\Api\ConflictException;
 use App\Http\Controllers\Controller;
@@ -11,6 +13,7 @@ use App\Http\Resources\Api\V1\SupplierOrderResource;
 use App\Models\Conversation;
 use App\Models\Order;
 use App\Models\User;
+use App\Services\OrderDocumentService;
 use App\Services\OrderLifecycleService;
 use App\Services\OrderService;
 use App\Services\SupplierApiScope;
@@ -57,6 +60,7 @@ class SupplierOrderFulfilmentController extends Controller
         private readonly OrderLifecycleService $lifecycle,
         private readonly OrderService $orders,
         private readonly CommandBus $bus,
+        private readonly OrderDocumentService $documents,
     ) {}
 
     public function confirm(Request $request, string $reference): SupplierOrderResource
@@ -142,6 +146,103 @@ class SupplierOrderFulfilmentController extends Controller
                     $this->bus->dispatch(new RecordOrderDeliveryCommand(orderId: $o->getKey(), actingUserId: $u->getKey()));
                 });
             },
+        );
+    }
+
+    /**
+     * Attach order documents (multipart `documents[]`, optional `kind`,
+     * `label`). Threaded: `OrderLifecycleService::attachDocuments()` (same
+     * in-thread documents card as the chat endpoint). Threadless: the bare
+     * `OrderDocumentService::store()` per file, plus the same audit entry and
+     * buyer notification.
+     */
+    public function attachDocuments(Request $request, string $reference): SupplierOrderResource
+    {
+        $data = $request->validate([
+            'kind' => ['nullable', 'string', 'in:'.implode(',', OrderDocumentKind::values())],
+            'label' => ['nullable', 'string', 'max:160'],
+            'documents' => ['required', 'array', 'min:1', 'max:10'],
+            'documents.*' => ChatOrderController::fileRules(),
+        ]);
+
+        $files = $request->file('documents') ?? [];
+        $kind = OrderDocumentKind::tryFrom($data['kind'] ?? '') ?? OrderDocumentKind::Other;
+        $label = $data['label'] ?? null;
+
+        return $this->run(
+            $request,
+            $reference,
+            fn (Conversation $c, Order $o, User $u) => $this->lifecycle->attachDocuments($c, $o, $u, $files, $kind, $label),
+            function (Order $o, User $u) use ($files, $kind, $label) {
+                DB::transaction(function () use ($o, $u, $files, $kind, $label) {
+                    foreach ($files as $file) {
+                        $this->documents->store($o, $file, $kind, $u, $label);
+                    }
+
+                    activity('order')->performedOn($o)->causedBy($u)
+                        ->event('documents_attached')
+                        ->withProperties(['count' => count($files), 'kind' => $kind->value])
+                        ->log('Supplier attached order documents');
+                });
+
+                $o->loadMissing('user');
+                $o->user?->notify(new \App\Notifications\DocumentUploadedNotification($o));
+            },
+            'order_action_not_allowed',
+        );
+    }
+
+    /**
+     * Record an OFF-PLATFORM payment (cumulative `amount` received to date,
+     * optional free-text `method` — never account details). Threaded:
+     * `OrderLifecycleService::recordPayment()`; threadless: the exporter
+     * Orders-table path, `OrderService::recordPayment()`. A cancelled order
+     * or an amount above the order total is a 409 `order_action_not_allowed`.
+     */
+    public function recordPayment(Request $request, string $reference): SupplierOrderResource
+    {
+        $data = $request->validate([
+            'amount' => ['required', 'numeric', 'min:0', 'max:999999999'],
+            'method' => ['nullable', 'string', 'max:80'],
+        ]);
+
+        $amount = $data['amount'];
+        $method = isset($data['method']) && trim((string) $data['method']) !== '' ? trim((string) $data['method']) : null;
+
+        return $this->run(
+            $request,
+            $reference,
+            fn (Conversation $c, Order $o, User $u) => $this->lifecycle->recordPayment($c, $o, $u, $amount, $method),
+            function (Order $o, User $u) use ($amount, $method) {
+                if ($o->status === OrderStatus::Cancelled) {
+                    throw new RuntimeException('This order was cancelled. No payment can be recorded against it.');
+                }
+
+                $this->orders->recordPayment($o, $amount, $method, $u);
+            },
+            'order_action_not_allowed',
+        );
+    }
+
+    /**
+     * Cancel with a required `reason` — `OrderService::cancel()`, the exporter
+     * Orders-table "Cancel order" action, whether or not the order has a
+     * thread (there is no chat-side cancel card). Completed/cancelled orders
+     * are a 409 `order_transition_not_allowed`.
+     */
+    public function cancel(Request $request, string $reference): SupplierOrderResource
+    {
+        $data = $request->validate([
+            'reason' => ['required', 'string', 'max:500'],
+        ]);
+
+        $cancel = fn (Order $o, User $u) => $this->orders->cancel($o, $data['reason'], $u);
+
+        return $this->run(
+            $request,
+            $reference,
+            fn (Conversation $c, Order $o, User $u) => $cancel($o, $u),
+            $cancel,
         );
     }
 

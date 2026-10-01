@@ -25,24 +25,24 @@ class TransformationRequestActions
     public static function all(): array
     {
         return [
-            self::make('accept', 'Accept', 'heroicon-m-check', 'success', fn (TransformationRequestService $s, TransformationRequest $r) => $s->accept(auth()->user(), $r))
+            self::make('accept', __('messages.transformation_actions.accept'), 'heroicon-m-check', 'success', fn (TransformationRequestService $s, TransformationRequest $r) => $s->accept(auth()->user(), $r))
                 ->requiresConfirmation(),
 
-            self::make('quote', 'Send quote', 'heroicon-m-currency-dollar', 'primary', fn (TransformationRequestService $s, TransformationRequest $r, array $data) => $s->quote(auth()->user(), $r, $data))
+            self::make('quote', __('messages.transformation_actions.send_quote'), 'heroicon-m-currency-dollar', 'primary', fn (TransformationRequestService $s, TransformationRequest $r, array $data) => $s->quote(auth()->user(), $r, $data))
                 ->schema([
-                    TextInput::make('amount')->numeric()->minValue(0.01)->required(),
-                    Select::make('currency')->options(['XAF' => 'XAF', 'EUR' => 'EUR', 'USD' => 'USD'])->default('XAF')->required(),
-                    TextInput::make('lead_time_days')->label('Lead time (days)')->integer()->minValue(0),
-                    Textarea::make('notes')->maxLength(2000),
+                    TextInput::make('amount')->label(__('messages.transformation_actions.amount'))->numeric()->minValue(0.01)->required(),
+                    Select::make('currency')->label(__('messages.transformation_actions.currency'))->options(array_combine(TransformationRequestService::QUOTE_CURRENCIES, TransformationRequestService::QUOTE_CURRENCIES))->default('XAF')->required(),
+                    TextInput::make('lead_time_days')->label(__('messages.transformation_actions.lead_time_days'))->integer()->minValue(0),
+                    Textarea::make('notes')->label(__('messages.transformation_actions.notes'))->maxLength(2000),
                 ]),
 
-            self::make('decline', 'Decline', 'heroicon-m-x-mark', 'danger', fn (TransformationRequestService $s, TransformationRequest $r, array $data) => $s->decline(auth()->user(), $r, (string) $data['reason']))
-                ->schema([Textarea::make('reason')->label('Reason')->required()->maxLength(1000)]),
+            self::make('decline', __('messages.transformation_actions.decline'), 'heroicon-m-x-mark', 'danger', fn (TransformationRequestService $s, TransformationRequest $r, array $data) => $s->decline(auth()->user(), $r, (string) $data['reason']))
+                ->schema([Textarea::make('reason')->label(__('messages.transformation_actions.reason'))->required()->maxLength(1000)]),
 
-            self::make('startJob', 'Start job', 'heroicon-m-play', 'primary', fn (TransformationRequestService $s, TransformationRequest $r) => $s->startJob(auth()->user(), $r))
+            self::make('startJob', __('messages.transformation_actions.start_job'), 'heroicon-m-play', 'primary', fn (TransformationRequestService $s, TransformationRequest $r) => $s->startJob(auth()->user(), $r))
                 ->requiresConfirmation(),
 
-            self::make('completeJob', 'Complete job', 'heroicon-m-check-badge', 'success', fn (TransformationRequestService $s, TransformationRequest $r, array $data) => $s->completeJob(
+            self::make('completeJob', __('messages.transformation_actions.complete_job'), 'heroicon-m-check-badge', 'success', fn (TransformationRequestService $s, TransformationRequest $r, array $data) => $s->completeJob(
                 auth()->user(),
                 $r,
                 filled($data['input_volume_m3'] ?? null) ? (float) $data['input_volume_m3'] : null,
@@ -50,20 +50,20 @@ class TransformationRequestActions
                 $data['notes'] ?? null,
             ))
                 ->schema([
-                    TextInput::make('input_volume_m3')->label('Input volume (m³)')->numeric()->minValue(0.01)
-                        ->helperText('Leave blank to use the requested volume.'),
-                    TextInput::make('output_volume_m3')->label('Output volume (m³)')->numeric()->minValue(0.01)
-                        ->helperText('Leave blank for no reported loss.'),
-                    Textarea::make('notes')->maxLength(2000),
+                    TextInput::make('input_volume_m3')->label(__('messages.transformation_actions.input_volume_m3'))->numeric()->minValue(0.01)
+                        ->helperText(__('messages.transformation_actions.input_volume_help')),
+                    TextInput::make('output_volume_m3')->label(__('messages.transformation_actions.output_volume_m3'))->numeric()->minValue(0.01)
+                        ->helperText(__('messages.transformation_actions.output_volume_help')),
+                    Textarea::make('notes')->label(__('messages.transformation_actions.notes'))->maxLength(2000),
                 ]),
 
-            self::make('acceptQuote', 'Accept quote', 'heroicon-m-check', 'success', fn (TransformationRequestService $s, TransformationRequest $r) => $s->acceptQuote(auth()->user(), $r))
+            self::make('acceptQuote', __('messages.transformation_actions.accept_quote'), 'heroicon-m-check', 'success', fn (TransformationRequestService $s, TransformationRequest $r) => $s->acceptQuote(auth()->user(), $r))
                 ->requiresConfirmation(),
 
-            self::make('declineQuote', 'Decline quote', 'heroicon-m-x-mark', 'danger', fn (TransformationRequestService $s, TransformationRequest $r) => $s->declineQuote(auth()->user(), $r))
+            self::make('declineQuote', __('messages.transformation_actions.decline_quote'), 'heroicon-m-x-mark', 'danger', fn (TransformationRequestService $s, TransformationRequest $r) => $s->declineQuote(auth()->user(), $r))
                 ->requiresConfirmation(),
 
-            self::make('cancel', 'Cancel request', 'heroicon-m-no-symbol', 'gray', fn (TransformationRequestService $s, TransformationRequest $r) => $s->cancel(auth()->user(), $r))
+            self::make('cancel', __('messages.transformation_actions.cancel_request'), 'heroicon-m-no-symbol', 'gray', fn (TransformationRequestService $s, TransformationRequest $r) => $s->cancel(auth()->user(), $r))
                 ->requiresConfirmation(),
         ];
     }
@@ -91,7 +91,7 @@ class TransformationRequestActions
             ->action(function (TransformationRequest $record, array $data = []) use ($call, $label): void {
                 try {
                     $call(app(TransformationRequestService::class), $record, $data);
-                    Notification::make()->title("{$label}: done")->success()->send();
+                    Notification::make()->title(__('messages.transformation_actions.done', ['action' => $label]))->success()->send();
                 } catch (ApiException|HttpException $e) {
                     Notification::make()->title($e->getMessage())->danger()->send();
                 }

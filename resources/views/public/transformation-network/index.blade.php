@@ -19,6 +19,11 @@
                     'bg-forest-700 text-white' => $type === 'manufacturer',
                     'border border-sand-300 bg-white text-ink hover:border-forest-300' => $type !== 'manufacturer',
                 ])>{{ __('messages.transformation.find_manufacturer') }}</a>
+                <a href="{{ route('transformation-network', ['type' => 'artisan']) }}" @class([
+                    'rounded-full px-5 py-2.5 text-sm font-semibold transition',
+                    'bg-forest-700 text-white' => $type === 'artisan',
+                    'border border-sand-300 bg-white text-ink hover:border-forest-300' => $type !== 'artisan',
+                ])>{{ __('messages.transformation.find_artisan') }}</a>
                 <a href="{{ route('transformation-network.match') }}"
                    class="rounded-full border border-forest-300 bg-white px-5 py-2.5 text-sm font-semibold text-forest-700 transition hover:bg-forest-50">
                     {{ __('messages.transformation.find_transformer_stock') }}

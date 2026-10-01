@@ -92,9 +92,14 @@ class TransformationRequestController extends Controller
 
     public function quote(Request $request, string $reference): TransformationRequestResource
     {
+        // Case-insensitive (the service upper-cases), but only the web form's list.
+        if (is_string($request->input('currency'))) {
+            $request->merge(['currency' => strtoupper($request->input('currency'))]);
+        }
+
         $data = $request->validate([
             'amount' => ['required', 'numeric', 'min:0.01'],
-            'currency' => ['required', 'string', 'size:3'],
+            'currency' => ['required', 'string', \Illuminate\Validation\Rule::in(\App\Services\TransformationRequestService::QUOTE_CURRENCIES)],
             'lead_time_days' => ['nullable', 'integer', 'min:0'],
             'notes' => ['nullable', 'string'],
         ]);

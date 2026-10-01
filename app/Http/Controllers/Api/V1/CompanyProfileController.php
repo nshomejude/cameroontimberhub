@@ -114,6 +114,10 @@ class CompanyProfileController extends Controller
                     $company->gallery()->create([
                         'image_path' => $image['image_path'],
                         'caption' => $image['caption'] ?? null,
+                        'description' => $image['description'] ?? null,
+                        'is_portfolio' => (bool) ($image['is_portfolio'] ?? false),
+                        'materials_used' => $image['materials_used'] ?? null,
+                        'completed_on' => $image['completed_on'] ?? null,
                     ]);
                 }
             }

@@ -150,6 +150,9 @@ class UserResource extends JsonResource
             'role' => $company->pivot->role,
             'status' => $company->status?->value,
             'type' => $company->type?->value,
+            // Additive: {value,label} + the effective plan, see CompanyContextPayload.
+            'organisation_type' => CompanyContextPayload::organisationType($company),
+            'plan' => CompanyContextPayload::plan($company),
         ];
     }
 
