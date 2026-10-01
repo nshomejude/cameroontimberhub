@@ -117,8 +117,8 @@ it('falls back to the segment Free plan when PastDue past grace or Cancelled', f
         'grace_until' => now()->subDay(),
     ]);
 
-    expect($cancelled->fresh()->hasFeature('leads_receive'))->toBeFalse()
+    expect($cancelled->fresh()->hasFeature('verified_badge'))->toBeFalse()
         ->and($cancelled->fresh()->effectivePlan()?->slug)->toBe('free')
-        ->and($pastGrace->fresh()->hasFeature('leads_receive'))->toBeFalse()
+        ->and($pastGrace->fresh()->hasFeature('verified_badge'))->toBeFalse()
         ->and($pastGrace->fresh()->effectivePlan()?->slug)->toBe('free');
 });

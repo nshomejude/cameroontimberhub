@@ -5,6 +5,9 @@ use App\Http\Controllers\Api\V1\Agent\AgentReferenceController;
 use App\Http\Controllers\Api\V1\Agent\AgentSupplierController;
 use App\Http\Controllers\Api\V1\AnnouncementController;
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\CertificateController;
+use App\Http\Controllers\Api\V1\ChatCommerceController;
+use App\Http\Controllers\Api\V1\ChatOrderController;
 use App\Http\Controllers\Api\V1\CompanyDocumentController;
 use App\Http\Controllers\Api\V1\CompanyOnboardingController;
 use App\Http\Controllers\Api\V1\CompanyProfileController;
@@ -12,49 +15,52 @@ use App\Http\Controllers\Api\V1\CompanySubscriptionController;
 use App\Http\Controllers\Api\V1\SupplierCapacityController;
 use App\Http\Controllers\Api\V1\SupplierLeadController;
 use App\Http\Controllers\Api\V1\SupplierLotTransformationController;
+use App\Http\Controllers\Api\V1\CompanyReviewController;
 use App\Http\Controllers\Api\V1\CompanyVerificationController;
-use App\Http\Controllers\Api\V1\CertificateController;
-use App\Http\Controllers\Api\V1\TraceabilityController;
-use App\Http\Controllers\Api\V1\FleetDriverController;
-use App\Http\Controllers\Api\V1\FleetVehicleController;
-use App\Http\Controllers\Api\V1\SupplierShipmentController;
-use App\Http\Controllers\Api\V1\LocalMarketController;
-use App\Http\Controllers\Api\V1\NearbyController;
-use App\Http\Controllers\Api\V1\TransformationNetworkController;
-use App\Http\Controllers\Api\V1\TransformationRequestController;
-use App\Http\Controllers\Api\V1\ChatCommerceController;
-use App\Http\Controllers\Api\V1\ChatOrderController;
+use App\Http\Controllers\Api\V1\ContactController;
 use App\Http\Controllers\Api\V1\ConversationController;
-use App\Http\Controllers\Api\V1\DeviceTokenController;
-use App\Http\Controllers\Api\V1\NotificationController;
-use App\Http\Controllers\Api\V1\ReferralController;
-use App\Http\Controllers\Api\V1\NotificationPreferenceController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\DemoLoginController;
+use App\Http\Controllers\Api\V1\DeviceTokenController;
 use App\Http\Controllers\Api\V1\DisputeController;
 use App\Http\Controllers\Api\V1\FavoriteController;
 use App\Http\Controllers\Api\V1\FeedController;
+use App\Http\Controllers\Api\V1\FleetDriverController;
+use App\Http\Controllers\Api\V1\FleetVehicleController;
 use App\Http\Controllers\Api\V1\FollowController;
+use App\Http\Controllers\Api\V1\LocalMarketController;
+use App\Http\Controllers\Api\V1\NearbyController;
+use App\Http\Controllers\Api\V1\NotificationController;
+use App\Http\Controllers\Api\V1\NotificationPreferenceController;
 use App\Http\Controllers\Api\V1\OrderController;
 use App\Http\Controllers\Api\V1\OrderDocumentController;
 use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\QuoteController;
 use App\Http\Controllers\Api\V1\ReceiptController;
-use App\Http\Controllers\Api\V1\CompanyReviewController;
+use App\Http\Controllers\Api\V1\ReferralController;
 use App\Http\Controllers\Api\V1\ReorderController;
 use App\Http\Controllers\Api\V1\RfqController;
 use App\Http\Controllers\Api\V1\SearchController;
 use App\Http\Controllers\Api\V1\SearchSuggestController;
 use App\Http\Controllers\Api\V1\SpeciesController;
+use App\Http\Controllers\Api\V1\StaffSupportTicketController;
 use App\Http\Controllers\Api\V1\SupplierController;
 use App\Http\Controllers\Api\V1\SupplierOrderController;
 use App\Http\Controllers\Api\V1\SupplierOrderFulfilmentController;
 use App\Http\Controllers\Api\V1\SupplierProductController;
-use App\Http\Controllers\Api\V1\TwoFactorController;
 use App\Http\Controllers\Api\V1\SupplierProductImageController;
 use App\Http\Controllers\Api\V1\SupplierQuoteController;
+use App\Http\Controllers\Api\V1\SupplierRfqBoardController;
 use App\Http\Controllers\Api\V1\SupplierRfqController;
+use App\Http\Controllers\Api\V1\SupplierShipmentController;
+use App\Http\Controllers\Api\V1\SupportTicketController;
+use App\Http\Controllers\Api\V1\TraceabilityController;
 use App\Http\Controllers\Api\V1\TradeAssuranceController;
+use App\Http\Controllers\Api\V1\TransformationNetworkController;
+use App\Http\Controllers\Api\V1\TransformationRequestController;
+use App\Http\Controllers\Api\V1\TwoFactorController;
+use App\Http\Middleware\AssignRequestId;
+use App\Http\Middleware\RecordApiKeyUsage;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -111,7 +117,7 @@ use Illuminate\Support\Facades\Route;
 // envelope for every v1 response (including a 429 from the limiter below).
 // It is also on the `web` group (see bootstrap/app.php) for admin-action
 // correlation.
-Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignRequestId::class, 'throttle:api-key', \App\Http\Middleware\RecordApiKeyUsage::class])->group(function (): void {
+Route::prefix('v1')->name('api.v1.')->middleware([AssignRequestId::class, 'throttle:api-key', RecordApiKeyUsage::class])->group(function (): void {
 
     /* ------------------------------------------------------------- auth */
 
@@ -226,7 +232,7 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
 
     // Public contact details (config/contact.php essentials) for the app's
     // "Contact us" screen. No auth.
-    Route::get('contact', \App\Http\Controllers\Api\V1\ContactController::class)->name('contact');
+    Route::get('contact', ContactController::class)->name('contact');
 
     /* --------------------------------------------- any authenticated user */
 
@@ -235,18 +241,18 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
         // own tickets only (others' 404). Staff inbox is gated in-controller
         // by the `support.manage` permission (403 otherwise).
         Route::prefix('support/tickets')->name('support.tickets.')->group(function (): void {
-            Route::get('/', [\App\Http\Controllers\Api\V1\SupportTicketController::class, 'index'])->name('index');
-            Route::post('/', [\App\Http\Controllers\Api\V1\SupportTicketController::class, 'store'])
+            Route::get('/', [SupportTicketController::class, 'index'])->name('index');
+            Route::post('/', [SupportTicketController::class, 'store'])
                 ->middleware('throttle:api-decision')->name('store');
-            Route::get('{reference}', [\App\Http\Controllers\Api\V1\SupportTicketController::class, 'show'])->name('show');
-            Route::post('{reference}/reply', [\App\Http\Controllers\Api\V1\SupportTicketController::class, 'reply'])
+            Route::get('{reference}', [SupportTicketController::class, 'show'])->name('show');
+            Route::post('{reference}/reply', [SupportTicketController::class, 'reply'])
                 ->middleware('throttle:api-decision')->name('reply');
         });
 
         Route::prefix('staff/support/tickets')->name('staff.support.tickets.')->group(function (): void {
-            Route::get('/', [\App\Http\Controllers\Api\V1\StaffSupportTicketController::class, 'index'])->name('index');
-            Route::get('{reference}', [\App\Http\Controllers\Api\V1\StaffSupportTicketController::class, 'show'])->name('show');
-            Route::post('{reference}/reply', [\App\Http\Controllers\Api\V1\StaffSupportTicketController::class, 'reply'])
+            Route::get('/', [StaffSupportTicketController::class, 'index'])->name('index');
+            Route::get('{reference}', [StaffSupportTicketController::class, 'show'])->name('show');
+            Route::post('{reference}/reply', [StaffSupportTicketController::class, 'reply'])
                 ->middleware('throttle:api-decision')->name('reply');
         });
 
@@ -408,7 +414,6 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
             Route::get('earnings', [ReferralController::class, 'earnings'])->name('earnings');
             Route::get('/', [ReferralController::class, 'index'])->name('index');
         });
-
 
         // Expo push-token registration for the mobile app — own prefix,
         // right after `notifications` for the same reason that group sits
@@ -615,6 +620,13 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
         Route::prefix('supplier')->name('supplier.')->group(function (): void {
             Route::get('rfqs', [SupplierRfqController::class, 'index'])->name('rfqs.index');
             Route::get('rfqs/{reference}', [SupplierRfqController::class, 'show'])->name('rfqs.show');
+
+            // Open buyer requests board: approved RFQs matching the caller's
+            // company that are not routed to it yet (buyer contact hidden).
+            // express-interest self-routes so the supplier can quote.
+            Route::get('rfq-board', [SupplierRfqBoardController::class, 'index'])->name('rfq-board.index');
+            Route::post('rfq-board/{reference}/express-interest', [SupplierRfqBoardController::class, 'expressInterest'])
+                ->middleware('throttle:api-decision')->name('rfq-board.express-interest');
 
             // Quote submission (this task): wraps QuoteService::open()/submit(),
             // the exact same write path the exporter "Create Quote" form uses.

@@ -31,7 +31,7 @@ class RfqTriageService
         'closed' => [],
     ];
 
-    public function transition(Rfq $rfq, RfqStatus $to, User $actor, ?string $reason = null): void
+    public function transition(Rfq $rfq, RfqStatus $to, ?User $actor, ?string $reason = null): void
     {
         if (! in_array($to->value, self::TRANSITIONS[$rfq->status->value] ?? [], true)) {
             throw new RuntimeException("Illegal RFQ transition {$rfq->status->value} -> {$to->value}");
@@ -52,9 +52,18 @@ class RfqTriageService
         $this->transition($rfq, RfqStatus::InReview, $actor);
     }
 
-    public function approve(Rfq $rfq, User $actor): void
+    /**
+     * Approve the RFQ and — unless `timber.rfq.auto_route_on_approval` is
+     * off — immediately route it as an "open request" to every matching,
+     * entitled supplier (RfqOpenRequestService::autoRoute()). A null actor
+     * is the system (auto-approval of a clean, verified RFQ). Staff can
+     * still route additional companies manually afterwards.
+     */
+    public function approve(Rfq $rfq, ?User $actor): void
     {
         $this->transition($rfq, RfqStatus::Approved, $actor);
+
+        app(RfqOpenRequestService::class)->autoRoute($rfq->refresh(), $actor);
     }
 
     /**
@@ -107,7 +116,7 @@ class RfqTriageService
      *
      * @param  list<int>  $companyIds
      */
-    public function routeDetailed(Rfq $rfq, array $companyIds, User $actor, LeadFlowService $leads): RfqRoutingResult
+    public function routeDetailed(Rfq $rfq, array $companyIds, ?User $actor, LeadFlowService $leads): RfqRoutingResult
     {
         if ($rfq->status !== RfqStatus::Approved) {
             throw new RuntimeException('Only approved RFQs can be routed.');
@@ -145,7 +154,7 @@ class RfqTriageService
 
             $routing = RfqCompany::firstOrCreate(
                 ['rfq_id' => $rfq->getKey(), 'company_id' => $companyId],
-                ['status' => 'sent', 'routed_by' => $actor->getKey(), 'routed_at' => now()],
+                ['status' => 'sent', 'routed_by' => $actor?->getKey(), 'routed_at' => now()],
             );
 
             if ($routing->wasRecentlyCreated) {

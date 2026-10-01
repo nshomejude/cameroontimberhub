@@ -658,7 +658,9 @@ company's reference is always a `404`.
 |---|---|---|
 | GET | `/supplier/rfqs` | RFQs routed to the caller's company. Query: `status` (`sent\|viewed\|responded\|declined`), `type` (`export\|domestic_manufacturing\|transport`). Each item carries `type`. |
 | GET | `/supplier/rfqs/{reference}` | One routed RFQ. |
-| POST | `/supplier/rfqs/{reference}/quote` | Submit a quote (`throttle:api-decision`). |
+| POST | `/supplier/rfqs/{reference}/quote` | Submit a quote (`throttle:api-decision`). Also accepts an RFQ from the caller's open-requests board (below): it is self-routed to the caller's company first, then quoted. |
+| GET | `/supplier/rfq-board` | Open buyer requests: approved, open RFQs matching the caller's company (species handled + RFQ type targeting) that are **not** routed to it yet. Paginated (15). Query: `type` (`export\|domestic_manufacturing\|transport`), `species` (species slug). Buyer name/company/email, notes and attachments are **omitted**. Empty when the company is not verified or its plan has `leads_receive` off. |
+| POST | `/supplier/rfq-board/{reference}/express-interest` | Self-route a board RFQ to the caller's company (`throttle:api-decision`). Returns the routed RFQ (`SupplierRfqResource`, as `/supplier/rfqs/{reference}`). `404` if the RFQ is not on the caller's board. Optional: quoting a board RFQ directly does the same. |
 | GET | `/supplier/quotes`, `/supplier/quotes/{reference}` | The caller's quotes; each carries `conversation_id` (see Quotes). |
 | GET | `/supplier/orders`, `/supplier/orders/{reference}` | Sales orders (`SupplierOrderResource`), with `conversation_id` and `actions[]`. |
 | GET | `/supplier/orders/{reference}/documents` | The order's documents (`OrderDocumentResource`, same shape as the buyer's). |
