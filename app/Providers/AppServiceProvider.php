@@ -43,6 +43,20 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Boot-time production guard: never refuse to boot (that would turn a
+        // config slip into an outage), but shout on the log so it is noticed.
+        // `php artisan launch:check` is the full, blocking gate.
+        if ($this->app->isProduction()) {
+            $problems = array_filter([
+                config('app.debug') ? 'APP_DEBUG=true' : null,
+                in_array(config('mail.default'), ['log', 'array'], true) ? 'MAIL_MAILER='.config('mail.default') : null,
+            ]);
+
+            if ($problems !== [] && $this->firstUnsafeConfigReportThisHour()) {
+                Log::critical('Unsafe production configuration: '.implode(', ', $problems).'. Run `php artisan launch:check`.');
+            }
+        }
+
         // Production-readiness Task A5: surface N+1 lazy loads everywhere.
         // Throws only in local dev (a developer sees and fixes it on the spot);
         // in CI and production it logs to the `errors` channel so a missed
@@ -413,5 +427,18 @@ class AppServiceProvider extends ServiceProvider
                 $activity->properties = $properties->merge($context);
             }
         });
+    }
+
+    /**
+     * Throttles the boot-time unsafe-config alert to once an hour so it does
+     * not flood the log on every request. Logs anyway if the cache is down.
+     */
+    private function firstUnsafeConfigReportThisHour(): bool
+    {
+        try {
+            return \Illuminate\Support\Facades\Cache::add('ops:unsafe-config-reported', true, 3600);
+        } catch (\Throwable) {
+            return true;
+        }
     }
 }
