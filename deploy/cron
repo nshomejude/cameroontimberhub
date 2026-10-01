@@ -1,0 +1,12 @@
+# Crontab for user `timberhub` (install: crontab -u timberhub deploy/cron,
+# or merge into the existing crontab with `crontab -e -u timberhub`).
+# Verify:  crontab -l -u timberhub
+#
+# 1. Laravel scheduler — REQUIRED. Drives the outbox relay, digests, renewals,
+#    badge expiry, queue-health and the scheduler heartbeat that /up/health
+#    checks (503 if > 3 minutes stale).
+* * * * * cd /home/timberhub/htdocs/www.cameroontimberhub.com && /usr/bin/php artisan schedule:run >> /dev/null 2>&1
+
+# 2. Nightly backup (DB + uploaded files), 02:00 server time. Logs to
+#    ~/backups/backup.log; config via env vars at the top of deploy/backup.sh.
+0 2 * * * /home/timberhub/htdocs/www.cameroontimberhub.com/deploy/backup.sh >> /home/timberhub/backups/backup.log 2>&1
