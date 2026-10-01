@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\DB;
  *
  *   invoice     → CTH-INV-YYYY-NNNNN
  *   credit note → CTH-CN-YYYY-NNNNN
+ *   commission statement → CTH-CS-YYYY-NNNNN (marketplace commission billed
+ *                 to a supplier, App\Services\Commission\CommissionStatementIssuer)
  *
  * `NNNNN` is a per-series, per-year, gap-free monotonic sequence. The single
  * counter row in `billing_document_sequences` for (series, year) is taken
@@ -25,6 +27,11 @@ class InvoiceNumberGenerator
     public function creditNote(): string
     {
         return $this->next('CN');
+    }
+
+    public function commissionStatement(): string
+    {
+        return $this->next('CS');
     }
 
     private function next(string $series): string

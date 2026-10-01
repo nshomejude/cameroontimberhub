@@ -951,6 +951,36 @@ Web: `GET /account/delete` (route `account.delete`, confirmation page for
 settings pages to link to) and `POST /account/delete` (`password`, `confirm`)
 do the same through `App\Actions\Account\DeleteAccount`.
 
+### Supplier — marketplace commission statements & deposits
+
+Owner decision 2026-10-01: the marketplace commission charged on each order (at supplier confirmation — shown as `commission` on supplier orders) is billed on a **monthly statement** per company and currency, issued on the 1st for the previous month, due in 15 days (`timber.commission.statement_due_days`). There is **no automatic debit**: the supplier pays by **MTN MoMo / Orange Money transfer** to the platform's number or by **bank deposit / transfer**, then **reports the deposit** here; finance confirms or rejects it. Open to pending-verification companies too. Every statement number belongs to the caller's (first) company — another company's number is `404`.
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/supplier/commission/summary` | `{ balances: [{ currency, outstanding, outstanding_formatted, open_statements, overdue, next_due_date, pending_deposits }], overdue, quoting_blocked, block_on_overdue_days }` — one balance per currency (never summed across currencies). `quoting_blocked` is only ever `true` when the optional enforcement is switched on (`block_on_overdue_days` not `null`). |
+| GET | `/supplier/commission/statements` | The company's statements, newest period first, 15/page. Query `status` = `issued\|partially_paid\|paid\|overdue\|void\|open` (`open` = still owed). |
+| GET | `/supplier/commission/statements/{number}` | One statement (e.g. `CTH-CS-2026-00012`) with `lines[]`, `deposits[]` and `payment_instructions`. |
+| POST | `/supplier/commission/statements/{number}/deposits` | Report a deposit — **multipart/form-data**: `method` (`mtn_momo\|orange_money\|bank`), `amount` (> 0), `currency` (must equal the statement currency), `transaction_reference` (required, 3–100 chars — the MoMo / Orange Money transaction ID or bank reference), `paid_on` (`YYYY-MM-DD`, not in the future), `notes?` (≤ 1000), `proof?` (jpg/png/webp/pdf ≤ 5 MB, stored privately). `201` with the deposit (`status: "pending"`). Throttled like other uploads. |
+
+Statement item: `number`, `period` (`2026-09`), `period_label`, `period_start`, `period_end`, `currency`, `status` (`issued` → `partially_paid` → `paid`; `overdue` once past `due_date` unpaid; `void` = withdrawn by finance, see `void_reason`), `status_label`, `charges_amount`, `adjustments_amount` (≤ 0: credits issued after an order was billed, e.g. a dispute refund), `total_amount`, `total_formatted`, `amount_paid` (confirmed deposits only), `amount_due`, `amount_due_formatted` (XAF has no decimals), `is_overdue`, `issued_at`, `due_date`, `paid_at`, `voided_at`, `void_reason`, `can_report_deposit`. Money fields are 2dp decimal strings.
+
+Detail only — `lines[]`: `kind` (`charge` / `adjustment`), `order_reference`, `description`, `charged_at`, `order_subtotal`, `commission_rate` (fraction, e.g. `"0.0300"`), `commission_amount`, `credited_amount`, `amount` (negative for an adjustment). `deposits[]`: `id`, `method`, `method_label`, `source` (`supplier` / `admin` = recorded by finance), `status` (`pending` / `confirmed` / `rejected`), `status_label`, `currency`, `amount` (reported), `amount_received` (what finance confirmed), `transaction_reference`, `paid_on`, `has_proof`, `rejection_reason`, `reviewed_at`, `created_at`. `payment_instructions`:
+
+```json
+{ "reference_hint": "Quote your statement number as the payment reason / reference.",
+  "methods": [
+    { "method": "mtn_momo", "label": "MTN Mobile Money", "details": { "number": "+237 6…", "account_name": "…" } },
+    { "method": "orange_money", "label": "Orange Money", "details": { "number": "+237 6…", "account_name": "…" } },
+    { "method": "bank", "label": "Bank deposit / transfer", "details": { "bank_name": "…", "account_name": "…", "account_number": "…", "iban": "…", "swift": "…", "branch": "…" } } ],
+  "notes": null }
+```
+
+Only configured channels are listed (`methods` may be empty before finance has set them — show "contact support"). Errors: `422` with `error.details.<field>` for validation — including `currency` (mismatch), `transaction_reference` (*already been reported*: the same reference was already used for that method — a rejected deposit's reference may be re-used) and `statement` (the statement is paid or void). `404` for a number that is not yours.
+
+**Optional enforcement:** when the platform sets `COMMISSION_BLOCK_ON_OVERDUE_DAYS=N` (off by default), a company with a statement unpaid more than N days past its due date gets **`409` `commission_overdue`** from `POST /supplier/rfqs/{reference}/quote` (and every other quote-submission path). Show the message and link to the Commission screen.
+
+Notifications (database + push with `screen: "commission"`, plus email; all respect notification preferences): `commission_statement` (statement issued; due-soon reminder 3 days before the due date and an overdue notice — `reminder: "due_soon" | "overdue"`, with `statement_number`, `currency`, `due_date`), `commission_deposit` (`deposit_status: "confirmed" | "rejected"`, `statement_number`, `transaction_reference`).
+
 ### Referrals — "Refer & earn" and commission payouts
 
 | Method | Path | Purpose |

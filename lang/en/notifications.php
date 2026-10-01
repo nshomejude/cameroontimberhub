@@ -260,6 +260,28 @@ return [
     // documented fallback (same limitation `lang/en/notifications.php`'s
     // header already notes for mail).
     'push' => [
+        'commission_statement_issued' => [
+            'title' => 'Commission statement :number issued',
+            'body' => 'Your marketplace commission statement for :period is :amount, due by :due.',
+        ],
+        'commission_statement_due_soon' => [
+            'title' => 'Commission statement :number due soon',
+            'body' => ':amount is still due on commission statement :number. Please pay by :due.',
+        ],
+        'commission_statement_overdue' => [
+            'title' => 'Commission statement :number is overdue',
+            'body' => ':amount on commission statement :number was due on :due and is now overdue. Please pay and report your deposit.',
+        ],
+        'commission_deposit_confirmed' => [
+            'title' => 'Commission deposit confirmed',
+            'body' => 'We received :amount (ref. :reference) for statement :number. Remaining balance: :balance.',
+        ],
+        'commission_deposit_rejected' => [
+            'title' => 'Commission deposit rejected',
+            'body' => 'Your deposit (ref. :reference) for statement :number could not be confirmed: :reason',
+        ],
+        'commission_pay_hint' => 'Pay by MTN Mobile Money, Orange Money or bank deposit using the details on the statement, then report the deposit with its transaction reference.',
+        'commission_action' => 'View statement',
         'quote_received' => [
             'title' => 'New quote received',
             'body' => ':supplier submitted a quote for RFQ :rfq.',

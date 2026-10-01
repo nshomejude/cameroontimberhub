@@ -15,6 +15,7 @@ use App\Models\User;
 use App\Notifications\QuoteAcceptedNotification;
 use App\Notifications\QuoteDeclinedNotification;
 use App\Notifications\QuoteReceivedNotification;
+use App\Services\Commission\CommissionCollectionService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\DB;
@@ -66,6 +67,12 @@ class QuoteService
         if (! $company->canRespondToBuyers()) {
             throw new RuntimeException(Company::VERIFICATION_REQUIRED_MESSAGE);
         }
+
+        // Optional commission enforcement (timber.commission.block_on_overdue_days,
+        // OFF by default): a company with a commission statement unpaid too
+        // long past its due date cannot quote. Throws a 409 `commission_overdue`
+        // CommissionOverdueException (a RuntimeException).
+        app(CommissionCollectionService::class)->assertMayQuote($company);
 
         $routing = RfqCompany::where('rfq_id', $rfq->getKey())
             ->where('company_id', $company->getKey())
