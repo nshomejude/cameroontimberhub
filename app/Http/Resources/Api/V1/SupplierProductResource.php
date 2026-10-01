@@ -82,6 +82,11 @@ class SupplierProductResource extends JsonResource
 
             'primary_image_url' => $this->primaryImageUrl(),
             'gallery' => $this->galleryImages(),
+            // Manageable photos, each with an id the mobile app passes back to
+            // DELETE .../images/{id} and PATCH .../images/order: the single
+            // primary image is id "primary", gallery rows (product_images)
+            // use their numeric id. See SupplierProductImageController.
+            'images' => $this->manageableImages(),
 
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
@@ -118,6 +123,30 @@ class SupplierProductResource extends JsonResource
         }
 
         return ['public' => $missing === [], 'missing' => $missing];
+    }
+
+    /**
+     * @return list<array{id: int|string, url: string, alt: string, is_primary: bool}>
+     */
+    private function manageableImages(): array
+    {
+        /** @var Product $product */
+        $product = $this->resource;
+        $out = [];
+
+        $primary = $product->publicImage($product->primary_image_path);
+        if ($primary !== null) {
+            $out[] = ['id' => 'primary', 'url' => $primary, 'alt' => (string) $product->name, 'is_primary' => true];
+        }
+
+        foreach ($product->images as $image) {
+            $url = $product->publicImage($image->path);
+            if ($url !== null) {
+                $out[] = ['id' => $image->getKey(), 'url' => $url, 'alt' => (string) $image->alt, 'is_primary' => false];
+            }
+        }
+
+        return $out;
     }
 
     /**

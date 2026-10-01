@@ -638,11 +638,16 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
                 ->middleware('throttle:api-decision')->name('products.destroy');
 
             // Product photo upload (this task): mirrors the ONE real image
-            // field the web form has (`primary_image_path`). No
-            // gallery add/delete/reorder routes exist — see
-            // SupplierProductImageController's docblock for why.
+            // field the web form has (`primary_image_path`), plus
+            // delete/reorder over the existing primary image and
+            // product_images rows — see SupplierProductImageController.
             Route::post('products/{product}/images', [SupplierProductImageController::class, 'store'])
                 ->middleware('throttle:api-upload')->name('products.images.store');
+            // `order` before `{image}` so the static segment wins.
+            Route::patch('products/{product}/images/order', [SupplierProductImageController::class, 'reorder'])
+                ->middleware('throttle:api-decision')->name('products.images.reorder');
+            Route::delete('products/{product}/images/{image}', [SupplierProductImageController::class, 'destroy'])
+                ->middleware('throttle:api-decision')->name('products.images.destroy');
 
             // Fleet (this task): vehicles + drivers, API counterpart of the
             // exporter panel's Vehicles/Drivers resources. Sits under

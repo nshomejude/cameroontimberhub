@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Exceptions\Api\ApiException;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Api\V1\SupplierProductResource;
 use App\Services\SupplierApiScope;
@@ -28,10 +29,15 @@ use Illuminate\Support\Facades\Storage;
  * that does not exist on the web, which the task instructions for this
  * change explicitly say not to do.
  *
- * So this endpoint mirrors the ONE real capability: uploading/replacing the
- * single `primary_image_path`. `DELETE .../images/{imageId}` and
- * `PATCH .../images/order` are DELIBERATELY NOT built — see this class's
- * and the routes file's comments for why.
+ * So `store` mirrors the ONE real capability: uploading/replacing the single
+ * `primary_image_path`. The released mobile app also calls
+ * `DELETE .../images/{image}` and `PATCH .../images/order`, so those exist
+ * too, but only over what is already there: `{image}` is `primary` (clears
+ * `primary_image_path`) or the id of one of THIS product's `product_images`
+ * rows (as listed in SupplierProductResource `images[]`); `order` rewrites
+ * `product_images.sort_order` (the primary image is always first and is
+ * ignored in the list). Removing the primary image of an active product is
+ * allowed — it simply has no photo until a new one is uploaded.
  *
  * The `image` validation rule (real image files only) mirrors the form's
  * `->image()` call. Since the component itself sets no size cap, a defensive
@@ -69,5 +75,65 @@ class SupplierProductImageController extends Controller
             'message' => 'Image uploaded.',
             'data' => new SupplierProductResource($record->fresh()->load('species')),
         ], 201);
+    }
+
+    public function destroy(Request $request, int|string $product, string $image): JsonResponse
+    {
+        $record = $this->scope->product($request->user(), $product);
+        SupplierProductController::assertCanManage($request, $record);
+
+        if ($image === 'primary') {
+            $path = $record->primary_image_path;
+            if (blank($path)) {
+                throw new ApiException(404, 'not_found', 'This product has no primary image.');
+            }
+
+            $record->update(['primary_image_path' => null]);
+            $this->deleteFile($path);
+        } else {
+            $row = ctype_digit($image) ? $record->images()->whereKey((int) $image)->first() : null;
+            if ($row === null) {
+                throw new ApiException(404, 'not_found', 'Image not found.');
+            }
+
+            $row->delete();
+            $this->deleteFile($row->path);
+        }
+
+        return response()->json([
+            'message' => 'Image removed.',
+            'data' => new SupplierProductResource($record->fresh()->load('species')),
+        ]);
+    }
+
+    public function reorder(Request $request, int|string $product): JsonResponse
+    {
+        $record = $this->scope->product($request->user(), $product);
+        SupplierProductController::assertCanManage($request, $record);
+
+        $data = $request->validate(['ids' => ['required', 'array', 'max:100'], 'ids.*' => ['required']]);
+
+        $ids = collect($data['ids'])->map(fn ($id) => (string) $id)->reject(fn ($id) => $id === 'primary')->values();
+        $owned = $record->images()->pluck('id')->map(fn ($id) => (string) $id);
+
+        if ($ids->diff($owned)->isNotEmpty()) {
+            throw new ApiException(422, 'validation_failed', 'Unknown image id.', ['ids' => ['One or more ids are not images of this product.']]);
+        }
+
+        foreach ($ids as $position => $id) {
+            $record->images()->whereKey((int) $id)->update(['sort_order' => $position + 1]);
+        }
+
+        return response()->json([
+            'message' => 'Images reordered.',
+            'data' => new SupplierProductResource($record->fresh()->load('species')),
+        ]);
+    }
+
+    private function deleteFile(?string $path): void
+    {
+        if (filled($path) && ! str_starts_with((string) $path, 'http') && ! str_starts_with(ltrim((string) $path, '/'), 'img/')) {
+            Storage::disk('public')->delete($path);
+        }
     }
 }
