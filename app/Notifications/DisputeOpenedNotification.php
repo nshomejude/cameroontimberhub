@@ -32,6 +32,7 @@ class DisputeOpenedNotification extends Notification implements ShouldQueue
                 'order' => $this->dispute->order?->reference_code,
             ]),
             'reference' => $this->dispute->order?->reference_code,
+            'dispute_id' => $this->dispute->getKey(),
             'screen' => 'dispute',
         ];
     }

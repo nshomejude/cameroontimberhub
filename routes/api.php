@@ -74,8 +74,9 @@ use Illuminate\Support\Facades\Route;
 | could bypass anti-spam, the verification gate, the state machines or the
 | authorisation rules.
 |
-| v1 is browse + RFQ + quotes + orders + Trade Assurance view/confirm +
-| documents + receipts. Reorder stays on the web for now.
+| v1 covers browse, RFQs, quotes, orders (incl. reorder), Trade Assurance,
+| disputes, reviews, documents + receipts, and the supplier/logistics
+| fulfilment surfaces below.
 |
 */
 
@@ -432,16 +433,16 @@ Route::prefix('v1')->name('api.v1.')->middleware([AssignRequestId::class, 'throt
         // the read-only `transformation` group's routes.
         Route::prefix('transformation/requests')->name('transformation-requests.')->group(function (): void {
             Route::get('/', [TransformationRequestController::class, 'index'])->name('index');
-            Route::post('/', [TransformationRequestController::class, 'store'])->name('store');
+            Route::post('/', [TransformationRequestController::class, 'store'])->middleware('throttle:api-decision')->name('store');
             Route::get('{reference}', [TransformationRequestController::class, 'show'])->name('show');
-            Route::post('{reference}/accept', [TransformationRequestController::class, 'accept'])->name('accept');
-            Route::post('{reference}/decline', [TransformationRequestController::class, 'decline'])->name('decline');
-            Route::post('{reference}/quote', [TransformationRequestController::class, 'quote'])->name('quote');
-            Route::post('{reference}/start', [TransformationRequestController::class, 'startJob'])->name('start');
-            Route::post('{reference}/complete', [TransformationRequestController::class, 'completeJob'])->name('complete');
-            Route::post('{reference}/accept-quote', [TransformationRequestController::class, 'acceptQuote'])->name('accept-quote');
-            Route::post('{reference}/decline-quote', [TransformationRequestController::class, 'declineQuote'])->name('decline-quote');
-            Route::post('{reference}/cancel', [TransformationRequestController::class, 'cancel'])->name('cancel');
+            Route::post('{reference}/accept', [TransformationRequestController::class, 'accept'])->middleware('throttle:api-decision')->name('accept');
+            Route::post('{reference}/decline', [TransformationRequestController::class, 'decline'])->middleware('throttle:api-decision')->name('decline');
+            Route::post('{reference}/quote', [TransformationRequestController::class, 'quote'])->middleware('throttle:api-decision')->name('quote');
+            Route::post('{reference}/start', [TransformationRequestController::class, 'startJob'])->middleware('throttle:api-decision')->name('start');
+            Route::post('{reference}/complete', [TransformationRequestController::class, 'completeJob'])->middleware('throttle:api-decision')->name('complete');
+            Route::post('{reference}/accept-quote', [TransformationRequestController::class, 'acceptQuote'])->middleware('throttle:api-decision')->name('accept-quote');
+            Route::post('{reference}/decline-quote', [TransformationRequestController::class, 'declineQuote'])->middleware('throttle:api-decision')->name('decline-quote');
+            Route::post('{reference}/cancel', [TransformationRequestController::class, 'cancel'])->middleware('throttle:api-decision')->name('cancel');
         });
     });
 

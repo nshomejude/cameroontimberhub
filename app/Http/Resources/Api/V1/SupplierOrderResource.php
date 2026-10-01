@@ -4,6 +4,7 @@ namespace App\Http\Resources\Api\V1;
 
 use App\Enums\OrderStatus;
 use App\Models\Order;
+use App\Services\OrderService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -102,8 +103,17 @@ class SupplierOrderResource extends JsonResource
      * released app only renders server `actions`. Such an order gets the SAME
      * action objects for `confirm`/`production`/`ship`/`tracking`/`deliver`,
      * pointed at the reference-based `supplier/orders/{reference}/...` routes
-     * (SupplierOrderFulfilmentController, same field names). The
-     * conversation-only actions (documents, proforma, payments) are omitted.
+     * (SupplierOrderFulfilmentController, same field names), plus
+     * `add_documents` (`supplier/orders/{reference}/documents`, multipart
+     * `documents[]`) and `record_payment` (`supplier/orders/{reference}/payments`,
+     * `{amount, method}`) with the same fields as the threaded variants.
+     * `proforma` and `request_payment` stay thread-only (they post a card
+     * into the conversation).
+     *
+     * `cancel` is emitted for any order whose status may move to `Cancelled`
+     * per `OrderService::TRANSITIONS`, threaded or not, always at
+     * `supplier/orders/{reference}/cancel` (that route resolves either path)
+     * with a required `reason`.
      *
      * @return list<array<string, mixed>>
      */
@@ -172,8 +182,16 @@ class SupplierOrderResource extends JsonResource
             ];
         }
 
-        if ($threadless) {
-            return $actions;
+        if (in_array(OrderStatus::Cancelled->value, OrderService::TRANSITIONS[$order->status->value] ?? [], true)) {
+            $actions[] = [
+                'key' => 'cancel',
+                'label' => 'Cancel order',
+                'method' => 'POST',
+                'path' => 'supplier/orders/'.rawurlencode((string) $order->reference_code).'/cancel',
+                'fields' => [
+                    ['name' => 'reason', 'label' => 'Reason', 'type' => 'text', 'required' => true, 'max_length' => 500],
+                ],
+            ];
         }
 
         if (! $order->status->isTerminal()) {
@@ -188,7 +206,9 @@ class SupplierOrderResource extends JsonResource
                     ['name' => 'label', 'label' => 'Label', 'type' => 'text', 'required' => false, 'max_length' => 160],
                 ],
             ];
+        }
 
+        if (! $threadless && ! $order->status->isTerminal()) {
             $actions[] = [
                 'key' => 'proforma',
                 'label' => 'Issue proforma invoice',
@@ -206,12 +226,14 @@ class SupplierOrderResource extends JsonResource
                     ['name' => 'reference', 'label' => 'Reference', 'type' => 'text', 'required' => false, 'max_length' => 120],
                 ],
             ];
+        }
 
+        if (! $order->status->isTerminal()) {
             $actions[] = [
                 'key' => 'record_payment',
                 'label' => 'Record a payment received',
                 'method' => 'POST',
-                'path' => "{$base}/payment-record",
+                'path' => $threadless ? "{$base}/payments" : "{$base}/payment-record",
                 'fields' => [
                     ['name' => 'amount', 'label' => 'Amount received', 'type' => 'decimal', 'required' => true],
                     ['name' => 'method', 'label' => 'How it arrived', 'type' => 'text', 'required' => false, 'placeholder' => 'e.g. Bank transfer', 'max_length' => 80],

@@ -868,6 +868,8 @@ Request pipeline (authenticated, any company member):
 | POST | `.../{reference}/accept`, `/decline` (`reason`), `/quote` (`amount`, `currency` = `XAF\|EUR\|USD`, case-insensitive, `lead_time_days?`, `notes?`), `/start`, `/complete` (`input_volume_m3?`, `output_volume_m3?`, `notes?`) | Provider side. |
 | POST | `.../{reference}/accept-quote`, `/decline-quote`, `/cancel` | Requester side. |
 
+All `POST` routes above (create and every decision) share the `api-decision` rate limiter (`429` when exceeded), like the other decision endpoints.
+
 Each item carries server-computed `actions[]` for the caller — render only those.
 
 ### Account deletion (App Store / Play requirement)
@@ -897,9 +899,23 @@ do the same through `App\Actions\Account\DeleteAccount`.
 - **Supplier orders without a conversation**: `GET /supplier/orders/{ref}`
   `actions[]` is no longer empty for threadless orders — it carries the same
   `{key,label,method,path,fields?}` objects (`confirm`, `production`, `ship`,
-  `deliver`, `tracking`) with `path` = `supplier/orders/{ref}/{action}`.
-  Conversation-only actions (documents, proforma, payment request/record)
-  appear only when a thread exists (paths stay `conversations/{id}/orders/{order}/…`).
+  `deliver`, `tracking`) with `path` = `supplier/orders/{ref}/{action}`,
+  plus `add_documents` (`POST supplier/orders/{ref}/documents`, multipart
+  `documents[]` + optional `kind`/`label`) and `record_payment`
+  (`POST supplier/orders/{ref}/payments`, `{amount, method?}`). `proforma`
+  and `request_payment` appear only when a thread exists (threaded paths stay
+  `conversations/{id}/orders/{order}/…`; each key appears at most once).
+- **Supplier order `cancel` action**: emitted on any order (threaded or not)
+  whose status may still move to `cancelled` (`awarded`, `confirmed`,
+  `in_production`, `shipped`), always at `POST supplier/orders/{ref}/cancel`
+  with a required `reason` field (≤500 chars).
+- **Notification deep links**: `company_verified` (company approved by staff)
+  now also lands in the notification centre and as an Expo push (both gated
+  by the user's notification preferences; email always goes) with
+  `{type, title, body, company_id, screen: "verification"}`. Dispute
+  notifications (`dispute_opened`, `dispute_reply`) now carry `dispute_id`
+  next to `reference` (the order reference) so the app can open
+  `/orders/{reference}/disputes/{dispute_id}` directly.
 - **Product images**: `SupplierProductResource.images[]` =
   `[{id, url, alt, is_primary}]` — the primary image has `id: "primary"`,
   gallery (`product_images`) rows their numeric id.

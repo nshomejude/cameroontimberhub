@@ -115,7 +115,13 @@ it('offers reference-based fulfilment actions when the order has no conversation
 
     $actions = collect($response->json('data.actions'))->keyBy('key');
 
-    expect($actions->keys()->all())->toBe(['confirm', 'tracking'])
+    expect($actions->keys()->all())->toBe(['confirm', 'tracking', 'cancel', 'add_documents', 'record_payment'])
+        ->and($actions['add_documents']['path'])->toBe('supplier/orders/'.$order->reference_code.'/documents')
+        ->and(collect($actions['add_documents']['fields'])->firstWhere('name', 'documents')['required'])->toBeTrue()
+        ->and($actions['record_payment']['path'])->toBe('supplier/orders/'.$order->reference_code.'/payments')
+        ->and(collect($actions['record_payment']['fields'])->pluck('name')->all())->toBe(['amount', 'method'])
+        ->and($actions['cancel']['path'])->toBe('supplier/orders/'.$order->reference_code.'/cancel')
+        ->and($actions['cancel']['fields'][0])->toMatchArray(['name' => 'reason', 'required' => true])
         ->and($actions['confirm'])->toMatchArray(['label' => 'Confirm order', 'method' => 'POST', 'path' => 'supplier/orders/'.$order->reference_code.'/confirm'])
         ->and($actions['tracking']['path'])->toBe('supplier/orders/'.$order->reference_code.'/tracking')
         ->and($actions['tracking']['fields'])->not->toBeEmpty();
@@ -126,7 +132,28 @@ it('offers reference-based fulfilment actions when the order has no conversation
 
     $keys = collect($this->actingAs($user, 'sanctum')
         ->getJson('/api/v1/supplier/orders/'.$order->reference_code)->json('data.actions'))->pluck('key')->all();
-    expect($keys)->toBe(['production', 'ship', 'tracking']);
+    expect($keys)->toBe(['production', 'ship', 'tracking', 'cancel', 'add_documents', 'record_payment']);
+
+    // The emitted payment and cancel paths really work too.
+    $byKey = collect($this->actingAs($user, 'sanctum')
+        ->getJson('/api/v1/supplier/orders/'.$order->reference_code)->json('data.actions'))->keyBy('key');
+    $this->actingAs($user, 'sanctum')->postJson('/api/v1/'.$byKey['record_payment']['path'], ['amount' => 100, 'method' => 'Bank transfer'])->assertSuccessful();
+    $this->actingAs($user, 'sanctum')->postJson('/api/v1/'.$byKey['cancel']['path'], ['reason' => 'Buyer withdrew'])->assertSuccessful();
+    expect($order->fresh()->status->value)->toBe('cancelled');
+});
+
+it('does not offer cancel once the order is delivered', function () {
+    [$user, $company] = supplierOrderApiUser();
+    $order = awardedOrderFor($company);
+    app(OrderService::class)->confirm($order);
+    app(OrderService::class)->ship($order);
+    app(OrderService::class)->deliver($order);
+
+    $keys = collect($this->actingAs($user, 'sanctum')
+        ->getJson('/api/v1/supplier/orders/'.$order->reference_code)->json('data.actions'))->pluck('key');
+
+    // Delivered only moves to completed (OrderService::TRANSITIONS).
+    expect($keys)->toContain('tracking')->and($keys)->not->toContain('cancel');
 });
 
 it('offers confirm but not ship on a freshly awarded order', function () {
@@ -154,7 +181,9 @@ it('offers confirm but not ship on a freshly awarded order', function () {
         ->and($keys)->toContain('add_documents')
         ->and($keys)->toContain('proforma')
         ->and($keys)->toContain('request_payment')
-        ->and($keys)->toContain('record_payment');
+        ->and($keys)->toContain('record_payment')
+        ->and($keys)->toContain('cancel')
+        ->and($keys->duplicates()->all())->toBe([]);
 });
 
 it('offers ship but not confirm once the order is confirmed', function () {
