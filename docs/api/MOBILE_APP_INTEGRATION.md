@@ -1332,3 +1332,7 @@ async function api(path: string, init: RequestInit = {}, token?: string) {
 ### Carrier picker — `GET /api/v1/supplier/carriers?q=`
 
 Lists logistics companies a supplier can choose as a shipment carrier (verified first, then pending; suspended/rejected/archived excluded; the caller's own company excluded). `q` matches legal name, trade name or city. Response: `{data:[{id, name, city, region, verified}], meta:{current_page,last_page,total}}`, 20 per page. Pass the chosen `id` as `carrier_company_id` with `mode: assign|request` to `POST supplier/orders/{reference}/shipments` or `PATCH supplier/shipments/{id}`.
+
+### Notification preference types
+
+`GET/PATCH /api/v1/notifications/preferences` `types` keys: `quote_received`, `order_status_changed`, `message_received`, `dispute_reply`, `company_verified`, `commission_statement` (statement issued + due/overdue reminders), `commission_deposit` (deposit confirmed/rejected). Missing keys default to on.

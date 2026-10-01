@@ -45,6 +45,9 @@ class NotificationPreference extends Model
         'order_status_changed',
         'message_received',
         'dispute_reply',
+        'company_verified',
+        'commission_statement',
+        'commission_deposit',
     ];
 
     public static function forUser(User $user): self
