@@ -40,6 +40,7 @@ use App\Http\Controllers\Api\V1\CompanyReviewController;
 use App\Http\Controllers\Api\V1\ReorderController;
 use App\Http\Controllers\Api\V1\RfqController;
 use App\Http\Controllers\Api\V1\SearchController;
+use App\Http\Controllers\Api\V1\SearchSuggestController;
 use App\Http\Controllers\Api\V1\SpeciesController;
 use App\Http\Controllers\Api\V1\SupplierController;
 use App\Http\Controllers\Api\V1\SupplierOrderController;
@@ -173,6 +174,11 @@ Route::prefix('v1')->name('api.v1.')->middleware([\App\Http\Middleware\AssignReq
     Route::get('suppliers', [SupplierController::class, 'index'])->name('suppliers.index');
     Route::get('suppliers/{slug}', [SupplierController::class, 'show'])->name('suppliers.show');
 
+    // Type-ahead: own 120/min limiter instead of the 60/min anonymous api-key one.
+    Route::get('search/suggest', SearchSuggestController::class)
+        ->withoutMiddleware('throttle:api-key')
+        ->middleware(['throttle:search-suggest', 'cache.headers:public;max_age=60;etag'])
+        ->name('search.suggest');
     Route::get('search', SearchController::class)->name('search');
 
     // Nearest sellers for buyers (public) — see NearbyController.

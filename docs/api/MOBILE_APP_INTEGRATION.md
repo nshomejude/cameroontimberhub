@@ -343,6 +343,90 @@ Auth column: 🌐 public · 🔑 buyer token.
 | GET | `/suppliers` | 🌐 | Verified supplier directory. Query: `q`, `types[]`, `species_in[]`, `region`, `sort`. Paginated. |
 | GET | `/suppliers/{slug}` | 🌐 | One supplier profile (`SupplierDetailResource`). |
 | GET | `/search` | 🌐 | Cross-entity search. Query: `q` (required). Returns grouped product / species / supplier hits. |
+| GET | `/search/suggest` | 🌐 | Instant (type-ahead) search — see below. Query: `q`, `types`, `limit`. |
+
+### Instant search (`GET /api/v1/search/suggest`)
+
+Type-ahead suggestions for the search bar. Public, no token needed (a token
+is accepted and only changes the throttle key).
+
+**Query**
+
+| Param | Default | Notes |
+|---|---|---|
+| `q` | — | The partial query. Under **2 characters** returns empty groups (200, not an error). Trimmed, lower-cased, capped at 64 chars. |
+| `types` | `products,suppliers,species` | Comma-separated subset. Unknown values → 422. |
+| `limit` | `5` | Per group, 1–5. Over 5 → 422. |
+
+**Matching** — case- and accent-insensitive substring match (`ebene` finds
+"Ébène", `IROKO` finds "Iroko"). Every space-separated word must match.
+A product matches on its own name **or its species' common / scientific /
+French name / synonyms, or its supplier's name** — so typing "iroko" lists
+every Iroko listing even if the seller named it "Sawn beams 50x150".
+Names starting with the query rank first. Only public data is returned:
+active products of publicly visible suppliers, publicly visible suppliers,
+published species.
+
+**Client guidance**
+
+- **Min chars:** don't call below `meta.min_chars` (2) — clear the dropdown instead.
+- **Debounce 250 ms** after the last keystroke.
+- **Cancel the in-flight request** on every new keystroke (`AbortController`
+  with `fetch`/axios `signal`), and ignore any response whose `meta.query`
+  no longer matches the (normalised) text in the box.
+- **Submit / "See all"** → the full paginated `GET /api/v1/search?q=…`
+  (`meta.search_url` is the website equivalent).
+- Tap a suggestion → `products/{slug}`, `suppliers/{slug}` or `species/{slug}`.
+  Each row also carries the website `url` (for share sheets / deep links).
+- **Caching:** responses are `Cache-Control: public, max-age=60` with an
+  `ETag`; send `If-None-Match` to get a `304`. Server-side results are
+  cached 60 s per normalised query.
+- **Throttle:** own limiter, **120 requests/min** per user (or per IP when
+  anonymous) — not the shared 60/min anonymous limit. On `429`, stop
+  suggesting until `Retry-After` elapses; the search button still works.
+
+**Example**
+
+```http
+GET /api/v1/search/suggest?q=iroko
+Accept: application/json
+```
+
+```json
+{
+  "data": {
+    "products": [
+      {
+        "id": 42,
+        "slug": "sawn-beams-50x150",
+        "name": "Sawn beams 50x150",
+        "species": "Iroko",
+        "company_name": "Scierie Nkongsamba",
+        "image_url": "https://cameroontimberhub.com/storage/products/abc.jpg",
+        "price_label": "650,000 FCFA",
+        "url": "https://cameroontimberhub.com/marketplace/sawn-beams-50x150"
+      }
+    ],
+    "suppliers": [],
+    "species": [
+      {
+        "slug": "iroko",
+        "name": "Iroko",
+        "scientific_name": "Milicia excelsa",
+        "url": "https://cameroontimberhub.com/species/iroko"
+      }
+    ]
+  },
+  "meta": {
+    "query": "iroko",
+    "min_chars": 2,
+    "search_url": "https://cameroontimberhub.com/search?q=iroko"
+  }
+}
+```
+
+Supplier rows: `{ "slug", "name", "logo_url", "city", "verified": true, "url" }`.
+`image_url` and `price_label` may be `null` (no photo / price on request).
 
 ### Dashboard — home screen, role-switched
 

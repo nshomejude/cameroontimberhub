@@ -246,7 +246,7 @@
     </div>
 
     {{-- ---------------- Header ---------------- --}}
-    <header x-data="{ mobileMenu: false, resources: false, domesticMarket: false }"
+    <header x-data="{ mobileMenu: false, mobileSearch: false, resources: false, domesticMarket: false }"
             class="sticky top-0 z-40 border-b border-sand-200 bg-white">
         <div class="mx-auto flex h-16 max-w-[1400px] items-center gap-4 px-4 lg:h-[72px] lg:px-6">
 
@@ -270,8 +270,14 @@
                      class="h-10 w-auto lg:h-12" width="600" height="200">
             </a>
 
+            {{-- Instant search (wide screens); lg-only gets an icon link to /search. --}}
+            <x-search-suggest id="header-search" class="ml-4 hidden w-56 xl:block 2xl:w-72" />
+
             {{-- Desktop nav --}}
             <nav class="ml-auto hidden items-center gap-7 lg:flex">
+                <a href="{{ url('/search') }}" class="text-ink hover:text-forest-700 xl:hidden" aria-label="{{ __('messages.nav.search') }}">
+                    <x-heroicon-o-magnifying-glass class="h-5 w-5" />
+                </a>
                 @foreach ($nav as $item)
                     <a href="{{ $item['url'] }}" @class([
                         'relative py-2 text-sm font-medium transition',
@@ -341,13 +347,20 @@
 
             {{-- Mobile actions --}}
             <div class="ml-auto flex items-center gap-1 lg:hidden">
-                <a href="{{ url('/search') }}" class="flex h-10 w-10 items-center justify-center rounded-lg text-ink" aria-label="{{ __('messages.nav.search') }}">
+                <button type="button" @click="mobileSearch = ! mobileSearch; $nextTick(() => mobileSearch && document.getElementById('mobile-header-search').focus())"
+                        class="flex h-10 w-10 items-center justify-center rounded-lg text-ink" aria-label="{{ __('messages.nav.search') }}"
+                        aria-controls="mobile-search-panel" :aria-expanded="mobileSearch ? 'true' : 'false'">
                     <x-heroicon-o-magnifying-glass class="h-6 w-6" />
-                </a>
+                </button>
                 <a href="{{ auth()->check() ? route('account.index') : route('login') }}" class="relative flex h-10 w-10 items-center justify-center rounded-lg text-ink" aria-label="{{ __('messages.nav.account') }}">
                     <x-heroicon-o-user class="h-6 w-6" />
                 </a>
             </div>
+        </div>
+
+        {{-- Mobile instant search panel --}}
+        <div id="mobile-search-panel" x-show="mobileSearch" x-cloak class="border-t border-sand-200 px-4 py-2 lg:hidden">
+            <x-search-suggest id="mobile-header-search" class="w-full" />
         </div>
 
         {{-- Mobile slide-in menu --}}
