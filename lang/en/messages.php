@@ -1233,7 +1233,7 @@ return [
         'subtotal' => 'Subtotal',
         'shipping' => 'Shipping',
         'tax' => 'Tax',
-        'marketplace_commission' => 'Marketplace commission (:rate%, if this order is placed under Trade Assurance)',
+        'marketplace_commission' => 'Marketplace commission (:rate%) — paid by the supplier, not added to your total',
         'terms' => 'Terms',
         'supplier_notes' => 'Supplier notes',
         'no_supplier_notes' => 'The supplier did not add any notes to this quote.',

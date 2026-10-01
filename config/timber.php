@@ -64,4 +64,36 @@ return [
         'auto_route_max' => (int) env('RFQ_AUTO_ROUTE_MAX', 30),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Marketplace commission (PRICING_SPEC §15)
+    |--------------------------------------------------------------------------
+    |
+    | Rates and caps live in `commission_rules` (/admin → Commission rules),
+    | never here. This block only holds the plumbing around them:
+    |
+    | protect_all_orders: every order created from an accepted quote is placed
+    | under Trade Assurance (tracking milestones, NOT escrow) — that is what
+    | makes it a "protected trade" on which commission is charged. Off = no
+    | order is ever protected, so no commission is ever charged.
+    |
+    | usd_to_xaf / usd_to_eur / usd_to_gbp / usd_to_cny: units of that
+    | currency per 1 USD, used ONLY to express a rule's fixed cap (e.g. the
+    | §15 "$5,000" cap, stored with cap_currency = USD) in the order's own
+    | currency. EUR defaults to the fixed XAF/EUR peg (655.957) applied to
+    | usd_to_xaf. When no rate is configured for a pair, the fixed-amount cap
+    | is skipped for that order (the percentage cap still applies).
+    |
+    */
+
+    'commission' => [
+        'protect_all_orders' => (bool) env('COMMISSION_PROTECT_ALL_ORDERS', true),
+        'usd_to_xaf' => (float) env('COMMISSION_USD_TO_XAF', 600),
+        'usd_to_eur' => filled(env('COMMISSION_USD_TO_EUR'))
+            ? (float) env('COMMISSION_USD_TO_EUR')
+            : round((float) env('COMMISSION_USD_TO_XAF', 600) / 655.957, 6),
+        'usd_to_gbp' => filled(env('COMMISSION_USD_TO_GBP')) ? (float) env('COMMISSION_USD_TO_GBP') : null,
+        'usd_to_cny' => filled(env('COMMISSION_USD_TO_CNY')) ? (float) env('COMMISSION_USD_TO_CNY') : null,
+    ],
+
 ];

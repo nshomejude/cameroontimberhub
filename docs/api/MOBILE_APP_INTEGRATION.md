@@ -562,7 +562,7 @@ Quote payload fields to drive UI: `status` / `status_label`, `is_expired`, `is_a
 | GET | `/orders/{reference}/shipments` | 🔑 | Shipment + checkpoint tracking timeline (`ShipmentTrackingResource`): `id`, `waybill_number`, `carrier_status` / `carrier_status_label` (see Logistics), `current_status`, `checkpoints[]` (`id`, `status`, `location`, `notes`, `has_photo`, `photo_url`, `occurred_at`, `recorded_at`). |
 | GET | `/orders/{reference}/shipments/{shipment}/checkpoints/{checkpoint}/photo` | 🔑 | Streams the checkpoint proof photo (image bytes with its real `Content-Type`, `Cache-Control: private`). Use the `photo_url` from the timeline (only set when `has_photo`). Buyer of the order only; anything else `404`. |
 
-Order lifecycle is in `status` / `status_label` plus the timestamp fields (`awarded_at`, `confirmed_at`, `production_started_at`, `shipped_at`, `delivered_at`, `completed_at`, `cancelled_at`) and `etd` / `eta` / `expected_delivery_at`. `has_trade_assurance` (bool|null) tells you whether to show the trade-assurance tab.
+Order lifecycle is in `status` / `status_label` plus the timestamp fields (`awarded_at`, `confirmed_at`, `production_started_at`, `shipped_at`, `delivered_at`, `completed_at`, `cancelled_at`) and `etd` / `eta` / `expected_delivery_at`. `has_trade_assurance` (bool|null) tells you whether to show the trade-assurance tab — every new order is now placed under Trade Assurance automatically, so expect `true` for orders created from this release on.
 
 ### Trade Assurance (milestone escrow-style protection)
 
@@ -672,8 +672,8 @@ company's reference is always a `404`.
 | POST | `/supplier/rfqs/{reference}/quote` | Submit a quote (`throttle:api-decision`). Also accepts an RFQ from the caller's open-requests board (below): it is self-routed to the caller's company first, then quoted. |
 | GET | `/supplier/rfq-board` | Open buyer requests: approved, open RFQs matching the caller's company (species handled + RFQ type targeting) that are **not** routed to it yet. Paginated (15). Query: `type` (`export\|domestic_manufacturing\|transport`), `species` (species slug). Buyer name/company/email, notes and attachments are **omitted**. Shown to verified **and pending-verification** companies; empty for draft/suspended/rejected/archived companies or when the plan has `leads_receive` off. Each item carries `can_respond` and `contact_locked: true`. |
 | POST | `/supplier/rfq-board/{reference}/express-interest` | Self-route a board RFQ to the caller's company (`throttle:api-decision`). Returns the routed RFQ (`SupplierRfqResource`, as `/supplier/rfqs/{reference}`). `404` if the RFQ is not on the caller's board. Optional: quoting a board RFQ directly does the same. |
-| GET | `/supplier/quotes`, `/supplier/quotes/{reference}` | The caller's quotes; each carries `conversation_id` (see Quotes). |
-| GET | `/supplier/orders`, `/supplier/orders/{reference}` | Sales orders (`SupplierOrderResource`), with `conversation_id` and `actions[]`. |
+| GET | `/supplier/quotes`, `/supplier/quotes/{reference}` | The caller's quotes; each carries `conversation_id` (see Quotes) and `commission_preview` (see below). |
+| GET | `/supplier/orders`, `/supplier/orders/{reference}` | Sales orders (`SupplierOrderResource`), with `conversation_id`, `actions[]` and `commission` (see below). |
 | GET | `/supplier/orders/{reference}/documents` | The order's documents (`OrderDocumentResource`, same shape as the buyer's). |
 | GET | `/supplier/orders/{reference}/documents/{document}/download` | Stream one document. |
 | GET | `/supplier/orders/{reference}/shipments` | Shipment + checkpoint timeline (`ShipmentTrackingResource`). |
@@ -704,6 +704,24 @@ While `can_respond` is `false`:
 
 Every supplier RFQ / board / lead item carries `can_respond` (bool) and
 `contact_locked` (bool; always `true` on the board).
+
+**Marketplace commission (supplier-only fields).** The platform's §15
+commission is paid by the supplier, so it appears only on supplier
+resources — never on the buyer's `OrderResource`/`QuoteResource`. Rates are
+fractions (`"0.0250"` = 2.5%); amounts are decimal strings in the record's
+`currency`.
+
+- `SupplierOrderResource.commission`: `{ "is_charged": true, "rate": "0.0250",
+  "amount": "250.00", "credited_amount": "0.00", "net_amount": "250.00",
+  "currency": "USD" }` — the frozen snapshot taken when the order was created
+  (a later rate change never alters it). `is_charged: false` (rate/amount
+  `null`, net `"0.00"`) = no commission applies. `credited_amount` grows when
+  the order is cancelled before the supplier confirms (full credit) or a
+  dispute decision credits part of it.
+- `SupplierQuoteResource.commission_preview`: `{ "rate": "0.0400",
+  "amount": "400.00", "currency": "USD", "is_international": true }` — what an
+  order from this quote would carry at the supplier's current plan tier
+  (`rate: null` = none). Show it next to the quote total before submitting.
 
 **Fulfilment and chat.** Accepting a quote does **not** create a conversation,
 so an order may have `conversation_id: null` (e.g. accepted from the buyer's

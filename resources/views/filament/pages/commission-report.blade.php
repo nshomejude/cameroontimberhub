@@ -10,20 +10,21 @@
                 <div class="text-xs uppercase tracking-wide text-gray-500">Charged orders</div>
                 <div class="text-2xl font-bold">{{ $totals['orders'] }}</div>
             </div>
-            <div class="rounded-lg border border-gray-200 p-4 dark:border-white/10">
-                <div class="text-xs uppercase tracking-wide text-gray-500">GMV (subtotal)</div>
-                <div class="text-2xl font-bold">{{ $totals['gmv'] }}</div>
-            </div>
-            <div class="rounded-lg border border-gray-200 p-4 dark:border-white/10">
-                <div class="text-xs uppercase tracking-wide text-gray-500">Net commission</div>
-                <div class="text-2xl font-bold">{{ $totals['net_commission'] }}</div>
-            </div>
+            {{-- One tile per currency: money is never summed across currencies. --}}
+            @foreach ($totals['by_currency'] as $currencyTotal)
+                <div class="rounded-lg border border-gray-200 p-4 dark:border-white/10">
+                    <div class="text-xs uppercase tracking-wide text-gray-500">{{ $currencyTotal['currency'] }} — GMV / net commission</div>
+                    <div class="text-lg font-bold tabular-nums">{{ $currencyTotal['gmv'] }}</div>
+                    <div class="text-2xl font-bold tabular-nums">{{ $currencyTotal['net_commission'] }}</div>
+                </div>
+            @endforeach
         </div>
 
         <div class="overflow-x-auto">
             <table class="w-full text-sm">
                 <thead>
                     <tr class="border-b border-gray-200 text-left text-xs uppercase tracking-wide text-gray-500 dark:border-white/10">
+                        <th class="py-2 pr-4">Currency</th>
                         <th class="py-2 pr-4">Segment</th>
                         <th class="py-2 pr-4 text-right">Orders</th>
                         <th class="py-2 pr-4 text-right">GMV</th>
@@ -36,7 +37,8 @@
                 <tbody>
                     @forelse ($rows as $row)
                         <tr class="border-b border-gray-100 dark:border-white/5">
-                            <td class="py-2 pr-4 font-medium">{{ $row['segment'] }}</td>
+                            <td class="py-2 pr-4 font-medium">{{ $row['currency'] }}</td>
+                            <td class="py-2 pr-4">{{ $row['segment'] }}</td>
                             <td class="py-2 pr-4 text-right tabular-nums">{{ $row['orders'] }}</td>
                             <td class="py-2 pr-4 text-right tabular-nums">{{ $row['gmv'] }}</td>
                             <td class="py-2 pr-4 text-right tabular-nums">{{ $row['commission'] }}</td>
@@ -46,7 +48,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="py-6 text-center text-gray-500">No commission has been charged yet.</td>
+                            <td colspan="8" class="py-6 text-center text-gray-500">No commission has been charged yet.</td>
                         </tr>
                     @endforelse
                 </tbody>

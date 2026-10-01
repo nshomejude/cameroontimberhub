@@ -12,11 +12,14 @@ use App\Models\Product;
 use App\Models\Quote;
 use App\Models\QuoteItem;
 use App\Models\Receipt;
+use App\Models\TradeAssuranceAgreement;
 use App\Models\User;
+use App\Services\Commission\CommissionCalculator;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
+use Throwable;
 
 /**
  * Order lifecycle state machine, mirroring QuoteService / RfqTriageService.
@@ -144,6 +147,23 @@ class OrderService
 
             $this->issueReceipt($order);
 
+            // PRICING_SPEC §15: every platform order is a protected trade
+            // (Trade Assurance milestone tracking — NOT escrow), which is
+            // what snapshots the marketplace commission onto it
+            // (TradeAssuranceAgreement::booted() → CommissionCalculator::charge()).
+            // Never allowed to block the trade itself: a failure is logged and
+            // rolled back to its own savepoint, and the order still stands.
+            if (config('timber.commission.protect_all_orders')) {
+                try {
+                    DB::transaction(fn () => TradeAssuranceAgreement::createDefaultMilestones($order, $actor));
+                } catch (Throwable $e) {
+                    Log::error('Order created but could not be placed under Trade Assurance / charged commission.', [
+                        'order_id' => $order->getKey(),
+                        'exception' => $e->getMessage(),
+                    ]);
+                }
+            }
+
             $log = activity('order')->performedOn($order)->event('created')
                 ->withProperties([
                     'quote_id' => $quote->getKey(),
@@ -260,6 +280,19 @@ class OrderService
         // checkpoints have something to attach to. No-op if one exists.
         if ($to === OrderStatus::Shipped) {
             app(ShipmentService::class)->ensureForOrder($order);
+        }
+
+        // §15: no commission on an order cancelled before the supplier
+        // accepted (confirmed) it — credit back what award snapshotted.
+        if ($to === OrderStatus::Cancelled && $from === OrderStatus::Awarded) {
+            try {
+                app(CommissionCalculator::class)->voidForPreAcceptanceCancellation($order);
+            } catch (Throwable $e) {
+                Log::error('Order cancelled but its commission could not be credited back.', [
+                    'order_id' => $order->getKey(),
+                    'exception' => $e->getMessage(),
+                ]);
+            }
         }
 
         $log = activity('order')->performedOn($order)->event('status_changed')

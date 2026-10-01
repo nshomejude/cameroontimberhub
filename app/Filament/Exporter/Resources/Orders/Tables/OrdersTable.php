@@ -42,6 +42,15 @@ class OrdersTable
                 TextColumn::make('total_amount')->label('Total')
                     ->formatStateUsing(fn ($state, Order $record): string => $record->money($state))
                     ->sortable(),
+                // PRICING_SPEC §15 marketplace commission charged to this
+                // supplier (frozen snapshot, net of any credit).
+                TextColumn::make('commission_amount')->label('Commission')
+                    ->getStateUsing(fn (Order $r): ?string => $r->is_commission_charged
+                        ? bcsub((string) $r->commission_amount, (string) ($r->commission_credited_amount ?? '0'), 2)
+                        : null)
+                    ->formatStateUsing(fn ($state, Order $record): string => $record->money($state).' ('.rtrim(rtrim(number_format(((float) $record->commission_rate) * 100, 2), '0'), '.').'%)')
+                    ->placeholder('—')
+                    ->toggleable(),
                 TextColumn::make('payment_status')->label('Settlement')->badge()
                     ->formatStateUsing(fn (OrderPaymentStatus $state): string => $state->label())
                     ->color(fn (OrderPaymentStatus $state): string => $state->color())

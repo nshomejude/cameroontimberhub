@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\TradeAssuranceMilestoneStatus;
 use App\Services\Commission\CommissionCalculator;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -62,11 +63,19 @@ class TradeAssuranceAgreement extends Model
      * Seeds the default milestone set for a freshly-awarded order:
      * Order Confirmed, Goods Dispatched, Goods Delivered, Buyer Confirmation.
      *
-     * Idempotent-ish in intent but not enforced here -- callers (e.g. the
-     * order creation flow) are responsible for calling this once per order.
+     * Idempotent: an order has at most one agreement (unique index on
+     * `order_id`), so a second call returns the existing agreement untouched.
+     * `OrderService::createFromQuote()` calls this for every new order while
+     * `timber.commission.protect_all_orders` is on.
      */
     public static function createDefaultMilestones(Order $order, ?User $createdBy = null): self
     {
+        $existing = self::query()->where('order_id', $order->getKey())->first();
+
+        if ($existing) {
+            return $existing;
+        }
+
         $agreement = self::create([
             'order_id' => $order->getKey(),
             'created_by' => $createdBy?->getKey(),
@@ -83,7 +92,7 @@ class TradeAssuranceAgreement extends Model
             $agreement->milestones()->create([
                 'title' => $milestone['title'],
                 'sequence' => $milestone['sequence'],
-                'status' => \App\Enums\TradeAssuranceMilestoneStatus::Pending->value,
+                'status' => TradeAssuranceMilestoneStatus::Pending->value,
             ]);
         }
 

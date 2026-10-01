@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\CommissionRules\Schemas;
 
+use App\Enums\RfqCurrency;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -67,7 +68,13 @@ class CommissionRuleForm
                             ->label('Cap amount')
                             ->numeric()
                             ->minValue(0)
-                            ->helperText('Maximum commission in the order currency\'s major unit. Blank = no fixed-amount cap.'),
+                            ->helperText('Maximum commission, in the cap currency below. Blank = no fixed-amount cap.'),
+
+                        Select::make('cap_currency')
+                            ->label('Cap currency')
+                            ->options(collect(RfqCurrency::cases())->mapWithKeys(fn (RfqCurrency $c) => [$c->value => $c->label()])->all())
+                            ->placeholder('Same as the order')
+                            ->helperText('The §15 cap is $5,000 → USD. An order in another currency is capped at the converted amount (config/timber.php commission.usd_to_*); with no rate configured for that currency only the percent cap applies.'),
 
                         TextInput::make('cap_percent')
                             ->label('Cap percent')

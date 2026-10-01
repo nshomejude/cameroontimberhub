@@ -5,9 +5,11 @@ namespace App\Filament\Resources\Disputes\Tables;
 use App\Enums\DisputeStatus;
 use App\Models\Dispute;
 use App\Notifications\DisputeResolvedNotification;
+use App\Services\Commission\CommissionCalculator;
 use App\Services\DisputeNotifier;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -52,6 +54,18 @@ class DisputesTable
                             ->helperText('Sent to both parties.')
                             ->required()
                             ->minLength(1),
+                        // PRICING_SPEC §15: commission treatment on a dispute
+                        // is decided here and recorded on the order.
+                        TextInput::make('commission_credit')
+                            ->label('Credit back marketplace commission')
+                            ->numeric()
+                            ->minValue(0)
+                            ->maxValue(fn (Dispute $record): float => (float) app(CommissionCalculator::class)->creditableAmount($record->order))
+                            ->prefix(fn (Dispute $record): ?string => $record->order?->currency?->value)
+                            ->helperText(fn (Dispute $record): string => 'Optional. Up to '
+                                .app(CommissionCalculator::class)->creditableAmount($record->order)
+                                .' still creditable on this order. Leave blank for no commission credit.')
+                            ->visible(fn (Dispute $record): bool => (bool) $record->order?->is_commission_charged),
                     ])
                     ->action(function (Dispute $record, array $data): void {
                         // A resolve after an appeal (appealed_at set) is the appeal decision.
@@ -59,7 +73,7 @@ class DisputesTable
                             ? DisputeResolvedNotification::EVENT_APPEAL_DECIDED
                             : DisputeResolvedNotification::EVENT_RESOLVED;
 
-                        if (static::attempt(fn () => $record->resolve(auth()->user(), $data['resolution_notes']), 'Dispute resolved.')) {
+                        if (static::attempt(fn () => $record->resolve(auth()->user(), $data['resolution_notes'], $data['commission_credit'] ?? null), 'Dispute resolved.')) {
                             app(DisputeNotifier::class)->decided($record, $event);
                         }
                     }),

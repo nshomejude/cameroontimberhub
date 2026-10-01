@@ -4,6 +4,7 @@ namespace App\Services\Commission;
 
 use App\Models\CommissionRule;
 use App\Models\Order;
+use App\Models\Quote;
 use DateTimeInterface;
 use RuntimeException;
 
@@ -12,8 +13,12 @@ use RuntimeException;
  * (billing engine M7, plan §15).
  *
  * No rate is ever hard-coded here: every number comes from a
- * `commission_rules` row. When no active rule matches, no commission line is
- * shown or charged.
+ * `commission_rules` row (seeded from PRICING_SPEC §15 by
+ * `CommissionRuleSeeder`). When no active rule matches, no commission line is
+ * shown or charged. A supplier with no plan at all is rated as
+ * UNLISTED_SEGMENT/UNLISTED_PLAN_TIER (§15 "Free / unlisted"). A rule's
+ * fixed cap is converted from its `cap_currency` into the order currency
+ * (see `capAmountIn()`).
  *
  * Commission is assessed on `Order.subtotal_amount` (the transaction value —
  * shipping and tax are excluded per plan §15), for the SUPPLIER side of the
@@ -38,6 +43,24 @@ use RuntimeException;
 class CommissionCalculator
 {
     /**
+     * PRICING_SPEC §15 "Free / unlisted": a supplier with no effective plan at
+     * all is rated exactly like the free tier of the default supplier segment
+     * (every new company is put on sell/`free` by `CompanyObserver`, so this
+     * only matters when that assignment failed or a plan was removed).
+     */
+    public const UNLISTED_SEGMENT = 'sell';
+
+    public const UNLISTED_PLAN_TIER = 'free';
+
+    /** Reason recorded when an order is cancelled before the supplier confirmed it (§15). */
+    private bool $memoizeRules = false;
+
+    /** @var array<string, ?CommissionRule> */
+    private array $ruleMemo = [];
+
+    public const PRE_ACCEPTANCE_CANCEL_REASON = 'Order cancelled before supplier acceptance — no commission (PRICING_SPEC §15)';
+
+    /**
      * The most specific active rule for $segment / $planTier at $at, or null
      * when none applies (→ no commission).
      *
@@ -47,6 +70,33 @@ class CommissionCalculator
      *   3. later effective_from beats earlier (newest rule in force wins).
      */
     public function for(string $segment, ?string $planTier = null, ?DateTimeInterface $at = null): ?CommissionRule
+    {
+        if ($this->memoizeRules && $at === null) {
+            $key = $segment.'|'.($planTier ?? '');
+
+            return array_key_exists($key, $this->ruleMemo)
+                ? $this->ruleMemo[$key]
+                : $this->ruleMemo[$key] = $this->resolveRule($segment, $planTier, null);
+        }
+
+        return $this->resolveRule($segment, $planTier, $at);
+    }
+
+    /**
+     * A copy of this calculator that remembers each segment/tier lookup —
+     * for rendering a LIST of previews in one request (e.g. the supplier
+     * quotes API) at a constant query count. Never used for charging.
+     */
+    public function memoized(): static
+    {
+        $clone = clone $this;
+        $clone->memoizeRules = true;
+        $clone->ruleMemo = [];
+
+        return $clone;
+    }
+
+    private function resolveRule(string $segment, ?string $planTier, ?DateTimeInterface $at): ?CommissionRule
     {
         $candidates = CommissionRule::query()
             ->active($at)
@@ -72,7 +122,7 @@ class CommissionCalculator
      */
     public function calculate(Order $order): array
     {
-        $order->loadMissing('company');
+        $order->loadMissing(['company.plan', 'company.currentSubscription.plan']);
         $supplier = $order->company;
 
         $destination = $order->destination_country_code ?? $order->buyer_country_code ?? null;
@@ -84,6 +134,29 @@ class CommissionCalculator
             planTier: $supplier?->effectivePlan()?->slug,
             subtotal: (string) $order->subtotal_amount,
             currency: (string) $order->currency->value,
+        );
+    }
+
+    /**
+     * The commission an order built from $quote would carry — the pre-commit
+     * disclosure shown to the buyer on the quote screen and to the supplier
+     * in the API (`commission_preview`). Read-only; nothing is charged.
+     *
+     * @return array{rate: ?string, amount: string, rule_id: ?int, is_international: bool}
+     */
+    public function previewForQuote(Quote $quote): array
+    {
+        $quote->loadMissing(['rfq', 'company.plan', 'company.currentSubscription.plan']);
+        $supplier = $quote->company;
+        $plan = $supplier?->effectivePlan();
+
+        return $this->preview(
+            supplierCountry: $supplier?->country_code,
+            destinationCountry: $quote->rfq?->destination_country_code ?? $quote->rfq?->buyer_country_code,
+            segment: $plan?->segment,
+            planTier: $plan?->slug,
+            subtotal: (string) $quote->subtotal_amount,
+            currency: (string) $quote->currency->value,
         );
     }
 
@@ -107,7 +180,8 @@ class CommissionCalculator
         $isInternational = $this->countriesDiffer($supplierCountry, $destinationCountry);
 
         if ($segment === null) {
-            return ['rate' => null, 'amount' => $this->scale2('0', $currency), 'rule_id' => null, 'is_international' => $isInternational];
+            $segment = self::UNLISTED_SEGMENT;
+            $planTier = self::UNLISTED_PLAN_TIER;
         }
 
         $rule = $this->for($segment, $planTier);
@@ -126,8 +200,9 @@ class CommissionCalculator
             $raw = bccomp($raw, $percentCap, 8) > 0 ? $percentCap : $raw;
         }
 
-        if ($rule->cap_amount !== null) {
-            $amountCap = bcadd((string) $rule->cap_amount, '0', 8);
+        $amountCap = $this->capAmountIn($rule, $currency);
+
+        if ($amountCap !== null) {
             $raw = bccomp($raw, $amountCap, 8) > 0 ? $amountCap : $raw;
         }
 
@@ -204,6 +279,91 @@ class CommissionCalculator
             ->event('credited')
             ->withProperties(['amount' => $amount, 'reason' => $reason])
             ->log('Commission credited: '.$reason);
+    }
+
+    /**
+     * The commission still available to credit back on $order (charged minus
+     * already credited), as a 2dp decimal string. '0.00' when never charged.
+     */
+    public function creditableAmount(Order $order): string
+    {
+        if (! $order->is_commission_charged) {
+            return '0.00';
+        }
+
+        $currency = (string) $order->currency->value;
+        $charged = $this->scale2((string) ($order->commission_amount ?? '0'), $currency);
+        $credited = $this->scale2((string) ($order->commission_credited_amount ?? '0'), $currency);
+        $room = bcsub($charged, $credited, 2);
+
+        return bccomp($room, '0', 2) > 0 ? $room : '0.00';
+    }
+
+    /**
+     * PRICING_SPEC §15: "No marketplace commission is charged on a
+     * transaction that is cancelled before supplier acceptance". Commission
+     * is snapshotted when the order becomes a protected trade (at award), so
+     * a cancel from `Awarded` (the supplier never confirmed) credits back
+     * whatever is still outstanding. No-op when nothing is left to credit.
+     */
+    public function voidForPreAcceptanceCancellation(Order $order): void
+    {
+        $room = $this->creditableAmount($order);
+
+        if (bccomp($room, '0', 2) <= 0) {
+            return;
+        }
+
+        $this->credit($order, $room, self::PRE_ACCEPTANCE_CANCEL_REASON);
+    }
+
+    /**
+     * The rule's fixed cap expressed in $currency (8dp bcmath string), or
+     * null when the rule has no fixed cap — or when its cap is in another
+     * currency and no conversion rate is configured, in which case the
+     * fixed cap is skipped and only the percentage cap applies.
+     *
+     * Conversion goes through USD using config/timber.php
+     * `commission.usd_to_{xaf,eur,gbp,cny}` (units per 1 USD).
+     */
+    public function capAmountIn(CommissionRule $rule, string $currency): ?string
+    {
+        if ($rule->cap_amount === null) {
+            return null;
+        }
+
+        $cap = bcadd((string) $rule->cap_amount, '0', 8);
+        $capCurrency = $rule->cap_currency ? strtoupper((string) $rule->cap_currency) : null;
+        $currency = strtoupper($currency);
+
+        if ($capCurrency === null || $capCurrency === $currency) {
+            return $cap;
+        }
+
+        $fromPerUsd = $this->unitsPerUsd($capCurrency);
+        $toPerUsd = $this->unitsPerUsd($currency);
+
+        if ($fromPerUsd === null || $toPerUsd === null) {
+            return null;
+        }
+
+        return bcdiv(bcmul($cap, $toPerUsd, 8), $fromPerUsd, 8);
+    }
+
+    /** Units of $currency per 1 USD, as a bcmath string, or null when unknown/unusable. */
+    private function unitsPerUsd(string $currency): ?string
+    {
+        if ($currency === 'USD') {
+            return '1';
+        }
+
+        $rate = config('timber.commission.usd_to_'.strtolower($currency));
+
+        if (! is_numeric($rate) || (float) $rate <= 0) {
+            return null;
+        }
+
+        return number_format((float) $rate, 8, '.', '');
     }
 
     private function countriesDiffer(?string $supplierCountry, ?string $destinationCountry): bool

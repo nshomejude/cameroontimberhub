@@ -2,6 +2,8 @@
 
 namespace App\Filament\Pages;
 
+use App\Enums\OrderStatus;
+use App\Models\CommissionRule;
 use App\Models\Order;
 use BackedEnum;
 use Filament\Pages\Page;
@@ -11,8 +13,8 @@ use Illuminate\Support\Collection;
 /**
  * /admin → Commission report (billing engine M7, plan §15).
  *
- * Total commission charged and take-rate (commission / GMV), by segment,
- * read live from `orders` — no fabricated figures. A plain table, not a
+ * Total commission charged and take-rate (commission / GMV), by currency
+ * and segment, read live from `orders` — no fabricated figures. A plain table, not a
  * chart: this is a finance/ops reconciliation view, not a marketing
  * dashboard. Gated on `pricing.manage` (reused, no new permission).
  */
@@ -43,21 +45,35 @@ class CommissionReport extends Page
     }
 
     /**
-     * One row per supplier segment, aggregated over charged orders.
+     * One row per (currency, segment), aggregated over charged orders.
      *
-     * @return Collection<int, array{segment: string, orders: int, gmv: string, commission: string, take_rate: string}>
+     * Money is never summed across currencies — an XAF order and a USD order
+     * land in separate rows. The segment is the one of the commission RULE
+     * that was snapshotted onto the order at charge time (not the supplier's
+     * current plan, which may have changed since). GMV excludes cancelled
+     * orders, whose commission is credited back (§15), so the take rate is
+     * net commission over the value of trades that stood.
+     *
+     * @return Collection<int, array{currency: string, segment: string, orders: int, gmv: string, commission: string, credited: string, net_commission: string, take_rate: string}>
      */
     public function getRows(): Collection
     {
         $charged = Order::query()
             ->where('is_commission_charged', true)
-            ->with(['company.plan', 'company.currentSubscription.plan'])
-            ->get();
+            ->get(['id', 'currency', 'status', 'subtotal_amount', 'commission_amount', 'commission_credited_amount', 'commission_rule_id']);
+
+        $segments = CommissionRule::query()
+            ->whereIn('id', $charged->pluck('commission_rule_id')->filter()->unique())
+            ->pluck('segment', 'id');
 
         return $charged
-            ->groupBy(fn (Order $order) => $order->company?->effectivePlan()?->segment ?? 'unknown')
-            ->map(function (Collection $orders, string $segment) {
-                $gmv = $orders->reduce(fn ($carry, Order $o) => bcadd($carry, (string) $o->subtotal_amount, 2), '0.00');
+            ->groupBy(fn (Order $order) => $order->currency->value.'|'.($segments[$order->commission_rule_id] ?? 'all segments'))
+            ->map(function (Collection $orders, string $key) {
+                [$currency, $segment] = explode('|', $key, 2);
+
+                $gmv = $orders
+                    ->reject(fn (Order $o) => $o->status === OrderStatus::Cancelled)
+                    ->reduce(fn ($carry, Order $o) => bcadd($carry, (string) $o->subtotal_amount, 2), '0.00');
                 $commission = $orders->reduce(fn ($carry, Order $o) => bcadd($carry, (string) $o->commission_amount, 2), '0.00');
                 $credited = $orders->reduce(fn ($carry, Order $o) => bcadd($carry, (string) $o->commission_credited_amount, 2), '0.00');
                 $net = bcsub($commission, $credited, 2);
@@ -66,6 +82,7 @@ class CommissionReport extends Page
                     : '0%';
 
                 return [
+                    'currency' => $currency,
                     'segment' => $segment,
                     'orders' => $orders->count(),
                     'gmv' => number_format((float) $gmv, 2),
@@ -75,17 +92,31 @@ class CommissionReport extends Page
                     'take_rate' => $takeRate,
                 ];
             })
+            ->sortBy(fn (array $row) => $row['currency'].'|'.$row['segment'])
             ->values();
     }
 
+    /**
+     * Totals per currency (never across currencies).
+     *
+     * @return array{orders: int, by_currency: list<array{currency: string, orders: int, gmv: string, net_commission: string}>}
+     */
     public function getTotals(): array
     {
         $rows = $this->getRows();
+        $toNumber = fn (string $formatted): string => str_replace(',', '', $formatted);
 
         return [
             'orders' => $rows->sum('orders'),
-            'gmv' => number_format((float) $rows->sum(fn ($r) => (float) str_replace(',', '', $r['gmv'])), 2),
-            'net_commission' => number_format((float) $rows->sum(fn ($r) => (float) str_replace(',', '', $r['net_commission'])), 2),
+            'by_currency' => $rows->groupBy('currency')
+                ->map(fn (Collection $group, string $currency) => [
+                    'currency' => $currency,
+                    'orders' => $group->sum('orders'),
+                    'gmv' => number_format((float) $group->reduce(fn ($c, $r) => bcadd($c, $toNumber($r['gmv']), 2), '0.00'), 2),
+                    'net_commission' => number_format((float) $group->reduce(fn ($c, $r) => bcadd($c, $toNumber($r['net_commission']), 2), '0.00'), 2),
+                ])
+                ->values()
+                ->all(),
         ];
     }
 }

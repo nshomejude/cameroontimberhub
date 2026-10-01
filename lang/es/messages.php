@@ -1116,7 +1116,7 @@ return [
         'subtotal' => 'Subtotal',
         'shipping' => 'Transporte',
         'tax' => 'Impuesto',
-        'marketplace_commission' => 'Comisión del mercado (:rate %, si este pedido se realiza bajo Trade Assurance)',
+        'marketplace_commission' => 'Comisión del mercado (:rate %) — la paga el proveedor, no se suma a su total',
         'terms' => 'Condiciones',
         'supplier_notes' => 'Notas del proveedor',
         'no_supplier_notes' => 'El proveedor no agregó ninguna nota a esta cotización.',

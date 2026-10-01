@@ -81,17 +81,11 @@ class BuyerQuoteController extends Controller
         // Pre-commit disclosure (billing engine M7, plan §15): the
         // marketplace commission a protected order would carry, computed
         // read-only from the supplier's current plan tier — never charged
-        // here, and never assumed to apply until an actual Trade Assurance
-        // agreement exists on the resulting order.
-        $supplier = $quote->company;
-        $commissionPreview = $commission->preview(
-            supplierCountry: $supplier?->country_code,
-            destinationCountry: $rfq->destination_country_code ?? $rfq->buyer_country_code,
-            segment: $supplier?->effectivePlan()?->segment,
-            planTier: $supplier?->effectivePlan()?->slug,
-            subtotal: (string) $quote->subtotal_amount,
-            currency: (string) $quote->currency->value,
-        );
+        // here. The order created on accept is placed under Trade Assurance
+        // (timber.commission.protect_all_orders), which is when the
+        // supplier is actually charged; the label tells the buyer it is
+        // supplier-paid and not added to their total.
+        $commissionPreview = $commission->previewForQuote($quote);
 
         return view('public.rfq.quote', [
             'rfq' => $rfq,

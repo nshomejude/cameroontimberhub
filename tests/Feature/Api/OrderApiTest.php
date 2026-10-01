@@ -1,7 +1,7 @@
 <?php
 
-use App\Enums\TradeAssuranceMilestoneStatus;
 use App\Enums\TrackingCheckpointStatus;
+use App\Enums\TradeAssuranceMilestoneStatus;
 use App\Models\Company;
 use App\Models\Order;
 use App\Models\Quote;
@@ -94,6 +94,8 @@ it('requires buyer auth to list orders', function () {
 /* ----------------------------------------------------------------- show */
 
 it('shows a single order the buyer owns, including line items', function () {
+    // Exercise the unprotected shape; auto-protection is covered below.
+    config(['timber.commission.protect_all_orders' => false]);
     $buyer = User::factory()->create();
     $order = apiOrder($buyer);
 
@@ -202,6 +204,7 @@ it('404s a guest (accountless) order for any authenticated buyer', function () {
 /* ----------------------------------------------------- trade assurance: view */
 
 it('reports no Trade Assurance agreement when none is set up yet', function () {
+    config(['timber.commission.protect_all_orders' => false]);
     $buyer = User::factory()->create();
     $order = apiOrder($buyer);
 
@@ -209,6 +212,16 @@ it('reports no Trade Assurance agreement when none is set up yet', function () {
         ->getJson('/api/v1/orders/'.$order->reference_code.'/trade-assurance')
         ->assertOk()
         ->assertJsonPath('data', null);
+});
+
+it('places every new order under Trade Assurance by default (PRICING_SPEC §15 protected trade)', function () {
+    $buyer = User::factory()->create();
+    $order = apiOrder($buyer);
+
+    $this->actingAs($buyer, 'sanctum')
+        ->getJson('/api/v1/orders/'.$order->reference_code)
+        ->assertOk()
+        ->assertJsonPath('data.has_trade_assurance', true);
 });
 
 it('shows the Trade Assurance agreement and its milestones', function () {

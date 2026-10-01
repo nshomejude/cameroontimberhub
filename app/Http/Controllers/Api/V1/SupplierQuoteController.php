@@ -128,7 +128,8 @@ class SupplierQuoteController extends Controller
     public function index(Request $request): AnonymousResourceCollection
     {
         $quotes = $this->scope->quotes($request->user())
-            ->with(['items', 'rfq'])
+            // company.* feeds SupplierQuoteResource::commissionPreview().
+            ->with(['items', 'rfq', 'company.plan', 'company.currentSubscription.plan'])
             ->withConversationId()
             ->paginate(15);
 

@@ -1239,7 +1239,7 @@ return [
         'subtotal' => 'Sous-total',
         'shipping' => 'Transport',
         'tax' => 'Taxe',
-        'marketplace_commission' => 'Commission de la place de marché (:rate %, si cette commande est passée sous Trade Assurance)',
+        'marketplace_commission' => 'Commission de la place de marché (:rate %) — payée par le fournisseur, non ajoutée à votre total',
         'terms' => 'Conditions',
         'supplier_notes' => 'Notes du fournisseur',
         'no_supplier_notes' => "Le fournisseur n'a ajouté aucune note à ce devis.",

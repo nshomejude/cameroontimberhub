@@ -1116,7 +1116,7 @@ return [
         'subtotal' => 'Zwischensumme',
         'shipping' => 'Transport',
         'tax' => 'Steuer',
-        'marketplace_commission' => 'Marktplatzprovision (:rate %, falls diese Bestellung über Trade Assurance abgewickelt wird)',
+        'marketplace_commission' => 'Marktplatzprovision (:rate %) — vom Lieferanten getragen, nicht zu Ihrer Summe addiert',
         'terms' => 'Bedingungen',
         'supplier_notes' => 'Anmerkungen des Lieferanten',
         'no_supplier_notes' => 'Der Lieferant hat diesem Angebot keine Anmerkungen hinzugefügt.',

@@ -3,6 +3,7 @@
 namespace App\Http\Resources\Api\V1;
 
 use App\Models\Quote;
+use App\Services\Commission\CommissionCalculator;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -58,6 +59,37 @@ class SupplierQuoteResource extends JsonResource
             'rfq_reference' => $this->whenLoaded('rfq', fn () => $this->rfq->reference_code),
             'items' => QuoteItemResource::collection($this->whenLoaded('items')),
             'conversation_id' => QuoteResource::conversationIdFor($this->resource),
+            'commission_preview' => $this->commissionPreview(),
+        ];
+    }
+
+    /**
+     * PRICING_SPEC §15 pre-commit disclosure for the supplier: the marketplace
+     * commission an order from this quote would carry at the supplier's
+     * CURRENT plan tier (the actual charge is snapshotted when the order is
+     * created). `rate` null = no commission rule applies.
+     *
+     * @return array{rate: ?string, amount: string, currency: ?string, is_international: bool}
+     */
+    private function commissionPreview(): array
+    {
+        // One memoized calculator per request keeps a paginated list at a
+        // constant query count (the rule lookup is shared across quotes).
+        $request = request();
+        $calculator = $request->attributes->get(CommissionCalculator::class);
+
+        if (! $calculator instanceof CommissionCalculator) {
+            $calculator = app(CommissionCalculator::class)->memoized();
+            $request->attributes->set(CommissionCalculator::class, $calculator);
+        }
+
+        $preview = $calculator->previewForQuote($this->resource);
+
+        return [
+            'rate' => $preview['rate'],
+            'amount' => $preview['amount'],
+            'currency' => $this->currency?->value,
+            'is_international' => $preview['is_international'],
         ];
     }
 }

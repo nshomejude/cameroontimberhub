@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 use RuntimeException;
 
 /**
@@ -34,6 +35,11 @@ use RuntimeException;
  * for any given `$at` date — historical dates keep resolving the old rule,
  * and an already-charged order's snapshot never changes regardless.
  *
+ * `cap_amount` is expressed in `cap_currency` (e.g. the §15 "$5,000" cap is
+ * cap_amount 5000 / cap_currency USD); null `cap_currency` = the order's own
+ * currency. `CommissionCalculator` converts using config/timber.php
+ * `commission.usd_to_*` rates.
+ *
  * Every create/update/delete is written to the `commission_rule` activity
  * log (no hash chain needed — a plain activity log matches `TaxRule`).
  */
@@ -62,7 +68,7 @@ class CommissionRule extends Model
         });
 
         static::updating(function (CommissionRule $rule): void {
-            $guarded = ['domestic_rate', 'international_rate', 'cap_amount', 'cap_percent'];
+            $guarded = ['domestic_rate', 'international_rate', 'cap_amount', 'cap_currency', 'cap_percent'];
 
             if ($rule->getOriginal('is_active') && $rule->isDirty($guarded)) {
                 throw new RuntimeException(
@@ -88,7 +94,7 @@ class CommissionRule extends Model
             ->event($event)
             ->withProperties($rule->only([
                 'name', 'segment', 'plan_tier', 'domestic_rate', 'international_rate',
-                'cap_amount', 'cap_percent', 'is_active', 'effective_from', 'effective_until',
+                'cap_amount', 'cap_currency', 'cap_percent', 'is_active', 'effective_from', 'effective_until',
             ]))
             ->log("Commission rule {$event}");
     }
@@ -99,7 +105,7 @@ class CommissionRule extends Model
      */
     public function scopeActive(Builder $query, ?\DateTimeInterface $at = null): Builder
     {
-        $at = $at ? \Illuminate\Support\Carbon::instance($at) : now();
+        $at = $at ? Carbon::instance($at) : now();
 
         return $query->where('is_active', true)
             ->where(fn (Builder $q) => $q->whereNull('effective_from')->orWhere('effective_from', '<=', $at))

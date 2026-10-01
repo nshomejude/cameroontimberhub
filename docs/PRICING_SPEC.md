@@ -342,6 +342,8 @@ Verification fees purchase a verification process. They do not guarantee approva
 
 - CT Hub must not claim to hold customer funds in escrow unless the required payment, licensing and safeguarding structure exists.
 
+> **Implementation note (2026-10-01).** Rates live in `commission_rules` (Admin → Commission rules), stored as fractions, seeded by `CommissionRuleSeeder` / data migration `2026_10_01_170010` (insert-if-missing, never overwrites). Tier mapping onto the real plan slugs: *Free / unlisted* → sell/`free` (a supplier with no plan is rated as sell/`free`); *Starter / Professional* → sell/`professional` and export/`exporter-professional`; *Pro / Business* → export/`exporter-business` (the sell segment has no business tier); *Enterprise* → no seeded rule (0% until a negotiated rule is added). The deal segment (`dealer-*`) is not mapped yet. The "$5,000" cap is stored as `cap_amount` 5000 + `cap_currency` USD and converted into the order currency via `config('timber.commission.usd_to_xaf')` (default 600; EUR via the XAF/EUR peg); with no rate for a currency only the percent cap applies. Every order from an accepted quote is a protected trade (Trade Assurance milestones, `COMMISSION_PROTECT_ALL_ORDERS`), and the commission is snapshotted at that point on `orders.commission_*`; cancellation before supplier confirmation credits it back in full; dispute resolution can credit part of it (`commission_credit` activity log). Pre-commit disclosure: buyer quote screen (as supplier-paid) and the supplier API (`commission_preview` on quotes, `commission` on orders). See RUNBOOK → Marketplace commission.
+
 
 ## 16. Logistics and Documentation Services
 

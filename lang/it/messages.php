@@ -1112,7 +1112,7 @@ return [
         'subtotal' => 'Subtotale',
         'shipping' => 'Spedizione',
         'tax' => 'Imposta',
-        'marketplace_commission' => 'Commissione del marketplace (:rate%, se questo ordine viene effettuato tramite Trade Assurance)',
+        'marketplace_commission' => 'Commissione del marketplace (:rate%) — a carico del fornitore, non aggiunta al tuo totale',
         'terms' => 'Condizioni',
         'supplier_notes' => 'Note del fornitore',
         'no_supplier_notes' => 'Il fornitore non ha aggiunto note a questo preventivo.',

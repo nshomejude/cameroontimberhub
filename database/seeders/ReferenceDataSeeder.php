@@ -21,6 +21,7 @@ class ReferenceDataSeeder extends Seeder
             RolesAndPermissionsSeeder::class,
             PlanSeeder::class,
             TaxRuleSeeder::class,
+            CommissionRuleSeeder::class, // after PlanSeeder: only seeds tiers whose plan exists
             DocumentTypeSeeder::class,
             SpeciesSeeder::class,
             PageSeeder::class,

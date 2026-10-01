@@ -1,7 +1,7 @@
 <?php
 
-use App\Models\Company;
 use App\Models\CommissionRule;
+use App\Models\Company;
 use App\Models\Order;
 use App\Models\Plan;
 use App\Models\Quote;
@@ -10,7 +10,6 @@ use App\Models\Rfq;
 use App\Models\RfqCompany;
 use App\Models\TradeAssuranceAgreement;
 use App\Services\Commission\CommissionCalculator;
-use App\Services\OrderService;
 use App\Services\QuoteService;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Support\Facades\Mail;
@@ -178,6 +177,7 @@ it('charges commission on a protected order at award (idempotent, snapshotted)',
 });
 
 it('does not charge commission on a non-protected order', function () {
+    config(['timber.commission.protect_all_orders' => false]);
     commissionRule();
     $rfq = Rfq::factory()->approved()->create(['buyer_country_code' => 'CM', 'destination_country_code' => 'CM']);
     $rfq->items()->create(['species_text' => 'Sapele', 'form' => 'sawn', 'quantity' => 100, 'unit' => 'm3']);

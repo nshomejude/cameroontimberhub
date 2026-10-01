@@ -65,9 +65,39 @@ class SupplierOrderResource extends JsonResource
             'completed_at' => $this->completed_at?->toIso8601String(),
             'cancelled_at' => $this->cancelled_at?->toIso8601String(),
             'created_at' => $this->created_at?->toIso8601String(),
+            'commission' => $this->commission(),
             'items' => OrderItemResource::collection($this->whenLoaded('items')),
             'conversation_id' => $this->whenLoaded('conversation', fn () => $this->conversation?->id),
             'actions' => $this->supplierActions(),
+        ];
+    }
+
+    /**
+     * The marketplace commission (PRICING_SPEC §15) the platform charges the
+     * supplier on this order — supplier-only (the buyer-facing
+     * `OrderResource` never carries it). Read from the frozen snapshot on the
+     * order, so a later rate change never alters it. `is_charged` false
+     * (rate/amount null) = not a protected trade or no rule applied.
+     * `net_amount` = amount − credited (credits come from a pre-acceptance
+     * cancellation or a dispute decision).
+     *
+     * @return array{is_charged: bool, rate: ?string, amount: ?string, credited_amount: string, net_amount: string, currency: ?string}
+     */
+    private function commission(): array
+    {
+        /** @var Order $order */
+        $order = $this->resource;
+        $charged = (bool) $order->is_commission_charged;
+        $amount = $charged ? (string) $order->commission_amount : null;
+        $credited = bcadd((string) ($order->commission_credited_amount ?? '0'), '0', 2);
+
+        return [
+            'is_charged' => $charged,
+            'rate' => $charged ? (string) $order->commission_rate : null,
+            'amount' => $amount,
+            'credited_amount' => $credited,
+            'net_amount' => $charged ? bcsub((string) $amount, $credited, 2) : '0.00',
+            'currency' => $order->currency?->value,
         ];
     }
 
