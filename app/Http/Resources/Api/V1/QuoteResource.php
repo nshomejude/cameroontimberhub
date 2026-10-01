@@ -2,6 +2,8 @@
 
 namespace App\Http\Resources\Api\V1;
 
+use App\Models\Conversation;
+use App\Models\Message;
 use App\Models\Quote;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -44,6 +46,32 @@ class QuoteResource extends JsonResource
             'rfq_reference' => $this->whenLoaded('rfq', fn () => $this->rfq->reference_code),
             'supplier' => $this->whenLoaded('company', fn () => new SupplierResource($this->company)),
             'items' => QuoteItemResource::collection($this->whenLoaded('items')),
+            'conversation_id' => self::conversationIdFor($this->resource),
         ];
+    }
+
+    /**
+     * The chat thread this quote lives in, if any — so the client can call
+     * `conversations/{id}/quotes/{quote}/counter|accept|decline`. A quote
+     * reaches a thread either as the thread's own `conversations.quote_id`
+     * or (the common case: the exporter "Share in chat" action / an
+     * in-thread RFQ) as a quotation card, i.e. a message whose `related_*`
+     * points at it (`MessagingService::postQuotation()`). Latest wins. Null
+     * when the quote was never shared into a conversation.
+     */
+    public static function conversationIdFor(Quote $quote): ?int
+    {
+        $viaCard = Message::query()
+            ->where('related_type', $quote->getMorphClass())
+            ->where('related_id', $quote->getKey())
+            ->max('conversation_id');
+
+        if ($viaCard !== null) {
+            return (int) $viaCard;
+        }
+
+        $direct = Conversation::query()->where('quote_id', $quote->getKey())->max('id');
+
+        return $direct === null ? null : (int) $direct;
     }
 }

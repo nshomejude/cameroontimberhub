@@ -3,6 +3,7 @@
 namespace App\Http\Resources\Api\V1;
 
 use App\Models\Rfq;
+use App\Models\RfqCompany;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -37,6 +38,7 @@ class SupplierRfqResource extends JsonResource
 
         return [
             'reference' => $this->reference_code,
+            'type' => $this->type?->value,
             'title' => $this->title,
             'project_name' => $this->project_name,
             'status' => $this->status->value,
@@ -55,7 +57,7 @@ class SupplierRfqResource extends JsonResource
             'attachments' => $this->attachments ?? [],
             'created_at' => $this->created_at?->toIso8601String(),
             'items' => RfqItemResource::collection($this->whenLoaded('items')),
-            'routing' => $routing instanceof \App\Models\RfqCompany ? [
+            'routing' => $routing instanceof RfqCompany ? [
                 'status' => $routing->status->value,
                 'status_label' => $routing->status->label(),
                 'routed_at' => $routing->routed_at?->toIso8601String(),

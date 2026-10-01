@@ -66,6 +66,8 @@ class DashboardController extends Controller
             return [
                 'data' => [
                     'role' => $role,
+                    'account_type' => UserResource::resolveAccountType($user, $role),
+                    'company' => null,
                     'stats' => [],
                     'recent_orders' => [],
                     'recent_quotes' => [],
@@ -96,6 +98,8 @@ class DashboardController extends Controller
         return [
             'data' => [
                 'role' => $role,
+                'account_type' => UserResource::resolveAccountType($user, $role),
+                'company' => null,
                 'stats' => $stats,
                 'recent_orders' => OrderResource::collection($this->dashboard->recentOrders($user))->resolve(),
                 'recent_quotes' => QuoteResource::collection($this->dashboard->recentQuotes($user))->resolve(),
@@ -129,6 +133,11 @@ class DashboardController extends Controller
         return [
             'data' => [
                 'role' => 'supplier',
+                // Additive: the same `account_type` / `company` (incl. `type`)
+                // UserResource returns from /auth/me, so the home screen can
+                // branch on seller kind without a second call.
+                'account_type' => UserResource::resolveAccountType($user, 'supplier'),
+                'company' => UserResource::resolveCompany($user),
                 'stats' => $this->supplierDashboard->stats($user),
                 'recent_orders' => SupplierOrderResource::collection($this->supplierDashboard->recentOrders($user))->resolve(),
                 'recent_quotes' => QuoteResource::collection($this->supplierDashboard->recentQuotes($user))->resolve(),

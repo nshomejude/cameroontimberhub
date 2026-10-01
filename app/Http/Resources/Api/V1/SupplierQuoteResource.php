@@ -57,6 +57,7 @@ class SupplierQuoteResource extends JsonResource
             ),
             'rfq_reference' => $this->whenLoaded('rfq', fn () => $this->rfq->reference_code),
             'items' => QuoteItemResource::collection($this->whenLoaded('items')),
+            'conversation_id' => QuoteResource::conversationIdFor($this->resource),
         ];
     }
 }

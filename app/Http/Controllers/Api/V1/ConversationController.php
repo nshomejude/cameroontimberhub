@@ -2,16 +2,24 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Enums\ConversationStatus;
+use App\Enums\ConversationTopic;
+use App\Exceptions\Api\ApiException;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Api\V1\ConversationResource;
 use App\Http\Resources\Api\V1\MessageResource;
+use App\Models\Company;
 use App\Models\Conversation;
+use App\Models\Order;
+use App\Models\Product;
 use App\Services\MessagingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Plain buyer <-> supplier messaging over token auth — the API counterpart of
@@ -84,6 +92,111 @@ class ConversationController extends Controller
         $messages = $this->messaging->messages($conversation, $limit);
 
         return MessageResource::collection($messages);
+    }
+
+    /**
+     * Start (or reuse) a conversation with a supplier company — the API
+     * counterpart of `Public\MessageController::start()` (POST
+     * /account/messages/start), through the exact same
+     * `MessagingService::start()` call, followed by the buyer's first message
+     * through `MessagingService::post()` (the same write `postMessage()` uses).
+     *
+     * Buyer-only (`api.buyer` on the route): `MessagingService::start()` always
+     * seats the caller as the conversation's BUYER, so a supplier calling it
+     * would open a thread with the wrong sides. A supplier reaches a buyer
+     * through an existing thread (or the exporter panel's "Share in chat"
+     * quote action), never through this endpoint.
+     *
+     * Mirrors the web's verified-email gate exactly: an unverified account may
+     * re-open an existing open thread with the same company/order, but may not
+     * open a NEW one — 403 `email_unverified` instead of the web's redirect to
+     * the verification notice.
+     *
+     * `company` accepts the numeric id or the slug. `order` is the order's
+     * reference code and, like the web, only attaches when this buyer owns it
+     * (and it was placed with this same company). `product_id`, when given,
+     * must be one of this company's products. 201 for a new thread, 200 when
+     * an open one was reused.
+     */
+    public function store(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $data = $request->validate([
+            'company' => ['required'],
+            'product_id' => ['nullable', 'integer'],
+            'order' => ['nullable', 'string', 'max:64'],
+            'topic' => ['nullable', 'string', Rule::in(ConversationTopic::values())],
+            'subject' => ['nullable', 'string', 'max:170'],
+            'body' => ['required', 'string', 'min:1', 'max:4000'],
+        ]);
+
+        $companyKey = (string) $data['company'];
+        $company = Company::query()
+            ->when(
+                ctype_digit($companyKey),
+                fn ($q) => $q->whereKey((int) $companyKey),
+                fn ($q) => $q->where('slug', $companyKey),
+            )
+            ->first();
+
+        if ($company === null) {
+            throw ValidationException::withMessages(['company' => [__('validation.exists', ['attribute' => 'company'])]]);
+        }
+
+        $product = null;
+        if (isset($data['product_id'])) {
+            $product = Product::whereKey($data['product_id'])->where('company_id', $company->getKey())->first();
+
+            if ($product === null) {
+                throw ValidationException::withMessages(['product_id' => [__('validation.exists', ['attribute' => 'product'])]]);
+            }
+        }
+
+        $order = null;
+        if (filled($data['order'] ?? null)) {
+            $order = Order::where('user_id', $user->getKey())
+                ->where('company_id', $company->getKey())
+                ->where('reference_code', $data['order'])
+                ->first();
+
+            if ($order === null) {
+                throw ValidationException::withMessages(['order' => [__('validation.exists', ['attribute' => 'order'])]]);
+            }
+        }
+
+        // Same lookup MessagingService::start() reuses a thread by.
+        $existing = Conversation::query()
+            ->where('user_id', $user->getKey())
+            ->where('company_id', $company->getKey())
+            ->where('order_id', $order?->getKey())
+            ->where('status', '!=', ConversationStatus::Closed->value)
+            ->exists();
+
+        if (! $existing && ! $user->hasVerifiedEmail()) {
+            throw new ApiException(
+                403,
+                'email_unverified',
+                __('Please verify your email address before messaging suppliers. Check your inbox for the link, or resend it below.'),
+            );
+        }
+
+        $conversation = $this->messaging->start(
+            buyer: $user,
+            company: $company,
+            topic: ConversationTopic::tryFrom($data['topic'] ?? '')
+                ?? ($order ? ConversationTopic::Order : ($product ? ConversationTopic::Product : ConversationTopic::General)),
+            product: $product,
+            order: $order,
+            subject: $data['subject'] ?? null,
+        );
+
+        $this->messaging->post($conversation, $user, $data['body']);
+
+        $conversation = $this->messaging->find($user, (int) $conversation->getKey());
+        $conversation->load('company:id,slug,legal_name,trade_name,logo_path,verified_at', 'user:id,name', 'latestMessage');
+
+        return response()->json(['data' => new ConversationResource($conversation)], $existing ? 200 : 201);
     }
 
     /** Body validation mirrors `App\Livewire\Messaging\Thread`'s own rule set exactly. */
