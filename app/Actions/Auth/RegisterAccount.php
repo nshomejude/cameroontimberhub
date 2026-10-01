@@ -127,9 +127,13 @@ class RegisterAccount
         if ($forApi) {
             $rules['password'] = ['required', Password::defaults()];
             unset($rules['terms']);
-            // A native client presents its own terms screen but must still
-            // send explicit consent, which is recorded on the user row.
-            $rules['terms_accepted'] = ['accepted'];
+            // A native client presents its own terms screen. Explicit consent
+            // is recorded when sent; it is optional only so app builds released
+            // before this field existed keep registering. Once every live build
+            // sends it, set API_REQUIRE_TERMS_ACCEPTED=true to make it mandatory.
+            $rules['terms_accepted'] = config('auth.api_require_terms_accepted', false)
+                ? ['accepted']
+                : ['sometimes', 'accepted'];
         }
 
         return $rules;
@@ -145,12 +149,14 @@ class RegisterAccount
                 'password' => $data['password'],
             ]);
 
-            // Consent record (terms of service). Both callers validate the
-            // consent field as `accepted` before reaching here.
-            $user->forceFill([
-                'terms_accepted_at' => now(),
-                'terms_version' => (string) config('app.terms_version', '1'),
-            ])->save();
+            // Consent record (terms of service). The web form always validates
+            // `terms`; the API records consent only when the client sent it.
+            if (! empty($data['terms']) || ! empty($data['terms_accepted'])) {
+                $user->forceFill([
+                    'terms_accepted_at' => now(),
+                    'terms_version' => (string) config('app.terms_version', '1'),
+                ])->save();
+            }
 
             $accountType = $data['account_type'] ?? 'buyer';
 

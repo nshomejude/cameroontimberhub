@@ -134,11 +134,14 @@ it('requires a verified email to start a new conversation', function () {
 
 /* ---------------------------------------------------- API registration */
 
-it('requires and records terms acceptance on API registration', function () {
+it('records terms acceptance on API registration, and requires it once enforced', function () {
     $payload = ['name' => 'Api Buyer', 'email' => 'api@example.com', 'password' => 'correct-horse-battery-staple'];
 
+    config(['auth.api_require_terms_accepted' => true]);
     $this->postJson('/api/v1/auth/register', $payload)
         ->assertStatus(422)->assertJsonValidationErrors('terms_accepted', 'error.details');
+    $this->postJson('/api/v1/auth/register', $payload + ['terms_accepted' => false])
+        ->assertStatus(422);
 
     Notification::fake();
     $this->postJson('/api/v1/auth/register', $payload + ['terms_accepted' => true])->assertCreated();
@@ -146,6 +149,15 @@ it('requires and records terms acceptance on API registration', function () {
     $user = User::where('email', 'api@example.com')->firstOrFail();
     expect($user->terms_accepted_at)->not->toBeNull();
     Notification::assertSentToTimes($user, VerifyEmail::class, 1);
+});
+
+it('lets older app builds register without terms_accepted while not enforced', function () {
+    config(['auth.api_require_terms_accepted' => false]);
+
+    $this->postJson('/api/v1/auth/register', ['name' => 'Old App', 'email' => 'old@example.com', 'password' => 'correct-horse-battery-staple'])
+        ->assertCreated();
+
+    expect(User::where('email', 'old@example.com')->firstOrFail()->terms_accepted_at)->toBeNull();
 });
 
 it('creates a missing account role instead of failing registration', function () {

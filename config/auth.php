@@ -121,4 +121,11 @@ return [
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 
+
+    /*
+    | Require `terms_accepted: true` on API registration. Off until every
+    | released mobile build sends the field (older builds would 422).
+    */
+    'api_require_terms_accepted' => (bool) env('API_REQUIRE_TERMS_ACCEPTED', false),
+
 ];
