@@ -71,26 +71,8 @@ class ReferralController extends Controller
     /** GET /api/v1/referrals */
     public function index(Request $request): AnonymousResourceCollection
     {
-        $referred = User::where('referred_by_user_id', $request->user()->id)
-            ->with('companies')
-            ->orderByDesc('referred_at')
-            ->orderByDesc('id')
-            ->limit(200)
-            ->get();
-
-        $earnings = ReferralEarning::where('referrer_user_id', $request->user()->id)
-            ->where('status', '!=', ReferralEarningStatus::Cancelled->value)
-            ->get();
-
-        $referred->each(function (User $u) use ($earnings): void {
-            $company = $u->companies->first();
-            $mine = $earnings->filter(fn (ReferralEarning $e) => $e->referred_user_id === $u->id
-                || ($company && $e->referred_company_id === $company->id));
-
-            $status = $this->referrals->statusFor($u, $company, $mine->isNotEmpty());
-            $u->setAttribute('referral_status', $status);
-            $u->setAttribute('referral_earned_label', self::sumLabel($mine));
-        });
+        $referred = $this->referrals->referredUsers($request->user())
+            ->each(fn (User $u) => $u->setAttribute('referral_earned_label', self::sumLabel($u->getAttribute('referral_earnings'))));
 
         return ReferralResource::collection($referred);
     }
@@ -109,31 +91,45 @@ class ReferralController extends Controller
 
     /**
      * PATCH /api/v1/referrals/payout-settings — where commissions are paid.
-     * `paypal_payout_email: null` (or "") removes it. The email is only ever
-     * returned masked.
+     * Send `paypal_payout_email` and/or `manual_payout_details` (MoMo number
+     * / bank details for commissions paid by hand, e.g. XAF); a key that is
+     * left out is unchanged, `null` (or "") removes it. At least one key is
+     * required. Both are only ever returned masked.
      */
     public function updatePayoutSettings(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'paypal_payout_email' => ['present', 'nullable', 'string', 'max:254', 'email:rfc'],
+            // Pre-existing clients always send the email; it is optional only
+            // when the request updates the manual details instead.
+            'paypal_payout_email' => [$request->exists('manual_payout_details') ? 'sometimes' : 'present', ...ReferralPayoutService::PAYPAL_EMAIL_RULES],
+            'manual_payout_details' => ReferralPayoutService::MANUAL_DETAILS_RULES,
         ]);
 
-        $this->payouts->setPaypalEmail($request->user(), $data['paypal_payout_email'] ?? null);
+        if ($request->exists('paypal_payout_email')) {
+            $this->payouts->setPaypalEmail($request->user(), $data['paypal_payout_email'] ?? null);
+        }
+
+        if ($request->exists('manual_payout_details')) {
+            $this->payouts->setManualPayoutDetails($request->user(), $data['manual_payout_details'] ?? null);
+        }
 
         return response()->json(['data' => $this->payoutBlock($request->user())]);
     }
 
-    /** @return array{paypal_email_masked: ?string, has_paypal_email: bool, paypal_available: bool, paypal_currencies: list<string>} */
+    /** @return array{paypal_email_masked: ?string, has_paypal_email: bool, paypal_available: bool, paypal_currencies: list<string>, manual_payout_details_masked: ?string, has_manual_payout_details: bool} */
     private function payoutBlock(User $user): array
     {
         $profile = ReferralPayoutProfile::forUser($user);
         $masked = $profile?->maskedPaypalEmail();
+        $manual = $profile?->maskedManualPayoutDetails();
 
         return [
             'paypal_email_masked' => $masked,
             'has_paypal_email' => $masked !== null,
             'paypal_available' => $this->payouts->paypalConfigured(),
             'paypal_currencies' => ReferralPayoutService::paypalCurrencies(),
+            'manual_payout_details_masked' => $manual,
+            'has_manual_payout_details' => $manual !== null,
         ];
     }
 

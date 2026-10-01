@@ -154,6 +154,27 @@
                 <button type="submit" class="{{ $btn }}">{{ __('messages.account_center.payout_save') }}</button>
             </form>
 
+            <form method="POST" action="{{ route('account.settings.referral-payout') }}" class="mt-6 space-y-4">
+                @csrf
+                @method('PUT')
+                <p class="text-[1.0625rem] text-ink-soft">{{ __('messages.account_center.payout_xaf_note') }}</p>
+                <p class="text-[1.0625rem] text-ink-soft">
+                    @if ($payoutProfile?->maskedManualPayoutDetails())
+                        {{ __('messages.account_center.payout_manual_current', ['details' => $payoutProfile->maskedManualPayoutDetails()]) }}
+                    @else
+                        {{ __('messages.account_center.payout_manual_none') }}
+                    @endif
+                </p>
+                <div>
+                    <label for="manual_payout_details" class="{{ $label }}">{{ __('messages.account_center.payout_manual_field') }}</label>
+                    <textarea id="manual_payout_details" name="manual_payout_details" rows="2" maxlength="500" autocomplete="off"
+                              class="{{ $field }}">{{ old('manual_payout_details') }}</textarea>
+                    <p class="mt-1 text-[0.9375rem] text-ink-soft">{{ __('messages.account_center.payout_manual_hint') }}</p>
+                    @error('manual_payout_details', 'payout') <p class="{{ $error }}">{{ $message }}</p> @enderror
+                </div>
+                <button type="submit" class="{{ $btn }}">{{ __('messages.account_center.payout_manual_save') }}</button>
+            </form>
+
             <h3 class="mt-6 text-[0.9375rem] font-bold uppercase tracking-[0.12em] text-ink-soft">{{ __('messages.account_center.payout_earnings') }}</h3>
             @forelse ($referralEarnings as $earning)
                 <div class="mt-2 flex flex-wrap items-center justify-between gap-2 border-b border-sand-200 py-2 text-[1.0625rem] last:border-0">

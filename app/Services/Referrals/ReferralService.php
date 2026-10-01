@@ -14,6 +14,7 @@ use App\Notifications\ReferralCommissionEarnedNotification;
 use App\Notifications\ReferralSignedUpNotification;
 use App\Services\Payments\PaymentAmount;
 use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -298,6 +299,76 @@ class ReferralService
         }
 
         return 'signed_up';
+    }
+
+    /**
+     * The users `$referrer` referred, newest first, each annotated with
+     * `referral_status` (statusFor()) and `referral_earnings` (their
+     * non-cancelled commissions). Backs GET /api/v1/referrals and the
+     * exporter-panel Referrals page.
+     *
+     * @return Collection<int, User>
+     */
+    public function referredUsers(User $referrer, ?int $limit = 200): Collection
+    {
+        $referred = User::where('referred_by_user_id', $referrer->getKey())
+            ->with('companies')
+            ->orderByDesc('referred_at')
+            ->orderByDesc('id')
+            ->when($limit !== null, fn ($q) => $q->limit($limit))
+            ->get();
+
+        $earnings = ReferralEarning::where('referrer_user_id', $referrer->getKey())
+            ->where('status', '!=', ReferralEarningStatus::Cancelled->value)
+            ->get();
+
+        return $referred->each(function (User $u) use ($earnings): void {
+            $company = $u->companies->first();
+            $mine = $earnings->filter(fn (ReferralEarning $e) => $e->referred_user_id === $u->id
+                || ($company && $e->referred_company_id === $company->id))->values();
+
+            $u->setAttribute('referral_status', $this->statusFor($u, $company, $mine->isNotEmpty()));
+            $u->setAttribute('referral_earnings', $mine);
+        });
+    }
+
+    /**
+     * Funnel counts for the referrer's dashboard: everyone who signed up with
+     * the code, and how many of them are (only) verified / qualified.
+     *
+     * @return array{signed_up: int, verified: int, qualified: int}
+     */
+    public function funnelFor(User $referrer): array
+    {
+        $statuses = $this->referredUsers($referrer, null)->pluck('referral_status');
+
+        return [
+            'signed_up' => $statuses->count(),
+            'verified' => $statuses->filter(fn ($s) => $s === 'verified')->count(),
+            'qualified' => $statuses->filter(fn ($s) => $s === 'qualified')->count(),
+        ];
+    }
+
+    /**
+     * Earned / paid / pending (pending or approved, not yet paid) commission
+     * totals per currency, cancelled commissions excluded.
+     *
+     * @return array<string, array{earned: float, paid: float, pending: float}>
+     */
+    public function totalsFor(User $referrer): array
+    {
+        return ReferralEarning::where('referrer_user_id', $referrer->getKey())
+            ->where('status', '!=', ReferralEarningStatus::Cancelled->value)
+            ->get(['amount', 'currency', 'status'])
+            ->groupBy(fn (ReferralEarning $e) => strtoupper((string) $e->currency))
+            ->map(fn (Collection $group) => [
+                'earned' => (float) $group->sum(fn ($e) => (float) $e->amount),
+                'paid' => (float) $group->where('status', ReferralEarningStatus::Paid)->sum(fn ($e) => (float) $e->amount),
+                'pending' => (float) $group->filter(fn ($e) => in_array($e->status, [ReferralEarningStatus::Pending, ReferralEarningStatus::Approved], true))
+                    ->sum(fn ($e) => (float) $e->amount),
+            ])
+            ->sortKeys()
+            ->all();
     }
 
     /** "Jean Dupont" → "Jean D." — never expose a referral's full name. */

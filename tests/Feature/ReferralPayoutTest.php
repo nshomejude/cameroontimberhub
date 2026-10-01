@@ -384,6 +384,58 @@ it('reverts a paid earning when PayPal returns a succeeded payout', function () 
         ->and($earning->fresh()->paid_at)->toBeNull();
 });
 
+it('makes a commission payable again after PayPal returns / refunds a paid payout', function (string $event, string $tx) {
+    rpoFakePayPal();
+    $earning = rpoEarning();
+    $first = rpoPay($earning);
+    rpoWebhook('PAYMENT.PAYOUTS-ITEM.SUCCEEDED', $first, 'SUCCESS');
+    expect($earning->fresh()->status)->toBe(ReferralEarningStatus::Paid);
+
+    rpoWebhook($event, $first, $tx)->assertOk();
+
+    $earning->refresh();
+    expect($first->fresh()->status)->toBe(ReferralPayoutStatus::Failed)
+        ->and($earning->status)->toBe(ReferralEarningStatus::Approved)
+        ->and($earning->payoutStatus())->toBe('failed')
+        ->and(app(ReferralPayoutService::class)->paypalBlocker($earning))->toBeNull();
+
+    // A fresh attempt can now be raised and paid (the unique "one live /
+    // succeeded attempt" index no longer blocks it) …
+    $second = rpoPay($earning);
+    expect($second->id)->not->toBe($first->id)
+        ->and($second->status)->toBe(ReferralPayoutStatus::Processing);
+    $this->postJson('/payments/paypal/webhook', [
+        'id' => 'WH-EVT-'.Str::random(6),
+        'event_type' => 'PAYMENT.PAYOUTS-ITEM.SUCCEEDED',
+        'resource' => [
+            'payout_item_id' => 'ITEM-2',
+            'transaction_id' => 'TX-2',
+            'transaction_status' => 'SUCCESS',
+            'sender_batch_id' => $second->sender_batch_id,
+            'payout_item' => ['sender_item_id' => (string) $earning->id],
+        ],
+    ])->assertOk();
+    expect($second->fresh()->status)->toBe(ReferralPayoutStatus::Succeeded)
+        ->and($earning->fresh()->status)->toBe(ReferralEarningStatus::Paid)
+        ->and(ReferralPayout::where('referral_earning_id', $earning->id)->count())->toBe(2);
+})->with([
+    'returned' => ['PAYMENT.PAYOUTS-ITEM.RETURNED', 'RETURNED'],
+    'refunded' => ['PAYMENT.PAYOUTS-ITEM.REFUNDED', 'REFUNDED'],
+]);
+
+it('lets finance pay a reversed commission manually instead', function () {
+    rpoFakePayPal();
+    $earning = rpoEarning();
+    $payout = rpoPay($earning);
+    rpoWebhook('PAYMENT.PAYOUTS-ITEM.SUCCEEDED', $payout, 'SUCCESS');
+    rpoWebhook('PAYMENT.PAYOUTS-ITEM.RETURNED', $payout, 'RETURNED');
+
+    $manual = app(ReferralPayoutService::class)->markPaidManually($earning->fresh(), rpoAdmin(), 'MOMO TX 55120');
+
+    expect($manual->method)->toBe('manual')
+        ->and($earning->fresh()->status)->toBe(ReferralEarningStatus::Paid);
+});
+
 it('rejects payout webhooks whose signature does not verify', function () {
     // Registered first, so it wins over rpoFakePayPal()'s SUCCESS stub.
     Http::fake(['*/v1/notifications/verify-webhook-signature' => Http::response(['verification_status' => 'FAILURE'], 200)]);

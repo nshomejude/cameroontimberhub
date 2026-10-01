@@ -49,16 +49,30 @@ class AccountSettingsController extends Controller
         ]);
     }
 
-    /** Referral payout destination — web counterpart of PATCH /api/v1/referrals/payout-settings. */
+    /**
+     * Referral payout destination — web counterpart of PATCH
+     * /api/v1/referrals/payout-settings. The panel has two forms (PayPal
+     * email; MoMo / bank details for manual payouts); each posts only its own
+     * field, and a field that is posted empty is removed.
+     */
     public function updateReferralPayout(Request $request): RedirectResponse
     {
         $data = $request->validateWithBag('payout', [
-            'paypal_payout_email' => ['nullable', 'string', 'max:254', 'email:rfc'],
+            'paypal_payout_email' => ReferralPayoutService::PAYPAL_EMAIL_RULES,
+            'manual_payout_details' => ReferralPayoutService::MANUAL_DETAILS_RULES,
         ]);
 
-        app(ReferralPayoutService::class)->setPaypalEmail($request->user(), $data['paypal_payout_email'] ?? null);
+        $payouts = app(ReferralPayoutService::class);
 
-        return redirect()->to(route('account.settings').'#referral-payouts')->with('status', __('messages.account_center.payout_saved'));
+        if ($request->exists('manual_payout_details')) {
+            $payouts->setManualPayoutDetails($request->user(), $data['manual_payout_details'] ?? null);
+            $status = __('messages.account_center.payout_manual_saved');
+        } else {
+            $payouts->setPaypalEmail($request->user(), $data['paypal_payout_email'] ?? null);
+            $status = __('messages.account_center.payout_saved');
+        }
+
+        return redirect()->to(route('account.settings').'#referral-payouts')->with('status', $status);
     }
 
     public function updateProfile(Request $request): RedirectResponse

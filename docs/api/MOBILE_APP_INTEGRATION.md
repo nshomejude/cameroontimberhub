@@ -958,14 +958,17 @@ do the same through `App\Actions\Account\DeleteAccount`.
 | GET | `/referrals/me` | Code, share URL, stats, terms and `payout` (below). |
 | GET | `/referrals` | People the user referred (masked names). |
 | GET | `/referrals/earnings` | The user's commissions, newest first, with payout status. |
-| PATCH | `/referrals/payout-settings` | Body: `paypal_payout_email` (email, or `null` / `""` to remove). Throttled 10/min. |
+| PATCH | `/referrals/payout-settings` | Body: `paypal_payout_email` (email, or `null` / `""` to remove) and/or `manual_payout_details` (free text ≤ 500 chars — preferred Mobile Money number or bank details for manual payouts, or `null` / `""` to remove). A key left out is unchanged; at least one is required (`paypal_payout_email` is required when `manual_payout_details` is absent, as before). Throttled 10/min. |
 
-`payout` block (in `/referrals/me` and the PATCH response) — the email is **never** returned in full:
+`payout` block (in `/referrals/me` and the PATCH response) — the email and the manual details are **never** returned in full:
 
 ```json
 { "paypal_email_masked": "je*********@example.com", "has_paypal_email": true,
-  "paypal_available": true, "paypal_currencies": ["USD", "EUR", "GBP"] }
+  "paypal_available": true, "paypal_currencies": ["USD", "EUR", "GBP"],
+  "manual_payout_details_masked": "MTN MoMo *** ** 34 56", "has_manual_payout_details": true }
 ```
+
+`manual_payout_details_masked`: emails in the text are masked like the PayPal email and every digit except the last four (never more than half) becomes `*`. Show the note *"Commissions in XAF are paid by Mobile Money or bank transfer — our finance team will contact you."* next to the field: XAF commissions are always paid manually, and finance sees these details in full on the admin Referral earnings table. `422` with `error.details.manual_payout_details` when longer than 500 characters.
 
 `paypal_available: false` means PayPal payouts are not switched on yet (commissions are paid manually by MoMo / bank). Commissions in a currency outside `paypal_currencies` (e.g. XAF) are always paid manually. `422` with `error.details.paypal_payout_email` for an invalid email.
 

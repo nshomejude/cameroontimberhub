@@ -99,6 +99,16 @@ class ReferralPayoutService
     // Referrer payout destination
     // ------------------------------------------------------------------
 
+    /**
+     * Validation for the referrer's PayPal payout email — shared by
+     * PATCH /api/v1/referrals/payout-settings, /account/settings and the
+     * exporter-panel Referrals page so the surfaces cannot drift.
+     */
+    public const PAYPAL_EMAIL_RULES = ['nullable', 'string', 'max:254', 'email:rfc'];
+
+    /** Validation for the free-text MoMo number / bank details (manual payouts). */
+    public const MANUAL_DETAILS_RULES = ['nullable', 'string', 'max:500'];
+
     public function setPaypalEmail(User $user, ?string $email): ReferralPayoutProfile
     {
         $email = filled($email) ? strtolower(trim((string) $email)) : null;
@@ -114,6 +124,30 @@ class ReferralPayoutService
             ->event('payout_email_updated')
             ->withProperties(['from' => $before, 'to' => $profile->maskedPaypalEmail()])
             ->log('Referral payout PayPal email updated');
+
+        return $profile;
+    }
+
+    /**
+     * Preferred MoMo number / bank details for commissions finance pays by
+     * hand (XAF, or whenever PayPal is not available). `null` / "" removes
+     * them. Only masked values reach the audit log.
+     */
+    public function setManualPayoutDetails(User $user, ?string $details): ReferralPayoutProfile
+    {
+        $details = filled($details) ? trim((string) $details) : null;
+
+        $profile = ReferralPayoutProfile::firstOrNew(['user_id' => $user->getKey()]);
+        $before = $profile->exists ? $profile->maskedManualPayoutDetails() : null;
+        $profile->manual_payout_details = $details;
+        $profile->save();
+
+        activity('referral_payout')
+            ->performedOn($profile)
+            ->causedBy($user)
+            ->event('manual_payout_details_updated')
+            ->withProperties(['from' => $before, 'to' => $profile->maskedManualPayoutDetails()])
+            ->log('Referral manual payout details updated');
 
         return $profile;
     }
