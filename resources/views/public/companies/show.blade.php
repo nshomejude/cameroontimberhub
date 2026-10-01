@@ -249,6 +249,7 @@
                     {{ $chat['label'] }}
                 </a>
             @endif
+            <x-save-supplier :company="$company" :class="$btnGhost" />
             <x-message-supplier :company="$company" :class="$btnGhost" />
             <a href="{{ $quoteUrl }}" class="{{ $btnPrimary }}">
                 <x-heroicon-o-paper-airplane class="h-5 w-5" aria-hidden="true" />
@@ -268,6 +269,7 @@
                     <x-heroicon-o-chat-bubble-left-right class="h-5 w-5" aria-hidden="true" />
                     Message Supplier
                 </a>
+                <x-save-supplier :company="$company" :class="$btnGhost.' w-full'" />
             </div>
 
             @if ($company->hasRating())

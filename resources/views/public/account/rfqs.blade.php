@@ -3,6 +3,8 @@
     :heading="__('messages.account.rfqs_title')"
     :subheading="__('messages.account.rfqs_subheading')">
 
+    <x-account.flash />
+
     @if ($rfqs->total() === 0)
         <x-account.blank icon="document-text"
             :title="__('messages.account.rfqs_empty_title')"
@@ -47,6 +49,15 @@
                                 {{ $rfq->quotes_count > 0 ? __('messages.account.compare_quotes') : __('messages.account.view_request') }}
                                 <x-heroicon-m-arrow-right class="h-4 w-4" />
                             </a>
+                            @if ($cancellation->canCancel($rfq))
+                                <form method="POST" action="{{ route('account.rfqs.cancel', $rfq->reference_code) }}"
+                                      onsubmit="return confirm(@js(__('messages.account_center.rfq_cancel_confirm')))">
+                                    @csrf
+                                    <button type="submit" class="text-[1.0625rem] font-semibold text-red-700 transition hover:text-red-900">
+                                        {{ __('messages.account_center.rfq_cancel') }}
+                                    </button>
+                                </form>
+                            @endif
                         </div>
                     </div>
                 </li>

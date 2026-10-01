@@ -64,6 +64,12 @@ class MessageController extends Controller
         ]);
 
         $company = Company::where('slug', $data['company'])->firstOrFail();
+
+        // Same gate as the API's POST /conversations: a company buyers cannot
+        // see (suspended, archived, pending, incomplete) cannot be messaged.
+        if (! $company->isPubliclyVisible()) {
+            return back()->withErrors(['company' => __('messages.account_center.company_unavailable')]);
+        }
         $product = isset($data['product']) ? Product::where('slug', $data['product'])->first() : null;
 
         // An order may only be attached when this buyer actually owns it.

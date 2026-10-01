@@ -82,6 +82,14 @@ return [
         'line_2' => 'Référence : :reference',
     ],
 
+    'rfq_withdrawn' => [
+        'subject' => 'Demande acheteur retirée — :reference',
+        'line_1' => 'L\'acheteur a retiré la demande :reference. Aucun devis n\'est plus nécessaire.',
+        'line_2' => 'Vous pouvez abandonner tout brouillon de devis préparé pour cette demande.',
+        'title' => 'Demande retirée',
+        'body' => 'L\'acheteur a retiré la demande :reference.',
+    ],
+
     'message_received_mail' => [
         'subject' => 'Nouveau message de :sender',
         'someone' => 'Quelqu\'un',

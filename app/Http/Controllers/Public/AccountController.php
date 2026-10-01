@@ -7,11 +7,16 @@ use App\Domain\Trade\Queries\ListBuyerQuotesQuery;
 use App\Domain\Trade\Queries\ListBuyerReceiptsQuery;
 use App\Domain\Trade\Queries\ListBuyerRfqsQuery;
 use App\Http\Controllers\Controller;
+use App\Models\Dispute;
+use App\Models\Rfq;
 use App\Services\BuyerDashboard;
 use App\Services\BuyerRfqAccess;
+use App\Services\RfqCancellationService;
 use App\Support\Bus\QueryBus;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use RuntimeException;
 
 /**
  * The buyer account area.
@@ -68,6 +73,7 @@ class AccountController extends Controller
         return view('public.account.rfqs', [
             'rfqs' => $this->queryBus->dispatch(new ListBuyerRfqsQuery($request->user()->getKey())),
             'access' => $this->access,
+            'cancellation' => app(RfqCancellationService::class),
         ]);
     }
 
@@ -85,6 +91,38 @@ class AccountController extends Controller
             'orders' => $this->queryBus->dispatch(new ListBuyerOrdersQuery($request->user()->getKey())),
             'access' => $this->access,
         ]);
+    }
+
+    /**
+     * Every dispute on the buyer's orders (Dispute::forBuyer — the same query
+     * as `GET /api/v1/disputes`). Each row links to the existing per-order
+     * dispute screen, which re-checks party membership itself.
+     */
+    public function disputes(Request $request): View
+    {
+        return view('public.account.disputes', [
+            'disputes' => Dispute::query()->forBuyer($request->user())->paginate(15)->withQueryString(),
+        ]);
+    }
+
+    /**
+     * Withdraw one of the buyer's own still-open RFQs. Resolved through the
+     * buyer's own RFQs only, so another buyer's reference 404s.
+     */
+    public function cancelRfq(Request $request, string $reference, RfqCancellationService $cancellation): RedirectResponse
+    {
+        $rfq = Rfq::query()
+            ->where('user_id', $request->user()->getKey())
+            ->where('reference_code', $reference)
+            ->firstOrFail();
+
+        try {
+            $cancellation->cancel($rfq, $request->user());
+        } catch (RuntimeException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return back()->with('status', __('messages.account_center.rfq_cancelled', ['reference' => $rfq->reference_code]));
     }
 
     public function receipts(Request $request): View

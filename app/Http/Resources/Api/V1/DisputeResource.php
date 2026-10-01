@@ -22,6 +22,7 @@ class DisputeResource extends JsonResource
         return [
             'id' => $this->id,
             'order_id' => $this->order_id,
+            'order_reference' => $this->whenLoaded('order', fn () => $this->order?->reference_code),
             'category' => $this->category->value,
             'category_label' => $this->category->label(),
             'status' => $this->status->value,

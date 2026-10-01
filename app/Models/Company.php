@@ -385,6 +385,12 @@ class Company extends Model
             );
     }
 
+    /** Instance form of {@see scopePubliclyVisible()} — one query, same rules. */
+    public function isPubliclyVisible(): bool
+    {
+        return static::query()->publiclyVisible()->whereKey($this->getKey())->exists();
+    }
+
     /**
      * Human-readable list of what is keeping this company out of
      * {@see scopePubliclyVisible()} — one entry per failed condition, in the

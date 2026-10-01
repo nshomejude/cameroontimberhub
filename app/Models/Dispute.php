@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\DisputeCategory;
 use App\Enums\DisputeStatus;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -82,6 +83,21 @@ class Dispute extends Model
     public function messages(): HasMany
     {
         return $this->hasMany(DisputeMessage::class)->orderBy('id');
+    }
+
+    /* ------------------------------------------------------------ scopes */
+
+    /**
+     * Every dispute on any order the buyer placed, newest first, with what a
+     * list row needs. Shared by `GET /api/v1/disputes` and `/account/disputes`
+     * so both surfaces show exactly the same rows.
+     */
+    public function scopeForBuyer(Builder $query, User $buyer): Builder
+    {
+        return $query
+            ->whereHas('order', fn (Builder $q) => $q->where('user_id', $buyer->getKey()))
+            ->with(['order:id,reference_code,user_id', 'raisedByUser', 'raisedByCompany', 'respondentCompany'])
+            ->orderByDesc('id');
     }
 
     /* ------------------------------------------------------------- party */

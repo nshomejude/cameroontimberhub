@@ -93,6 +93,15 @@ return [
         'line_2' => 'Reference: :reference',
     ],
 
+    // ----- app/Notifications/RfqWithdrawnNotification -----
+    'rfq_withdrawn' => [
+        'subject' => 'Buyer request withdrawn — :reference',
+        'line_1' => 'The buyer has withdrawn request :reference. No quote is needed any more.',
+        'line_2' => 'Any draft quote you prepared for it can be discarded.',
+        'title' => 'Request withdrawn',
+        'body' => 'The buyer withdrew request :reference.',
+    ],
+
     // ----- app/Notifications/MessageReceivedNotification (mail, coalesced) -----
     'message_received_mail' => [
         'subject' => 'New message from :sender',
