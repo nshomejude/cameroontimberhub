@@ -153,6 +153,16 @@ Omitting `account_type` registers a buyer — existing clients need no update.
 
 > Login failure is **one generic message** on the `email` field for every cause (unknown address, wrong password, …) and the response time is flattened. Do not build UI that distinguishes "no such account" from "wrong password" — the backend deliberately won't tell you.
 
+> **Staff accounts must have 2FA.** When `STAFF_REQUIRE_2FA` is on (the
+> production default), a staff user (any platform staff role) **without**
+> confirmed two-factor authentication gets `403` with
+> `error.code = "two_factor_enrollment_required"` from `POST /auth/login` —
+> after a correct password, and no token is issued. The message points to
+> the web enrolment page (`/security/two-factor`). Show it with an "Open in
+> browser" button; the app cannot enrol staff itself. Staff with 2FA get the
+> normal `two_factor_required` challenge. Every `/api/v1/staff/*` route
+> enforces the same rule (same `403` code) for tokens minted earlier.
+
 ### Current user / log out
 
 | | |
