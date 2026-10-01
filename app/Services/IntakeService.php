@@ -11,6 +11,7 @@ use App\Models\ContactMessage;
 use App\Models\Rfq;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
 
@@ -81,7 +82,10 @@ class IntakeService
         $rfq->load('items');
         $this->risk->evaluate($rfq);
 
-        $this->sendRfqVerificationMail($rfq);
+        // The RFQ is already committed: a mail transport failure must not turn
+        // a saved request into a 500. The buyer can recover via the resend form
+        // on the thanks page (rfq.resend).
+        $this->safely(fn () => $this->sendRfqVerificationMail($rfq), 'RFQ verification mail failed', ['rfq_id' => $rfq->getKey()]);
 
         return $rfq;
     }
@@ -124,9 +128,38 @@ class IntakeService
             ]);
         }
 
-        Mail::to($inquiry->email)->send(new InquiryVerificationMail($inquiry, $this->inquiryVerifyUrl($inquiry)));
+        $this->safely(fn () => $this->sendInquiryVerificationMail($inquiry), 'Inquiry verification mail failed', ['inquiry_id' => $inquiry->getKey()]);
 
         return $inquiry;
+    }
+
+    /** Send (or re-send) the signed 48-hour confirmation link for an inquiry. */
+    public function sendInquiryVerificationMail(CompanyInquiry $inquiry): void
+    {
+        Mail::to($inquiry->email)->send(new InquiryVerificationMail($inquiry, $this->inquiryVerifyUrl($inquiry)));
+    }
+
+    /**
+     * Run a best-effort side effect (an email) after the row it describes has
+     * been persisted. A failure is logged to the `errors` channel and
+     * swallowed so the caller still reaches its success page.
+     *
+     * @param  array<string, mixed>  $context
+     */
+    public function safely(callable $send, string $message, array $context = []): bool
+    {
+        try {
+            $send();
+
+            return true;
+        } catch (\Throwable $e) {
+            Log::channel('errors')->error($message, $context + [
+                'exception' => $e::class,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
     }
 
     /**

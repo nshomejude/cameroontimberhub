@@ -306,9 +306,7 @@ class ChatCommerceService
                 $this->messaging->postOrderReference($conversation, null, $order);
             }
 
-            // Tell the supplier's company their quote was accepted.
-            $accepted->loadMissing('company.users');
-            $accepted->company?->users?->each(fn (User $u) => $u->notify(new \App\Notifications\QuoteAcceptedNotification($accepted)));
+            // Supplier notification is dispatched by QuoteService::accept().
 
             return $acceptance->refresh();
         });
@@ -336,8 +334,7 @@ class ChatCommerceService
                 'Quotation '.$declined->reference_code.' was declined by the buyer.',
             );
 
-            $declined->loadMissing('company.users');
-            $declined->company?->users?->each(fn (User $u) => $u->notify(new \App\Notifications\QuoteDeclinedNotification($declined)));
+            // Supplier notification is dispatched by QuoteService::decline().
 
             return $declined;
         });

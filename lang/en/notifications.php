@@ -93,6 +93,41 @@ return [
         'line_2' => 'Reference: :reference',
     ],
 
+    // ----- app/Notifications/MessageReceivedNotification (mail, coalesced) -----
+    'message_received_mail' => [
+        'subject' => 'New message from :sender',
+        'someone' => 'Someone',
+        'line_1' => ':sender sent you a message on Cameroon Timber Hub:',
+        'action' => 'Open the conversation',
+        'line_2' => 'To avoid flooding your inbox we send at most one email per conversation every :minutes minutes — open the conversation to see everything.',
+    ],
+
+    // ----- app/Notifications/LeadReceivedNotification -----
+    'lead_received' => [
+        'subject' => 'New buyer inquiry from :name',
+        'line_1' => ':name has sent your company a confirmed inquiry.',
+        'action' => 'View the lead',
+        'line_2' => 'Reply quickly — buyers usually contact several suppliers.',
+    ],
+
+    // ----- app/Mail/BuyerRfqRoutedMail + BuyerRfqRejectedMail -----
+    'buyer_rfq_routed' => [
+        'subject' => 'Your request :reference was sent to suppliers',
+        'heading' => 'Your request is with suppliers',
+        'intro' => 'Good news — your request :reference has been reviewed and sent to :count verified supplier(s).',
+        'next' => 'Suppliers reply with quotes by email. You can follow responses using the button below.',
+        'action' => 'View responses',
+        'salutation' => 'Thanks,',
+    ],
+    'buyer_rfq_rejected' => [
+        'subject' => 'Update on your request :reference',
+        'heading' => 'We could not route your request',
+        'intro' => 'Thank you for your request :reference. After review, we are unable to send it to suppliers at this time.',
+        'reason' => 'Reason: :reason',
+        'next' => 'If you believe this is a mistake or can add more detail, simply reply to this email or submit a new request.',
+        'salutation' => 'Kind regards,',
+    ],
+
     // ----- app/Notifications/SubscriptionRenewalReminder (billing engine M6) -----
     'subscription_renewal' => [
         'subject' => 'Your :plan plan renews soon',

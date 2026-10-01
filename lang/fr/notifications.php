@@ -82,6 +82,38 @@ return [
         'line_2' => 'Référence : :reference',
     ],
 
+    'message_received_mail' => [
+        'subject' => 'Nouveau message de :sender',
+        'someone' => 'Quelqu\'un',
+        'line_1' => ':sender vous a envoyé un message sur Cameroon Timber Hub :',
+        'action' => 'Ouvrir la conversation',
+        'line_2' => 'Pour ne pas encombrer votre boîte, nous envoyons au plus un e-mail par conversation toutes les :minutes minutes — ouvrez la conversation pour tout voir.',
+    ],
+
+    'lead_received' => [
+        'subject' => 'Nouvelle demande acheteur de :name',
+        'line_1' => ':name a envoyé une demande confirmée à votre société.',
+        'action' => 'Voir la piste',
+        'line_2' => 'Répondez rapidement — les acheteurs contactent souvent plusieurs fournisseurs.',
+    ],
+
+    'buyer_rfq_routed' => [
+        'subject' => 'Votre demande :reference a été transmise aux fournisseurs',
+        'heading' => 'Votre demande est chez les fournisseurs',
+        'intro' => 'Bonne nouvelle — votre demande :reference a été examinée et transmise à :count fournisseur(s) vérifié(s).',
+        'next' => 'Les fournisseurs répondent par e-mail avec leurs offres. Suivez les réponses avec le bouton ci-dessous.',
+        'action' => 'Voir les réponses',
+        'salutation' => 'Merci,',
+    ],
+    'buyer_rfq_rejected' => [
+        'subject' => 'Mise à jour de votre demande :reference',
+        'heading' => 'Nous ne pouvons pas transmettre votre demande',
+        'intro' => 'Merci pour votre demande :reference. Après examen, nous ne pouvons pas la transmettre aux fournisseurs pour le moment.',
+        'reason' => 'Motif : :reason',
+        'next' => 'Si vous pensez qu\'il s\'agit d\'une erreur ou pouvez apporter plus de détails, répondez simplement à cet e-mail ou soumettez une nouvelle demande.',
+        'salutation' => 'Cordialement,',
+    ],
+
     'subscription_renewal' => [
         'subject' => 'Votre offre :plan se renouvelle bientôt',
         'line_1' => 'Votre abonnement :plan doit être renouvelé le :date pour :amount.',

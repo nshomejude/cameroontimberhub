@@ -892,6 +892,24 @@ return [
         'activity_order_status' => 'Order :status',
     ],
 
+    'rfq_followup' => [
+        'next_title' => 'What happens next',
+        'next_1' => 'Click the confirmation link we just emailed you (check your spam or promotions folder if you cannot see it).',
+        'next_2' => 'Our team reviews your confirmed request — you will hear from us within 24 hours.',
+        'next_3' => 'Matching verified exporters receive it and reply with quotes by email.',
+        'spam_hint' => 'Did not get the email? Check your spam folder, or request a new link below.',
+        'resend_title' => 'Resend the confirmation link',
+        'resend_reference' => 'Request reference',
+        'resend_email' => 'Email used on the request',
+        'resend_submit' => 'Send a new link',
+        'resend_generic' => 'If that reference and email match an unconfirmed request, a new confirmation link is on its way. It is valid for 48 hours.',
+        'link_invalid_title' => 'This link has expired or is invalid',
+        'link_invalid_body' => 'Confirmation links are valid for 48 hours and must be opened exactly as received. Your request is still saved — ask for a fresh link below.',
+        'link_invalid_inquiry_body' => 'Confirmation links are valid for 48 hours. Your message has not been delivered yet — please send it again from the supplier page.',
+        'back_to_supplier' => 'Back to :company',
+        'browse_exporters' => 'Browse exporters',
+    ],
+
     'rfq_wizard' => [
         'title' => 'Request a quote',
         'title_step' => 'Request a quote — step :n of :total',

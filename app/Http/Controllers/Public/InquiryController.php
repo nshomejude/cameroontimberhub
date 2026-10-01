@@ -9,6 +9,7 @@ use App\Models\CompanyInquiry;
 use App\Services\IntakeService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\View\View;
 
 class InquiryController extends Controller
@@ -42,9 +43,16 @@ class InquiryController extends Controller
         return back()->with('inquiry_sent', true);
     }
 
-    public function verify(Request $request, CompanyInquiry $inquiry, IntakeService $intake): View
+    public function verify(Request $request, CompanyInquiry $inquiry, IntakeService $intake): View|Response
     {
-        abort_unless($request->query('h') === sha1($inquiry->email), 403);
+        // Signature checked here (not via `signed` middleware) so an expired
+        // link gets a recovery page — still a 403 — rather than a bare error.
+        if (! $request->hasValidSignature() || $request->query('h') !== sha1($inquiry->email)) {
+            return response()->view('public.rfq.link-invalid', [
+                'kind' => 'inquiry',
+                'company' => $inquiry->company,
+            ], 403);
+        }
 
         $intake->verifyInquiry($inquiry);
 

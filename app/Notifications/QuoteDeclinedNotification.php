@@ -10,7 +10,7 @@ use Illuminate\Notifications\Notification;
 
 /**
  * Fired at the supplier's company users when a buyer declines their quote —
- * `ChatCommerceService::declineQuotation()` is the trigger.
+ * `QuoteService::decline()` (explicit) and `QuoteService::accept()` (auto-declined siblings) are the triggers.
  */
 class QuoteDeclinedNotification extends Notification implements ShouldQueue
 {

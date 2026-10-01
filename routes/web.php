@@ -183,6 +183,9 @@ Route::get('/request-quote/manufacturing', [RfqController::class, 'createManufac
 Route::get('/request-quote/transport', [RfqController::class, 'createTransport'])->name('rfq.create.transport');
 Route::post('/request-quote', [RfqController::class, 'store'])->middleware('throttle:rfq-submit')->name('rfq.store');
 Route::get('/request-quote/thanks', [RfqController::class, 'thanks'])->name('rfq.thanks');
+// Re-send an expired/lost confirmation link (reference + email). The response
+// is identical whether or not a match exists, so it cannot enumerate RFQs.
+Route::post('/request-quote/resend', [RfqController::class, 'resend'])->middleware('throttle:6,60')->name('rfq.resend');
 // Wizard steps. Each is a real GET URL so refresh and browser back/forward work
 // without JavaScript; the POST banks the step in the session and redirects.
 Route::get('/request-quote/step/{step}', [RfqController::class, 'step'])->name('rfq.step');
@@ -192,7 +195,9 @@ Route::post('/request-quote/step/{step}', [RfqController::class, 'storeStep'])
 // Session-backed RFQ shortlist ("Add to RFQ List" on a product page).
 Route::post('/rfq-list/{slug}', [RfqListController::class, 'store'])->middleware('throttle:session-write')->name('rfq-list.store');
 Route::delete('/rfq-list/{slug}', [RfqListController::class, 'destroy'])->middleware('throttle:session-write')->name('rfq-list.destroy');
-Route::get('/rfq/{rfq}/verify', [RfqController::class, 'verify'])->middleware('signed')->name('rfq.verify');
+// Signature is checked in the controller (not the `signed` middleware) so an
+// expired or mangled link renders a recovery page instead of a bare 403.
+Route::get('/rfq/{rfq}/verify', [RfqController::class, 'verify'])->name('rfq.verify');
 
 // Buyer-facing quote responses. Deliberately NOT behind `auth` or `signed`
 // middleware: RFQ intake is account-free, so access is decided per-request by
@@ -267,7 +272,7 @@ Route::get('/certificates/{certificateNumber}', [CertificateVerificationControll
 
 // Public company inquiry intake + email verification.
 Route::post('/companies/{company:slug}/inquiries', [InquiryController::class, 'store'])->middleware('throttle:inquiry-submit')->name('inquiry.store');
-Route::get('/inquiry/{inquiry}/verify', [InquiryController::class, 'verify'])->middleware('signed')->name('inquiry.verify');
+Route::get('/inquiry/{inquiry}/verify', [InquiryController::class, 'verify'])->name('inquiry.verify');
 
 // Static marketing pages (CMS-backed via the pages table).
 Route::get('/about', [PageController::class, 'show'])->defaults('slug', 'about')->name('about');

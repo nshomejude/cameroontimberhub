@@ -57,6 +57,10 @@ return [
         env('CONTACT_EMAIL_PARTNERSHIPS', 'partnerships@cameroontimberhub.com'),
     ])),
 
+    // Where /contact form submissions are delivered. Falls back to the general
+    // mailbox above, then to the mailer's from-address.
+    'inbox' => env('CONTACT_INBOX') ?: (env('CONTACT_EMAIL_GENERAL', 'info@cameroontimberhub.com') ?: null),
+
     'website' => env('CONTACT_WEBSITE', 'www.cameroontimberhub.com'),
 
     'hours' => [

@@ -70,7 +70,11 @@ function notificationApiOrder(): array
 
     app(QuoteService::class)->accept($quote, $buyer);
 
-    $order = Order::where('quote_id', $quote->getKey())->firstOrFail();
+    // accept() notifies the supplier (quote_accepted); start each test from a
+    // clean inbox so counts reflect only the event under test.
+    $supplierUser->notifications()->delete();
+
+    $order =Order::where('quote_id', $quote->getKey())->firstOrFail();
 
     $conversation = Conversation::factory()->create([
         'user_id' => $buyer->getKey(),

@@ -11,6 +11,8 @@ use App\Models\Quote;
 use App\Models\Rfq;
 use App\Models\RfqCompany;
 use App\Models\User;
+use App\Notifications\QuoteAcceptedNotification;
+use App\Notifications\QuoteDeclinedNotification;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -243,7 +245,9 @@ class QuoteService
      */
     public function accept(Quote $quote, ?User $actor = null): Quote
     {
-        return DB::transaction(function () use ($quote, $actor) {
+        $autoDeclined = collect();
+
+        $accepted = DB::transaction(function () use ($quote, $actor, &$autoDeclined) {
             $quote = Quote::whereKey($quote->getKey())->lockForUpdate()->firstOrFail();
 
             if ($quote->isExpired()) {
@@ -261,7 +265,7 @@ class QuoteService
             $accepted = $this->transition($quote, QuoteStatus::Accepted, $actor);
 
             foreach ($others as $other) {
-                $this->transition($other, QuoteStatus::Declined, $actor, 'Another quote was accepted for this request.');
+                $autoDeclined->push($this->transition($other, QuoteStatus::Declined, $actor, 'Another quote was accepted for this request.'));
             }
 
             // The RFQ is settled once a quote wins.
@@ -279,6 +283,14 @@ class QuoteService
 
             return $accepted;
         });
+
+        // Single dispatch point for every accept path (signed buyer link,
+        // account screen, chat thread via AwardQuoteCommand). The winner and
+        // every auto-declined sibling supplier are told.
+        $this->notifySupplier($accepted, new QuoteAcceptedNotification($accepted));
+        $autoDeclined->each(fn (Quote $q) => $this->notifySupplier($q, new QuoteDeclinedNotification($q)));
+
+        return $accepted;
     }
 
     public function decline(Quote $quote, string $reason, ?User $actor = null): Quote
@@ -287,7 +299,26 @@ class QuoteService
             throw new RuntimeException('A decline reason is required.');
         }
 
-        return $this->transition($quote, QuoteStatus::Declined, $actor, trim($reason));
+        $declined = $this->transition($quote, QuoteStatus::Declined, $actor, trim($reason));
+
+        $this->notifySupplier($declined, new QuoteDeclinedNotification($declined));
+
+        return $declined;
+    }
+
+    /**
+     * Notify the quoting company's users. `afterCommit()` so that, when this
+     * runs inside a caller's outer transaction (ChatCommerceService), nothing
+     * is sent for a decision that is then rolled back.
+     */
+    private function notifySupplier(Quote $quote, \Illuminate\Notifications\Notification $notification): void
+    {
+        $quote->loadMissing('company.users');
+        $users = $quote->company?->users;
+
+        if ($users && $users->isNotEmpty()) {
+            \Illuminate\Support\Facades\Notification::send($users, $notification->afterCommit());
+        }
     }
 
     /* ---------------------------------------------------------------- system */

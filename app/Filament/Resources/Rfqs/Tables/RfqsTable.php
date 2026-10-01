@@ -76,8 +76,18 @@ class RfqsTable
                                     ])),
                         ])
                         ->action(function (Rfq $record, array $data): void {
-                            $count = app(RfqTriageService::class)->route($record, $data['companies'], auth()->user(), app(LeadFlowService::class));
-                            Notification::make()->title("Routed to {$count} company/companies")->success()->send();
+                            $result = app(RfqTriageService::class)->routeDetailed($record, $data['companies'], auth()->user(), app(LeadFlowService::class));
+                            $selected = count($data['companies']);
+
+                            // Anything short of "every selected company got it"
+                            // is a warning listing who was skipped and why.
+                            $notification = Notification::make()->title("Routed to {$result->routed} of {$selected} company/companies");
+                            if ($result->routed < $selected || $result->routed === 0) {
+                                $notification->warning()->body('Not routed: '.$result->skippedSummary())->persistent();
+                            } else {
+                                $notification->success();
+                            }
+                            $notification->send();
                         }),
 
                     Action::make('reject')->label('Reject')->icon('heroicon-o-x-circle')->color('danger')
