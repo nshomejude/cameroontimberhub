@@ -66,6 +66,12 @@ class MtnMomoGateway implements PaymentGatewayContract
             ], 503);
         }
 
+        // Re-submitting a settled/failed payment would overwrite its
+        // provider_reference and re-push a charge.
+        if (! $payment->isPending()) {
+            return response()->view('payments.mtn-momo.failed', ['payment' => $payment], 409);
+        }
+
         return match ($this->requestToPay($payment, $data['phone'])) {
             'pending' => response()->view('payments.mtn-momo.pending', ['payment' => $payment], 200),
             default => response()->view('payments.mtn-momo.failed', ['payment' => $payment], 502),

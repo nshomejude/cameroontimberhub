@@ -11,6 +11,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\URL;
 use Stripe\Checkout\Session as CheckoutSession;
 use Stripe\Exception\ApiErrorException;
 use Stripe\Exception\SignatureVerificationException;
@@ -69,7 +70,7 @@ class StripeGateway implements PaymentGatewayContract
                     'quantity' => 1,
                 ]],
                 'success_url' => route('payments.stripe.success', ['payment' => $payment->id]).'?session_id={CHECKOUT_SESSION_ID}',
-                'cancel_url' => route('payments.stripe.cancel', ['payment' => $payment->id]),
+                'cancel_url' => URL::temporarySignedRoute('payments.stripe.cancel', now()->addDay(), ['payment' => $payment->id]),
                 'metadata' => [
                     'payment_id' => (string) $payment->id,
                 ],

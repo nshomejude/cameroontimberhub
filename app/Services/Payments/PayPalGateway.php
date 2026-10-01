@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\URL;
 use Throwable;
 
 /**
@@ -49,15 +50,20 @@ class PayPalGateway implements PaymentGatewayContract
                     'intent' => 'CAPTURE',
                     'purchase_units' => [
                         [
+                            // custom_id ties the PayPal order back to this
+                            // Payment; verified again on capture.
+                            'custom_id' => (string) $payment->getKey(),
                             'amount' => [
                                 'currency_code' => $payment->currency,
-                                'value' => number_format((float) $payment->amount, 2, '.', ''),
+                                'value' => self::formatAmount($payment->amount),
                             ],
                         ],
                     ],
                     'application_context' => [
-                        'return_url' => route('payments.paypal.return', $payment),
-                        'cancel_url' => route('payments.paypal.cancel', $payment),
+                        // Signed: the return/cancel legs are public browser
+                        // redirects, so only links we minted may act.
+                        'return_url' => URL::temporarySignedRoute('payments.paypal.return', now()->addDay(), ['payment' => $payment->getKey()]),
+                        'cancel_url' => URL::temporarySignedRoute('payments.paypal.cancel', now()->addDay(), ['payment' => $payment->getKey()]),
                     ],
                 ]);
 
@@ -88,11 +94,19 @@ class PayPalGateway implements PaymentGatewayContract
 
     public function handleReturn(Request $request, Payment $payment): Response
     {
-        $orderId = $request->query('token') ?? $payment->provider_reference;
+        // Only ever capture the order WE created for this payment. The
+        // `token` query param is attacker-controlled: capturing it blindly
+        // would let a cheap order A complete an expensive payment B.
+        $orderId = (string) $payment->provider_reference;
+        $token = $request->query('token');
 
-        if (! $orderId) {
-            $payment->markFailed();
+        if ($orderId === '' || ($token !== null && (! is_string($token) || ! hash_equals($orderId, $token)))) {
+            Log::warning('PayPal return token does not match the payment order', ['payment_id' => $payment->id]);
 
+            return response()->view('payments.paypal.failed', ['payment' => $payment], 400);
+        }
+
+        if (! $payment->isPending()) {
             return response()->view('payments.paypal.failed', ['payment' => $payment], 400);
         }
 
@@ -108,7 +122,12 @@ class PayPalGateway implements PaymentGatewayContract
             $data = $response->json();
 
             if ($response->successful() && ($data['status'] ?? null) === 'COMPLETED') {
-                $captureId = $data['purchase_units'][0]['payments']['captures'][0]['id'] ?? $orderId;
+                $capture = $data['purchase_units'][0]['payments']['captures'][0] ?? [];
+                $captureId = $capture['id'] ?? $orderId;
+
+                if (! $this->captureMatches($payment, $capture, $data['purchase_units'][0] ?? [])) {
+                    return response()->view('payments.paypal.failed', ['payment' => $payment], 400);
+                }
 
                 // Completion goes through the CommandBus (billing engine M2) so
                 // markCompleted() + the PaymentCompleted outbox event are one
@@ -202,7 +221,14 @@ class PayPalGateway implements PaymentGatewayContract
             return $this->jsonResponse(['status' => 'ignored']);
         }
 
-        if ($eventType === 'PAYMENT.CAPTURE.COMPLETED' || $eventType === 'CHECKOUT.ORDER.APPROVED') {
+        // Only a completed capture settles a payment — CHECKOUT.ORDER.APPROVED
+        // means the payer approved but no funds have moved yet (the return
+        // leg captures). The captured amount must match ours.
+        if ($eventType === 'PAYMENT.CAPTURE.COMPLETED') {
+            if (! $this->captureMatches($payment, $resource)) {
+                return $this->jsonResponse(['status' => 'rejected']);
+            }
+
             $captureId = $resource['id'] ?? $orderId;
             app(CommandBus::class)->dispatch(new RecordPaymentCompletionCommand(
                 paymentId: $payment->getKey(),
@@ -213,6 +239,47 @@ class PayPalGateway implements PaymentGatewayContract
         }
 
         return $this->jsonResponse(['status' => 'ok']);
+    }
+
+    /**
+     * Verify a capture really pays for this payment: same amount and
+     * currency, and (when PayPal echoes it) our custom_id. Logs critical and
+     * returns false on any mismatch so the caller does not complete.
+     *
+     * @param  array<string, mixed>  $capture
+     * @param  array<string, mixed>  $purchaseUnit
+     */
+    private function captureMatches(Payment $payment, array $capture, array $purchaseUnit = []): bool
+    {
+        $value = $capture['amount']['value'] ?? null;
+        $currency = $capture['amount']['currency_code'] ?? null;
+        $customId = $capture['custom_id'] ?? $purchaseUnit['custom_id'] ?? null;
+
+        $amountOk = $value !== null
+            && self::formatAmount($value) === self::formatAmount($payment->amount)
+            && is_string($currency)
+            && strtoupper($currency) === strtoupper((string) $payment->currency);
+        $customOk = $customId === null || (string) $customId === (string) $payment->getKey();
+
+        if ($amountOk && $customOk) {
+            return true;
+        }
+
+        Log::critical('PayPal capture does not match payment — not completing', [
+            'payment_id' => $payment->id,
+            'expected_amount' => self::formatAmount($payment->amount),
+            'expected_currency' => $payment->currency,
+            'captured_amount' => $value,
+            'captured_currency' => $currency,
+            'custom_id' => $customId,
+        ]);
+
+        return false;
+    }
+
+    private static function formatAmount(mixed $amount): string
+    {
+        return number_format((float) $amount, 2, '.', '');
     }
 
     private function jsonResponse(array $data, int $status = 200): Response

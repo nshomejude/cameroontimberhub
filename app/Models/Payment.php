@@ -56,8 +56,34 @@ class Payment extends Model
         ]);
     }
 
+    /**
+     * Fail a still-pending attempt. A no-op for any other status so a stray
+     * cancel link, late gateway callback or replayed request can never flip
+     * a completed/refunded payment back to failed. Conditional UPDATE keeps
+     * it race-safe against a concurrent completion.
+     */
     public function markFailed(): void
     {
-        $this->update(['status' => PaymentStatus::Failed]);
+        $updated = static::query()
+            ->whereKey($this->getKey())
+            ->where('status', PaymentStatus::Pending->value)
+            ->update(['status' => PaymentStatus::Failed->value, 'updated_at' => now()]);
+
+        if ($updated > 0) {
+            $this->status = PaymentStatus::Failed;
+            $this->syncOriginalAttribute('status');
+        }
+    }
+
+    /**
+     * Pending check against the stored row (in-memory status can be null
+     * right after create() since the DB default supplies it).
+     */
+    public function isPending(): bool
+    {
+        return static::query()
+            ->whereKey($this->getKey())
+            ->where('status', PaymentStatus::Pending->value)
+            ->exists();
     }
 }

@@ -281,7 +281,7 @@ it('PayPal: a verified capture-completed webhook completes the payment and write
 
     $this->postJson(route('payments.paypal.webhook'), [
         'event_type' => 'PAYMENT.CAPTURE.COMPLETED',
-        'resource' => ['id' => 'PP-CAP-1', 'supplementary_data' => ['related_ids' => ['order_id' => 'PP-ORDER-1']]],
+        'resource' => ['id' => 'PP-CAP-1', 'amount' => ['currency_code' => 'USD', 'value' => '50000.00'], 'supplementary_data' => ['related_ids' => ['order_id' => 'PP-ORDER-1']]],
     ])->assertOk();
 
     expect($payment->fresh()->status)->toBe(PaymentStatus::Completed)

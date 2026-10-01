@@ -107,7 +107,10 @@ it('submits a request to pay and records the provider reference on success', fun
         'provider_reference' => null,
     ]);
 
-    $response = $this->post(route('payments.mtn-momo.submit', $payment), [
+    $owner = User::factory()->create();
+    $payment->company->users()->attach($owner);
+
+    $response = $this->actingAs($owner)->post(route('payments.mtn-momo.submit', $payment), [
         'phone' => '677123456',
     ]);
 
@@ -144,7 +147,10 @@ it('marks the payment failed when the request to pay call fails', function () {
         'provider_reference' => null,
     ]);
 
-    $response = $this->post(route('payments.mtn-momo.submit', $payment), [
+    $owner = User::factory()->create();
+    $payment->company->users()->attach($owner);
+
+    $response = $this->actingAs($owner)->post(route('payments.mtn-momo.submit', $payment), [
         'phone' => '677123456',
     ]);
 
@@ -171,7 +177,10 @@ it('marks the payment failed gracefully when the token request throws', function
         'provider_reference' => null,
     ]);
 
-    $response = $this->post(route('payments.mtn-momo.submit', $payment), [
+    $owner = User::factory()->create();
+    $payment->company->users()->attach($owner);
+
+    $response = $this->actingAs($owner)->post(route('payments.mtn-momo.submit', $payment), [
         'phone' => '677123456',
     ]);
 
