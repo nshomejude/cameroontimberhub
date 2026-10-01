@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Filament\Exporter\Resources\TransformationRequests\TransformationRequestResource;
 use App\Models\TransformationRequest;
 use App\Notifications\Concerns\PreferenceGatedChannels;
 use Illuminate\Bus\Queueable;
@@ -36,6 +37,7 @@ class TransformationRequestAcceptedNotification extends Notification implements 
             ]),
             'reference' => $this->request->reference_code,
             'screen' => 'transformation_request',
+            'url' => TransformationRequestResource::getUrl('view', ['record' => $this->request], panel: 'exporter'),
         ];
     }
 }
