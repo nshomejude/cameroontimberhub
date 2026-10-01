@@ -31,6 +31,7 @@ ssh -i ~/.ssh/cameroontimberhub_deploy root@www.cameroontimberhub.com \
   sudo -u timberhub git pull --ff-only origin master && \
   sudo -u timberhub composer install --no-dev --optimize-autoloader && \
   sudo -u timberhub php artisan migrate --force && \
+  sudo -u timberhub php artisan db:seed --class=RolesAndPermissionsSeeder --force && \
   sudo -u timberhub php artisan config:cache && \
   sudo -u timberhub php artisan route:cache && \
   sudo -u timberhub php artisan view:cache && \
@@ -43,6 +44,7 @@ ssh -i ~/.ssh/cameroontimberhub_deploy root@www.cameroontimberhub.com \
 ```
 
 - `migrate --force` is safe — every migration in this repo is additive. If a migration is destructive, **take a backup first** (§4).
+- `db:seed --class=RolesAndPermissionsSeeder --force` must run on every deploy: staff permissions live in the database, so new permissions/role grants in the seeder only take effect once it is re-run. It is idempotent (`findOrCreate` + `syncPermissions`) and does not touch user role assignments — but it resets each staff role's permissions to the seeder matrix, so manual permission edits on those roles in prod are overwritten.
 - `queue:restart` + a `timberhub-queue.service` restart are both needed: the signal tells running workers to finish and exit, the service restart brings them back with the new code.
 - After deploy: `GET /up/health` should be `ok`; `php artisan about --only=cache` should show every cache `CACHED`.
 

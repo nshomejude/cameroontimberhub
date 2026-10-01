@@ -247,7 +247,10 @@ class CompaniesTable
     protected static function agentModerationActions(): array
     {
         $moderate = fn (): ModerateAgentSubmission => app(ModerateAgentSubmission::class);
-        $canManage = fn (): bool => (bool) auth()->user()?->can('companies.manage');
+        // Dedicated moderation permission (verification officers, moderators)
+        // OR full company authority.
+        $canManage = fn (): bool => (bool) (auth()->user()?->can('agent-submissions.moderate')
+            || auth()->user()?->can('companies.manage'));
         $isAgent = fn (Company $r): bool => str_starts_with((string) $r->source, 'agent:');
 
         return [

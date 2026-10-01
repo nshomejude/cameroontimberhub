@@ -85,6 +85,11 @@ class RolesAndPermissionsSeeder extends Seeder
         // Support tickets ("live chat with support"): staff inbox on
         // /api/v1/staff/support/tickets and the admin SupportTicketResource.
         'support.manage',
+        // Agent Ingestion Gateway moderation: approve / reject / publish
+        // products / attach owner on agent-sourced companies (CompaniesTable
+        // row actions, OR companies.manage). Lets verification officers and
+        // moderators clear the agent queue without full company authority.
+        'agent-submissions.moderate',
     ];
 
     /** Role => permission matrix (spec decision G). super_admin gets all. */
@@ -117,12 +122,17 @@ class RolesAndPermissionsSeeder extends Seeder
             'api-keys.manage',
             // Support ticket inbox.
             'support.manage',
+            // Agent submission moderation queue.
+            'agent-submissions.moderate',
+            // NOTE: plans.manage is deliberately NOT granted to admin
+            // (MVP spec decision G: super_admin + billing_officer only).
         ],
         'verification_officer' => [
             'companies.view', 'documents.review', 'verification.review',
             'badges.issue', 'badges.revoke', 'audit.view',
             'certificates.manage',
             'support.manage',
+            'agent-submissions.moderate',
         ],
         'content_manager' => [
             'companies.view', 'species.manage', 'pages.manage',
@@ -132,9 +142,12 @@ class RolesAndPermissionsSeeder extends Seeder
         'support_officer' => [
             'support.manage',
         ],
-        // Community/support moderator: answers support tickets.
+        // Community/support moderator: answers support tickets, moderates
+        // listings/inquiries and the agent submission queue.
         'moderator' => [
             'support.manage',
+            'products.manage', 'inquiries.review',
+            'companies.view', 'agent-submissions.moderate',
         ],
         // Compliance authority (blueprint §88, §89 segregation): manages
         // regulatory sources, compliance rules/cases, inspectors and
@@ -149,6 +162,8 @@ class RolesAndPermissionsSeeder extends Seeder
         // excludes verification.review/badges.* and compliance.manage.
         'billing_officer' => [
             'plans.manage', 'payments.view', 'audit.view',
+            // Invoices/credit notes are billing records; answers billing tickets.
+            'billing.view', 'support.manage',
         ],
         // Payment/gateway-credential authority (billing engine plan §7.6):
         // holds payments.manage so it can propose/approve gateway credential
@@ -157,6 +172,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'payments.manage',
             'pricing.manage',
             'billing.view',
+            // Needs to see the payments it reconciles; answers payment tickets.
+            'payments.view', 'support.manage',
         ],
     ];
 
@@ -194,6 +211,11 @@ class RolesAndPermissionsSeeder extends Seeder
                              // resources (OR an OrganisationType::Logistics company).
     ];
 
+    /**
+     * Idempotent: findOrCreate + syncPermissions, so it is safe (and required)
+     * to re-run on every production deploy to pick up matrix changes:
+     * `php artisan db:seed --class=RolesAndPermissionsSeeder --force`.
+     */
     public function run(): void
     {
         app(PermissionRegistrar::class)->forgetCachedPermissions();
