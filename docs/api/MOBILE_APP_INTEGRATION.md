@@ -558,6 +558,25 @@ there is no separate expiry-tracking API yet; that rides the same
 `/company/documents` family above. No delete endpoint exists yet on either
 the web resource or this API — noted as a follow-up, not an oversight.
 
+### Transformation — requests to processors, manufacturers & artisans
+
+Read-only directory (public): `GET /transformation/providers`,
+`GET /transformation/providers/{slug}`, `GET /transformation/match`. Eligible
+providers are verified companies whose `type` is `processor`,
+`manufacturer` or `artisan` (`OrganisationType::transformationProviders()`).
+
+Request pipeline (authenticated, any company member):
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/transformation/requests` | Paginated list. Query: `box` = `sent` (requests your company made) or `received` (requests made to your company). **Default:** `received` when your company's `type` is a provider type (processor/manufacturer/artisan), otherwise `sent`. `status` = `pending\|quoted\|accepted\|in_progress\|completed\|declined\|cancelled` (optional; unknown values are ignored). `per_page` 1–50 (default 15). |
+| POST | `/transformation/requests` | Create. Body: `provider_slug`, `service` (`sawing\|drying\|planing\|moulding\|veneer\|other`), `volume_m3`, optional `species_slug`, `input_description`, `target_spec`, `deadline`, `notes`. |
+| GET | `/transformation/requests/{reference}` | One request (`404` for non-participants). |
+| POST | `.../{reference}/accept`, `/decline` (`reason`), `/quote` (`amount`, `currency`, `lead_time_days?`, `notes?`), `/start`, `/complete` (`input_volume_m3?`, `output_volume_m3?`, `notes?`) | Provider side. |
+| POST | `.../{reference}/accept-quote`, `/decline-quote`, `/cancel` | Requester side. |
+
+Each item carries server-computed `actions[]` for the caller — render only those.
+
 ---
 
 ## 4. A full transaction flow
