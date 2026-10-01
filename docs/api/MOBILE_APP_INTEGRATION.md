@@ -551,12 +551,46 @@ showing the Fleet section in the client at all.
 | POST | `/supplier/fleet/drivers` | 🔑 | Create a driver. Body: `{ "name": "...", "license_number": "...", "phone": "...", "is_active": true }` (`name`, `license_number` required; `phone`/`is_active` optional). |
 | GET | `/supplier/fleet/drivers/{id}` | 🔑 | One driver. `404` if not the caller's company's. |
 | PATCH | `/supplier/fleet/drivers/{id}` | 🔑 | Partial update, same body fields, all optional. Rate-limited. |
+| DELETE | `/supplier/fleet/vehicles/{id}` | 🔑 | Delete a vehicle (hard delete). `204`; `404` if not yours; **`409` `fleet_in_use`** while it is assigned to a shipment whose order is not yet delivered/completed/cancelled. |
+| DELETE | `/supplier/fleet/drivers/{id}` | 🔑 | Delete a driver. Same rules as vehicles. |
 
 Both resources ride the shared polymorphic Document store for compliance
 paperwork (registration, insurance, driving licence, medical certificate) —
 there is no separate expiry-tracking API yet; that rides the same
-`/company/documents` family above. No delete endpoint exists yet on either
-the web resource or this API — noted as a follow-up, not an oversight.
+`/company/documents` family above.
+
+### Logistics — shipments, waybills and checkpoints
+
+A **shipment** is a trackable, waybill-bearing consignment of an order. It is
+created explicitly (below, or the web "Create shipment / waybill" order
+action) or **automatically when the order is marked shipped** if it has none
+yet. The buyer sees it at `GET /orders/{reference}/shipments`.
+
+Who sees/writes a shipment: members of its **carrier company**
+(`carrier_company_id`, derived from the chosen vehicle/driver) **or** of the
+order's **supplier company**. Anyone else gets `404`. All routes sit behind
+`api.supplier` (any company member, including logistics companies).
+
+| Method | Path | Auth | Notes |
+|---|---|---|---|
+| POST | `/supplier/orders/{reference}/shipments` | 🔑 | Supplier only (own sales order). Body (all optional): `{ "vehicle_id": 1, "driver_id": 2, "carrier_company_id": 3, "origin": "Douala", "destination": "Le Havre" }`. Vehicle/driver/carrier must be the supplier's own or a logistics company's (`type = logistics`), active, and all from the same company — else `422`. `422 order_not_shippable` for delivered/completed/cancelled orders. Returns `201` + shipment. Rate-limited (`api-decision`). |
+| GET | `/supplier/shipments` | 🔑 | Shipments visible to the caller (carrier or supplier), newest first, 15/page. |
+| GET | `/supplier/shipments/{id}` | 🔑 | One shipment incl. `checkpoints[]` (ordered by `occurred_at`). |
+| POST | `/supplier/shipments/{id}/checkpoints` | 🔑 | Record a checkpoint. Body: `{ "status": "dispatched\|in_transit\|delayed\|delivered", "location": "...", "latitude": 4.05, "longitude": 9.7, "notes": "...", "occurred_at": "ISO-8601 device time", "client_event_id": "uuid" }` (`status` required). **Offline replay:** mint one `client_event_id` per captured checkpoint and resend it on every retry — a repeat returns `200` with `"replayed": true` and the original row instead of a duplicate (`201`, `"replayed": false`). Rate-limited (`api-decision`). |
+
+Shipment shape: `id`, `waybill_number`, `order_reference`, `origin`,
+`destination`, `carrier_company {id,name}`, `vehicle {id,registration_number}`,
+`driver {id,name}`, `waybill_url` (public printable waybill + QR, always set),
+`tracking_url` (public `/track/{token}` link — `null` until the first
+checkpoint exists), `current_status` / `current_status_label` /
+`current_status_updated_at`, `checkpoints[]` (show only: `id`,
+`client_event_id`, `status`, `status_label`, `location`, `latitude`,
+`longitude`, `notes`, `occurred_at`, `recorded_at`), `created_at`.
+
+Web: the offline-capable capture page `/logistics/shipments/{waybill}/checkpoint`
+now requires login (guests are redirected to login and back) and the same
+carrier-or-supplier membership; the public waybill and `/track/{token}` pages
+stay open.
 
 ---
 

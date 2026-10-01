@@ -4,8 +4,11 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Api\V1\VehicleResource;
+use App\Exceptions\Api\ConflictException;
 use App\Services\FleetApiScope;
+use App\Services\ShipmentService;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 /**
@@ -21,7 +24,10 @@ class FleetVehicleController extends Controller
 {
     private const TYPES = ['truck', 'trailer', 'pickup', 'van', 'flatbed', 'container_chassis', 'other'];
 
-    public function __construct(private readonly FleetApiScope $scope) {}
+    public function __construct(
+        private readonly FleetApiScope $scope,
+        private readonly ShipmentService $shipments,
+    ) {}
 
     public function index(Request $request): AnonymousResourceCollection
     {
@@ -71,5 +77,23 @@ class FleetVehicleController extends Controller
         $record->update($data);
 
         return new VehicleResource($record->fresh());
+    }
+
+    /**
+     * Hard delete (Vehicle has no SoftDeletes). Refused with 409 while the
+     * vehicle is on a shipment whose order hasn't been delivered yet —
+     * removing it would orphan live tracking.
+     */
+    public function destroy(Request $request, int|string $vehicle): Response
+    {
+        $record = $this->scope->vehicle($request->user(), $vehicle);
+
+        if ($this->shipments->hasOpenAssignment('vehicle_id', $record->getKey())) {
+            throw new ConflictException(__('logistics.errors.fleet_in_use'), 'fleet_in_use');
+        }
+
+        $record->delete();
+
+        return response()->noContent();
     }
 }

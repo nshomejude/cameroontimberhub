@@ -78,6 +78,12 @@ class Order extends Model
         return $this->belongsTo(User::class);
     }
 
+    /** Transport bookings with digital waybills (gap-plan 1.5.10). */
+    public function shipments(): HasMany
+    {
+        return $this->hasMany(Shipment::class);
+    }
+
     public function items(): HasMany
     {
         return $this->hasMany(OrderItem::class);

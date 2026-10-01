@@ -8,16 +8,20 @@ use App\Enums\OrderPaymentStatus;
 use App\Enums\OrderStatus;
 use App\Models\Order;
 use App\Services\OrderService;
+use App\Services\ShipmentService;
+use App\Services\ShipmentWaybillQrCodeService;
 use App\Support\Bus\CommandBus;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Validation\ValidationException;
 use RuntimeException;
 
 class OrdersTable
@@ -117,6 +121,8 @@ class OrdersTable
                                 ->log('Supplier updated the shipment details');
                         }, 'Shipment details saved')),
 
+                    static::createShipmentAction(),
+
                     /*
                      * Record an OFF-PLATFORM payment.
                      *
@@ -186,6 +192,56 @@ class OrdersTable
                 )),
                 'Mark shipped — done',
             ));
+    }
+
+    /**
+     * "Create shipment / waybill" — the trackable, waybill-bearing Shipment
+     * (distinct from "Shipment details" above, which only edits free-text
+     * carrier facts on the order). Vehicle/driver are optional and come from
+     * the supplier's own fleet or a logistics partner's
+     * (ShipmentService::selectableVehicles()/Drivers()); the carrier company
+     * is derived from them. Marking the order shipped auto-creates a bare
+     * shipment if none exists, so this is for assigning fleet up front or
+     * for split consignments.
+     */
+    protected static function createShipmentAction(): Action
+    {
+        $fleetLabel = fn (string $name, $model): string => "{$name} ({$model->company?->name})";
+
+        return Action::make('createShipment')->label('Create shipment / waybill')->icon('heroicon-o-qr-code')->color('primary')
+            ->visible(fn (Order $r): bool => ! in_array($r->status, [OrderStatus::Delivered, OrderStatus::Completed, OrderStatus::Cancelled], true))
+            ->schema([
+                Select::make('vehicle_id')->label('Vehicle (optional)')->searchable()
+                    ->options(fn (Order $record): array => app(ShipmentService::class)->selectableVehicles($record)
+                        ->with('company')->orderBy('registration_number')->limit(200)->get()
+                        ->mapWithKeys(fn ($v) => [$v->id => $fleetLabel($v->registration_number, $v)])->all()),
+                Select::make('driver_id')->label('Driver (optional)')->searchable()
+                    ->options(fn (Order $record): array => app(ShipmentService::class)->selectableDrivers($record)
+                        ->with('company')->orderBy('name')->limit(200)->get()
+                        ->mapWithKeys(fn ($d) => [$d->id => $fleetLabel($d->name, $d)])->all()),
+                TextInput::make('origin')->maxLength(200),
+                TextInput::make('destination')->maxLength(200),
+            ])
+            ->action(function (Order $record, array $data): void {
+                try {
+                    $shipment = app(ShipmentService::class)->createFromOrder($record, $data);
+                } catch (ValidationException $e) {
+                    Notification::make()->title(collect($e->errors())->flatten()->first())->danger()->send();
+
+                    return;
+                }
+
+                activity('order')->performedOn($record)->causedBy(auth()->user())
+                    ->event('shipment_created')
+                    ->withProperties(['waybill_number' => $shipment->waybill_number])
+                    ->log('Supplier created a shipment waybill');
+
+                Notification::make()->title("Waybill {$shipment->waybill_number} created")->success()
+                    ->actions([
+                        Action::make('open')->label('Open waybill')
+                            ->url(app(ShipmentWaybillQrCodeService::class)->waybillUrl($shipment), shouldOpenInNewTab: true),
+                    ])->send();
+            });
     }
 
     /**

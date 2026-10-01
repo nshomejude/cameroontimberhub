@@ -41,6 +41,22 @@ class Shipment extends Model
         return $this->belongsTo(Order::class);
     }
 
+    /** The company physically moving this shipment (nullable — not assigned yet). */
+    public function carrierCompany(): BelongsTo
+    {
+        return $this->belongsTo(Company::class, 'carrier_company_id');
+    }
+
+    public function vehicle(): BelongsTo
+    {
+        return $this->belongsTo(Vehicle::class);
+    }
+
+    public function driver(): BelongsTo
+    {
+        return $this->belongsTo(Driver::class);
+    }
+
     /** TimberLots carried on this shipment (blueprint §10 wiring), with the m3 quantity on this leg. */
     public function timberLots(): BelongsToMany
     {

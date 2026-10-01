@@ -255,6 +255,13 @@ class OrderService
 
         $order->update($data);
 
+        // Every ship path (panel, chat, API, staff) lands here: guarantee the
+        // order has a waybill-bearing Shipment so buyer tracking and carrier
+        // checkpoints have something to attach to. No-op if one exists.
+        if ($to === OrderStatus::Shipped) {
+            app(ShipmentService::class)->ensureForOrder($order);
+        }
+
         $log = activity('order')->performedOn($order)->event('status_changed')
             ->withProperties(['from' => $from->value, 'to' => $to->value, 'reason' => $reason]);
 

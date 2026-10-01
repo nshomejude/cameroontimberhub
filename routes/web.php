@@ -258,10 +258,15 @@ Route::get('/shipments/{shipment:waybill_number}/waybill', [ShipmentWaybillContr
     ->name('shipments.waybill.show');
 
 // Offline-capable field checkpoint capture for logistics/drivers (blueprint
-// §45-46). Same no-auth, waybill_number-token access pattern as the waybill
-// route directly above — a driver in the field has no account either.
+// §45-46). Writing a checkpoint (incl. "delivered") requires a logged-in
+// member of the carrier or the order's supplier company — a guest is sent
+// to login and returned here (intended URL). Reading stays public via the
+// waybill page above and /track/{token}.
+// The POST deliberately has no `auth` middleware: a guest redirect would be
+// followed by fetch() as a 200 and the OfflineQueue would drop the item —
+// the controller answers a guest with a JSON 401 instead (stays queued).
 Route::get('/logistics/shipments/{shipment:waybill_number}/checkpoint', [LogisticsCheckpointController::class, 'create'])
-    ->name('logistics.checkpoints.create');
+    ->middleware('auth')->name('logistics.checkpoints.create');
 Route::post('/logistics/shipments/{shipment:waybill_number}/checkpoint', [LogisticsCheckpointController::class, 'store'])
     ->middleware('throttle:checkpoint-record')->name('logistics.checkpoints.store');
 

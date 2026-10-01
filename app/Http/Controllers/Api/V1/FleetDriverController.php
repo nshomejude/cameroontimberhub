@@ -4,8 +4,11 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Api\V1\DriverResource;
+use App\Exceptions\Api\ConflictException;
 use App\Services\FleetApiScope;
+use App\Services\ShipmentService;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 /**
@@ -17,7 +20,10 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
  */
 class FleetDriverController extends Controller
 {
-    public function __construct(private readonly FleetApiScope $scope) {}
+    public function __construct(
+        private readonly FleetApiScope $scope,
+        private readonly ShipmentService $shipments,
+    ) {}
 
     public function index(Request $request): AnonymousResourceCollection
     {
@@ -67,5 +73,19 @@ class FleetDriverController extends Controller
         $record->update($data);
 
         return new DriverResource($record->fresh());
+    }
+
+    /** Hard delete (no SoftDeletes); 409 while on an in-transit shipment — see FleetVehicleController::destroy(). */
+    public function destroy(Request $request, int|string $driver): Response
+    {
+        $record = $this->scope->driver($request->user(), $driver);
+
+        if ($this->shipments->hasOpenAssignment('driver_id', $record->getKey())) {
+            throw new ConflictException(__('logistics.errors.fleet_in_use'), 'fleet_in_use');
+        }
+
+        $record->delete();
+
+        return response()->noContent();
     }
 }
